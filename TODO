@@ -1,0 +1,23 @@
+Before adding to chrome
+-----------------------
+- multi-threaded test/benchmark
+- Allow missing crc32c in Table format?
+
+Maybe afterwards
+----------------
+
+ss
+- Stats
+- Speed up backwards scan (avoid three passes over data)
+
+db
+- Maybe implement DB::BulkDeleteForRange(start_key, end_key)
+  that would blow away files whose ranges are entirely contained
+  within [start_key..end_key]?  For Chrome, deletion of obsolete
+  object stores, etc. can be done in the background anyway, so
+  probably not that important.
+
+api changes?
+- Efficient large value reading and writing
+
+Faster Get implementation

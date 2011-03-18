@@ -1,0 +1,282 @@
+// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
+
+#include "db/version_edit.h"
+
+#include "db/version_set.h"
+#include "util/coding.h"
+
+namespace leveldb {
+
+// Tag numbers for serialized VersionEdit.  These numbers are written to
+// disk and should not be changed.
+enum Tag {
+  kComparator           = 1,
+  kLogNumber            = 2,
+  kNextFileNumber       = 3,
+  kLastSequence         = 4,
+  kCompactPointer       = 5,
+  kDeletedFile          = 6,
+  kNewFile              = 7,
+  kLargeValueRef        = 8,
+};
+
+void VersionEdit::Clear() {
+  comparator_.clear();
+  log_number_ = 0;
+  last_sequence_ = 0;
+  next_file_number_ = 0;
+  has_comparator_ = false;
+  has_log_number_ = false;
+  has_next_file_number_ = false;
+  has_last_sequence_ = false;
+  deleted_files_.clear();
+  new_files_.clear();
+  large_refs_added_.clear();
+}
+
+void VersionEdit::EncodeTo(std::string* dst) const {
+  if (has_comparator_) {
+    PutVarint32(dst, kComparator);
+    PutLengthPrefixedSlice(dst, comparator_);
+  }
+  if (has_log_number_) {
+    PutVarint32(dst, kLogNumber);
+    PutVarint64(dst, log_number_);
+  }
+  if (has_next_file_number_) {
+    PutVarint32(dst, kNextFileNumber);
+    PutVarint64(dst, next_file_number_);
+  }
+  if (has_last_sequence_) {
+    PutVarint32(dst, kLastSequence);
+    PutVarint64(dst, last_sequence_);
+  }
+
+  for (int i = 0; i < compact_pointers_.size(); i++) {
+    PutVarint32(dst, kCompactPointer);
+    PutVarint32(dst, compact_pointers_[i].first);  // level
+    PutLengthPrefixedSlice(dst, compact_pointers_[i].second.Encode());
+  }
+
+  for (DeletedFileSet::const_iterator iter = deleted_files_.begin();
+       iter != deleted_files_.end();
+       ++iter) {
+    PutVarint32(dst, kDeletedFile);
+    PutVarint32(dst, iter->first);   // level
+    PutVarint64(dst, iter->second);  // file number
+  }
+
+  for (int i = 0; i < new_files_.size(); i++) {
+    const FileMetaData& f = new_files_[i].second;
+    PutVarint32(dst, kNewFile);
+    PutVarint32(dst, new_files_[i].first);  // level
+    PutVarint64(dst, f.number);
+    PutVarint64(dst, f.file_size);
+    PutLengthPrefixedSlice(dst, f.smallest.Encode());
+    PutLengthPrefixedSlice(dst, f.largest.Encode());
+  }
+
+  for (int i = 0; i < large_refs_added_.size(); i++) {
+    const VersionEdit::Large& l = large_refs_added_[i];
+    PutVarint32(dst, kLargeValueRef);
+    PutLengthPrefixedSlice(dst,
+                           Slice(l.large_ref.data, LargeValueRef::ByteSize()));
+    PutVarint64(dst, l.fnum);
+    PutLengthPrefixedSlice(dst, l.internal_key.Encode());
+  }
+}
+
+static bool GetInternalKey(Slice* input, InternalKey* dst) {
+  Slice str;
+  if (GetLengthPrefixedSlice(input, &str)) {
+    dst->DecodeFrom(str);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+static bool GetLevel(Slice* input, int* level) {
+  uint32_t v;
+  if (GetVarint32(input, &v) &&
+      v < config::kNumLevels) {
+    *level = v;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+Status VersionEdit::DecodeFrom(const Slice& src) {
+  Clear();
+  Slice input = src;
+  const char* msg = NULL;
+  uint32_t tag;
+
+  // Temporary storage for parsing
+  int level;
+  uint64_t number;
+  FileMetaData f;
+  Slice str;
+  Large large;
+  InternalKey key;
+
+  while (msg == NULL && GetVarint32(&input, &tag)) {
+    switch (tag) {
+      case kComparator:
+        if (GetLengthPrefixedSlice(&input, &str)) {
+          comparator_ = str.ToString();
+          has_comparator_ = true;
+        } else {
+          msg = "comparator name";
+        }
+        break;
+
+      case kLogNumber:
+        if (GetVarint64(&input, &log_number_)) {
+          has_log_number_ = true;
+        } else {
+          msg = "log number";
+        }
+        break;
+
+      case kNextFileNumber:
+        if (GetVarint64(&input, &next_file_number_)) {
+          has_next_file_number_ = true;
+        } else {
+          msg = "next file number";
+        }
+        break;
+
+      case kLastSequence:
+        if (GetVarint64(&input, &last_sequence_)) {
+          has_last_sequence_ = true;
+        } else {
+          msg = "last sequence number";
+        }
+        break;
+
+      case kCompactPointer:
+        if (GetLevel(&input, &level) &&
+            GetInternalKey(&input, &key)) {
+          compact_pointers_.push_back(std::make_pair(level, key));
+        } else {
+          msg = "compaction pointer";
+        }
+        break;
+
+      case kDeletedFile:
+        if (GetLevel(&input, &level) &&
+            GetVarint64(&input, &number)) {
+          deleted_files_.insert(std::make_pair(level, number));
+        } else {
+          msg = "deleted file";
+        }
+        break;
+
+      case kNewFile:
+        if (GetLevel(&input, &level) &&
+            GetVarint64(&input, &f.number) &&
+            GetVarint64(&input, &f.file_size) &&
+            GetInternalKey(&input, &f.smallest) &&
+            GetInternalKey(&input, &f.largest)) {
+          new_files_.push_back(std::make_pair(level, f));
+        } else {
+          msg = "new-file entry";
+        }
+        break;
+
+      case kLargeValueRef:
+        if (GetLengthPrefixedSlice(&input, &str) &&
+            (str.size() == LargeValueRef::ByteSize()) &&
+            GetVarint64(&input, &large.fnum) &&
+            GetInternalKey(&input, &large.internal_key)) {
+          large.large_ref = LargeValueRef::FromRef(str);
+          large_refs_added_.push_back(large);
+        } else {
+          msg = "large ref";
+        }
+        break;
+
+      default:
+        msg = "unknown tag";
+        break;
+    }
+  }
+
+  if (msg == NULL && !input.empty()) {
+    msg = "invalid tag";
+  }
+
+  Status result;
+  if (msg != NULL) {
+    result = Status::Corruption("VersionEdit", msg);
+  }
+  return result;
+}
+
+std::string VersionEdit::DebugString() const {
+  std::string r;
+  r.append("VersionEdit {");
+  if (has_comparator_) {
+    r.append("\n  Comparator: ");
+    r.append(comparator_);
+  }
+  if (has_log_number_) {
+    r.append("\n  LogNumber: ");
+    AppendNumberTo(&r, log_number_);
+  }
+  if (has_next_file_number_) {
+    r.append("\n  NextFile: ");
+    AppendNumberTo(&r, next_file_number_);
+  }
+  if (has_last_sequence_) {
+    r.append("\n  LastSeq: ");
+    AppendNumberTo(&r, last_sequence_);
+  }
+  for (int i = 0; i < compact_pointers_.size(); i++) {
+    r.append("\n  CompactPointer: ");
+    AppendNumberTo(&r, compact_pointers_[i].first);
+    r.append(" '");
+    AppendEscapedStringTo(&r, compact_pointers_[i].second.Encode());
+    r.append("'");
+  }
+  for (DeletedFileSet::const_iterator iter = deleted_files_.begin();
+       iter != deleted_files_.end();
+       ++iter) {
+    r.append("\n  DeleteFile: ");
+    AppendNumberTo(&r, iter->first);
+    r.append(" ");
+    AppendNumberTo(&r, iter->second);
+  }
+  for (int i = 0; i < new_files_.size(); i++) {
+    const FileMetaData& f = new_files_[i].second;
+    r.append("\n  AddFile: ");
+    AppendNumberTo(&r, new_files_[i].first);
+    r.append(" ");
+    AppendNumberTo(&r, f.number);
+    r.append(" ");
+    AppendNumberTo(&r, f.file_size);
+    r.append(" '");
+    AppendEscapedStringTo(&r, f.smallest.Encode());
+    r.append("' .. '");
+    AppendEscapedStringTo(&r, f.largest.Encode());
+    r.append("'");
+  }
+  for (int i = 0; i < large_refs_added_.size(); i++) {
+    const VersionEdit::Large& l = large_refs_added_[i];
+    r.append("\n  LargeRef: ");
+    AppendNumberTo(&r, l.fnum);
+    r.append(" ");
+    r.append(LargeValueRefToFilenameString(l.large_ref));
+    r.append(" '");
+    AppendEscapedStringTo(&r, l.internal_key.Encode());
+    r.append("'");
+  }
+  r.append("\n}\n");
+  return r;
+}
+
+}
