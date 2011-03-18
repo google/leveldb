@@ -17,7 +17,7 @@ LIBOBJECTS = \
 	./db/db_impl.o \
 	./db/db_iter.o \
 	./db/filename.o \
-	./db/format.o \
+	./db/dbformat.o \
 	./db/log_reader.o \
 	./db/log_writer.o \
 	./db/memtable.o \
