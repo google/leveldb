@@ -11,9 +11,7 @@
       'LEVELDB_PLATFORM_CHROMIUM=1',
     ],
     'include_dirs': [
-      # MOE:begin_strip
-      '../..',
-      # MOE:end_strip_and_replace '.',
+      '.',
     ],
     'conditions': [
       ['OS == "win"', {
@@ -35,9 +33,7 @@
       'dependencies': [
         # The base libary is a lightweight abstraction layer for things like
         # threads and IO. http://src.chromium.org/viewvc/chrome/trunk/src/base/
-        # MOE:begin_strip
-        '../../../../base/base.gyp:base',
-        # MOE:end_strip_and_replace '../../base/base.gyp:base',
+        '../../base/base.gyp:base',
       ],
       'conditions': [
         ['use_snappy', {
@@ -138,16 +134,12 @@
       'target_name': 'leveldb_testutil',
       'type': '<(library)',
       'dependencies': [
-        # MOE:begin_strip
-        '../../../../base/base.gyp:base',
-        # MOE:end_strip_and_replace '../../base/base.gyp:base',
+        '../../base/base.gyp:base',
         'leveldb',
       ],
       'export_dependent_settings': [
         # The tests use include directories from these projects.
-        # MOE:begin_strip
-        '../../../../base/base.gyp:base',
-        # MOE:end_strip_and_replace '../../base/base.gyp:base',
+        '../../base/base.gyp:base',
         'leveldb',
       ],
       'sources': [
