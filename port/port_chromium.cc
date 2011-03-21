@@ -8,7 +8,7 @@
 
 #if defined(USE_SNAPPY)
 #  include "third_party/snappy/src/snappy.h"
-#  include "third_party/snappy/src/snappy-stubs.h"
+#  include "snappy-stubs-public.h"
 #endif
 
 namespace leveldb {
@@ -55,8 +55,7 @@ void Lightweight_Compress(const char* input, size_t input_length,
 #if defined(USE_SNAPPY)
   output->resize(snappy::MaxCompressedLength(input_length));
   size_t outlen;
-  snappy::RawCompress(snappy::StringPiece(input, input_length),
-                      &(*output)[0], &outlen);
+  snappy::RawCompress(input, input_length, &(*output)[0], &outlen);
   output->resize(outlen);
 #else
   output->assign(input, input_length);
@@ -66,13 +65,12 @@ void Lightweight_Compress(const char* input, size_t input_length,
 bool Lightweight_Uncompress(const char* input_data, size_t input_length,
                             std::string* output) {
 #if defined(USE_SNAPPY)
-  snappy::StringPiece input(input_data, input_length);
   size_t ulength;
-  if (!snappy::GetUncompressedLength(input, &ulength)) {
+  if (!snappy::GetUncompressedLength(input_data, input_length, &ulength)) {
     return false;
   }
   output->resize(ulength);
-  return snappy::RawUncompress(input, &(*output)[0]);
+  return snappy::RawUncompress(input_data, input_length, &(*output)[0]);
 #else
   output->assign(input_data, input_length);
   return true;

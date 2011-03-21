@@ -4,7 +4,7 @@
 
 {
   'variables': {
-    'use_snappy%': 0,
+    'use_snappy%': 1,
   },
   'target_defaults': {
     'defines': [
@@ -38,7 +38,7 @@
       'conditions': [
         ['use_snappy', {
           'dependencies': [
-            '../../../../third_party/snappy/snappy.gyp:snappy',
+            '../../third_party/snappy/snappy.gyp:snappy',
           ],
         }],
       ],
