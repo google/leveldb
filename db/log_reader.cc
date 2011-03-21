@@ -148,16 +148,22 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
     // Check crc
     if (checksum_) {
       if (type == kZeroType && length == 0) {
-        // Skip zero length record
-        buffer_.remove_prefix(kHeaderSize + length);
+        // Skip zero length record without reporting any drops since
+        // such records are produced by the mmap based writing code in
+        // env_posix.cc that preallocates file regions.
+        buffer_.clear();
         return kBadRecord;
       }
 
       uint32_t expected_crc = crc32c::Unmask(DecodeFixed32(header));
       uint32_t actual_crc = crc32c::Value(header + 6, 1 + length);
       if (actual_crc != expected_crc) {
-        ReportDrop(length, "checksum mismatch");
-        buffer_.remove_prefix(kHeaderSize + length);
+        // Drop the rest of the buffer since "length" itself may have
+        // been corrupted and if we trust it, we could find some
+        // fragment of a real log record that just happens to look
+        // like a valid log record.
+        ReportDrop(buffer_.size(), "checksum mismatch");
+        buffer_.clear();
         return kBadRecord;
       }
     }

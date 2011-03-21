@@ -17,7 +17,8 @@ class MergingIterator : public Iterator {
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
         n_(n),
-        current_(NULL) {
+        current_(NULL),
+        direction_(kForward) {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
     }
@@ -36,6 +37,7 @@ class MergingIterator : public Iterator {
       children_[i].SeekToFirst();
     }
     FindSmallest();
+    direction_ = kForward;
   }
 
   virtual void SeekToLast() {
@@ -43,6 +45,7 @@ class MergingIterator : public Iterator {
       children_[i].SeekToLast();
     }
     FindLargest();
+    direction_ = kReverse;
   }
 
   virtual void Seek(const Slice& target) {
@@ -50,16 +53,60 @@ class MergingIterator : public Iterator {
       children_[i].Seek(target);
     }
     FindSmallest();
+    direction_ = kForward;
   }
 
   virtual void Next() {
     assert(Valid());
+
+    // Ensure that all children are positioned after key().
+    // If we are moving in the forward direction, it is already
+    // true for all of the non-current_ children since current_ is
+    // the smallest child and key() == current_->key().  Otherwise,
+    // we explicitly position the non-current_ children.
+    if (direction_ != kForward) {
+      for (int i = 0; i < n_; i++) {
+        IteratorWrapper* child = &children_[i];
+        if (child != current_) {
+          child->Seek(key());
+          if (child->Valid() &&
+              comparator_->Compare(key(), child->key()) == 0) {
+            child->Next();
+          }
+        }
+      }
+      direction_ = kForward;
+    }
+
     current_->Next();
     FindSmallest();
   }
 
   virtual void Prev() {
     assert(Valid());
+
+    // Ensure that all children are positioned before key().
+    // If we are moving in the reverse direction, it is already
+    // true for all of the non-current_ children since current_ is
+    // the largest child and key() == current_->key().  Otherwise,
+    // we explicitly position the non-current_ children.
+    if (direction_ != kReverse) {
+      for (int i = 0; i < n_; i++) {
+        IteratorWrapper* child = &children_[i];
+        if (child != current_) {
+          child->Seek(key());
+          if (child->Valid()) {
+            // Child is at first entry >= key().  Step back one to be < key()
+            child->Prev();
+          } else {
+            // Child has no entries >= key().  Position at last entry.
+            child->SeekToLast();
+          }
+        }
+      }
+      direction_ = kReverse;
+    }
+
     current_->Prev();
     FindLargest();
   }
@@ -96,6 +143,13 @@ class MergingIterator : public Iterator {
   IteratorWrapper* children_;
   int n_;
   IteratorWrapper* current_;
+
+  // Which direction is the iterator moving?
+  enum Direction {
+    kForward,
+    kReverse
+  };
+  Direction direction_;
 };
 
 void MergingIterator::FindSmallest() {

@@ -35,9 +35,11 @@ static const char* FLAGS_benchmarks =
     "writerandom,"
     "sync,tenth,tenth,writerandom,nosync,normal,"
     "readseq,"
+    "readreverse,"
     "readrandom,"
     "compact,"
     "readseq,"
+    "readreverse,"
     "readrandom,"
     "writebig";
 
@@ -167,7 +169,7 @@ class Benchmark {
       message_.append(rate);
     }
 
-    fprintf(stdout, "%-12s : %10.3f micros/op;%s%s\n",
+    fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
             name.ToString().c_str(),
             (finish - start_) * 1e6 / done_,
             (message_.empty() ? "" : " "),
@@ -179,7 +181,11 @@ class Benchmark {
   }
 
  public:
-  enum Order { SEQUENTIAL, RANDOM };
+  enum Order {
+    SEQUENTIAL,
+    REVERSE,  // Currently only supported for reads
+    RANDOM
+  };
 
   Benchmark() : cache_(NewLRUCache(200<<20)),
                 db_(NULL),
@@ -239,6 +245,8 @@ class Benchmark {
         Write(RANDOM, num_ / 1000, 100 * 1000);
       } else if (name == Slice("readseq")) {
         Read(SEQUENTIAL);
+      } else if (name == Slice("readreverse")) {
+        Read(REVERSE);
       } else if (name == Slice("readrandom")) {
         Read(RANDOM);
       } else if (name == Slice("compact")) {
@@ -284,23 +292,39 @@ class Benchmark {
 
   void Read(Order order) {
     ReadOptions options;
-    if (order == SEQUENTIAL) {
-      Iterator* iter = db_->NewIterator(options);
-      int i = 0;
-      for (iter->SeekToFirst(); i < num_ && iter->Valid(); iter->Next()) {
-        bytes_ += iter->key().size() + iter->value().size();
-        FinishedSingleOp();
-        ++i;
+    switch (order) {
+      case SEQUENTIAL: {
+        Iterator* iter = db_->NewIterator(options);
+        int i = 0;
+        for (iter->SeekToFirst(); i < num_ && iter->Valid(); iter->Next()) {
+          bytes_ += iter->key().size() + iter->value().size();
+          FinishedSingleOp();
+          ++i;
+        }
+        delete iter;
+        break;
       }
-      delete iter;
-    } else {
-      std::string value;
-      for (int i = 0; i < num_; i++) {
-        char key[100];
-        const int k = (order == SEQUENTIAL) ? i : (rand_.Next() % FLAGS_num);
-        snprintf(key, sizeof(key), "%012d", k);
-        db_->Get(options, key, &value);
-        FinishedSingleOp();
+      case REVERSE: {
+        Iterator* iter = db_->NewIterator(options);
+        int i = 0;
+        for (iter->SeekToLast(); i < num_ && iter->Valid(); iter->Prev()) {
+          bytes_ += iter->key().size() + iter->value().size();
+          FinishedSingleOp();
+          ++i;
+        }
+        delete iter;
+        break;
+      }
+      case RANDOM: {
+        std::string value;
+        for (int i = 0; i < num_; i++) {
+          char key[100];
+          const int k = (order == SEQUENTIAL) ? i : (rand_.Next() % FLAGS_num);
+          snprintf(key, sizeof(key), "%012d", k);
+          db_->Get(options, key, &value);
+          FinishedSingleOp();
+        }
+        break;
       }
     }
   }

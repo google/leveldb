@@ -13,6 +13,7 @@
 #include "include/write_batch.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
+#include "db/log_format.h"
 #include "db/version_set.h"
 #include "util/logging.h"
 #include "util/testharness.h"
@@ -128,17 +129,17 @@ class CorruptionTest {
     std::string fname = candidates[rnd_.Uniform(candidates.size())];
 
     struct stat sbuf;
-    if (stat(fname.c_str(), &sbuf) != 0) {	
-      const char* msg = strerror(errno);	
-      ASSERT_TRUE(false) << fname << ": " << msg;	
-    }	
+    if (stat(fname.c_str(), &sbuf) != 0) {
+      const char* msg = strerror(errno);
+      ASSERT_TRUE(false) << fname << ": " << msg;
+    }
 
-    if (offset < 0) {	
-      // Relative to end of file; make it absolute	
-      if (-offset > sbuf.st_size) {	
-        offset = 0;	
-      } else {	
-        offset = sbuf.st_size + offset;	
+    if (offset < 0) {
+      // Relative to end of file; make it absolute
+      if (-offset > sbuf.st_size) {
+        offset = 0;
+      } else {
+        offset = sbuf.st_size + offset;
       }
     }
     if (offset > sbuf.st_size) {
@@ -183,12 +184,14 @@ class CorruptionTest {
 };
 
 TEST(CorruptionTest, Recovery) {
-  Build(10);
-  Check(10, 10);
+  Build(100);
+  Check(100, 100);
   Corrupt(kLogFile, 19, 1);      // WriteBatch tag for first record
-  Corrupt(kLogFile, 2*kValueSize, 1);  // Somewhere in second log record?
+  Corrupt(kLogFile, log::kBlockSize + 1000, 1);  // Somewhere in second block
   Reopen();
-  Check(8, 8);
+
+  // The 64 records in the first two log blocks are completely lost.
+  Check(36, 36);
 }
 
 TEST(CorruptionTest, RecoverWriteError) {

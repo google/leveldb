@@ -422,7 +422,7 @@ class PosixEnv : public Env {
   virtual void Logv(WritableFile* info_log, const char* format, va_list ap) {
     pthread_t tid = pthread_self();
     uint64_t thread_id = 0;
-    memcpy(&thread_id, &tid, min(sizeof(thread_id), sizeof(tid)));
+    memcpy(&thread_id, &tid, std::min(sizeof(thread_id), sizeof(tid)));
 
     // We try twice: the first time with a fixed-size stack allocated buffer,
     // and the second time with a much larger dynamically allocated buffer.

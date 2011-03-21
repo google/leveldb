@@ -169,6 +169,8 @@ class Constructor {
 
   virtual const KVMap& data() { return data_; }
 
+  virtual DB* db() const { return NULL; }  // Overridden in DBConstructor
+
  private:
   KVMap data_;
 };
@@ -381,6 +383,8 @@ class DBConstructor: public Constructor {
     return db_->NewIterator(ReadOptions());
   }
 
+  virtual DB* db() const { return db_; }
+
  private:
   void NewDB() {
     std::string name = test::TmpDir() + "/table_testdb";
@@ -392,6 +396,7 @@ class DBConstructor: public Constructor {
 
     options.create_if_missing = true;
     options.error_if_exists = true;
+    options.write_buffer_size = 10000;  // Something small to force merging
     status = DB::Open(options, name, &db_);
     ASSERT_TRUE(status.ok()) << status.ToString();
   }
@@ -640,6 +645,9 @@ class Harness {
     }
   }
 
+  // Returns NULL if not running against a DB
+  DB* db() const { return constructor_->db(); }
+
  private:
   Options options_;
   Constructor* constructor_;
@@ -702,6 +710,26 @@ TEST(Harness, Randomized) {
       Test(&rnd);
     }
   }
+}
+
+TEST(Harness, RandomizedLongDB) {
+  Random rnd(test::RandomSeed());
+  TestArgs args = { DB_TEST, false, 16 };
+  Init(args);
+  int num_entries = 100000;
+  for (int e = 0; e < num_entries; e++) {
+    std::string v;
+    Add(test::RandomKey(&rnd, rnd.Skewed(4)),
+        test::RandomString(&rnd, rnd.Skewed(5), &v).ToString());
+  }
+  Test(&rnd);
+
+  // We must have created enough data to force merging
+  uint64_t l0_files, l1_files;
+  ASSERT_TRUE(db()->GetProperty("leveldb.num-files-at-level0", &l0_files));
+  ASSERT_TRUE(db()->GetProperty("leveldb.num-files-at-level1", &l1_files));
+  ASSERT_GT(l0_files + l1_files, 0);
+
 }
 
 class MemTableTest { };

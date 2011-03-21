@@ -286,7 +286,7 @@ TEST(LogTest, ChecksumMismatch) {
   Write("foo");
   IncrementByte(0, 10);
   ASSERT_EQ("EOF", Read());
-  ASSERT_EQ(3, DroppedBytes());
+  ASSERT_EQ(10, DroppedBytes());
   ASSERT_EQ("OK", MatchError("checksum mismatch"));
 }
 
