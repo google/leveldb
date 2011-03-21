@@ -594,10 +594,8 @@ void ChromiumEnv::StartThread(void (*function)(void* arg), void* arg) {
   new Thread(function, arg); // Will self-delete.
 }
 
-// TODO(jorlow): This won't co-exist with Chrome. Need to find a better way.
-::base::AtExitManager exit_manager;
-
-::base::LazyInstance<ChromiumEnv> default_env(::base::LINKER_INITIALIZED);
+::base::LazyInstance<ChromiumEnv, ::base::LeakyLazyInstanceTraits<ChromiumEnv> >
+    default_env(::base::LINKER_INITIALIZED);
 
 }
 

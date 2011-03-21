@@ -8,7 +8,6 @@
 
 #if defined(USE_SNAPPY)
 #  include "third_party/snappy/src/snappy.h"
-#  include "snappy-stubs-public.h"
 #endif
 
 namespace leveldb {
