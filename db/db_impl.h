@@ -57,7 +57,7 @@ class DBImpl : public DB {
 
   // Return the maximum overlapping data (in bytes) at next level for any
   // file at a level >= 1.
-  int64 TEST_MaxNextLevelOverlappingBytes();
+  int64_t TEST_MaxNextLevelOverlappingBytes();
 
  private:
   friend class DB;

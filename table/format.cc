@@ -106,9 +106,9 @@ Status ReadBlock(RandomAccessFile* file,
 
       // Ok
       break;
-    case kLightweightCompression: {
+    case kSnappyCompression: {
       std::string decompressed;
-      if (!port::Lightweight_Uncompress(data, n, &decompressed)) {
+      if (!port::Snappy_Uncompress(data, n, &decompressed)) {
         delete[] buf;
         s = Status::Corruption("corrupted compressed block contents");
         return s;

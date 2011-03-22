@@ -22,7 +22,7 @@ Options::Options()
       block_cache(NULL),
       block_size(8192),
       block_restart_interval(16),
-      compression(kLightweightCompression) {
+      compression(kSnappyCompression) {
 }
 
 

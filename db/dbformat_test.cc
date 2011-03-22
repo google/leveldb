@@ -117,7 +117,7 @@ TEST(FormatTest, SHA1) {
                 LargeValueRef::Make("hello", kNoCompression)));
   ASSERT_EQ("aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d-5-1",  // SHA1, lwcompr
             LargeValueRefToFilenameString(
-                LargeValueRef::Make("hello", kLightweightCompression)));
+                LargeValueRef::Make("hello", kSnappyCompression)));
 }
 
 }

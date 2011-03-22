@@ -326,7 +326,7 @@ class ChromiumEnv : public Env {
 
   virtual Status GetFileSize(const std::string& fname, uint64_t* size) {
     Status s;
-    int64 signed_size;
+    int64_t signed_size;
     if (!::file_util::GetFileSize(CreateFilePath(fname), &signed_size)) {
       *size = 0;
       s = Status::IOError(fname, "Could not determine file size.");

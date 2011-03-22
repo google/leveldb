@@ -138,11 +138,14 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       block_contents = raw;
       break;
 
-    case kLightweightCompression: {
-      port::Lightweight_Compress(raw.data(), raw.size(), &r->compressed_output);
-      block_contents = r->compressed_output;
-      if (block_contents.size() >= raw.size() - (raw.size() / 8u)) {
-        // Compressed less than 12.5%, so just store uncompressed form
+    case kSnappyCompression: {
+      std::string* compressed = &r->compressed_output;
+      if (port::Snappy_Compress(raw.data(), raw.size(), compressed) &&
+          compressed->size() < raw.size() - (raw.size() / 8u)) {
+        block_contents = *compressed;
+      } else {
+        // Snappy not supported, or compressed less than 12.5%, so just
+        // store uncompressed form
         block_contents = raw;
         type = kNoCompression;
       }

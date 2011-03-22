@@ -31,7 +31,7 @@ TEST(VersionEditTest, EncodeDecode) {
     edit.DeleteFile(4, kBig + 700 + i);
     edit.AddLargeValueRef(LargeValueRef::Make("big", kNoCompression),
                           kBig + 800 + i, "foobar");
-    edit.AddLargeValueRef(LargeValueRef::Make("big2", kLightweightCompression),
+    edit.AddLargeValueRef(LargeValueRef::Make("big2", kSnappyCompression),
                           kBig + 801 + i, "baz");
     edit.SetCompactPointer(i, InternalKey("x", kBig + 900 + i, kTypeValue));
   }

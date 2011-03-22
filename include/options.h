@@ -22,8 +22,8 @@ class WritableFile;
 enum CompressionType {
   // NOTE: do not change the values of existing entries, as these are
   // part of the persistent format on disk.
-  kNoCompression           = 0x0,
-  kLightweightCompression  = 0x1,
+  kNoCompression     = 0x0,
+  kSnappyCompression = 0x1,
 };
 
 // Options to control the behavior of a database (passed to DB::Open)
@@ -122,16 +122,16 @@ struct Options {
   // Compress blocks using the specified compression algorithm.  This
   // parameter can be changed dynamically.
   //
-  // Default: kLightweightCompression, which gives lightweight but fast
+  // Default: kSnappyCompression, which gives lightweight but fast
   // compression.
   //
-  // Typical speeds of kLightweightCompression on an Intel(R) Core(TM)2 2.4GHz:
+  // Typical speeds of kSnappyCompression on an Intel(R) Core(TM)2 2.4GHz:
   //    ~200-500MB/s compression
   //    ~400-800MB/s decompression
   // Note that these speeds are significantly faster than most
   // persistent storage speeds, and therefore it is typically never
   // worth switching to kNoCompression.  Even if the input data is
-  // incompressible, the kLightweightCompression implementation will
+  // incompressible, the kSnappyCompression implementation will
   // efficiently detect that and will switch to uncompressed mode.
   CompressionType compression;
 

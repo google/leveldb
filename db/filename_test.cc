@@ -136,7 +136,7 @@ TEST(FileNameTest, Construction) {
   ASSERT_EQ(999, number);
   ASSERT_EQ(kTempFile, type);
 
-  for (int i = 0; i <= kLightweightCompression; i++) {
+  for (int i = 0; i <= kSnappyCompression; i++) {
     CompressionType ctype = static_cast<CompressionType>(i);
     std::string value = "abcdef";
     LargeValueRef real_large_ref = LargeValueRef::Make(Slice(value), ctype);

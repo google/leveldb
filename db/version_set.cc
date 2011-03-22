@@ -20,9 +20,11 @@
 
 namespace leveldb {
 
-// Maximum number of overlaps in grandparent (i.e., level+2) before we
+static const int kTargetFileSize = 2 * 1048576;
+
+// Maximum bytes of overlaps in grandparent (i.e., level+2) before we
 // stop building a single file in a level->level+1 compaction.
-static const int kMaxGrandParentFiles = 10;
+static const int64_t kMaxGrandParentOverlapBytes = 10 * kTargetFileSize;
 
 static double MaxBytesForLevel(int level) {
   if (level == 0) {
@@ -38,7 +40,7 @@ static double MaxBytesForLevel(int level) {
 }
 
 static uint64_t MaxFileSizeForLevel(int level) {
-  return 2 << 20;       // We could vary per level to reduce number of files?
+  return kTargetFileSize;  // We could vary per level to reduce number of files?
 }
 
 namespace {
@@ -755,17 +757,22 @@ void VersionSet::AddLiveFiles(std::set<uint64_t>* live) {
   }
 }
 
-int64 VersionSet::MaxNextLevelOverlappingBytes() {
-  int64 result = 0;
+static int64_t TotalFileSize(const std::vector<FileMetaData*>& files) {
+  int64_t sum = 0;
+  for (int i = 0; i < files.size(); i++) {
+    sum += files[i]->file_size;
+  }
+  return sum;
+}
+
+int64_t VersionSet::MaxNextLevelOverlappingBytes() {
+  int64_t result = 0;
   std::vector<FileMetaData*> overlaps;
   for (int level = 0; level < config::kNumLevels - 1; level++) {
     for (int i = 0; i < current_->files_[level].size(); i++) {
       const FileMetaData* f = current_->files_[level][i];
       GetOverlappingInputs(level+1, f->smallest, f->largest, &overlaps);
-      int64 sum = 0;
-      for (int j = 0; j < overlaps.size(); j++) {
-        sum += overlaps[j]->file_size;
-      }
+      const int64_t sum = TotalFileSize(overlaps);
       if (sum > result) {
         result = sum;
       }
@@ -989,7 +996,8 @@ Compaction::Compaction(int level)
       max_output_file_size_(MaxFileSizeForLevel(level)),
       input_version_(NULL),
       grandparent_index_(0),
-      output_start_(-1) {
+      seen_key_(false),
+      overlapped_bytes_(0) {
   for (int i = 0; i < config::kNumLevels; i++) {
     level_ptrs_[i] = 0;
   }
@@ -1002,12 +1010,12 @@ Compaction::~Compaction() {
 }
 
 bool Compaction::IsTrivialMove() const {
-  // Avoid a move if there are lots of overlapping grandparent files.
+  // Avoid a move if there is lots of overlapping grandparent data.
   // Otherwise, the move could create a parent file that will require
   // a very expensive merge later on.
-  return (num_input_files(0) == 1
-          && num_input_files(1) == 0
-          && grandparents_.size() <= kMaxGrandParentFiles);
+  return (num_input_files(0) == 1 &&
+          num_input_files(1) == 0 &&
+          TotalFileSize(grandparents_) <= kMaxGrandParentOverlapBytes);
 }
 
 void Compaction::AddInputDeletions(VersionEdit* edit) {
@@ -1044,17 +1052,16 @@ bool Compaction::ShouldStopBefore(const InternalKey& key) {
   const InternalKeyComparator* icmp = &input_version_->vset_->icmp_;
   while (grandparent_index_ < grandparents_.size() &&
       icmp->Compare(key, grandparents_[grandparent_index_]->largest) > 0) {
+    if (seen_key_) {
+      overlapped_bytes_ += grandparents_[grandparent_index_]->file_size;
+    }
     grandparent_index_++;
   }
+  seen_key_ = true;
 
-  // First call?
-  if (output_start_ < 0) {
-    output_start_ = grandparent_index_;
-  }
-
-  if (grandparent_index_ - output_start_ + 1 > kMaxGrandParentFiles) {
-    // Too many overlaps for current output; start new output
-    output_start_ = grandparent_index_;
+  if (overlapped_bytes_ > kMaxGrandParentOverlapBytes) {
+    // Too much overlap for current output; start new output
+    overlapped_bytes_ = 0;
     return true;
   } else {
     return false;

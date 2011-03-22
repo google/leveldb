@@ -866,7 +866,7 @@ Iterator* DBImpl::TEST_NewInternalIterator() {
   return NewInternalIterator(ReadOptions(), &ignored);
 }
 
-int64 DBImpl::TEST_MaxNextLevelOverlappingBytes() {
+int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
   MutexLock l(&mutex_);
   return versions_->MaxNextLevelOverlappingBytes();
 }
@@ -989,11 +989,11 @@ void DBImpl::MaybeCompressLargeValue(
     std::string* scratch,
     LargeValueRef* ref) {
   switch (options_.compression) {
-    case kLightweightCompression: {
-      port::Lightweight_Compress(raw_value.data(), raw_value.size(), scratch);
-      if (scratch->size() < (raw_value.size() / 8) * 7) {
+    case kSnappyCompression: {
+      if (port::Snappy_Compress(raw_value.data(), raw_value.size(), scratch) &&
+          (scratch->size() < (raw_value.size() / 8) * 7)) {
         *file_bytes = *scratch;
-        *ref = LargeValueRef::Make(raw_value, kLightweightCompression);
+        *ref = LargeValueRef::Make(raw_value, kSnappyCompression);
         return;
       }
 

@@ -77,25 +77,16 @@ inline void SHA1_Hash(const char* data, size_t len, char* hash_array) {
   SHA1_Hash_Portable(data, len, hash_array);
 }
 
-/**
- * TODO(gabor): Implement actual compress
- *     This is a hack - it just copies input to output.
- *     No actual compression occurs.
- */
-inline void Lightweight_Compress(const char* input, size_t input_length,
-                           std::string* output) {
-  output->assign(input, input_length);
+// TODO(gabor): Implement actual compress
+inline bool Snappy_Compress(const char* input, size_t input_length,
+                            std::string* output) {
+  return false;
 }
 
-/**
- * TODO(gabor): Implement actual uncompress
- *     This is a hack - it just copies input to output.
- *     No actual uncompression occurs.
- */
-inline bool Lightweight_Uncompress(const char* input_data, size_t input_length,
-                             std::string* output) {
-  output->assign(input_data, input_length);
-  return true;
+// TODO(gabor): Implement actual uncompress
+inline bool Snappy_Uncompress(const char* input_data, size_t input_length,
+                              std::string* output) {
+  return false;
 }
 
 inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {

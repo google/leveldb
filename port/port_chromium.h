@@ -89,10 +89,10 @@ inline void SHA1_Hash(const char* data, size_t len, char* hash_array) {
                                reinterpret_cast<unsigned char*>(hash_array));
 }
 
-void Lightweight_Compress(const char* input, size_t input_length,
-                          std::string* output);
-bool Lightweight_Uncompress(const char* input_data, size_t input_length,
-                            std::string* output);
+bool Snappy_Compress(const char* input, size_t input_length,
+                     std::string* output);
+bool Snappy_Uncompress(const char* input_data, size_t input_length,
+                       std::string* output);
 
 inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
   return false;

@@ -140,7 +140,7 @@ bool FilenameStringToLargeValueRef(const Slice& s, LargeValueRef* h) {
       ConsumeChar(&in, '-') &&
       ConsumeDecimalNumber(&in, &ctype) &&
       in.empty() &&
-      (ctype <= kLightweightCompression)) {
+      (ctype <= kSnappyCompression)) {
     EncodeFixed64(&h->data[20], value_size);
     h->data[28] = static_cast<unsigned char>(ctype);
     return true;

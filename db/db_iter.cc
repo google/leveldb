@@ -374,10 +374,10 @@ void DBIter::ReadIndirectValue() const {
             }
             break;
           }
-          case kLightweightCompression: {
+          case kSnappyCompression: {
             std::string uncompressed;
-            if (port::Lightweight_Uncompress(result.data(), result.size(),
-                                       &uncompressed) &&
+            if (port::Snappy_Uncompress(result.data(), result.size(),
+                                        &uncompressed) &&
                 uncompressed.size() == large_ref.ValueSize()) {
               swap(uncompressed, large_->value);
             } else {

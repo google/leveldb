@@ -674,6 +674,12 @@ TEST(DBTest, LargeValues1) {
   ASSERT_TRUE(LargeValuesOK(this, expected));
 }
 
+static bool SnappyCompressionSupported() {
+  std::string out;
+  Slice in = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  return port::Snappy_Compress(in.data(), in.size(), &out);
+}
+
 TEST(DBTest, LargeValues2) {
   Options options;
   options.large_value_threshold = 10000;
@@ -694,12 +700,11 @@ TEST(DBTest, LargeValues2) {
 
   ASSERT_OK(Put("big2", big2));
   ASSERT_EQ(big2, Get("big2"));
-#if defined(LEVELDB_PLATFORM_POSIX) || defined(LEVELDB_PLATFORM_CHROMIUM)
-  // TODO(sanjay) Reenable after compression support is added
-  expected.insert(LargeValueRef::Make(big2, kNoCompression));
-#else
-  expected.insert(LargeValueRef::Make(big2, kLightweightCompression));
-#endif
+  if (SnappyCompressionSupported()) {
+    expected.insert(LargeValueRef::Make(big2, kSnappyCompression));
+  } else {
+    expected.insert(LargeValueRef::Make(big2, kNoCompression));
+  }
   ASSERT_TRUE(LargeValuesOK(this, expected));
 
   ASSERT_OK(dbfull()->TEST_CompactMemTable());

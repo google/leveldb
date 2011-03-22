@@ -141,7 +141,7 @@ class VersionSet {
 
   // Return the maximum overlapping data (in bytes) at next level for any
   // file at a level >= 1.
-  int64 MaxNextLevelOverlappingBytes();
+  int64_t MaxNextLevelOverlappingBytes();
 
   // Create an iterator that reads over the compaction inputs for "*c".
   // The caller should delete the iterator when no longer needed.
@@ -298,8 +298,10 @@ class Compaction {
   // State used to check for number of of overlapping grandparent files
   // (parent == level_ + 1, grandparent == level_ + 2)
   std::vector<FileMetaData*> grandparents_;
-  int grandparent_index_;   // Index in grandparent_starts_
-  int output_start_;        // Index in grandparent_starts_ where output started
+  int grandparent_index_;     // Index in grandparent_starts_
+  bool seen_key_;             // Some output key has been seen
+  int64_t overlapped_bytes_;  // Bytes of overlap between current output
+                              // and grandparent files
 
   // State for implementing IsBaseLevelForKey
 

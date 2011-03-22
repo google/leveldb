@@ -800,12 +800,17 @@ TEST(TableTest, ApproximateOffsetOfPlain) {
 
 }
 
+static bool SnappyCompressionSupported() {
+  std::string out;
+  Slice in = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  return port::Snappy_Compress(in.data(), in.size(), &out);
+}
+
 TEST(TableTest, ApproximateOffsetOfCompressed) {
-#if defined(LEVELDB_PLATFORM_POSIX) || defined(LEVELDB_PLATFORM_CHROMIUM)
-  // Compression not supported yet, so skip this test.
-  // TODO(sanjay) Reenable after compression support is added
-  return;
-#endif
+  if (!SnappyCompressionSupported()) {
+    fprintf(stderr, "skipping compression tests\n");
+    return;
+  }
 
   Random rnd(301);
   TableConstructor c(BytewiseComparator());
@@ -818,7 +823,7 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
   KVMap kvmap;
   Options options;
   options.block_size = 1024;
-  options.compression = kLightweightCompression;
+  options.compression = kSnappyCompression;
   c.Finish(options, &keys, &kvmap);
 
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("abc"),       0,      0));

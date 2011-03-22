@@ -96,15 +96,16 @@ extern void SHA1_Hash(const char* data, size_t len, char* hash_array);
 
 // ------------------ Compression -------------------
 
-// Store the lightweight compression of "input[0,input_length-1]" in *output.
-extern void Lightweight_Compress(const char* input, size_t input_length,
-                           std::string* output);
+// Store the snappy compression of "input[0,input_length-1]" in *output.
+// Returns false if snappy is not supported by this port.
+extern bool Snappy_Compress(const char* input, size_t input_length,
+                            std::string* output);
 
-// Attempt to lightweight uncompress input[0,input_length-1] into *output.
+// Attempt to snappy uncompress input[0,input_length-1] into *output.
 // Returns true if successful, false if the input is invalid lightweight
 // compressed data.
-extern bool Lightweight_Uncompress(const char* input_data, size_t input_length,
-                             std::string* output);
+extern bool Snappy_Uncompress(const char* input_data, size_t input_length,
+                              std::string* output);
 
 // ------------------ Miscellaneous -------------------
 
