@@ -123,8 +123,14 @@ one level-0 file in case some of these files overlap each other.
 A compaction merges the contents of the picked files to produce a
 sequence of level-(L+1) files.  We switch to producing a new
 level-(L+1) file after the current output file has reached the target
-file size (2MB).  The old files are discarded and the new files are
-added to the serving state.
+file size (2MB).  We also switch to a new output file when the key
+range of the current output file has grown enough to overlap more then
+ten level-(L+2) files.  This last rule ensures that a later compaction
+of a level-(L+1) file will not pick up too much data from level-(L+2).
+
+<p>
+The old files are discarded and the new files are added to the serving
+state.
 
 <p>
 Compactions for a particular level rotate through the key space.  In

@@ -72,15 +72,19 @@ class DBTest {
   }
 
   Status Put(const std::string& k, const std::string& v) {
+    WriteOptions options;
+    options.sync = false;
     WriteBatch batch;
     batch.Put(k, v);
-    return db_->Write(WriteOptions(), &batch);
+    return db_->Write(options, &batch);
   }
 
   Status Delete(const std::string& k) {
+    WriteOptions options;
+    options.sync = false;
     WriteBatch batch;
     batch.Delete(k);
-    return db_->Write(WriteOptions(), &batch);
+    return db_->Write(options, &batch);
   }
 
   std::string Get(const std::string& k, const Snapshot* snapshot = NULL) {
@@ -175,6 +179,35 @@ class DBTest {
     }
     fprintf(stderr, "Found %d live large value files\n", (int)live.size());
     return live;
+  }
+
+  void Compact(const Slice& start, const Slice& limit) {
+    dbfull()->TEST_CompactMemTable();
+    int max_level_with_files = 1;
+    for (int level = 1; level < config::kNumLevels; level++) {
+      uint64_t v;
+      char name[100];
+      snprintf(name, sizeof(name), "leveldb.num-files-at-level%d", level);
+      if (dbfull()->GetProperty(name, &v) && v > 0) {
+        max_level_with_files = level;
+      }
+    }
+    for (int level = 0; level < max_level_with_files; level++) {
+      dbfull()->TEST_CompactRange(level, "", "~");
+    }
+  }
+
+  void DumpFileCounts(const char* label) {
+    fprintf(stderr, "---\n%s:\n", label);
+    fprintf(stderr, "maxoverlap: %lld\n",
+            static_cast<long long>(
+                dbfull()->TEST_MaxNextLevelOverlappingBytes()));
+    for (int level = 0; level < config::kNumLevels; level++) {
+      int num = NumTableFilesAtLevel(level);
+      if (num > 0) {
+        fprintf(stderr, "  level %3d : %d files\n", level, num);
+      }
+    }
   }
 };
 
@@ -313,6 +346,43 @@ TEST(DBTest, CompactionsGenerateMultipleFiles) {
   for (int i = 0; i < 80; i++) {
     ASSERT_EQ(Get(Key(i)), values[i]);
   }
+}
+
+TEST(DBTest, SparseMerge) {
+  Options options;
+  options.compression = kNoCompression;
+  Reopen(&options);
+
+  // Suppose there is:
+  //    small amount of data with prefix A
+  //    large amount of data with prefix B
+  //    small amount of data with prefix C
+  // and that recent updates have made small changes to all three prefixes.
+  // Check that we do not do a compaction that merges all of B in one shot.
+  const std::string value(1000, 'x');
+  Put("A", "va");
+  // Write approximately 100MB of "B" values
+  for (int i = 0; i < 100000; i++) {
+    char key[100];
+    snprintf(key, sizeof(key), "B%010d", i);
+    Put(key, value);
+  }
+  Put("C", "vc");
+  Compact("", "z");
+
+  // Make sparse update
+  Put("A",    "va2");
+  Put("B100", "bvalue2");
+  Put("C",    "vc2");
+  dbfull()->TEST_CompactMemTable();
+
+  // Compactions should not cause us to create a situation where
+  // a file overlaps too much data at the next level.
+  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20*1048576);
+  dbfull()->TEST_CompactRange(0, "", "z");
+  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20*1048576);
+  dbfull()->TEST_CompactRange(1, "", "z");
+  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20*1048576);
 }
 
 static bool Between(uint64_t val, uint64_t low, uint64_t high) {

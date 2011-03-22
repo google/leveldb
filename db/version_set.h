@@ -139,6 +139,10 @@ class VersionSet {
       const InternalKey& begin,
       const InternalKey& end);
 
+  // Return the maximum overlapping data (in bytes) at next level for any
+  // file at a level >= 1.
+  int64 MaxNextLevelOverlappingBytes();
+
   // Create an iterator that reads over the compaction inputs for "*c".
   // The caller should delete the iterator when no longer needed.
   Iterator* MakeInputIterator(Compaction* c);
@@ -195,6 +199,13 @@ class VersionSet {
                 InternalKey* smallest,
                 InternalKey* largest);
 
+  void GetRange2(const std::vector<FileMetaData*>& inputs1,
+                 const std::vector<FileMetaData*>& inputs2,
+                 InternalKey* smallest,
+                 InternalKey* largest);
+
+  void SetupOtherInputs(Compaction* c);
+
   Env* const env_;
   const std::string dbname_;
   const Options* const options_;
@@ -250,6 +261,10 @@ class Compaction {
   // Maximum size of files to build during this compaction.
   uint64_t MaxOutputFileSize() const { return max_output_file_size_; }
 
+  // Is this a trivial compaction that can be implemented by just
+  // moving a single input file to the next level (no merging or splitting)
+  bool IsTrivialMove() const;
+
   // Add all inputs to this compaction as delete operations to *edit.
   void AddInputDeletions(VersionEdit* edit);
 
@@ -257,6 +272,10 @@ class Compaction {
   // the compaction is producing data in "level+1" for which no data exists
   // in levels greater than "level+1".
   bool IsBaseLevelForKey(const Slice& user_key);
+
+  // Returns true iff we should stop building the current output
+  // before processing "key".
+  bool ShouldStopBefore(const InternalKey& key);
 
   // Release the input version for the compaction, once the compaction
   // is successful.
@@ -275,6 +294,12 @@ class Compaction {
 
   // Each compaction reads inputs from "level_" and "level_+1"
   std::vector<FileMetaData*> inputs_[2];      // The two sets of inputs
+
+  // State used to check for number of of overlapping grandparent files
+  // (parent == level_ + 1, grandparent == level_ + 2)
+  std::vector<FileMetaData*> grandparents_;
+  int grandparent_index_;   // Index in grandparent_starts_
+  int output_start_;        // Index in grandparent_starts_ where output started
 
   // State for implementing IsBaseLevelForKey
 

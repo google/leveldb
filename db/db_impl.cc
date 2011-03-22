@@ -532,8 +532,9 @@ void DBImpl::BackgroundCompaction() {
   }
 
   Status status;
-  if (c->num_input_files(0) == 1 && c->num_input_files(1) == 0) {
+  if (c->IsTrivialMove()) {
     // Move file to next level
+    assert(c->num_input_files(0) == 1);
     FileMetaData* f = c->input(0, 0);
     c->edit()->DeleteFile(c->level(), f->number);
     c->edit()->AddFile(c->level() + 1, f->number, f->file_size,
@@ -718,8 +719,18 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   bool has_current_user_key = false;
   SequenceNumber last_sequence_for_key = kMaxSequenceNumber;
   for (; input->Valid() && !shutting_down_.Acquire_Load(); ) {
-    // Handle key/value, add to state, etc.
     Slice key = input->key();
+    InternalKey tmp_internal_key;
+    tmp_internal_key.DecodeFrom(key);
+    if (compact->compaction->ShouldStopBefore(tmp_internal_key) &&
+        compact->builder != NULL) {
+      status = FinishCompactionOutputFile(compact, input);
+      if (!status.ok()) {
+        break;
+      }
+    }
+
+    // Handle key/value, add to state, etc.
     bool drop = false;
     if (!ParseInternalKey(key, &ikey)) {
       // Do not hide error keys
@@ -853,6 +864,11 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
 Iterator* DBImpl::TEST_NewInternalIterator() {
   SequenceNumber ignored;
   return NewInternalIterator(ReadOptions(), &ignored);
+}
+
+int64 DBImpl::TEST_MaxNextLevelOverlappingBytes() {
+  MutexLock l(&mutex_);
+  return versions_->MaxNextLevelOverlappingBytes();
 }
 
 Status DBImpl::Get(const ReadOptions& options,

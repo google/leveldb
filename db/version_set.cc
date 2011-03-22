@@ -20,6 +20,10 @@
 
 namespace leveldb {
 
+// Maximum number of overlaps in grandparent (i.e., level+2) before we
+// stop building a single file in a level->level+1 compaction.
+static const int kMaxGrandParentFiles = 10;
+
 static double MaxBytesForLevel(int level) {
   if (level == 0) {
     return 4 * 1048576.0;
@@ -509,7 +513,7 @@ Status VersionSet::Finalize(Version* v) {
   double best_score = -1;
 
   Status s;
-  for (int level = 0; s.ok() && level < config::kNumLevels; level++) {
+  for (int level = 0; s.ok() && level < config::kNumLevels-1; level++) {
     s = SortLevel(v, level);
 
     // Compute the ratio of current size to size limit.
@@ -751,6 +755,25 @@ void VersionSet::AddLiveFiles(std::set<uint64_t>* live) {
   }
 }
 
+int64 VersionSet::MaxNextLevelOverlappingBytes() {
+  int64 result = 0;
+  std::vector<FileMetaData*> overlaps;
+  for (int level = 0; level < config::kNumLevels - 1; level++) {
+    for (int i = 0; i < current_->files_[level].size(); i++) {
+      const FileMetaData* f = current_->files_[level][i];
+      GetOverlappingInputs(level+1, f->smallest, f->largest, &overlaps);
+      int64 sum = 0;
+      for (int j = 0; j < overlaps.size(); j++) {
+        sum += overlaps[j]->file_size;
+      }
+      if (sum > result) {
+        result = sum;
+      }
+    }
+  }
+  return result;
+}
+
 // Store in "*inputs" all files in "level" that overlap [begin,end]
 void VersionSet::GetOverlappingInputs(
     int level,
@@ -797,6 +820,18 @@ void VersionSet::GetRange(const std::vector<FileMetaData*>& inputs,
   }
 }
 
+// Stores the minimal range that covers all entries in inputs1 and inputs2
+// in *smallest, *largest.
+// REQUIRES: inputs is not empty
+void VersionSet::GetRange2(const std::vector<FileMetaData*>& inputs1,
+                           const std::vector<FileMetaData*>& inputs2,
+                           InternalKey* smallest,
+                           InternalKey* largest) {
+  std::vector<FileMetaData*> all = inputs1;
+  all.insert(all.end(), inputs2.begin(), inputs2.end());
+  GetRange(all, smallest, largest);
+}
+
 Iterator* VersionSet::MakeInputIterator(Compaction* c) {
   ReadOptions options;
   options.verify_checksums = options_->paranoid_checks;
@@ -836,6 +871,7 @@ Compaction* VersionSet::PickCompaction() {
   }
   const int level = current_->compaction_level_;
   assert(level >= 0);
+  assert(level+1 < config::kNumLevels);
 
   Compaction* c = new Compaction(level);
   c->input_version_ = current_;
@@ -855,31 +891,36 @@ Compaction* VersionSet::PickCompaction() {
     c->inputs_[0].push_back(current_->files_[level][0]);
   }
 
-  // Find the range we are compacting
-  InternalKey smallest, largest;
-  GetRange(c->inputs_[0], &smallest, &largest);
-
   // Files in level 0 may overlap each other, so pick up all overlapping ones
   if (level == 0) {
+    InternalKey smallest, largest;
+    GetRange(c->inputs_[0], &smallest, &largest);
     // Note that the next call will discard the file we placed in
     // c->inputs_[0] earlier and replace it with an overlapping set
     // which will include the picked file.
     GetOverlappingInputs(0, smallest, largest, &c->inputs_[0]);
     assert(!c->inputs_[0].empty());
-    GetRange(c->inputs_[0], &smallest, &largest);
   }
 
+  SetupOtherInputs(c);
+
+  return c;
+}
+
+void VersionSet::SetupOtherInputs(Compaction* c) {
+  const int level = c->level();
+  InternalKey smallest, largest;
+  GetRange(c->inputs_[0], &smallest, &largest);
+
   GetOverlappingInputs(level+1, smallest, largest, &c->inputs_[1]);
+
+  // Get entire range covered by compaction
+  InternalKey all_start, all_limit;
+  GetRange2(c->inputs_[0], c->inputs_[1], &all_start, &all_limit);
 
   // See if we can grow the number of inputs in "level" without
   // changing the number of "level+1" files we pick up.
   if (!c->inputs_[1].empty()) {
-    // Get entire range covered by compaction
-    std::vector<FileMetaData*> all = c->inputs_[0];
-    all.insert(all.end(), c->inputs_[1].begin(), c->inputs_[1].end());
-    InternalKey all_start, all_limit;
-    GetRange(all, &all_start, &all_limit);
-
     std::vector<FileMetaData*> expanded0;
     GetOverlappingInputs(level, all_start, all_limit, &expanded0);
     if (expanded0.size() > c->inputs_[0].size()) {
@@ -899,8 +940,15 @@ Compaction* VersionSet::PickCompaction() {
         largest = new_limit;
         c->inputs_[0] = expanded0;
         c->inputs_[1] = expanded1;
+        GetRange2(c->inputs_[0], c->inputs_[1], &all_start, &all_limit);
       }
     }
+  }
+
+  // Compute the set of grandparent files that overlap this compaction
+  // (parent == level+1; grandparent == level+2)
+  if (level + 2 < config::kNumLevels) {
+    GetOverlappingInputs(level + 2, all_start, all_limit, &c->grandparents_);
   }
 
   if (false) {
@@ -916,8 +964,6 @@ Compaction* VersionSet::PickCompaction() {
   // key range next time.
   compact_pointer_[level] = largest.Encode().ToString();
   c->edit_.SetCompactPointer(level, largest);
-
-  return c;
 }
 
 Compaction* VersionSet::CompactRange(
@@ -934,25 +980,16 @@ Compaction* VersionSet::CompactRange(
   c->input_version_ = current_;
   c->input_version_->Ref();
   c->inputs_[0] = inputs;
-
-  // Find the range we are compacting
-  InternalKey smallest, largest;
-  GetRange(c->inputs_[0], &smallest, &largest);
-
-  GetOverlappingInputs(level+1, smallest, largest, &c->inputs_[1]);
-  if (false) {
-    Log(env_, options_->info_log, "Compacting %d '%s' .. '%s'",
-        level,
-        EscapeString(smallest.Encode()).c_str(),
-        EscapeString(largest.Encode()).c_str());
-  }
+  SetupOtherInputs(c);
   return c;
 }
 
 Compaction::Compaction(int level)
     : level_(level),
       max_output_file_size_(MaxFileSizeForLevel(level)),
-      input_version_(NULL) {
+      input_version_(NULL),
+      grandparent_index_(0),
+      output_start_(-1) {
   for (int i = 0; i < config::kNumLevels; i++) {
     level_ptrs_[i] = 0;
   }
@@ -962,6 +999,15 @@ Compaction::~Compaction() {
   if (input_version_ != NULL) {
     input_version_->Unref();
   }
+}
+
+bool Compaction::IsTrivialMove() const {
+  // Avoid a move if there are lots of overlapping grandparent files.
+  // Otherwise, the move could create a parent file that will require
+  // a very expensive merge later on.
+  return (num_input_files(0) == 1
+          && num_input_files(1) == 0
+          && grandparents_.size() <= kMaxGrandParentFiles);
 }
 
 void Compaction::AddInputDeletions(VersionEdit* edit) {
@@ -991,6 +1037,28 @@ bool Compaction::IsBaseLevelForKey(const Slice& user_key) {
     }
   }
   return true;
+}
+
+bool Compaction::ShouldStopBefore(const InternalKey& key) {
+  // Scan to find earliest grandparent file that contains key.
+  const InternalKeyComparator* icmp = &input_version_->vset_->icmp_;
+  while (grandparent_index_ < grandparents_.size() &&
+      icmp->Compare(key, grandparents_[grandparent_index_]->largest) > 0) {
+    grandparent_index_++;
+  }
+
+  // First call?
+  if (output_start_ < 0) {
+    output_start_ = grandparent_index_;
+  }
+
+  if (grandparent_index_ - output_start_ + 1 > kMaxGrandParentFiles) {
+    // Too many overlaps for current output; start new output
+    output_start_ = grandparent_index_;
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void Compaction::ReleaseInputs() {

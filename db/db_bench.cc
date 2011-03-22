@@ -17,11 +17,14 @@
 
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
-//      writeseq    -- write N values in sequential key order
-//      writerandom -- write N values in random key order
-//      writebig    -- write N/1000 100K valuesin random order
-//      readseq     -- read N values sequentially
-//      readrandom  -- read N values in random order
+//      fillseq       -- write N values in sequential key order in async mode
+//      fillrandom    -- write N values in random key order in async mode
+//      overwrite     -- overwrite N values in random key order in async mode
+//      fillsync      -- write N/100 values in random key order in sync mode
+//      fill100K      -- write N/1000 100K values in random order in async mode
+//      readseq       -- read N values sequentially
+//      readreverse   -- read N values in reverse order
+//      readrandom    -- read N values in random order
 //   Meta operations:
 //      compact     -- Compact the entire DB
 //      heapprofile -- Dump a heap profile (if supported by this port)
@@ -30,10 +33,10 @@
 //      tenth       -- divide N by 10 (i.e., following benchmarks are smaller)
 //      normal      -- reset N back to its normal value (1000000)
 static const char* FLAGS_benchmarks =
-    "writeseq,"
-    "writeseq,"
-    "writerandom,"
-    "sync,tenth,tenth,writerandom,nosync,normal,"
+    "fillseq,"
+    "fillrandom,"
+    "overwrite,"
+    "fillsync,"
     "readseq,"
     "readreverse,"
     "readrandom,"
@@ -41,7 +44,7 @@ static const char* FLAGS_benchmarks =
     "readseq,"
     "readreverse,"
     "readrandom,"
-    "writebig";
+    "fill100K";
 
 // Number of key/values to place in database
 static int FLAGS_num = 1000000;
@@ -51,7 +54,7 @@ static int FLAGS_value_size = 100;
 
 // Arrange to generate values that shrink to this fraction of
 // their original size after compression
-static double FLAGS_compression_ratio = 0.25;
+static double FLAGS_compression_ratio = 0.5;
 
 // Print histogram of operation timings
 static bool FLAGS_histogram = false;
@@ -93,6 +96,19 @@ class RandomGenerator {
     return Slice(data_.data() + pos_ - len, len);
   }
 };
+
+static Slice TrimSpace(Slice s) {
+  int start = 0;
+  while (start < s.size() && isspace(s[start])) {
+    start++;
+  }
+  int limit = s.size();
+  while (limit > start && isspace(s[limit-1])) {
+    limit--;
+  }
+  return Slice(s.data() + start, limit - start);
+}
+
 }
 
 class Benchmark {
@@ -100,7 +116,6 @@ class Benchmark {
   Cache* cache_;
   DB* db_;
   int num_;
-  bool sync_;
   int heap_counter_;
   double start_;
   double last_op_finish_;
@@ -113,6 +128,70 @@ class Benchmark {
   // State kept for progress messages
   int done_;
   int next_report_;     // When to report next
+
+  void PrintHeader() {
+    const int kKeySize = 16;
+    PrintEnvironment();
+    fprintf(stdout, "Keys:       %d bytes each\n", kKeySize);
+    fprintf(stdout, "Values:     %d bytes each (%d bytes after compression)\n",
+            FLAGS_value_size,
+            static_cast<int>(FLAGS_value_size * FLAGS_compression_ratio + 0.5));
+    fprintf(stdout, "Entries:    %d\n", num_);
+    fprintf(stdout, "RawSize:    %.1f MB (estimated)\n",
+            (((kKeySize + FLAGS_value_size) * num_) / 1048576.0));
+    fprintf(stdout, "FileSize:   %.1f MB (estimated)\n",
+            (((kKeySize + FLAGS_value_size * FLAGS_compression_ratio) * num_)
+             / 1048576.0));
+    PrintWarnings();
+    fprintf(stdout, "------------------------------------------------\n");
+  }
+
+  void PrintWarnings() {
+#if defined(__GNUC__) && !defined(__OPTIMIZE__)
+    fprintf(stdout,
+            "WARNING: Optimization is disabled: benchmarks unnecessarily slow\n"
+            );
+#endif
+#ifndef NDEBUG
+    fprintf(stdout,
+            "WARNING: Assertions are enabled; benchmarks unnecessarily slow\n");
+#endif
+  }
+
+  void PrintEnvironment() {
+    fprintf(stderr, "LevelDB:    version %d.%d\n",
+            kMajorVersion, kMinorVersion);
+
+#if defined(__linux)
+    time_t now = time(NULL);
+    fprintf(stderr, "Date:       %s", ctime(&now));  // ctime() adds newline
+
+    FILE* cpuinfo = fopen("/proc/cpuinfo", "r");
+    if (cpuinfo != NULL) {
+      char line[1000];
+      int num_cpus = 0;
+      std::string cpu_type;
+      std::string cache_size;
+      while (fgets(line, sizeof(line), cpuinfo) != NULL) {
+        const char* sep = strchr(line, ':');
+        if (sep == NULL) {
+          continue;
+        }
+        Slice key = TrimSpace(Slice(line, sep - 1 - line));
+        Slice val = TrimSpace(Slice(sep + 1));
+        if (key == "model name") {
+          ++num_cpus;
+          cpu_type = val.ToString();
+        } else if (key == "cache size") {
+          cache_size = val.ToString();
+        }
+      }
+      fclose(cpuinfo);
+      fprintf(stderr, "CPU:        %d * %s\n", num_cpus, cpu_type.c_str());
+      fprintf(stderr, "CPUCache:   %s\n", cache_size.c_str());
+    }
+#endif
+  }
 
   void Start() {
     start_ = Env::Default()->NowMicros() * 1e-6;
@@ -164,9 +243,10 @@ class Benchmark {
       snprintf(rate, sizeof(rate), "%5.1f MB/s",
                (bytes_ / 1048576.0) / (finish - start_));
       if (!message_.empty()) {
-        message_.push_back(' ');
+        message_  = std::string(rate) + " " + message_;
+      } else {
+        message_ = rate;
       }
-      message_.append(rate);
     }
 
     fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
@@ -183,14 +263,16 @@ class Benchmark {
  public:
   enum Order {
     SEQUENTIAL,
-    REVERSE,  // Currently only supported for reads
     RANDOM
+  };
+  enum DBState {
+    FRESH,
+    EXISTING
   };
 
   Benchmark() : cache_(NewLRUCache(200<<20)),
                 db_(NULL),
                 num_(FLAGS_num),
-                sync_(false),
                 heap_counter_(0),
                 bytes_(0),
                 rand_(301) {
@@ -210,19 +292,8 @@ class Benchmark {
   }
 
   void Run() {
-    Options options;
-    options.create_if_missing = true;
-    options.max_open_files = 10000;
-    options.block_cache = cache_;
-    options.write_buffer_size = FLAGS_write_buffer_size;
-
-    Start();
-    Status s = DB::Open(options, "/tmp/dbbench", &db_);
-    Stop("open");
-    if (!s.ok()) {
-      fprintf(stderr, "open error: %s\n", s.ToString().c_str());
-      exit(1);
-    }
+    PrintHeader();
+    Open();
 
     const char* benchmarks = FLAGS_benchmarks;
     while (benchmarks != NULL) {
@@ -237,30 +308,30 @@ class Benchmark {
       }
 
       Start();
-      if (name == Slice("writeseq")) {
-        Write(SEQUENTIAL, num_, FLAGS_value_size);
-      } else if (name == Slice("writerandom")) {
-        Write(RANDOM, num_, FLAGS_value_size);
-      } else if (name == Slice("writebig")) {
-        Write(RANDOM, num_ / 1000, 100 * 1000);
+
+      WriteOptions write_options;
+      write_options.sync = false;
+      if (name == Slice("fillseq")) {
+        Write(write_options, SEQUENTIAL, FRESH, num_, FLAGS_value_size);
+      } else if (name == Slice("fillrandom")) {
+        Write(write_options, RANDOM, FRESH, num_, FLAGS_value_size);
+      } else if (name == Slice("overwrite")) {
+        Write(write_options, RANDOM, EXISTING, num_, FLAGS_value_size);
+      } else if (name == Slice("fillsync")) {
+        write_options.sync = true;
+        Write(write_options, RANDOM, FRESH, num_ / 100, FLAGS_value_size);
+      } else if (name == Slice("fill100K")) {
+        Write(write_options, RANDOM, FRESH, num_ / 1000, 100 * 1000);
       } else if (name == Slice("readseq")) {
-        Read(SEQUENTIAL);
+        ReadSequential();
       } else if (name == Slice("readreverse")) {
-        Read(REVERSE);
+        ReadReverse();
       } else if (name == Slice("readrandom")) {
-        Read(RANDOM);
+        ReadRandom();
       } else if (name == Slice("compact")) {
         Compact();
       } else if (name == Slice("heapprofile")) {
         HeapProfile();
-      } else if (name == Slice("sync")) {
-        sync_ = true;
-      } else if (name == Slice("nosync")) {
-        sync_ = false;
-      } else if (name == Slice("tenth")) {
-        num_ = num_ / 10;
-      } else if (name == Slice("normal")) {
-        num_ = FLAGS_num;
       } else {
         fprintf(stderr, "unknown benchmark '%s'\n", name.ToString().c_str());
       }
@@ -268,16 +339,44 @@ class Benchmark {
     }
   }
 
-  void Write(Order order, int num_entries, int value_size) {
+ private:
+  void Open() {
+    assert(db_ == NULL);
+    Options options;
+    options.create_if_missing = true;
+    options.max_open_files = 10000;
+    options.block_cache = cache_;
+    options.write_buffer_size = FLAGS_write_buffer_size;
+    Status s = DB::Open(options, "/tmp/dbbench", &db_);
+    if (!s.ok()) {
+      fprintf(stderr, "open error: %s\n", s.ToString().c_str());
+      exit(1);
+    }
+  }
+
+  void Write(const WriteOptions& options, Order order, DBState state,
+             int num_entries, int value_size) {
+    if (state == FRESH) {
+      delete db_;
+      db_ = NULL;
+      DestroyDB("/tmp/dbbench", Options());
+      Open();
+      Start();  // Do not count time taken to destroy/open
+    }
+
+    if (num_entries != num_) {
+      char msg[100];
+      snprintf(msg, sizeof(msg), "(%d ops)", num_entries);
+      message_ = msg;
+    }
+
     WriteBatch batch;
     Status s;
     std::string val;
-    WriteOptions options;
-    options.sync = sync_;
     for (int i = 0; i < num_entries; i++) {
       const int k = (order == SEQUENTIAL) ? i : (rand_.Next() % FLAGS_num);
       char key[100];
-      snprintf(key, sizeof(key), "%012d", k);
+      snprintf(key, sizeof(key), "%016d", k);
       batch.Clear();
       batch.Put(key, gen_.Generate(value_size));
       s = db_->Write(options, &batch);
@@ -290,42 +389,37 @@ class Benchmark {
     }
   }
 
-  void Read(Order order) {
+  void ReadSequential() {
+    Iterator* iter = db_->NewIterator(ReadOptions());
+    int i = 0;
+    for (iter->SeekToFirst(); i < num_ && iter->Valid(); iter->Next()) {
+      bytes_ += iter->key().size() + iter->value().size();
+      FinishedSingleOp();
+      ++i;
+    }
+    delete iter;
+  }
+
+  void ReadReverse() {
+    Iterator* iter = db_->NewIterator(ReadOptions());
+    int i = 0;
+    for (iter->SeekToLast(); i < num_ && iter->Valid(); iter->Prev()) {
+      bytes_ += iter->key().size() + iter->value().size();
+      FinishedSingleOp();
+      ++i;
+    }
+    delete iter;
+  }
+
+  void ReadRandom() {
     ReadOptions options;
-    switch (order) {
-      case SEQUENTIAL: {
-        Iterator* iter = db_->NewIterator(options);
-        int i = 0;
-        for (iter->SeekToFirst(); i < num_ && iter->Valid(); iter->Next()) {
-          bytes_ += iter->key().size() + iter->value().size();
-          FinishedSingleOp();
-          ++i;
-        }
-        delete iter;
-        break;
-      }
-      case REVERSE: {
-        Iterator* iter = db_->NewIterator(options);
-        int i = 0;
-        for (iter->SeekToLast(); i < num_ && iter->Valid(); iter->Prev()) {
-          bytes_ += iter->key().size() + iter->value().size();
-          FinishedSingleOp();
-          ++i;
-        }
-        delete iter;
-        break;
-      }
-      case RANDOM: {
-        std::string value;
-        for (int i = 0; i < num_; i++) {
-          char key[100];
-          const int k = (order == SEQUENTIAL) ? i : (rand_.Next() % FLAGS_num);
-          snprintf(key, sizeof(key), "%012d", k);
-          db_->Get(options, key, &value);
-          FinishedSingleOp();
-        }
-        break;
-      }
+    std::string value;
+    for (int i = 0; i < num_; i++) {
+      char key[100];
+      const int k = rand_.Next() % FLAGS_num;
+      snprintf(key, sizeof(key), "%016d", k);
+      db_->Get(options, key, &value);
+      FinishedSingleOp();
     }
   }
 

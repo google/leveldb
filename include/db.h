@@ -12,6 +12,9 @@
 
 namespace leveldb {
 
+static const int kMajorVersion = 1;
+static const int kMinorVersion = 0;
+
 struct Options;
 struct ReadOptions;
 struct WriteOptions;
