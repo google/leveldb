@@ -60,6 +60,9 @@ namespace {
 
 class Thread;
 
+static const ::FilePath::CharType kLevelDBTestDirectoryPrefix[]
+    = FILE_PATH_LITERAL("leveldb-test-");
+
 ::FilePath CreateFilePath(const std::string& file_path) {
 #if defined(OS_WIN)
   return FilePath(UTF8ToUTF16(file_path));
@@ -391,12 +394,16 @@ class ChromiumEnv : public Env {
   }
 
   virtual Status GetTestDirectory(std::string* path) {
+    mu_.Acquire();
     if (test_directory_.empty()) {
-      if (!::file_util::CreateNewTempDirectory("leveldb-", &test_directory_)) {
+      if (!::file_util::CreateNewTempDirectory(kLevelDBTestDirectoryPrefix,
+                                               &test_directory_)) {
+        mu_.Release();
         return Status::IOError("Could not create temp directory.");
       }
     }
     *path = FilePathToString(test_directory_);
+    mu_.Release();
     return Status::OK();
   }
 
