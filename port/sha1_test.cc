@@ -31,22 +31,6 @@ TEST(SHA1, Simple) {
             TestSHA1(x.data(), x.size()));
 }
 
-TEST(SHA1, Benchmark) {
-  std::string data(1048576 * 100, 'x');
-  double start = Env::Default()->NowMicros() * 1e-6;
-  static const int kIters = 10;
-  uint32_t sha1 = 0;
-  for (int i = 0; i < kIters; i++) {
-    char hash_val[20];
-    SHA1_Hash(data.data(), data.size(), hash_val);
-    sha1 |= hash_val[0];
-  }
-  double finish = Env::Default()->NowMicros() * 1e-6;
-  double mb = (static_cast<long long int>(data.size()) * kIters) / 1048576.0;
-  fprintf(stderr, "SHA1 %0.0f MB: %.3f secs; %.1f MB/s, dummy=0x%02x\n",
-          mb, (finish - start), mb / (finish - start), sha1);
-}
-
 }
 }
 

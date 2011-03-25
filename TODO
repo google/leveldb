@@ -8,7 +8,6 @@ Maybe afterwards
 
 ss
 - Stats
-- Speed up backwards scan (avoid three passes over data)
 
 db
 - Maybe implement DB::BulkDeleteForRange(start_key, end_key)

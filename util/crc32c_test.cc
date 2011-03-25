@@ -64,20 +64,6 @@ TEST(CRC, Mask) {
   ASSERT_EQ(crc, Unmask(Unmask(Mask(Mask(crc)))));
 }
 
-TEST(CRC, Benchmark) {
-  std::string data(1048576 * 100, 'x');
-  double start = Env::Default()->NowMicros() * 1e-6;
-  static const int kIters = 10;
-  uint32_t crc = 0;
-  for (int i = 0; i < kIters; i++) {
-    crc |= Value(data.data(), data.size());
-  }
-  double finish = Env::Default()->NowMicros() * 1e-6;
-  double mb = (static_cast<long long int>(data.size()) * kIters) / 1048576.0;
-  fprintf(stderr, "CRC %0.0f MB: %.3f secs; %.1f MB/s, crc=0x%08x\n",
-          mb, (finish - start), mb / (finish - start), crc);
-}
-
 }
 }
 

@@ -11,6 +11,8 @@
 #include "include/db.h"
 #include "include/env.h"
 #include "include/write_batch.h"
+#include "port/port.h"
+#include "util/crc32c.h"
 #include "util/histogram.h"
 #include "util/random.h"
 #include "util/testutil.h"
@@ -25,6 +27,8 @@
 //      readseq       -- read N values sequentially
 //      readreverse   -- read N values in reverse order
 //      readrandom    -- read N values in random order
+//      crc32c        -- repeated crc32c of 4K of data
+//      sha1          -- repeated SHA1 computation over 4K of data
 //   Meta operations:
 //      compact     -- Compact the entire DB
 //      heapprofile -- Dump a heap profile (if supported by this port)
@@ -34,17 +38,21 @@
 //      normal      -- reset N back to its normal value (1000000)
 static const char* FLAGS_benchmarks =
     "fillseq,"
+    "fillsync,"
     "fillrandom,"
     "overwrite,"
-    "fillsync,"
+    "readrandom,"
+    "readrandom,"  // Extra run to allow previous compactions to quiesce
     "readseq,"
     "readreverse,"
-    "readrandom,"
     "compact,"
+    "readrandom,"
     "readseq,"
     "readreverse,"
-    "readrandom,"
-    "fill100K";
+    "fill100K,"
+    "crc32c,"
+    "sha1"
+    ;
 
 // Number of key/values to place in database
 static int FLAGS_num = 1000000;
@@ -330,6 +338,10 @@ class Benchmark {
         ReadRandom();
       } else if (name == Slice("compact")) {
         Compact();
+      } else if (name == Slice("crc32c")) {
+        Crc32c(4096, "(4K per op)");
+      } else if (name == Slice("sha1")) {
+        SHA1(4096, "(4K per op)");
       } else if (name == Slice("heapprofile")) {
         HeapProfile();
       } else {
@@ -340,6 +352,41 @@ class Benchmark {
   }
 
  private:
+  void Crc32c(int size, const char* label) {
+    // Checksum about 500MB of data total
+    string data(size, 'x');
+    int64_t bytes = 0;
+    uint32_t crc = 0;
+    while (bytes < 500 * 1048576) {
+      crc = crc32c::Value(data.data(), size);
+      FinishedSingleOp();
+      bytes += size;
+    }
+    // Print so result is not dead
+    fprintf(stderr, "... crc=0x%x\r", static_cast<unsigned int>(crc));
+
+    bytes_ = bytes;
+    message_ = label;
+  }
+
+  void SHA1(int size, const char* label) {
+    // SHA1 about 100MB of data total
+    string data(size, 'x');
+    int64_t bytes = 0;
+    char sha1[20];
+    while (bytes < 100 * 1048576) {
+      port::SHA1_Hash(data.data(), size, sha1);
+      FinishedSingleOp();
+      bytes += size;
+    }
+
+    // Print so result is not dead
+    fprintf(stderr, "... sha1=%02x...\r", static_cast<unsigned int>(sha1[0]));
+
+    bytes_ = bytes;
+    message_ = label;
+  }
+
   void Open() {
     assert(db_ == NULL);
     Options options;

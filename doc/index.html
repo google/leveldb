@@ -132,8 +132,7 @@ range <code>[start,limit)</code>:
   }
 </pre>
 You can also process entries in reverse order.  (Caveat: reverse
-iteration is currently a factor of two or three slower than forward
-iteration.)
+iteration may be somewhat slower than forward iteration.)
 <p>
 <pre>
   for (it-&gt;SeekToLast(); it-&gt;Valid(); it-&gt;Prev()) {

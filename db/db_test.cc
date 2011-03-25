@@ -209,6 +209,16 @@ class DBTest {
       }
     }
   }
+
+  std::string IterStatus(Iterator* iter) {
+    std::string result;
+    if (iter->Valid()) {
+      result = iter->key().ToString() + "->" + iter->value().ToString();
+    } else {
+      result = "(invalid)";
+    }
+    return result;
+  }
 };
 
 TEST(DBTest, Empty) {
@@ -232,6 +242,180 @@ TEST(DBTest, PutDeleteGet) {
   ASSERT_EQ("v2", Get("foo"));
   ASSERT_OK(db_->Delete(WriteOptions(), "foo"));
   ASSERT_EQ("NOT_FOUND", Get("foo"));
+}
+
+TEST(DBTest, IterEmpty) {
+  Iterator* iter = db_->NewIterator(ReadOptions());
+
+  iter->SeekToFirst();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->SeekToLast();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->Seek("foo");
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  delete iter;
+}
+
+TEST(DBTest, IterSingle) {
+  ASSERT_OK(Put("a", "va"));
+  Iterator* iter = db_->NewIterator(ReadOptions());
+
+  iter->SeekToFirst();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+  iter->SeekToFirst();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->SeekToLast();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+  iter->SeekToLast();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->Seek("");
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->Seek("a");
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->Seek("b");
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  delete iter;
+}
+
+TEST(DBTest, IterMulti) {
+  ASSERT_OK(Put("a", "va"));
+  ASSERT_OK(Put("b", "vb"));
+  ASSERT_OK(Put("c", "vc"));
+  Iterator* iter = db_->NewIterator(ReadOptions());
+
+  iter->SeekToFirst();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "b->vb");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "c->vc");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+  iter->SeekToFirst();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->SeekToLast();
+  ASSERT_EQ(IterStatus(iter), "c->vc");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "b->vb");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+  iter->SeekToLast();
+  ASSERT_EQ(IterStatus(iter), "c->vc");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->Seek("");
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Seek("a");
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Seek("ax");
+  ASSERT_EQ(IterStatus(iter), "b->vb");
+  iter->Seek("b");
+  ASSERT_EQ(IterStatus(iter), "b->vb");
+  iter->Seek("z");
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  // Switch from reverse to forward
+  iter->SeekToLast();
+  iter->Prev();
+  iter->Prev();
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "b->vb");
+
+  // Switch from forward to reverse
+  iter->SeekToFirst();
+  iter->Next();
+  iter->Next();
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "b->vb");
+
+  // Make sure iter stays at snapshot
+  ASSERT_OK(Put("a",  "va2"));
+  ASSERT_OK(Put("a2", "va3"));
+  ASSERT_OK(Put("b",  "vb2"));
+  ASSERT_OK(Put("c",  "vc2"));
+  ASSERT_OK(Delete("b"));
+  iter->SeekToFirst();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "b->vb");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "c->vc");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+  iter->SeekToLast();
+  ASSERT_EQ(IterStatus(iter), "c->vc");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "b->vb");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  delete iter;
+}
+
+TEST(DBTest, IterSmallAndLargeMix) {
+  ASSERT_OK(Put("a", "va"));
+  ASSERT_OK(Put("b", std::string(100000, 'b')));
+  ASSERT_OK(Put("c", "vc"));
+  ASSERT_OK(Put("d", std::string(100000, 'd')));
+  ASSERT_OK(Put("e", std::string(100000, 'e')));
+
+  Iterator* iter = db_->NewIterator(ReadOptions());
+
+  iter->SeekToFirst();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "b->" + std::string(100000, 'b'));
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "c->vc");
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "d->" + std::string(100000, 'd'));
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "e->" + std::string(100000, 'e'));
+  iter->Next();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  iter->SeekToLast();
+  ASSERT_EQ(IterStatus(iter), "e->" + std::string(100000, 'e'));
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "d->" + std::string(100000, 'd'));
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "c->vc");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "b->" + std::string(100000, 'b'));
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "(invalid)");
+
+  delete iter;
 }
 
 TEST(DBTest, Recover) {
