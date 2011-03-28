@@ -35,18 +35,19 @@ Status Writer::AddRecord(const Slice& slice) {
   do {
     const int leftover = kBlockSize - block_offset_;
     assert(leftover >= 0);
-    if (leftover <= kHeaderSize) {
+    if (leftover < kHeaderSize) {
       // Switch to a new block
       if (leftover > 0) {
-        // Fill the trailer
-        dest_->Append(Slice("\x00\x00\x00\x00\x00\x00\x00", leftover));
+        // Fill the trailer (literal below relies on kHeaderSize being 7)
+        assert(kHeaderSize == 7);
+        dest_->Append(Slice("\x00\x00\x00\x00\x00\x00", leftover));
       }
       block_offset_ = 0;
     }
 
-    // Invariant: we never leave <= kHeaderSize bytes in a block.
+    // Invariant: we never leave < kHeaderSize bytes in a block.
     const int avail = kBlockSize - block_offset_ - kHeaderSize;
-    assert(avail > 0);
+    assert(avail >= 0);
 
     const size_t fragment_length = (left < avail) ? left : avail;
 

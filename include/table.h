@@ -20,8 +20,9 @@ struct ReadOptions;
 // immutable and persistent.
 class Table {
  public:
-  // Attempt to open the table that is stored in "file", and read the
-  // metadata entries necessary to allow retrieving data from the table.
+  // Attempt to open the table that is stored in bytes [0..file_size)
+  // of "file", and read the metadata entries necessary to allow
+  // retrieving data from the table.
   //
   // If successful, returns ok and sets "*table" to the newly opened
   // table.  The client should delete "*table" when no longer needed.
@@ -33,6 +34,7 @@ class Table {
   // *file must remain live while this Table is in use.
   static Status Open(const Options& options,
                      RandomAccessFile* file,
+                     uint64_t file_size,
                      Table** table);
 
   ~Table();

@@ -354,7 +354,7 @@ class Benchmark {
  private:
   void Crc32c(int size, const char* label) {
     // Checksum about 500MB of data total
-    string data(size, 'x');
+    std::string data(size, 'x');
     int64_t bytes = 0;
     uint32_t crc = 0;
     while (bytes < 500 * 1048576) {
@@ -371,7 +371,7 @@ class Benchmark {
 
   void SHA1(int size, const char* label) {
     // SHA1 about 100MB of data total
-    string data(size, 'x');
+    std::string data(size, 'x');
     int64_t bytes = 0;
     char sha1[20];
     while (bytes < 100 * 1048576) {

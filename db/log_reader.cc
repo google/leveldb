@@ -105,7 +105,7 @@ void Reader::ReportDrop(size_t bytes, const char* reason) {
 
 unsigned int Reader::ReadPhysicalRecord(Slice* result) {
   while (true) {
-    if (buffer_.size() <= kHeaderSize) {
+    if (buffer_.size() < kHeaderSize) {
       if (!eof_) {
         // Last read was a full read, so this is a trailer to skip
         buffer_.clear();
@@ -124,12 +124,10 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
       } else if (buffer_.size() == 0) {
         // End of file
         return kEof;
-      } else if (buffer_.size() < kHeaderSize) {
+      } else {
         ReportDrop(buffer_.size(), "truncated record at end of file");
         buffer_.clear();
         return kEof;
-      } else {
-        // We have a trailing zero-length record.  Fall through and check it.
       }
     }
 

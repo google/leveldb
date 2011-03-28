@@ -9,12 +9,15 @@ Each block consists of a sequence of records:
 	type: uint8		// One of FULL, FIRST, MIDDLE, LAST
 	data: uint8[length]
 
-A record never starts within the last seven bytes of a block.  Any
-leftover bytes here form the trailer, which must consist entirely of
-zero bytes and must be skipped by readers.  In particular, even if
-there are exactly seven bytes left in the block, and a zero-length
-user record is added (which will fit in these seven bytes), the writer
-must skip these trailer bytes and add the record to the next block.
+A record never starts within the last six bytes of a block (since it
+won't fit).  Any leftover bytes here form the trailer, which must
+consist entirely of zero bytes and must be skipped by readers.  
+
+Aside: if exactly seven bytes are left in the current block, and a new
+non-zero length record is added, the writer must emit a FIRST record
+(which contains zero bytes of user data) to fill up the trailing seven
+bytes of the block and then emit all of the user data in subsequent
+blocks.
 
 More types may be added in the future.  Some Readers may skip record
 types they do not understand, others may report that some data was

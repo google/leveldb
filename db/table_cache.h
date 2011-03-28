@@ -23,15 +23,16 @@ class TableCache {
   TableCache(const std::string& dbname, const Options* options, int entries);
   ~TableCache();
 
-  // Get an iterator for the specified file number and return it.  If
-  // "tableptr" is non-NULL, also sets "*tableptr" to point to the
-  // Table object underlying the returned iterator, or NULL if no
-  // Table object underlies the returned iterator.  The returned
-  // "*tableptr" object is owned by the cache and should not be
-  // deleted, and is valid for as long as the returned iterator is
-  // live.
+  // Return an iterator for the specified file number (the corresponding
+  // file length must be exactly "file_size" bytes).  If "tableptr" is
+  // non-NULL, also sets "*tableptr" to point to the Table object
+  // underlying the returned iterator, or NULL if no Table object underlies
+  // the returned iterator.  The returned "*tableptr" object is owned by
+  // the cache and should not be deleted, and is valid for as long as the
+  // returned iterator is live.
   Iterator* NewIterator(const ReadOptions& options,
                         uint64_t file_number,
+                        uint64_t file_size,
                         Table** tableptr = NULL);
 
   // Evict any entry for the specified file number

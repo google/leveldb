@@ -29,9 +29,9 @@ struct Table::Rep {
 
 Status Table::Open(const Options& options,
                    RandomAccessFile* file,
+                   uint64_t size,
                    Table** table) {
   *table = NULL;
-  const uint64_t size = file->Size();
   if (size < Footer::kEncodedLength) {
     return Status::InvalidArgument("file is too short to be an sstable");
   }

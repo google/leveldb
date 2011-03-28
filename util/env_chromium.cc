@@ -144,16 +144,12 @@ class ChromiumSequentialFile: public SequentialFile {
 class ChromiumRandomAccessFile: public RandomAccessFile {
  private:
   std::string filename_;
-  uint64_t size_;
   ::base::PlatformFile file_;
 
  public:
-  ChromiumRandomAccessFile(const std::string& fname, uint64_t size,
-                           ::base::PlatformFile file)
-      : filename_(fname), size_(size), file_(file) { }
+  ChromiumRandomAccessFile(const std::string& fname, ::base::PlatformFile file)
+      : filename_(fname), file_(file) { }
   virtual ~ChromiumRandomAccessFile() { ::base::ClosePlatformFile(file_); }
-
-  virtual uint64_t Size() const { return size_; }
 
   virtual Status Read(uint64_t offset, size_t n, Slice* result,
                       char* scratch) const {
@@ -256,13 +252,7 @@ class ChromiumEnv : public Env {
       *result = NULL;
       return Status::IOError(fname, PlatformFileErrorString(error_code));
     }
-    ::base::PlatformFileInfo info;
-    if (!::base::GetPlatformFileInfo(file, &info)) {
-      *result = NULL;
-      ::base::ClosePlatformFile(file);
-      return Status::IOError(fname, PlatformFileErrorString(error_code));
-    }
-    *result = new ChromiumRandomAccessFile(fname, info.size, file);
+    *result = new ChromiumRandomAccessFile(fname, file);
     return Status::OK();
   }
 

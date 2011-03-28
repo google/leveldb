@@ -110,7 +110,7 @@ class StringSource: public RandomAccessFile {
 
   virtual ~StringSource() { }
 
-  virtual uint64_t Size() const { return contents_.size(); }
+  uint64_t Size() const { return contents_.size(); }
 
   virtual Status Read(uint64_t offset, size_t n, Slice* result,
                        char* scratch) const {
@@ -246,7 +246,7 @@ class TableConstructor: public Constructor {
     source_ = new StringSource(sink.contents());
     Options table_options;
     table_options.comparator = options.comparator;
-    return Table::Open(table_options, source_, &table_);
+    return Table::Open(table_options, source_, sink.contents().size(), &table_);
   }
   virtual size_t NumBytes() const { return source_->Size(); }
 

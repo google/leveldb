@@ -340,8 +340,11 @@ void DBIter::ReadIndirectValue(Slice ref) const {
   std::string fname = LargeValueFileName(*dbname_, large_ref);
   RandomAccessFile* file;
   Status s = env_->NewRandomAccessFile(fname, &file);
+  uint64_t file_size = 0;
   if (s.ok()) {
-    uint64_t file_size = file->Size();
+    s = env_->GetFileSize(fname, &file_size);
+  }
+  if (s.ok()) {
     uint64_t value_size = large_ref.ValueSize();
     large_->value.resize(value_size);
     Slice result;

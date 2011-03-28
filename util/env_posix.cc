@@ -57,15 +57,12 @@ class PosixSequentialFile: public SequentialFile {
 class PosixRandomAccessFile: public RandomAccessFile {
  private:
   std::string filename_;
-  uint64_t size_;
   int fd_;
 
  public:
-  PosixRandomAccessFile(const std::string& fname, uint64_t size, int fd)
-      : filename_(fname), size_(size), fd_(fd) { }
+  PosixRandomAccessFile(const std::string& fname, int fd)
+      : filename_(fname), fd_(fd) { }
   virtual ~PosixRandomAccessFile() { close(fd_); }
-
-  virtual uint64_t Size() const { return size_; }
 
   virtual Status Read(uint64_t offset, size_t n, Slice* result,
                       char* scratch) const {
@@ -286,14 +283,7 @@ class PosixEnv : public Env {
       *result = NULL;
       return Status::IOError(fname, strerror(errno));
     }
-    struct stat sbuf;
-    if (fstat(fd, &sbuf) != 0) {
-      *result = NULL;
-      Status s = Status::IOError(fname, strerror(errno));
-      close(fd);
-      return s;
-    }
-    *result = new PosixRandomAccessFile(fname, sbuf.st_size, fd);
+    *result = new PosixRandomAccessFile(fname, fd);
     return Status::OK();
   }
 

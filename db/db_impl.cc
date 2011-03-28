@@ -642,7 +642,9 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
 
   if (s.ok() && current_entries > 0) {
     // Verify that the table is usable
-    Iterator* iter = table_cache_->NewIterator(ReadOptions(),output_number);
+    Iterator* iter = table_cache_->NewIterator(ReadOptions(),
+                                               output_number,
+                                               current_bytes);
     s = iter->status();
     delete iter;
     if (s.ok()) {

@@ -168,9 +168,6 @@ class RandomAccessFile {
   RandomAccessFile() { }
   virtual ~RandomAccessFile();
 
-  // Return the length of this file in bytes.
-  virtual uint64_t Size() const = 0;
-
   // Read up to "n" bytes from the file starting at "offset".
   // "scratch[0..n-1]" may be written by this routine.  Sets "*result"
   // to the data that was read (including if fewer than "n" bytes were

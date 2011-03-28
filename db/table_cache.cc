@@ -44,6 +44,7 @@ TableCache::~TableCache() {
 
 Iterator* TableCache::NewIterator(const ReadOptions& options,
                                   uint64_t file_number,
+                                  uint64_t file_size,
                                   Table** tableptr) {
   if (tableptr != NULL) {
     *tableptr = NULL;
@@ -59,7 +60,7 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
     Table* table = NULL;
     Status s = env_->NewRandomAccessFile(fname, &file);
     if (s.ok()) {
-      s = Table::Open(*options_, file, &table);
+      s = Table::Open(*options_, file, file_size, &table);
     }
 
     if (!s.ok()) {
