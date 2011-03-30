@@ -10,7 +10,7 @@
 
 #include <string>
 #include <utility>
-#include "include/slice.h"
+#include "leveldb/slice.h"
 
 namespace leveldb {
 

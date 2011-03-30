@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
-#include "include/status.h"
+#include "leveldb/status.h"
 
 namespace leveldb {
 

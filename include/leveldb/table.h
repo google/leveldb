@@ -6,7 +6,7 @@
 #define STORAGE_LEVELDB_INCLUDE_TABLE_H_
 
 #include <stdint.h>
-#include "include/iterator.h"
+#include "leveldb/iterator.h"
 
 namespace leveldb {
 

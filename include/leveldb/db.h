@@ -7,8 +7,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "include/iterator.h"
-#include "include/options.h"
+#include "leveldb/iterator.h"
+#include "leveldb/options.h"
 
 namespace leveldb {
 
