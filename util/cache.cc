@@ -12,7 +12,7 @@
 
 #include <assert.h>
 
-#include "include/cache.h"
+#include "leveldb/cache.h"
 #include "port/port.h"
 #include "util/hash.h"
 #include "util/mutexlock.h"

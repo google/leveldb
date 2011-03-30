@@ -8,9 +8,9 @@
 #include "db/dbformat.h"
 #include "db/table_cache.h"
 #include "db/version_edit.h"
-#include "include/db.h"
-#include "include/env.h"
-#include "include/iterator.h"
+#include "leveldb/db.h"
+#include "leveldb/env.h"
+#include "leveldb/iterator.h"
 
 namespace leveldb {
 

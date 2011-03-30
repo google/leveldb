@@ -9,8 +9,8 @@
 #include "db/dbformat.h"
 #include "db/log_writer.h"
 #include "db/snapshot.h"
-#include "include/db.h"
-#include "include/env.h"
+#include "leveldb/db.h"
+#include "leveldb/env.h"
 #include "port/port.h"
 
 namespace leveldb {

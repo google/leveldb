@@ -19,8 +19,8 @@
 #include "base/threading/platform_thread.h"
 #include "base/threading/thread.h"
 #include "base/utf_string_conversions.h"
-#include "include/env.h"
-#include "include/slice.h"
+#include "leveldb/env.h"
+#include "leveldb/slice.h"
 #include "port/port.h"
 #include "util/logging.h"
 

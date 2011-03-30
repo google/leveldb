@@ -6,8 +6,8 @@
 #define STORAGE_LEVELDB_DB_LOG_READER_H_
 
 #include "db/log_format.h"
-#include "include/slice.h"
-#include "include/status.h"
+#include "leveldb/slice.h"
+#include "leveldb/status.h"
 
 namespace leveldb {
 

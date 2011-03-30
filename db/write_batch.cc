@@ -14,9 +14,9 @@
 //    len: varint32
 //    data: uint8[len]
 
-#include "include/write_batch.h"
+#include "leveldb/write_batch.h"
 
-#include "include/db.h"
+#include "leveldb/db.h"
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"

@@ -7,9 +7,9 @@
 
 #include <string>
 #include <stdint.h>
-#include "include/slice.h"
-#include "include/status.h"
-#include "include/table_builder.h"
+#include "leveldb/slice.h"
+#include "leveldb/status.h"
+#include "leveldb/table_builder.h"
 
 namespace leveldb {
 

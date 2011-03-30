@@ -12,6 +12,7 @@
     ],
     'include_dirs': [
       '.',
+      'include/',
     ],
     'conditions': [
       ['OS == "win"', {
@@ -42,6 +43,11 @@
           ],
         }],
       ],
+      'direct_dependent_settings': {
+        'include_dirs': [
+          'include/',
+        ],
+      },
       'sources': [
         # Include and then exclude so that all files show up in IDEs, even if
         # they don't build.
@@ -73,17 +79,17 @@
         'db/version_set.h',
         'db/write_batch.cc',
         'db/write_batch_internal.h',
-        'include/cache.h',
-        'include/comparator.h',
-        'include/db.h',
-        'include/env.h',
-        'include/iterator.h',
-        'include/options.h',
-        'include/slice.h',
-        'include/status.h',
-        'include/table.h',
-        'include/table_builder.h',
-        'include/write_batch.h',
+        'include/leveldb/cache.h',
+        'include/leveldb/comparator.h',
+        'include/leveldb/db.h',
+        'include/leveldb/env.h',
+        'include/leveldb/iterator.h',
+        'include/leveldb/options.h',
+        'include/leveldb/slice.h',
+        'include/leveldb/status.h',
+        'include/leveldb/table.h',
+        'include/leveldb/table_builder.h',
+        'include/leveldb/write_batch.h',
         'port/port.h',
         'port/port_chromium.cc',
         'port/port_chromium.h',

@@ -8,7 +8,7 @@ CC = g++
 #OPT = -O2 -DNDEBUG
 OPT = -g2
 
-CFLAGS = -c -DLEVELDB_PLATFORM_POSIX -I. -std=c++0x $(OPT)
+CFLAGS = -c -DLEVELDB_PLATFORM_POSIX -I. -I./include -std=c++0x $(OPT)
 
 LDFLAGS=-lpthread
 

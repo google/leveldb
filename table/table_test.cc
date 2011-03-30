@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "include/table.h"
+#include "leveldb/table.h"
 
 #include <map>
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
-#include "include/db.h"
-#include "include/env.h"
-#include "include/iterator.h"
-#include "include/table_builder.h"
+#include "leveldb/db.h"
+#include "leveldb/env.h"
+#include "leveldb/iterator.h"
+#include "leveldb/table_builder.h"
 #include "table/block.h"
 #include "table/block_builder.h"
 #include "table/format.h"

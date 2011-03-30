@@ -3,8 +3,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <stdint.h>
-#include "include/comparator.h"
-#include "include/slice.h"
+#include "leveldb/comparator.h"
+#include "leveldb/slice.h"
 #include "util/logging.h"
 
 namespace leveldb {
