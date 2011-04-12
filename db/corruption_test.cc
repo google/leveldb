@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include "leveldb/cache.h"
 #include "leveldb/env.h"
 #include "leveldb/table.h"
 #include "leveldb/write_batch.h"
@@ -28,10 +29,12 @@ class CorruptionTest {
   test::ErrorEnv env_;
   Random rnd_;
   std::string dbname_;
+  Cache* tiny_cache_;
   Options options_;
   DB* db_;
 
   CorruptionTest() : rnd_(test::RandomSeed()) {
+    tiny_cache_ = NewLRUCache(100);
     options_.env = &env_;
     dbname_ = test::TmpDir() + "/db_test";
     DestroyDB(dbname_, options_);
@@ -45,6 +48,7 @@ class CorruptionTest {
   ~CorruptionTest() {
      delete db_;
      DestroyDB(dbname_, Options());
+     delete tiny_cache_;
   }
 
   Status TryReopen(Options* options = NULL) {
@@ -52,6 +56,7 @@ class CorruptionTest {
     db_ = NULL;
     Options opt = (options ? *options : options_);
     opt.env = &env_;
+    opt.block_cache = tiny_cache_;
     return DB::Open(opt, dbname_, &db_);
   }
 
@@ -160,12 +165,15 @@ class CorruptionTest {
     ASSERT_TRUE(s.ok()) << s.ToString();
   }
 
-  uint64_t Property(const std::string& name) {
-    uint64_t result;
-    if (!db_->GetProperty(name, &result)) {
-      result = ~static_cast<uint64_t>(0);
+  int Property(const std::string& name) {
+    std::string property;
+    int result;
+    if (db_->GetProperty(name, &property) &&
+        sscanf(property.c_str(), "%d", &result) == 1) {
+      return result;
+    } else {
+      return -1;
     }
-    return result;
   }
 
   // Return the ith key
@@ -235,7 +243,7 @@ TEST(CorruptionTest, TableFileIndexData) {
   dbi->TEST_CompactRange(0, "", "~");
   dbi->TEST_CompactRange(1, "", "~");
 
-  Corrupt(kTableFile, -1000, 500);
+  Corrupt(kTableFile, -2000, 500);
   Reopen();
   Check(5000, 9999);
 }
@@ -327,6 +335,7 @@ TEST(CorruptionTest, CompactionInputError) {
 TEST(CorruptionTest, CompactionInputErrorParanoid) {
   Options options;
   options.paranoid_checks = true;
+  options.write_buffer_size = 1048576;
   Reopen(&options);
 
   Build(10);

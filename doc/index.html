@@ -63,15 +63,12 @@ Example:
 The database provides <code>Put</code>, <code>Delete</code>, and <code>Get</code> methods to
 modify/query the database.  For example, the following code
 moves the value stored under key1 to key2.
-<p>
 <pre>
   std::string value;
   leveldb::Status s = db-&gt;Get(leveldb::ReadOptions(), key1, &amp;value);
   if (s.ok()) s = db-&gt;Put(leveldb::WriteOptions(), key2, value);
   if (s.ok()) s = db-&gt;Delete(leveldb::WriteOptions(), key1);
 </pre>
-See <a href="#async">important performance note</a> below for how to
-speed up writes significantly.
 
 <h1>Atomic Updates</h1>
 <p>
@@ -100,6 +97,47 @@ we do not end up erroneously dropping the value entirely.
 Apart from its atomicity benefits, <code>WriteBatch</code> may also be used to
 speed up bulk updates by placing lots of individual mutations into the
 same batch.
+
+<h1>Synchronous Writes</h1>
+By default, each write to <code>leveldb</code> is asynchronous: it
+returns after pushing the write from the process into the operating
+system.  The transfer from operating system memory to the underlying
+persistent storage happens asynchronously.  The <code>sync</code> flag
+can be turned on for a particular write to make the write operation
+not return until the data being written has been pushed all the way to
+persistent storage.  (On Posix systems, this is implemented by calling
+either <code>fsync(...)</code> or <code>fdatasync(...)</code> or
+<code>msync(..., MS_SYNC)</code> before the write operation returns.)
+<pre>
+  leveldb::WriteOptions write_options;
+  write_options.sync = true;
+  db-&gt;Put(write_options, ...);
+</pre>
+Asynchronous writes are often more than a thousand times as fast as
+synchronous writes.  The downside of asynchronous writes is that a
+crash of the machine may cause the last few updates to be lost.  Note
+that a crash of just the writing process (i.e., not a reboot) will not
+cause any loss since even when <code>sync</code> is false, an update
+is pushed from the process memory into the operating system before it
+is considered done.
+
+<p>
+Asynchronous writes can often be used safely.  For example, when
+loading a large amount of data into the database you can handle lost
+updates by restarting the bulk load after a crash.  A hybrid scheme is
+also possible where every Nth write is synchronous, and in the event
+of a crash, the bulk load is restarted just after the last synchronous
+write finished by the previous run.  (The synchronous write can update
+a marker that describes where to restart on a crash.)
+
+<p>
+<code>WriteBatch</code> provides an alternative to asynchronous writes.
+Multiple updates may be placed in the same <code>WriteBatch</code> and
+applied together using a synchronous write (i.e.,
+<code>write_options.sync</code> is set to true).  The extra cost of
+the synchronous write will be amortized across all of the writes in
+the batch.
+
 <p>
 <h1>Concurrency</h1>
 <p>
@@ -290,47 +328,11 @@ Performance can be tuned by changing the default values of the
 types defined in <code>leveldb/include/options.h</code>.
 
 <p>
-<h2><a name="async">Asynchronous Writes</a></h2>
-
-By default, each write to <code>leveldb</code> is synchronous: it does
-not return until the write has been pushed from memory to persistent
-storage.  (On Posix systems, this is implemented by calling either
-<code>fdatasync(...)</code> or <code>msync(..., MS_SYNC)</code>.)
-<strong>Synchronous writes may be very slow and the synchrony can be
-optionally disabled</strong>:
-<pre>
-  leveldb::WriteOptions write_options;
-  write_options.sync = false;
-  db-&gt;Put(write_options, ...);
-</pre>
-Asynchronous writes are often more than a hundred times as fast as
-synchronous writes.  The downside of asynchronous writes is that a
-crash of the machine may cause the last few updates to be lost.  Note
-that a crash of just the writing process (i.e., not a reboot) will not
-cause any loss since even when <code>sync</code> is false, an update
-is pushed from the process memory into the operating system before it
-is considered done.
-
-<p>
-Asynchronous writes can be particularly beneficial when loading a
-large amount of data into the database since you can mitigate the
-problem of lost updates by restarting the bulk load.  A hybrid scheme
-is also possible where every Nth write is synchronous, and in the
-event of a crash, the bulk load is restarted just after the last
-synchronous write finished by the previous run.
-
-<p>
-<code>WriteBatch</code> provides an alternative to asynchronous writes.
-Multiple updates may be placed in the same <code>WriteBatch</code> and
-applied together using a synchronous write.  The extra cost of the
-synchronous write will be amortized across all of the writes in the batch.
-
-<p>
 <h2>Block size</h2>
 <p>
 <code>leveldb</code> groups adjacent keys together into the same block and such a
 block is the unit of transfer to and from persistent storage.  The
-default block size is approximately 8192 uncompressed bytes.
+default block size is approximately 4096 uncompressed bytes.
 Applications that mostly do bulk scans over the contents of the
 database may wish to increase this size.  Applications that do a lot
 of point reads of small values may wish to switch to a smaller block

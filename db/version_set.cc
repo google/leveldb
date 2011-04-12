@@ -27,16 +27,14 @@ static const int kTargetFileSize = 2 * 1048576;
 static const int64_t kMaxGrandParentOverlapBytes = 10 * kTargetFileSize;
 
 static double MaxBytesForLevel(int level) {
-  if (level == 0) {
-    return 4 * 1048576.0;
-  } else {
-    double result = 10 * 1048576.0;
-    while (level > 1) {
-      result *= 10;
-      level--;
-    }
-    return result;
+  // Note: the result for level zero is not really used since we set
+  // the level-0 compaction threshold based on number of files.
+  double result = 10 * 1048576.0;  // Result for both level-0 and level-1
+  while (level > 1) {
+    result *= 10;
+    level--;
   }
+  return result;
 }
 
 static uint64_t MaxFileSizeForLevel(int level) {
@@ -327,6 +325,9 @@ VersionSet::VersionSet(const std::string& dbname,
       icmp_(*cmp),
       next_file_number_(2),
       manifest_file_number_(0),  // Filled by Recover()
+      last_sequence_(0),
+      log_number_(0),
+      prev_log_number_(0),
       descriptor_file_(NULL),
       descriptor_log_(NULL),
       current_(new Version(this)),
@@ -345,7 +346,19 @@ VersionSet::~VersionSet() {
 }
 
 Status VersionSet::LogAndApply(VersionEdit* edit, MemTable* cleanup_mem) {
+  if (edit->has_log_number_) {
+    assert(edit->log_number_ >= log_number_);
+    assert(edit->log_number_ < next_file_number_);
+  } else {
+    edit->SetLogNumber(log_number_);
+  }
+
+  if (!edit->has_prev_log_number_) {
+    edit->SetPrevLogNumber(prev_log_number_);
+  }
+
   edit->SetNextFile(next_file_number_);
+  edit->SetLastSequence(last_sequence_);
 
   Version* v = new Version(this);
   {
@@ -372,7 +385,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, MemTable* cleanup_mem) {
     }
   }
 
-  // Write new record to log file
+  // Write new record to MANIFEST log
   if (s.ok()) {
     std::string record;
     edit->EncodeTo(&record);
@@ -396,6 +409,8 @@ Status VersionSet::LogAndApply(VersionEdit* edit, MemTable* cleanup_mem) {
     v->next_ = NULL;
     current_->next_ = v;
     current_ = v;
+    log_number_ = edit->log_number_;
+    prev_log_number_ = edit->prev_log_number_;
   } else {
     delete v;
     if (!new_manifest_file.empty()) {
@@ -406,13 +421,11 @@ Status VersionSet::LogAndApply(VersionEdit* edit, MemTable* cleanup_mem) {
       env_->DeleteFile(new_manifest_file);
     }
   }
-  //Log(env_, options_->info_log, "State\n%s", current_->DebugString().c_str());
 
   return s;
 }
 
-Status VersionSet::Recover(uint64_t* log_number,
-                           SequenceNumber* last_sequence) {
+Status VersionSet::Recover() {
   struct LogReporter : public log::Reader::Reporter {
     Status* status;
     virtual void Corruption(size_t bytes, const Status& s) {
@@ -439,9 +452,13 @@ Status VersionSet::Recover(uint64_t* log_number,
   }
 
   bool have_log_number = false;
+  bool have_prev_log_number = false;
   bool have_next_file = false;
   bool have_last_sequence = false;
   uint64_t next_file = 0;
+  uint64_t last_sequence = 0;
+  uint64_t log_number = 0;
+  uint64_t prev_log_number = 0;
   Builder builder(this, current_);
 
   {
@@ -467,8 +484,13 @@ Status VersionSet::Recover(uint64_t* log_number,
       }
 
       if (edit.has_log_number_) {
-        *log_number = edit.log_number_;
+        log_number = edit.log_number_;
         have_log_number = true;
+      }
+
+      if (edit.has_prev_log_number_) {
+        prev_log_number = edit.prev_log_number_;
+        have_prev_log_number = true;
       }
 
       if (edit.has_next_file_number_) {
@@ -477,7 +499,7 @@ Status VersionSet::Recover(uint64_t* log_number,
       }
 
       if (edit.has_last_sequence_) {
-        *last_sequence = edit.last_sequence_;
+        last_sequence = edit.last_sequence_;
         have_last_sequence = true;
       }
     }
@@ -492,6 +514,10 @@ Status VersionSet::Recover(uint64_t* log_number,
       s = Status::Corruption("no meta-lognumber entry in descriptor");
     } else if (!have_last_sequence) {
       s = Status::Corruption("no last-sequence-number entry in descriptor");
+    }
+
+    if (!have_prev_log_number) {
+      prev_log_number = 0;
     }
   }
 
@@ -508,10 +534,21 @@ Status VersionSet::Recover(uint64_t* log_number,
       current_ = v;
       manifest_file_number_ = next_file;
       next_file_number_ = next_file + 1;
+      last_sequence_ = last_sequence;
+      log_number_ = log_number;
+      prev_log_number_ = prev_log_number;
     }
   }
 
   return s;
+}
+
+static int64_t TotalFileSize(const std::vector<FileMetaData*>& files) {
+  int64_t sum = 0;
+  for (int i = 0; i < files.size(); i++) {
+    sum += files[i]->file_size;
+  }
+  return sum;
 }
 
 Status VersionSet::Finalize(Version* v) {
@@ -523,23 +560,24 @@ Status VersionSet::Finalize(Version* v) {
   for (int level = 0; s.ok() && level < config::kNumLevels-1; level++) {
     s = SortLevel(v, level);
 
-    // Compute the ratio of current size to size limit.
-    uint64_t level_bytes = 0;
-    for (int i = 0; i < v->files_[level].size(); i++) {
-      level_bytes += v->files_[level][i]->file_size;
-    }
-    double score = static_cast<double>(level_bytes) / MaxBytesForLevel(level);
-
+    double score;
     if (level == 0) {
-      // Level-0 file sizes are going to be often much smaller than
-      // MaxBytesForLevel(0) since we do not account for compression
-      // when producing a level-0 file; and too many level-0 files
-      // increase merging costs.  So use a file-count limit for
-      // level-0 in addition to the byte-count limit.
-      double count_score = v->files_[level].size() / 4.0;
-      if (count_score > score) {
-        score = count_score;
-      }
+      // We treat level-0 specially by bounding the number of files
+      // instead of number of bytes for two reasons:
+      //
+      // (1) With larger write-buffer sizes, it is nice not to do too
+      // many level-0 compactions.
+      //
+      // (2) The files in level-0 are merged on every read and
+      // therefore we wish to avoid too many files when the individual
+      // file size is small (perhaps because of a small write-buffer
+      // setting, or very high compression ratios, or lots of
+      // overwrites/deletions).
+      score = v->files_[level].size() / 4.0;
+    } else {
+      // Compute the ratio of current size to size limit.
+      const uint64_t level_bytes = TotalFileSize(v->files_[level]);
+      score = static_cast<double>(level_bytes) / MaxBytesForLevel(level);
     }
 
     if (score > best_score) {
@@ -696,8 +734,7 @@ bool VersionSet::RegisterLargeValueRef(const LargeValueRef& large_ref,
   return is_first;
 }
 
-void VersionSet::CleanupLargeValueRefs(const std::set<uint64_t>& live_tables,
-                                       uint64_t log_file_num) {
+void VersionSet::CleanupLargeValueRefs(const std::set<uint64_t>& live_tables) {
   for (LargeValueMap::iterator it = large_value_refs_.begin();
        it != large_value_refs_.end();
        ) {
@@ -705,7 +742,8 @@ void VersionSet::CleanupLargeValueRefs(const std::set<uint64_t>& live_tables,
     for (LargeReferencesSet::iterator ref_it = refs->begin();
          ref_it != refs->end();
          ) {
-      if (ref_it->first != log_file_num &&              // Not in log file
+      if (ref_it->first != log_number_ &&               // Not in log file
+          ref_it->first != prev_log_number_ &&          // Not in prev log
           live_tables.count(ref_it->first) == 0) {      // Not in a live table
         // No longer live: erase
         LargeReferencesSet::iterator to_erase = ref_it;
@@ -762,12 +800,10 @@ void VersionSet::AddLiveFiles(std::set<uint64_t>* live) {
   }
 }
 
-static int64_t TotalFileSize(const std::vector<FileMetaData*>& files) {
-  int64_t sum = 0;
-  for (int i = 0; i < files.size(); i++) {
-    sum += files[i]->file_size;
-  }
-  return sum;
+int64_t VersionSet::NumLevelBytes(int level) const {
+  assert(level >= 0);
+  assert(level < config::kNumLevels);
+  return TotalFileSize(current_->files_[level]);
 }
 
 int64_t VersionSet::MaxNextLevelOverlappingBytes() {

@@ -24,12 +24,6 @@
 
 namespace leveldb {
 
-// Grouping of constants.  We may want to make some of these
-// parameters set via options.
-namespace config {
-static const int kNumLevels = 7;
-}
-
 namespace log { class Writer; }
 
 class Compaction;
@@ -107,7 +101,7 @@ class VersionSet {
   Status LogAndApply(VersionEdit* edit, MemTable* cleanup_mem);
 
   // Recover the last saved descriptor from persistent storage.
-  Status Recover(uint64_t* log_number, SequenceNumber* last_sequence);
+  Status Recover();
 
   // Save current contents to *log
   Status WriteSnapshot(log::Writer* log);
@@ -123,6 +117,25 @@ class VersionSet {
 
   // Return the number of Table files at the specified level.
   int NumLevelFiles(int level) const;
+
+  // Return the combined file size of all files at the specified level.
+  int64_t NumLevelBytes(int level) const;
+
+  // Return the last sequence number.
+  uint64_t LastSequence() const { return last_sequence_; }
+
+  // Set the last sequence number to s.
+  void SetLastSequence(uint64_t s) {
+    assert(s >= last_sequence_);
+    last_sequence_ = s;
+  }
+
+  // Return the current log file number.
+  uint64_t LogNumber() const { return log_number_; }
+
+  // Return the log file number for the log file that is currently
+  // being compacted, or zero if there is no such log file.
+  uint64_t PrevLogNumber() const { return prev_log_number_; }
 
   // Pick level and inputs for a new compaction.
   // Returns NULL if there is no compaction to be done.
@@ -168,9 +181,8 @@ class VersionSet {
 
   // Cleanup the large value reference state by eliminating any
   // references from files that are not includes in either "live_tables"
-  // or "log_file".
-  void CleanupLargeValueRefs(const std::set<uint64_t>& live_tables,
-                             uint64_t log_file_num);
+  // or the current log.
+  void CleanupLargeValueRefs(const std::set<uint64_t>& live_tables);
 
   // Returns true if a large value with the given reference is live.
   bool LargeValueIsLive(const LargeValueRef& large_ref);
@@ -213,6 +225,9 @@ class VersionSet {
   const InternalKeyComparator icmp_;
   uint64_t next_file_number_;
   uint64_t manifest_file_number_;
+  uint64_t last_sequence_;
+  uint64_t log_number_;
+  uint64_t prev_log_number_;  // 0 or backing store for memtable being compacted
 
   // Opened lazily
   WritableFile* descriptor_file_;

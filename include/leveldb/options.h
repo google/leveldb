@@ -69,15 +69,14 @@ struct Options {
   // -------------------
   // Parameters that affect performance
 
-  // Amount of data to build up in memory before converting to an
-  // on-disk file.
+  // Amount of data to build up in memory (backed by an unsorted log
+  // on disk) before converting to a sorted on-disk file.
   //
-  // Some DB operations may encounter a delay proportional to the size
-  // of this parameter.  Therefore we recommend against increasing
-  // this parameter unless you are willing to live with an occasional
-  // slow operation in exchange for faster bulk loading throughput.
+  // Larger values increase performance, especially during bulk loads.
+  // Up to two write buffers may be held in memory at the same time,
+  // so you may wish to adjust this parameter to control memory usage.
   //
-  // Default: 1MB
+  // Default: 4MB
   size_t write_buffer_size;
 
   // Number of open files that can be used by the DB.  You may need to
@@ -100,7 +99,8 @@ struct Options {
   // Control over blocks (user data is stored in a set of blocks, and
   // a block is the unit of reading from disk).
 
-  // Use the specified cache for blocks (if non-NULL).
+  // If non-NULL, use the specified cache for blocks.
+  // If NULL, leveldb will automatically create and use an 8MB internal cache.
   // Default: NULL
   Cache* block_cache;
 
@@ -109,7 +109,7 @@ struct Options {
   // actual size of the unit read from disk may be smaller if
   // compression is enabled.  This parameter can be changed dynamically.
   //
-  // Default: 8K
+  // Default: 4K
   int block_size;
 
   // Number of keys between restart points for delta encoding of keys.
@@ -177,7 +177,12 @@ struct WriteOptions {
   // crashes (i.e., the machine does not reboot), no writes will be
   // lost even if sync==false.
   //
-  // Default: true
+  // In other words, a DB write with sync==false has similar
+  // crash semantics as the "write()" system call.  A DB write
+  // with sync==true has similar crash semantics to a "write()"
+  // system call followed by "fsync()".
+  //
+  // Default: false
   bool sync;
 
   // If "post_write_snapshot" is non-NULL, and the write succeeds,
@@ -193,7 +198,7 @@ struct WriteOptions {
   const Snapshot** post_write_snapshot;
 
   WriteOptions()
-      : sync(true),
+      : sync(false),
         post_write_snapshot(NULL) {
   }
 };

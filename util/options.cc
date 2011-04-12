@@ -16,11 +16,11 @@ Options::Options()
       paranoid_checks(false),
       env(Env::Default()),
       info_log(NULL),
-      write_buffer_size(1<<20),
+      write_buffer_size(4<<20),
       max_open_files(1000),
       large_value_threshold(65536),
       block_cache(NULL),
-      block_size(8192),
+      block_size(4096),
       block_restart_interval(16),
       compression(kSnappyCompression) {
 }

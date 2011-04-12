@@ -15,6 +15,20 @@
 #include <string>
 #include <cctype>
 
+// Collapse the plethora of ARM flavors available to an easier to manage set
+// Defs reference is at https://wiki.edubuntu.org/ARM/Thumb2PortingHowto
+#if defined(__ARM_ARCH_6__) || \
+    defined(__ARM_ARCH_6J__) || \
+    defined(__ARM_ARCH_6K__) || \
+    defined(__ARM_ARCH_6Z__) || \
+    defined(__ARM_ARCH_6T2__) || \
+    defined(__ARM_ARCH_6ZK__) || \
+    defined(__ARM_ARCH_7__) || \
+    defined(__ARM_ARCH_7R__) || \
+    defined(__ARM_ARCH_7A__)
+#define ARMV6_OR_7 1
+#endif
+
 extern "C" {
   size_t fread_unlocked(void *a, size_t b, size_t c, FILE *d);
   size_t fwrite_unlocked(const void *a, size_t b, size_t c, FILE *d);
@@ -61,28 +75,50 @@ class CondVar {
   pthread_cond_t cv_;
 };
 
+#ifndef ARMV6_OR_7
+// On ARM chipsets <V6, 0xffff0fa0 is the hard coded address of a 
+// memory barrier function provided by the kernel.
+typedef void (*LinuxKernelMemoryBarrierFunc)(void);
+LinuxKernelMemoryBarrierFunc pLinuxKernelMemoryBarrier ATTRIBUTE_WEAK =
+    (LinuxKernelMemoryBarrierFunc) 0xffff0fa0;
+#endif
+
 // Storage for a lock-free pointer
 class AtomicPointer {
  private:
-  std::atomic<void*> rep_;
+  void* rep_;
+
+  inline void MemoryBarrier() const {
+    // TODO(gabor): This only works on Android instruction sets >= V6
+#ifdef ARMV6_OR_7
+    __asm__ __volatile__("dmb" : : : "memory");
+#else
+    pLinuxKernelMemoryBarrier();
+#endif
+  }
+
  public:
   AtomicPointer() { }
   explicit AtomicPointer(void* v) : rep_(v) { }
   inline void* Acquire_Load() const {
-    return rep_.load(std::memory_order_acquire);
+    void* r = rep_;
+    MemoryBarrier();
+    return r;
   }
   inline void Release_Store(void* v) {
-    rep_.store(v, std::memory_order_release);
+    MemoryBarrier();
+    rep_ = v;
   }
   inline void* NoBarrier_Load() const {
-    return rep_.load(std::memory_order_relaxed);
+    void* r = rep_;
+    return r;
   }
   inline void NoBarrier_Store(void* v) {
-    rep_.store(v, std::memory_order_relaxed);
+    rep_ = v;
   }
 };
 
-// TODO(gabor): Implement actual compress
+// TODO(gabor): Implement compress
 inline bool Snappy_Compress(
     const char* input,
     size_t input_length,
@@ -90,7 +126,7 @@ inline bool Snappy_Compress(
   return false;
 }
 
-// TODO(gabor): Implement actual uncompress
+// TODO(gabor): Implement uncompress
 inline bool Snappy_Uncompress(
     const char* input_data,
     size_t input_length,

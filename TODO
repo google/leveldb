@@ -1,11 +1,3 @@
-Before adding to chrome
------------------------
-- multi-threaded test/benchmark
-- Allow missing crc32c in Table format?
-
-Maybe afterwards
-----------------
-
 ss
 - Stats
 

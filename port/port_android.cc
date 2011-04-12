@@ -24,7 +24,6 @@ int fdatasync(int fd) {
 }
 }
 
-// TODO(gabor): This is copied from port_posix.cc - not sure if I should do this?
 namespace leveldb {
 namespace port {
 

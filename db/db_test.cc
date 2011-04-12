@@ -72,19 +72,11 @@ class DBTest {
   }
 
   Status Put(const std::string& k, const std::string& v) {
-    WriteOptions options;
-    options.sync = false;
-    WriteBatch batch;
-    batch.Put(k, v);
-    return db_->Write(options, &batch);
+    return db_->Put(WriteOptions(), k, v);
   }
 
   Status Delete(const std::string& k) {
-    WriteOptions options;
-    options.sync = false;
-    WriteBatch batch;
-    batch.Delete(k);
-    return db_->Write(options, &batch);
+    return db_->Delete(WriteOptions(), k);
   }
 
   std::string Get(const std::string& k, const Snapshot* snapshot = NULL) {
@@ -147,11 +139,11 @@ class DBTest {
   }
 
   int NumTableFilesAtLevel(int level) {
-    uint64_t val;
+    std::string property;
     ASSERT_TRUE(
         db_->GetProperty("leveldb.num-files-at-level" + NumberToString(level),
-                         &val));
-    return val;
+                         &property));
+    return atoi(property.c_str());
   }
 
   uint64_t Size(const Slice& start, const Slice& limit) {
@@ -185,10 +177,7 @@ class DBTest {
     dbfull()->TEST_CompactMemTable();
     int max_level_with_files = 1;
     for (int level = 1; level < config::kNumLevels; level++) {
-      uint64_t v;
-      char name[100];
-      snprintf(name, sizeof(name), "leveldb.num-files-at-level%d", level);
-      if (dbfull()->GetProperty(name, &v) && v > 0) {
+      if (NumTableFilesAtLevel(level) > 0) {
         max_level_with_files = level;
       }
     }
@@ -459,7 +448,7 @@ TEST(DBTest, MinorCompactionsHappen) {
   options.write_buffer_size = 10000;
   Reopen(&options);
 
-  const int N = 100;
+  const int N = 500;
 
   int starting_num_tables = NumTableFilesAtLevel(0);
   for (int i = 0; i < N; i++) {
@@ -1047,7 +1036,7 @@ class ModelDB: public DB {
     return Status::OK();
   }
 
-  virtual bool GetProperty(const Slice& property, uint64_t* value) {
+  virtual bool GetProperty(const Slice& property, std::string* value) {
     return false;
   }
   virtual void GetApproximateSizes(const Range* r, int n, uint64_t* sizes) {

@@ -15,6 +15,12 @@
 
 namespace leveldb {
 
+// Grouping of constants.  We may want to make some of these
+// parameters set via options.
+namespace config {
+static const int kNumLevels = 7;
+}
+
 class InternalKey;
 
 // Value types encoded as the last component of internal keys.

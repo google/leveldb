@@ -20,15 +20,18 @@ enum Tag {
   kDeletedFile          = 6,
   kNewFile              = 7,
   kLargeValueRef        = 8,
+  kPrevLogNumber        = 9,
 };
 
 void VersionEdit::Clear() {
   comparator_.clear();
   log_number_ = 0;
+  prev_log_number_ = 0;
   last_sequence_ = 0;
   next_file_number_ = 0;
   has_comparator_ = false;
   has_log_number_ = false;
+  has_prev_log_number_ = false;
   has_next_file_number_ = false;
   has_last_sequence_ = false;
   deleted_files_.clear();
@@ -44,6 +47,10 @@ void VersionEdit::EncodeTo(std::string* dst) const {
   if (has_log_number_) {
     PutVarint32(dst, kLogNumber);
     PutVarint64(dst, log_number_);
+  }
+  if (has_prev_log_number_) {
+    PutVarint32(dst, kPrevLogNumber);
+    PutVarint64(dst, prev_log_number_);
   }
   if (has_next_file_number_) {
     PutVarint32(dst, kNextFileNumber);
@@ -142,6 +149,14 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         }
         break;
 
+      case kPrevLogNumber:
+        if (GetVarint64(&input, &prev_log_number_)) {
+          has_prev_log_number_ = true;
+        } else {
+          msg = "previous log number";
+        }
+        break;
+
       case kNextFileNumber:
         if (GetVarint64(&input, &next_file_number_)) {
           has_next_file_number_ = true;
@@ -227,6 +242,10 @@ std::string VersionEdit::DebugString() const {
   if (has_log_number_) {
     r.append("\n  LogNumber: ");
     AppendNumberTo(&r, log_number_);
+  }
+  if (has_prev_log_number_) {
+    r.append("\n  PrevLogNumber: ");
+    AppendNumberTo(&r, prev_log_number_);
   }
   if (has_next_file_number_) {
     r.append("\n  NextFile: ");

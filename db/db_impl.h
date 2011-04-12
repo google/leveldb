@@ -36,7 +36,7 @@ class DBImpl : public DB {
   virtual Iterator* NewIterator(const ReadOptions&);
   virtual const Snapshot* GetSnapshot();
   virtual void ReleaseSnapshot(const Snapshot* snapshot);
-  virtual bool GetProperty(const Slice& property, uint64_t* value);
+  virtual bool GetProperty(const Slice& property, std::string* value);
   virtual void GetApproximateSizes(const Range* range, int n, uint64_t* sizes);
 
   // Extra methods (for testing) that are not in the public DB interface
@@ -72,14 +72,6 @@ class DBImpl : public DB {
   // be made to the descriptor are added to *edit.
   Status Recover(VersionEdit* edit);
 
-  // Apply the specified updates and save the resulting descriptor to
-  // persistent storage.  If cleanup_mem is non-NULL, arrange to
-  // delete it when all existing snapshots have gone away iff Install()
-  // returns OK.
-  Status Install(VersionEdit* edit,
-                 uint64_t new_log_number,
-                 MemTable* cleanup_mem);
-
   void MaybeIgnoreError(Status* s) const;
 
   // Delete any unneeded files and stale in-memory entries.
@@ -99,6 +91,7 @@ class DBImpl : public DB {
 
   Status WriteLevel0Table(MemTable* mem, VersionEdit* edit);
 
+  Status MakeRoomForWrite(bool force /* compact even if there is room? */);
   bool HasLargeValues(const WriteBatch& batch) const;
 
   // Process data in "*updates" and return a status.  "assigned_seq"
@@ -141,6 +134,7 @@ class DBImpl : public DB {
   const InternalKeyComparator internal_comparator_;
   const Options options_;  // options_.comparator == &internal_comparator_
   bool owns_info_log_;
+  bool owns_cache_;
   const std::string dbname_;
 
   // table_cache_ provides its own synchronization
@@ -152,13 +146,13 @@ class DBImpl : public DB {
   // State below is protected by mutex_
   port::Mutex mutex_;
   port::AtomicPointer shutting_down_;
-  port::CondVar bg_cv_;         // Signalled when !bg_compaction_scheduled_
+  port::CondVar bg_cv_;          // Signalled when !bg_compaction_scheduled_
   port::CondVar compacting_cv_;  // Signalled when !compacting_
-  SequenceNumber last_sequence_;
   MemTable* mem_;
+  MemTable* imm_;                // Memtable being compacted
+  port::AtomicPointer has_imm_;  // So bg thread can detect non-NULL imm_
   WritableFile* logfile_;
   log::Writer* log_;
-  uint64_t log_number_;
   SnapshotList snapshots_;
 
   // Set of table files to protect from deletion because they are
@@ -175,6 +169,23 @@ class DBImpl : public DB {
 
   // Have we encountered a background error in paranoid mode?
   Status bg_error_;
+
+  // Per level compaction stats.  stats_[level] stores the stats for
+  // compactions that produced data for the specified "level".
+  struct CompactionStats {
+    int64_t micros;
+    int64_t bytes_read;
+    int64_t bytes_written;
+
+    CompactionStats() : micros(0), bytes_read(0), bytes_written(0) { }
+
+    void Add(const CompactionStats& c) {
+      this->micros += c.micros;
+      this->bytes_read += c.bytes_read;
+      this->bytes_written += c.bytes_written;
+    }
+  };
+  CompactionStats stats_[config::kNumLevels];
 
   // No copying allowed
   DBImpl(const DBImpl&);

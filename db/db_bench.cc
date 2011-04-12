@@ -31,11 +31,8 @@
 //      sha1          -- repeated SHA1 computation over 4K of data
 //   Meta operations:
 //      compact     -- Compact the entire DB
+//      stats       -- Print DB stats
 //      heapprofile -- Dump a heap profile (if supported by this port)
-//      sync        -- switch to synchronous writes (not the default)
-//      nosync      -- switch to asynchronous writes (the default)
-//      tenth       -- divide N by 10 (i.e., following benchmarks are smaller)
-//      normal      -- reset N back to its normal value (1000000)
 static const char* FLAGS_benchmarks =
     "fillseq,"
     "fillsync,"
@@ -51,7 +48,9 @@ static const char* FLAGS_benchmarks =
     "readreverse,"
     "fill100K,"
     "crc32c,"
-    "sha1"
+    "sha1,"
+    "snappycomp,"
+    "snappyuncomp,"
     ;
 
 // Number of key/values to place in database
@@ -68,7 +67,12 @@ static double FLAGS_compression_ratio = 0.5;
 static bool FLAGS_histogram = false;
 
 // Number of bytes to buffer in memtable before compacting
-static int FLAGS_write_buffer_size = 1 << 20;
+// (initialized to default value by "main")
+static int FLAGS_write_buffer_size = 0;
+
+// Number of bytes to use as a cache of uncompressed data.
+// Negative means use default settings.
+static int FLAGS_cache_size = -1;
 
 namespace leveldb {
 
@@ -129,6 +133,7 @@ class Benchmark {
   double last_op_finish_;
   int64_t bytes_;
   std::string message_;
+  std::string post_message_;
   Histogram hist_;
   RandomGenerator gen_;
   Random rand_;
@@ -146,7 +151,8 @@ class Benchmark {
             static_cast<int>(FLAGS_value_size * FLAGS_compression_ratio + 0.5));
     fprintf(stdout, "Entries:    %d\n", num_);
     fprintf(stdout, "RawSize:    %.1f MB (estimated)\n",
-            (((kKeySize + FLAGS_value_size) * num_) / 1048576.0));
+            ((static_cast<int64_t>(kKeySize + FLAGS_value_size) * num_)
+             / 1048576.0));
     fprintf(stdout, "FileSize:   %.1f MB (estimated)\n",
             (((kKeySize + FLAGS_value_size * FLAGS_compression_ratio) * num_)
              / 1048576.0));
@@ -164,6 +170,15 @@ class Benchmark {
     fprintf(stdout,
             "WARNING: Assertions are enabled; benchmarks unnecessarily slow\n");
 #endif
+
+    // See if snappy is working by attempting to compress a compressible string
+    const char text[] = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
+    std::string compressed;
+    if (!port::Snappy_Compress(text, sizeof(text), &compressed)) {
+      fprintf(stdout, "WARNING: Snappy compression is not enabled\n");
+    } else if (compressed.size() >= sizeof(text)) {
+      fprintf(stdout, "WARNING: Snappy compression is not effective\n");
+    }
   }
 
   void PrintEnvironment() {
@@ -225,15 +240,13 @@ class Benchmark {
 
     done_++;
     if (done_ >= next_report_) {
-      if (next_report_ < 1000) {
-        next_report_ += 100;
-      } else if (next_report_ < 10000) {
-        next_report_ += 1000;
-      } else if (next_report_ < 100000) {
-        next_report_ += 10000;
-      } else {
-        next_report_ += 100000;
-      }
+      if      (next_report_ < 1000)   next_report_ += 100;
+      else if (next_report_ < 5000)   next_report_ += 500;
+      else if (next_report_ < 10000)  next_report_ += 1000;
+      else if (next_report_ < 50000)  next_report_ += 5000;
+      else if (next_report_ < 100000) next_report_ += 10000;
+      else if (next_report_ < 500000) next_report_ += 50000;
+      else                            next_report_ += 100000;
       fprintf(stderr, "... finished %d ops%30s\r", done_, "");
       fflush(stderr);
     }
@@ -248,7 +261,7 @@ class Benchmark {
 
     if (bytes_ > 0) {
       char rate[100];
-      snprintf(rate, sizeof(rate), "%5.1f MB/s",
+      snprintf(rate, sizeof(rate), "%6.1f MB/s",
                (bytes_ / 1048576.0) / (finish - start_));
       if (!message_.empty()) {
         message_  = std::string(rate) + " " + message_;
@@ -266,6 +279,11 @@ class Benchmark {
       fprintf(stdout, "Microseconds per op:\n%s\n", hist_.ToString().c_str());
     }
     fflush(stdout);
+
+    if (!post_message_.empty()) {
+      fprintf(stdout, "\n%s\n", post_message_.c_str());
+      post_message_.clear();
+    }
   }
 
  public:
@@ -278,12 +296,13 @@ class Benchmark {
     EXISTING
   };
 
-  Benchmark() : cache_(NewLRUCache(200<<20)),
-                db_(NULL),
-                num_(FLAGS_num),
-                heap_counter_(0),
-                bytes_(0),
-                rand_(301) {
+  Benchmark()
+  : cache_(FLAGS_cache_size >= 0 ? NewLRUCache(FLAGS_cache_size) : NULL),
+    db_(NULL),
+    num_(FLAGS_num),
+    heap_counter_(0),
+    bytes_(0),
+    rand_(301) {
     std::vector<std::string> files;
     Env::Default()->GetChildren("/tmp/dbbench", &files);
     for (int i = 0; i < files.size(); i++) {
@@ -318,36 +337,54 @@ class Benchmark {
       Start();
 
       WriteOptions write_options;
-      write_options.sync = false;
+      bool known = true;
       if (name == Slice("fillseq")) {
-        Write(write_options, SEQUENTIAL, FRESH, num_, FLAGS_value_size);
+        Write(write_options, SEQUENTIAL, FRESH, num_, FLAGS_value_size, 1);
+      } else if (name == Slice("fillbatch")) {
+        Write(write_options, SEQUENTIAL, FRESH, num_, FLAGS_value_size, 1000);
       } else if (name == Slice("fillrandom")) {
-        Write(write_options, RANDOM, FRESH, num_, FLAGS_value_size);
+        Write(write_options, RANDOM, FRESH, num_, FLAGS_value_size, 1);
       } else if (name == Slice("overwrite")) {
-        Write(write_options, RANDOM, EXISTING, num_, FLAGS_value_size);
+        Write(write_options, RANDOM, EXISTING, num_, FLAGS_value_size, 1);
       } else if (name == Slice("fillsync")) {
         write_options.sync = true;
-        Write(write_options, RANDOM, FRESH, num_ / 100, FLAGS_value_size);
+        Write(write_options, RANDOM, FRESH, num_ / 100, FLAGS_value_size, 1);
       } else if (name == Slice("fill100K")) {
-        Write(write_options, RANDOM, FRESH, num_ / 1000, 100 * 1000);
+        Write(write_options, RANDOM, FRESH, num_ / 1000, 100 * 1000, 1);
       } else if (name == Slice("readseq")) {
         ReadSequential();
       } else if (name == Slice("readreverse")) {
         ReadReverse();
       } else if (name == Slice("readrandom")) {
         ReadRandom();
+      } else if (name == Slice("readrandomsmall")) {
+        int n = num_;
+        num_ /= 1000;
+        ReadRandom();
+        num_ = n;
       } else if (name == Slice("compact")) {
         Compact();
       } else if (name == Slice("crc32c")) {
         Crc32c(4096, "(4K per op)");
       } else if (name == Slice("sha1")) {
         SHA1(4096, "(4K per op)");
+      } else if (name == Slice("snappycomp")) {
+        SnappyCompress();
+      } else if (name == Slice("snappyuncomp")) {
+        SnappyUncompress();
       } else if (name == Slice("heapprofile")) {
         HeapProfile();
+      } else if (name == Slice("stats")) {
+        PrintStats();
       } else {
-        fprintf(stderr, "unknown benchmark '%s'\n", name.ToString().c_str());
+        known = false;
+        if (name != Slice()) {  // No error message for empty name
+          fprintf(stderr, "unknown benchmark '%s'\n", name.ToString().c_str());
+        }
       }
-      Stop(name);
+      if (known) {
+        Stop(name);
+      }
     }
   }
 
@@ -387,11 +424,54 @@ class Benchmark {
     message_ = label;
   }
 
+  void SnappyCompress() {
+    Slice input = gen_.Generate(Options().block_size);
+    int64_t bytes = 0;
+    int64_t produced = 0;
+    bool ok = true;
+    std::string compressed;
+    while (ok && bytes < 1024 * 1048576) {  // Compress 1G
+      ok = port::Snappy_Compress(input.data(), input.size(), &compressed);
+      produced += compressed.size();
+      bytes += input.size();
+      FinishedSingleOp();
+    }
+
+    if (!ok) {
+      message_ = "(snappy failure)";
+    } else {
+      char buf[100];
+      snprintf(buf, sizeof(buf), "(output: %.1f%%)",
+               (produced * 100.0) / bytes);
+      message_ = buf;
+      bytes_ = bytes;
+    }
+  }
+
+  void SnappyUncompress() {
+    Slice input = gen_.Generate(Options().block_size);
+    std::string compressed;
+    bool ok = port::Snappy_Compress(input.data(), input.size(), &compressed);
+    int64_t bytes = 0;
+    std::string uncompressed;
+    while (ok && bytes < 1024 * 1048576) {  // Compress 1G
+      ok =  port::Snappy_Uncompress(compressed.data(), compressed.size(),
+                                    &uncompressed);
+      bytes += uncompressed.size();
+      FinishedSingleOp();
+    }
+
+    if (!ok) {
+      message_ = "(snappy failure)";
+    } else {
+      bytes_ = bytes;
+    }
+  }
+
   void Open() {
     assert(db_ == NULL);
     Options options;
     options.create_if_missing = true;
-    options.max_open_files = 10000;
     options.block_cache = cache_;
     options.write_buffer_size = FLAGS_write_buffer_size;
     Status s = DB::Open(options, "/tmp/dbbench", &db_);
@@ -402,7 +482,7 @@ class Benchmark {
   }
 
   void Write(const WriteOptions& options, Order order, DBState state,
-             int num_entries, int value_size) {
+             int num_entries, int value_size, int entries_per_batch) {
     if (state == FRESH) {
       delete db_;
       db_ = NULL;
@@ -420,19 +500,21 @@ class Benchmark {
     WriteBatch batch;
     Status s;
     std::string val;
-    for (int i = 0; i < num_entries; i++) {
-      const int k = (order == SEQUENTIAL) ? i : (rand_.Next() % FLAGS_num);
-      char key[100];
-      snprintf(key, sizeof(key), "%016d", k);
+    for (int i = 0; i < num_entries; i += entries_per_batch) {
       batch.Clear();
-      batch.Put(key, gen_.Generate(value_size));
+      for (int j = 0; j < entries_per_batch; j++) {
+        const int k = (order == SEQUENTIAL) ? i+j : (rand_.Next() % FLAGS_num);
+        char key[100];
+        snprintf(key, sizeof(key), "%016d", k);
+        batch.Put(key, gen_.Generate(value_size));
+        bytes_ += value_size + strlen(key);
+        FinishedSingleOp();
+      }
       s = db_->Write(options, &batch);
-      bytes_ += value_size + strlen(key);
       if (!s.ok()) {
         fprintf(stderr, "put error: %s\n", s.ToString().c_str());
         exit(1);
       }
-      FinishedSingleOp();
     }
   }
 
@@ -475,15 +557,24 @@ class Benchmark {
     dbi->TEST_CompactMemTable();
     int max_level_with_files = 1;
     for (int level = 1; level < config::kNumLevels; level++) {
-      uint64_t v;
+      std::string property;
       char name[100];
       snprintf(name, sizeof(name), "leveldb.num-files-at-level%d", level);
-      if (db_->GetProperty(name, &v) && v > 0) {
+      if (db_->GetProperty(name, &property) && atoi(property.c_str()) > 0) {
         max_level_with_files = level;
       }
     }
     for (int level = 0; level < max_level_with_files; level++) {
       dbi->TEST_CompactRange(level, "", "~");
+    }
+  }
+
+  void PrintStats() {
+    std::string stats;
+    if (!db_->GetProperty("leveldb.stats", &stats)) {
+      message_ = "(failed)";
+    } else {
+      post_message_ = stats;
     }
   }
 
@@ -512,6 +603,7 @@ class Benchmark {
 }
 
 int main(int argc, char** argv) {
+  FLAGS_write_buffer_size = leveldb::Options().write_buffer_size;
   for (int i = 1; i < argc; i++) {
     double d;
     int n;
@@ -529,7 +621,9 @@ int main(int argc, char** argv) {
       FLAGS_value_size = n;
     } else if (sscanf(argv[i], "--write_buffer_size=%d%c", &n, &junk) == 1) {
       FLAGS_write_buffer_size = n;
-    }  else {
+    } else if (sscanf(argv[i], "--cache_size=%d%c", &n, &junk) == 1) {
+      FLAGS_cache_size = n;
+    } else {
       fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
       exit(1);
     }

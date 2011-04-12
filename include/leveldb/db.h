@@ -13,7 +13,7 @@
 namespace leveldb {
 
 static const int kMajorVersion = 1;
-static const int kMinorVersion = 0;
+static const int kMinorVersion = 1;
 
 struct Options;
 struct ReadOptions;
@@ -49,7 +49,7 @@ class DB {
 
   // Set the database entry for "key" to "value".  Returns OK on success,
   // and a non-OK status on error.
-  // Note: consider setting options.sync = false.
+  // Note: consider setting options.sync = true.
   virtual Status Put(const WriteOptions& options,
                      const Slice& key,
                      const Slice& value) = 0;
@@ -57,12 +57,12 @@ class DB {
   // Remove the database entry (if any) for "key".  Returns OK on
   // success, and a non-OK status on error.  It is not an error if "key"
   // did not exist in the database.
-  // Note: consider setting options.sync = false.
+  // Note: consider setting options.sync = true.
   virtual Status Delete(const WriteOptions& options, const Slice& key) = 0;
 
   // Apply the specified updates to the database.
   // Returns OK on success, non-OK on failure.
-  // Note: consider setting options.sync = false.
+  // Note: consider setting options.sync = true.
   virtual Status Write(const WriteOptions& options, WriteBatch* updates) = 0;
 
   // If the database contains an entry for "key" store the
@@ -103,7 +103,9 @@ class DB {
   //
   //  "leveldb.num-files-at-level<N>" - return the number of files at level <N>,
   //     where <N> is an ASCII representation of a level number (e.g. "0").
-  virtual bool GetProperty(const Slice& property, uint64_t* value) = 0;
+  //  "leveldb.stats" - returns a multi-line string that describes statistics
+  //     about the internal operation of the DB.
+  virtual bool GetProperty(const Slice& property, std::string* value) = 0;
 
   // For each i in [0,n-1], store in "sizes[i]", the approximate
   // file system space used by keys in "[range[i].start .. range[i].limit)".
