@@ -1,0 +1,14 @@
+ss
+- Stats
+
+db
+- Maybe implement DB::BulkDeleteForRange(start_key, end_key)
+  that would blow away files whose ranges are entirely contained
+  within [start_key..end_key]?  For Chrome, deletion of obsolete
+  object stores, etc. can be done in the background anyway, so
+  probably not that important.
+
+api changes:
+- Make it wrappable
+
+Faster Get implementation
