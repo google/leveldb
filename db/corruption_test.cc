@@ -121,11 +121,10 @@ class CorruptionTest {
     std::vector<std::string> filenames;
     ASSERT_OK(env_.GetChildren(dbname_, &filenames));
     uint64_t number;
-    LargeValueRef large_ref;
     FileType type;
     std::vector<std::string> candidates;
     for (int i = 0; i < filenames.size(); i++) {
-      if (ParseFileName(filenames[i], &number, &large_ref, &type) &&
+      if (ParseFileName(filenames[i], &number, &type) &&
           type == filetype) {
         candidates.push_back(dbname_ + "/" + filenames[i]);
       }
@@ -274,29 +273,6 @@ TEST(CorruptionTest, SequenceNumberRecovery) {
   Reopen();
   ASSERT_OK(db_->Get(ReadOptions(), "foo", &v));
   ASSERT_EQ("v6", v);
-}
-
-TEST(CorruptionTest, LargeValueRecovery) {
-  Options options;
-  options.large_value_threshold = 10000;
-  Reopen(&options);
-
-  Random rnd(301);
-  std::string big;
-  ASSERT_OK(db_->Put(WriteOptions(),
-                     "foo", test::RandomString(&rnd, 100000, &big)));
-  std::string v;
-  ASSERT_OK(db_->Get(ReadOptions(), "foo", &v));
-  ASSERT_EQ(big, v);
-
-  RepairDB();
-  Reopen();
-  ASSERT_OK(db_->Get(ReadOptions(), "foo", &v));
-  ASSERT_EQ(big, v);
-
-  Reopen();
-  ASSERT_OK(db_->Get(ReadOptions(), "foo", &v));
-  ASSERT_EQ(big, v);
 }
 
 TEST(CorruptionTest, CorruptedDescriptor) {

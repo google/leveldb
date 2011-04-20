@@ -75,18 +75,6 @@ class VersionEdit {
     deleted_files_.insert(std::make_pair(level, file));
   }
 
-  // Record that a large value with the specified large_ref was
-  // written to the output file numbered "fnum"
-  void AddLargeValueRef(const LargeValueRef& large_ref,
-                        uint64_t fnum,
-                        const Slice& internal_key) {
-    large_refs_added_.resize(large_refs_added_.size() + 1);
-    Large* large = &(large_refs_added_.back());
-    large->large_ref = large_ref;
-    large->fnum = fnum;
-    large->internal_key.DecodeFrom(internal_key);
-  }
-
   void EncodeTo(std::string* dst) const;
   Status DecodeFrom(const Slice& src);
 
@@ -111,12 +99,6 @@ class VersionEdit {
   std::vector< std::pair<int, InternalKey> > compact_pointers_;
   DeletedFileSet deleted_files_;
   std::vector< std::pair<int, FileMetaData> > new_files_;
-  struct Large {
-    LargeValueRef large_ref;
-    uint64_t fnum;
-    InternalKey internal_key;
-  };
-  std::vector<Large> large_refs_added_;
 };
 
 }

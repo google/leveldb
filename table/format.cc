@@ -36,7 +36,7 @@ void Footer::EncodeTo(std::string* dst) const {
   metaindex_handle_.EncodeTo(dst);
   index_handle_.EncodeTo(dst);
   dst->resize(2 * BlockHandle::kMaxEncodedLength);  // Padding
-  PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber));
+  PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber & 0xffffffffu));
   PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber >> 32));
   assert(dst->size() == original_size + kEncodedLength);
 }
@@ -71,7 +71,7 @@ Status ReadBlock(RandomAccessFile* file,
 
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
-  size_t n = handle.size();
+  size_t n = static_cast<size_t>(handle.size());
   char* buf = new char[n + kBlockTrailerSize];
   Slice contents;
   Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);

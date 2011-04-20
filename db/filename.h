@@ -16,13 +16,11 @@
 namespace leveldb {
 
 class Env;
-struct LargeValueRef;
 
 enum FileType {
   kLogFile,
   kDBLockFile,
   kTableFile,
-  kLargeValueFile,
   kDescriptorFile,
   kCurrentFile,
   kTempFile,
@@ -38,12 +36,6 @@ extern std::string LogFileName(const std::string& dbname, uint64_t number);
 // in the db named by "dbname".  The result will be prefixed with
 // "dbname".
 extern std::string TableFileName(const std::string& dbname, uint64_t number);
-
-// Return the name of the large value file with the specified large
-// value reference in the db named by "dbname".  The result will be
-// prefixed with "dbname".
-extern std::string LargeValueFileName(const std::string& dbname,
-                                      const LargeValueRef& large_ref);
 
 // Return the name of the descriptor file for the db named by
 // "dbname" and the specified incarnation number.  The result will be
@@ -71,14 +63,10 @@ extern std::string InfoLogFileName(const std::string& dbname);
 extern std::string OldInfoLogFileName(const std::string& dbname);
 
 // If filename is a leveldb file, store the type of the file in *type.
-// If *type is kLargeValueFile, then the large value reference data
-// from the filename is stored in "*large_ref.  For all other types of
-// files, the number encoded in the filename is stored in *number.  If
-// the filename was successfully parsed, returns true.  Else return
-// false.
+// The number encoded in the filename is stored in *number.  If the
+// filename was successfully parsed, returns true.  Else return false.
 extern bool ParseFileName(const std::string& filename,
                           uint64_t* number,
-                          LargeValueRef* large_ref,
                           FileType* type);
 
 // Make the CURRENT file point to the descriptor file with the

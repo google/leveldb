@@ -13,7 +13,6 @@
 #include "base/atomicops.h"
 #include "base/basictypes.h"
 #include "base/logging.h"
-#include "base/sha1.h"
 #include "base/synchronization/condition_variable.h"
 #include "base/synchronization/lock.h"
 
@@ -82,12 +81,6 @@ class AtomicPointer {
     ::base::subtle::NoBarrier_Store(&rep_, reinterpret_cast<Rep>(v));
   }
 };
-
-inline void SHA1_Hash(const char* data, size_t len, char* hash_array) {
-  return ::base::SHA1HashBytes(reinterpret_cast<const unsigned char*>(data),
-                               len,
-                               reinterpret_cast<unsigned char*>(hash_array));
-}
 
 bool Snappy_Compress(const char* input, size_t input_length,
                      std::string* output);

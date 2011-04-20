@@ -19,7 +19,7 @@ enum Tag {
   kCompactPointer       = 5,
   kDeletedFile          = 6,
   kNewFile              = 7,
-  kLargeValueRef        = 8,
+  // 8 was used for large value refs
   kPrevLogNumber        = 9,
 };
 
@@ -36,7 +36,6 @@ void VersionEdit::Clear() {
   has_last_sequence_ = false;
   deleted_files_.clear();
   new_files_.clear();
-  large_refs_added_.clear();
 }
 
 void VersionEdit::EncodeTo(std::string* dst) const {
@@ -61,7 +60,7 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     PutVarint64(dst, last_sequence_);
   }
 
-  for (int i = 0; i < compact_pointers_.size(); i++) {
+  for (size_t i = 0; i < compact_pointers_.size(); i++) {
     PutVarint32(dst, kCompactPointer);
     PutVarint32(dst, compact_pointers_[i].first);  // level
     PutLengthPrefixedSlice(dst, compact_pointers_[i].second.Encode());
@@ -75,7 +74,7 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     PutVarint64(dst, iter->second);  // file number
   }
 
-  for (int i = 0; i < new_files_.size(); i++) {
+  for (size_t i = 0; i < new_files_.size(); i++) {
     const FileMetaData& f = new_files_[i].second;
     PutVarint32(dst, kNewFile);
     PutVarint32(dst, new_files_[i].first);  // level
@@ -83,15 +82,6 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     PutVarint64(dst, f.file_size);
     PutLengthPrefixedSlice(dst, f.smallest.Encode());
     PutLengthPrefixedSlice(dst, f.largest.Encode());
-  }
-
-  for (int i = 0; i < large_refs_added_.size(); i++) {
-    const VersionEdit::Large& l = large_refs_added_[i];
-    PutVarint32(dst, kLargeValueRef);
-    PutLengthPrefixedSlice(dst,
-                           Slice(l.large_ref.data, LargeValueRef::ByteSize()));
-    PutVarint64(dst, l.fnum);
-    PutLengthPrefixedSlice(dst, l.internal_key.Encode());
   }
 }
 
@@ -127,7 +117,6 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
   uint64_t number;
   FileMetaData f;
   Slice str;
-  Large large;
   InternalKey key;
 
   while (msg == NULL && GetVarint32(&input, &tag)) {
@@ -203,18 +192,6 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         }
         break;
 
-      case kLargeValueRef:
-        if (GetLengthPrefixedSlice(&input, &str) &&
-            (str.size() == LargeValueRef::ByteSize()) &&
-            GetVarint64(&input, &large.fnum) &&
-            GetInternalKey(&input, &large.internal_key)) {
-          large.large_ref = LargeValueRef::FromRef(str);
-          large_refs_added_.push_back(large);
-        } else {
-          msg = "large ref";
-        }
-        break;
-
       default:
         msg = "unknown tag";
         break;
@@ -255,7 +232,7 @@ std::string VersionEdit::DebugString() const {
     r.append("\n  LastSeq: ");
     AppendNumberTo(&r, last_sequence_);
   }
-  for (int i = 0; i < compact_pointers_.size(); i++) {
+  for (size_t i = 0; i < compact_pointers_.size(); i++) {
     r.append("\n  CompactPointer: ");
     AppendNumberTo(&r, compact_pointers_[i].first);
     r.append(" '");
@@ -270,7 +247,7 @@ std::string VersionEdit::DebugString() const {
     r.append(" ");
     AppendNumberTo(&r, iter->second);
   }
-  for (int i = 0; i < new_files_.size(); i++) {
+  for (size_t i = 0; i < new_files_.size(); i++) {
     const FileMetaData& f = new_files_[i].second;
     r.append("\n  AddFile: ");
     AppendNumberTo(&r, new_files_[i].first);
@@ -282,16 +259,6 @@ std::string VersionEdit::DebugString() const {
     AppendEscapedStringTo(&r, f.smallest.Encode());
     r.append("' .. '");
     AppendEscapedStringTo(&r, f.largest.Encode());
-    r.append("'");
-  }
-  for (int i = 0; i < large_refs_added_.size(); i++) {
-    const VersionEdit::Large& l = large_refs_added_[i];
-    r.append("\n  LargeRef: ");
-    AppendNumberTo(&r, l.fnum);
-    r.append(" ");
-    r.append(LargeValueRefToFilenameString(l.large_ref));
-    r.append(" '");
-    AppendEscapedStringTo(&r, l.internal_key.Encode());
     r.append("'");
   }
   r.append("\n}\n");

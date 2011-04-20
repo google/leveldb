@@ -171,22 +171,6 @@ class VersionSet {
   // "key" as of version "v".
   uint64_t ApproximateOffsetOf(Version* v, const InternalKey& key);
 
-  // Register a reference to a large value with the specified
-  // large_ref from the specified file number.  Returns "true" if this
-  // is the first recorded reference to the "large_ref" value in the
-  // database, and false otherwise.
-  bool RegisterLargeValueRef(const LargeValueRef& large_ref,
-                             uint64_t filenum,
-                             const InternalKey& internal_key);
-
-  // Cleanup the large value reference state by eliminating any
-  // references from files that are not includes in either "live_tables"
-  // or the current log.
-  void CleanupLargeValueRefs(const std::set<uint64_t>& live_tables);
-
-  // Returns true if a large value with the given reference is live.
-  bool LargeValueIsLive(const LargeValueRef& large_ref);
-
  private:
   class Builder;
 
@@ -236,14 +220,6 @@ class VersionSet {
   // Versions are kept in a singly linked list that is never empty
   Version* current_;    // Pointer to the last (newest) list entry
   Version* oldest_;     // Pointer to the first (oldest) list entry
-
-  // Map from large value reference to the set of <file numbers,internal_key>
-  // values containing references to the value.  We keep the
-  // internal key as a std::string rather than as an InternalKey because
-  // we want to be able to easily use a set.
-  typedef std::set<std::pair<uint64_t, std::string> > LargeReferencesSet;
-  typedef std::map<LargeValueRef, LargeReferencesSet> LargeValueMap;
-  LargeValueMap large_value_refs_;
 
   // Per-level key at which the next compaction at that level should start.
   // Either an empty string, or a valid InternalKey.
@@ -313,7 +289,7 @@ class Compaction {
   // State used to check for number of of overlapping grandparent files
   // (parent == level_ + 1, grandparent == level_ + 2)
   std::vector<FileMetaData*> grandparents_;
-  int grandparent_index_;     // Index in grandparent_starts_
+  size_t grandparent_index_;  // Index in grandparent_starts_
   bool seen_key_;             // Some output key has been seen
   int64_t overlapped_bytes_;  // Bytes of overlap between current output
                               // and grandparent files
@@ -324,7 +300,7 @@ class Compaction {
   // is that we are positioned at one of the file ranges for each
   // higher level than the ones involved in this compaction (i.e. for
   // all L >= level_ + 2).
-  int level_ptrs_[config::kNumLevels];
+  size_t level_ptrs_[config::kNumLevels];
 };
 
 }

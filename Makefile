@@ -27,7 +27,6 @@ LIBOBJECTS = \
 	./db/version_set.o \
 	./db/write_batch.o \
 	./port/port_posix.o \
-	./port/sha1_portable.o \
 	./table/block.o \
 	./table/block_builder.o \
 	./table/format.o \
@@ -63,7 +62,6 @@ TESTS = \
 	env_test \
 	filename_test \
 	log_test \
-	sha1_test \
 	skiplist_test \
 	table_test \
 	version_edit_test \
@@ -114,9 +112,6 @@ log_test: db/log_test.o $(LIBOBJECTS) $(TESTHARNESS)
 
 table_test: table/table_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CC) $(LDFLAGS) table/table_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
-
-sha1_test: port/sha1_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) port/sha1_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 skiplist_test: db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CC) $(LDFLAGS) db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@

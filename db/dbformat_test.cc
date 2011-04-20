@@ -76,9 +76,6 @@ TEST(FormatTest, InternalKeyShortSeparator) {
   ASSERT_EQ(IKey("foo", 100, kTypeValue),
             Shorten(IKey("foo", 100, kTypeValue),
                     IKey("foo", 100, kTypeDeletion)));
-  ASSERT_EQ(IKey("foo", 100, kTypeValue),
-            Shorten(IKey("foo", 100, kTypeValue),
-                    IKey("foo", 100, kTypeLargeValueRef)));
 
   // When user keys are misordered
   ASSERT_EQ(IKey("foo", 100, kTypeValue),
@@ -106,18 +103,6 @@ TEST(FormatTest, InternalKeyShortestSuccessor) {
             ShortSuccessor(IKey("foo", 100, kTypeValue)));
   ASSERT_EQ(IKey("\xff\xff", 100, kTypeValue),
             ShortSuccessor(IKey("\xff\xff", 100, kTypeValue)));
-}
-
-TEST(FormatTest, SHA1) {
-  // Check that we are computing the same value as sha1.
-  // Note that the last two numbers are the length of the input and the
-  // compression type.
-  ASSERT_EQ("aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d-5-0",  // SHA1, uncompr
-            LargeValueRefToFilenameString(
-                LargeValueRef::Make("hello", kNoCompression)));
-  ASSERT_EQ("aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d-5-1",  // SHA1, lwcompr
-            LargeValueRefToFilenameString(
-                LargeValueRef::Make("hello", kSnappyCompression)));
 }
 
 }

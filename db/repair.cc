@@ -6,8 +6,7 @@
 // (1) Any log files are first converted to tables
 // (2) We scan every table to compute
 //     (a) smallest/largest for the table
-//     (b) large value refs from the table
-//     (c) largest sequence number in the table
+//     (b) largest sequence number in the table
 // (3) We generate descriptor contents:
 //      - log number is set to zero
 //      - next-file-number is set to 1 + largest file number we found
@@ -22,9 +21,8 @@
 //   (c) For each table: if it overlaps earlier table, place in level-0,
 //       else place in level-M.
 // Possible optimization 2:
-//   Store per-table metadata (smallest, largest, largest-seq#,
-//   large-value-refs, ...) in the table's meta section to speed up
-//   ScanTable.
+//   Store per-table metadata (smallest, largest, largest-seq#, ...)
+//   in the table's meta section to speed up ScanTable.
 
 #include "db/builder.h"
 #include "db/db_impl.h"
@@ -73,7 +71,7 @@ class Repairer {
     }
     if (status.ok()) {
       unsigned long long bytes = 0;
-      for (int i = 0; i < tables_.size(); i++) {
+      for (size_t i = 0; i < tables_.size(); i++) {
         bytes += tables_[i].meta.file_size;
       }
       Log(env_, options_.info_log,
@@ -119,13 +117,10 @@ class Repairer {
     }
 
     uint64_t number;
-    LargeValueRef large_ref;
     FileType type;
-    for (int i = 0; i < filenames.size(); i++) {
-      if (ParseFileName(filenames[i], &number, &large_ref, &type)) {
-        if (type == kLargeValueFile) {
-          // Will be picked up when we process a Table that points to it
-        } else if (type == kDescriptorFile) {
+    for (size_t i = 0; i < filenames.size(); i++) {
+      if (ParseFileName(filenames[i], &number, &type)) {
+        if (type == kDescriptorFile) {
           manifests_.push_back(filenames[i]);
         } else {
           if (number + 1 > next_file_number_) {
@@ -145,7 +140,7 @@ class Repairer {
   }
 
   void ConvertLogFilesToTables() {
-    for (int i = 0; i < logs_.size(); i++) {
+    for (size_t i = 0; i < logs_.size(); i++) {
       std::string logname = LogFileName(dbname_, logs_[i]);
       Status status = ConvertLogToTable(logs_[i]);
       if (!status.ok()) {
@@ -239,7 +234,7 @@ class Repairer {
 
   void ExtractMetaData() {
     std::vector<TableInfo> kept;
-    for (int i = 0; i < table_numbers_.size(); i++) {
+    for (size_t i = 0; i < table_numbers_.size(); i++) {
       TableInfo t;
       t.meta.number = table_numbers_[i];
       Status status = ScanTable(&t);
@@ -283,17 +278,6 @@ class Repairer {
         if (parsed.sequence > t->max_sequence) {
           t->max_sequence = parsed.sequence;
         }
-
-        if (ExtractValueType(key) == kTypeLargeValueRef) {
-          if (iter->value().size() != LargeValueRef::ByteSize()) {
-            Log(env_, options_.info_log, "Table #%llu: bad large value ref",
-                (unsigned long long) t->meta.number);
-          } else {
-            edit_.AddLargeValueRef(LargeValueRef::FromRef(iter->value()),
-                                   t->meta.number,
-                                   key);
-          }
-        }
       }
       if (!iter->status().ok()) {
         status = iter->status();
@@ -316,7 +300,7 @@ class Repairer {
     }
 
     SequenceNumber max_sequence = 0;
-    for (int i = 0; i < tables_.size(); i++) {
+    for (size_t i = 0; i < tables_.size(); i++) {
       if (max_sequence < tables_[i].max_sequence) {
         max_sequence = tables_[i].max_sequence;
       }
@@ -327,7 +311,7 @@ class Repairer {
     edit_.SetNextFile(next_file_number_);
     edit_.SetLastSequence(max_sequence);
 
-    for (int i = 0; i < tables_.size(); i++) {
+    for (size_t i = 0; i < tables_.size(); i++) {
       // TODO(opt): separate out into multiple levels
       const TableInfo& t = tables_[i];
       edit_.AddFile(0, t.meta.number, t.meta.file_size,
@@ -351,7 +335,7 @@ class Repairer {
       env_->DeleteFile(tmp);
     } else {
       // Discard older manifests
-      for (int i = 0; i < manifests_.size(); i++) {
+      for (size_t i = 0; i < manifests_.size(); i++) {
         ArchiveFile(dbname_ + "/" + manifests_[i]);
       }
 

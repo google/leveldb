@@ -92,29 +92,6 @@ class DBImpl : public DB {
   Status WriteLevel0Table(MemTable* mem, VersionEdit* edit);
 
   Status MakeRoomForWrite(bool force /* compact even if there is room? */);
-  bool HasLargeValues(const WriteBatch& batch) const;
-
-  // Process data in "*updates" and return a status.  "assigned_seq"
-  // is the sequence number assigned to the first mod in "*updates".
-  // If no large values are encountered, "*final" is set to "updates".
-  // If large values were encountered, registers the references of the
-  // large values with the VersionSet, writes the large values to
-  // files (if appropriate), and allocates a new WriteBatch with the
-  // large values replaced with indirect references and stores a
-  // pointer to the new WriteBatch in *final.  If *final != updates on
-  // return, then the client should delete *final when no longer
-  // needed.  Returns OK on success, and an appropriate error
-  // otherwise.
-  Status HandleLargeValues(SequenceNumber assigned_seq,
-                           WriteBatch* updates,
-                           WriteBatch** final);
-
-  // Helper routine for HandleLargeValues
-  void MaybeCompressLargeValue(
-      const Slice& raw_value,
-      Slice* file_bytes,
-      std::string* scratch,
-      LargeValueRef* ref);
 
   struct CompactionState;
 

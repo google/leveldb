@@ -51,7 +51,7 @@ class BytewiseComparatorImpl : public Comparator {
   virtual void FindShortSuccessor(std::string* key) const {
     // Find first character that can be incremented
     size_t n = key->size();
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
       const uint8_t byte = (*key)[i];
       if (byte != static_cast<uint8_t>(0xff)) {
         (*key)[i] = byte + 1;

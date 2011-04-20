@@ -8,7 +8,7 @@ db
   object stores, etc. can be done in the background anyway, so
   probably not that important.
 
-api changes?
-- Efficient large value reading and writing
+api changes:
+- Make it wrappable
 
 Faster Get implementation

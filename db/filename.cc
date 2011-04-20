@@ -30,14 +30,6 @@ std::string TableFileName(const std::string& name, uint64_t number) {
   return MakeFileName(name, number, "sst");
 }
 
-std::string LargeValueFileName(const std::string& name,
-                               const LargeValueRef& large_ref) {
-  std::string result = name + "/";
-  result += LargeValueRefToFilenameString(large_ref);
-  result += ".val";
-  return result;
-}
-
 std::string DescriptorFileName(const std::string& dbname, uint64_t number) {
   assert(number > 0);
   char buf[100];
@@ -75,11 +67,9 @@ std::string OldInfoLogFileName(const std::string& dbname) {
 //    dbname/LOG
 //    dbname/LOG.old
 //    dbname/MANIFEST-[0-9]+
-//    dbname/[0-9a-f]{20}-[0-9]+-[0-9]+.val
 //    dbname/[0-9]+.(log|sst)
 bool ParseFileName(const std::string& fname,
                    uint64_t* number,
-                   LargeValueRef* large_ref,
                    FileType* type) {
   Slice rest(fname);
   if (rest == "CURRENT") {
@@ -91,15 +81,6 @@ bool ParseFileName(const std::string& fname,
   } else if (rest == "LOG" || rest == "LOG.old") {
     *number = 0;
     *type = kInfoLogFile;
-  } else if (rest.size() >= 4 &&
-      Slice(rest.data() + rest.size() - 4, 4) == ".val") {
-    LargeValueRef h;
-    if (!FilenameStringToLargeValueRef(Slice(rest.data(), rest.size() - 4),
-                                       &h)) {
-      return false;
-    }
-    *large_ref = h;
-    *type = kLargeValueFile;
   } else if (rest.starts_with("MANIFEST-")) {
     rest.remove_prefix(strlen("MANIFEST-"));
     uint64_t num;

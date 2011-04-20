@@ -28,7 +28,6 @@
 //      readreverse   -- read N values in reverse order
 //      readrandom    -- read N values in random order
 //      crc32c        -- repeated crc32c of 4K of data
-//      sha1          -- repeated SHA1 computation over 4K of data
 //   Meta operations:
 //      compact     -- Compact the entire DB
 //      stats       -- Print DB stats
@@ -48,7 +47,6 @@ static const char* FLAGS_benchmarks =
     "readreverse,"
     "fill100K,"
     "crc32c,"
-    "sha1,"
     "snappycomp,"
     "snappyuncomp,"
     ;
@@ -366,8 +364,6 @@ class Benchmark {
         Compact();
       } else if (name == Slice("crc32c")) {
         Crc32c(4096, "(4K per op)");
-      } else if (name == Slice("sha1")) {
-        SHA1(4096, "(4K per op)");
       } else if (name == Slice("snappycomp")) {
         SnappyCompress();
       } else if (name == Slice("snappyuncomp")) {
@@ -401,24 +397,6 @@ class Benchmark {
     }
     // Print so result is not dead
     fprintf(stderr, "... crc=0x%x\r", static_cast<unsigned int>(crc));
-
-    bytes_ = bytes;
-    message_ = label;
-  }
-
-  void SHA1(int size, const char* label) {
-    // SHA1 about 100MB of data total
-    std::string data(size, 'x');
-    int64_t bytes = 0;
-    char sha1[20];
-    while (bytes < 100 * 1048576) {
-      port::SHA1_Hash(data.data(), size, sha1);
-      FinishedSingleOp();
-      bytes += size;
-    }
-
-    // Print so result is not dead
-    fprintf(stderr, "... sha1=%02x...\r", static_cast<unsigned int>(sha1[0]));
 
     bytes_ = bytes;
     message_ = label;

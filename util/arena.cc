@@ -16,7 +16,7 @@ Arena::Arena() {
 }
 
 Arena::~Arena() {
-  for (int i = 0; i < blocks_.size(); i++) {
+  for (size_t i = 0; i < blocks_.size(); i++) {
     delete[] blocks_[i];
   }
 }

@@ -46,9 +46,9 @@ Status Writer::AddRecord(const Slice& slice) {
     }
 
     // Invariant: we never leave < kHeaderSize bytes in a block.
-    const int avail = kBlockSize - block_offset_ - kHeaderSize;
-    assert(avail >= 0);
+    assert(kBlockSize - block_offset_ - kHeaderSize >= 0);
 
+    const size_t avail = kBlockSize - block_offset_ - kHeaderSize;
     const size_t fragment_length = (left < avail) ? left : avail;
 
     RecordType type;

@@ -62,7 +62,9 @@ static inline const char* DecodeEntry(const char* p, const char* limit,
     if ((p = GetVarint32Ptr(p, limit, value_length)) == NULL) return NULL;
   }
 
-  if (limit - p < (*non_shared + *value_length)) return NULL;
+  if (static_cast<uint32>(limit - p) < (*non_shared + *value_length)) {
+    return NULL;
+  }
   return p;
 }
 

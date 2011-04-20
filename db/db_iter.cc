@@ -53,13 +53,11 @@ class DBIter: public Iterator {
         user_comparator_(cmp),
         iter_(iter),
         sequence_(s),
-        large_(NULL),
         direction_(kForward),
         valid_(false) {
   }
   virtual ~DBIter() {
     delete iter_;
-    delete large_;
   }
   virtual bool Valid() const { return valid_; }
   virtual Slice key() const {
@@ -68,20 +66,10 @@ class DBIter: public Iterator {
   }
   virtual Slice value() const {
     assert(valid_);
-    Slice raw_value = (direction_ == kForward) ? iter_->value() : saved_value_;
-    if (large_ == NULL) {
-      return raw_value;
-    } else {
-      MutexLock l(&large_->mutex);
-      if (!large_->produced) {
-        ReadIndirectValue(raw_value);
-      }
-      return large_->value;
-    }
+    return (direction_ == kForward) ? iter_->value() : saved_value_;
   }
   virtual Status status() const {
     if (status_.ok()) {
-      if (large_ != NULL && !large_->status.ok()) return large_->status;
       return iter_->status();
     } else {
       return status_;
@@ -95,27 +83,12 @@ class DBIter: public Iterator {
   virtual void SeekToLast();
 
  private:
-  struct Large {
-    port::Mutex mutex;
-    std::string value;
-    bool produced;
-    Status status;
-  };
-
   void FindNextUserEntry(bool skipping, std::string* skip);
   void FindPrevUserEntry();
   bool ParseKey(ParsedInternalKey* key);
-  void ReadIndirectValue(Slice ref) const;
 
   inline void SaveKey(const Slice& k, std::string* dst) {
     dst->assign(k.data(), k.size());
-  }
-
-  inline void ForgetLargeValue() {
-    if (large_ != NULL) {
-      delete large_;
-      large_ = NULL;
-    }
   }
 
   inline void ClearSavedValue() {
@@ -136,7 +109,6 @@ class DBIter: public Iterator {
   Status status_;
   std::string saved_key_;     // == current key when direction_==kReverse
   std::string saved_value_;   // == current raw value when direction_==kReverse
-  Large* large_;              // Non-NULL if value is an indirect reference
   Direction direction_;
   bool valid_;
 
@@ -156,7 +128,6 @@ inline bool DBIter::ParseKey(ParsedInternalKey* ikey) {
 
 void DBIter::Next() {
   assert(valid_);
-  ForgetLargeValue();
 
   if (direction_ == kReverse) {  // Switch directions?
     direction_ = kForward;
@@ -185,7 +156,6 @@ void DBIter::FindNextUserEntry(bool skipping, std::string* skip) {
   // Loop until we hit an acceptable entry to yield
   assert(iter_->Valid());
   assert(direction_ == kForward);
-  assert(large_ == NULL);
   do {
     ParsedInternalKey ikey;
     if (ParseKey(&ikey) && ikey.sequence <= sequence_) {
@@ -197,17 +167,12 @@ void DBIter::FindNextUserEntry(bool skipping, std::string* skip) {
           skipping = true;
           break;
         case kTypeValue:
-        case kTypeLargeValueRef:
           if (skipping &&
               user_comparator_->Compare(ikey.user_key, *skip) <= 0) {
             // Entry hidden
           } else {
             valid_ = true;
             saved_key_.clear();
-            if (ikey.type == kTypeLargeValueRef) {
-              large_ = new Large;
-              large_->produced = false;
-            }
             return;
           }
           break;
@@ -221,7 +186,6 @@ void DBIter::FindNextUserEntry(bool skipping, std::string* skip) {
 
 void DBIter::Prev() {
   assert(valid_);
-  ForgetLargeValue();
 
   if (direction_ == kForward) {  // Switch directions?
     // iter_ is pointing at the current entry.  Scan backwards until
@@ -249,7 +213,6 @@ void DBIter::Prev() {
 
 void DBIter::FindPrevUserEntry() {
   assert(direction_ == kReverse);
-  assert(large_ == NULL);
 
   ValueType value_type = kTypeDeletion;
   if (iter_->Valid()) {
@@ -286,16 +249,11 @@ void DBIter::FindPrevUserEntry() {
     direction_ = kForward;
   } else {
     valid_ = true;
-    if (value_type == kTypeLargeValueRef) {
-      large_ = new Large;
-      large_->produced = false;
-    }
   }
 }
 
 void DBIter::Seek(const Slice& target) {
   direction_ = kForward;
-  ForgetLargeValue();
   ClearSavedValue();
   saved_key_.clear();
   AppendInternalKey(
@@ -310,7 +268,6 @@ void DBIter::Seek(const Slice& target) {
 
 void DBIter::SeekToFirst() {
   direction_ = kForward;
-  ForgetLargeValue();
   ClearSavedValue();
   iter_->SeekToFirst();
   if (iter_->Valid()) {
@@ -322,65 +279,9 @@ void DBIter::SeekToFirst() {
 
 void DBIter::SeekToLast() {
   direction_ = kReverse;
-  ForgetLargeValue();
   ClearSavedValue();
   iter_->SeekToLast();
   FindPrevUserEntry();
-}
-
-void DBIter::ReadIndirectValue(Slice ref) const {
-  assert(!large_->produced);
-  large_->produced = true;
-  LargeValueRef large_ref;
-  if (ref.size() != LargeValueRef::ByteSize()) {
-    large_->status = Status::Corruption("malformed large value reference");
-    return;
-  }
-  memcpy(large_ref.data, ref.data(), LargeValueRef::ByteSize());
-  std::string fname = LargeValueFileName(*dbname_, large_ref);
-  RandomAccessFile* file;
-  Status s = env_->NewRandomAccessFile(fname, &file);
-  uint64_t file_size = 0;
-  if (s.ok()) {
-    s = env_->GetFileSize(fname, &file_size);
-  }
-  if (s.ok()) {
-    uint64_t value_size = large_ref.ValueSize();
-    large_->value.resize(value_size);
-    Slice result;
-    s = file->Read(0, file_size, &result,
-                   const_cast<char*>(large_->value.data()));
-    if (s.ok()) {
-      if (result.size() == file_size) {
-        switch (large_ref.compression_type()) {
-          case kNoCompression: {
-            if (result.data() != large_->value.data()) {
-              large_->value.assign(result.data(), result.size());
-            }
-            break;
-          }
-          case kSnappyCompression: {
-            std::string uncompressed;
-            if (port::Snappy_Uncompress(result.data(), result.size(),
-                                        &uncompressed) &&
-                uncompressed.size() == large_ref.ValueSize()) {
-              swap(uncompressed, large_->value);
-            } else {
-              s = Status::Corruption(
-                  "Unable to read entire compressed large value file");
-            }
-          }
-        }
-      } else {
-        s = Status::Corruption("Unable to read entire large value file");
-      }
-    }
-    delete file;        // Ignore errors on closing
-  }
-  if (!s.ok()) {
-    large_->value.clear();
-    large_->status = s;
-  }
 }
 
 }  // anonymous namespace

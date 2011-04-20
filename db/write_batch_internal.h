@@ -13,10 +13,6 @@ namespace leveldb {
 // WriteBatch that we don't want in the public WriteBatch interface.
 class WriteBatchInternal {
  public:
-  static void PutLargeValueRef(WriteBatch* batch,
-                               const Slice& key,
-                               const LargeValueRef& large_ref);
-
   // Return the number of entries in the batch.
   static int Count(const WriteBatch* batch);
 

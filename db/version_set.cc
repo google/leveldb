@@ -58,7 +58,7 @@ std::string IntSetToString(const std::set<uint64_t>& s) {
 Version::~Version() {
   assert(refs_ == 0);
   for (int level = 0; level < config::kNumLevels; level++) {
-    for (int i = 0; i < files_[level].size(); i++) {
+    for (size_t i = 0; i < files_[level].size(); i++) {
       FileMetaData* f = files_[level][i];
       assert(f->refs >= 0);
       f->refs--;
@@ -134,7 +134,7 @@ class Version::LevelFileNumIterator : public Iterator {
  private:
   const InternalKeyComparator icmp_;
   const std::vector<FileMetaData*>* const flist_;
-  int index_;
+  uint32_t index_;
 
   // Backing store for value().  Holds the file number and size.
   mutable char value_buf_[16];
@@ -164,7 +164,7 @@ Iterator* Version::NewConcatenatingIterator(const ReadOptions& options,
 void Version::AddIterators(const ReadOptions& options,
                            std::vector<Iterator*>* iters) {
   // Merge all level zero files together since they may overlap
-  for (int i = 0; i < files_[0].size(); i++) {
+  for (size_t i = 0; i < files_[0].size(); i++) {
     iters->push_back(
         vset_->table_cache_->NewIterator(
             options, files_[0][i]->number, files_[0][i]->file_size));
@@ -201,7 +201,7 @@ std::string Version::DebugString() const {
     AppendNumberTo(&r, level);
     r.push_back(':');
     const std::vector<FileMetaData*>& files = files_[level];
-    for (int i = 0; i < files.size(); i++) {
+    for (size_t i = 0; i < files.size(); i++) {
       r.push_back(' ');
       AppendNumberTo(&r, files[i]->number);
       r.push_back(':');
@@ -232,7 +232,7 @@ class VersionSet::Builder {
       : vset_(vset) {
     for (int level = 0; level < config::kNumLevels; level++) {
       const std::vector<FileMetaData*>& files = base->files_[level];
-      for (int i = 0; i < files.size(); i++) {
+      for (size_t i = 0; i < files.size(); i++) {
         FileMetaData* f = files[i];
         f->refs++;
         files_[level].insert(std::make_pair(f->number, f));
@@ -258,7 +258,7 @@ class VersionSet::Builder {
   // Apply all of the edits in *edit to the current state.
   void Apply(VersionEdit* edit) {
     // Update compaction pointers
-    for (int i = 0; i < edit->compact_pointers_.size(); i++) {
+    for (size_t i = 0; i < edit->compact_pointers_.size(); i++) {
       const int level = edit->compact_pointers_[i].first;
       vset_->compact_pointer_[level] =
           edit->compact_pointers_[i].second.Encode().ToString();
@@ -284,18 +284,12 @@ class VersionSet::Builder {
     }
 
     // Add new files
-    for (int i = 0; i < edit->new_files_.size(); i++) {
+    for (size_t i = 0; i < edit->new_files_.size(); i++) {
       const int level = edit->new_files_[i].first;
       FileMetaData* f = new FileMetaData(edit->new_files_[i].second);
       f->refs = 1;
       assert(files_[level].count(f->number) == 0);
       files_[level].insert(std::make_pair(f->number, f));
-    }
-
-    // Add large value refs
-    for (int i = 0; i < edit->large_refs_added_.size(); i++) {
-      const VersionEdit::Large& l = edit->large_refs_added_[i];
-      vset_->RegisterLargeValueRef(l.large_ref, l.fnum, l.internal_key);
     }
   }
 
@@ -545,7 +539,7 @@ Status VersionSet::Recover() {
 
 static int64_t TotalFileSize(const std::vector<FileMetaData*>& files) {
   int64_t sum = 0;
-  for (int i = 0; i < files.size(); i++) {
+  for (size_t i = 0; i < files.size(); i++) {
     sum += files[i]->file_size;
   }
   return sum;
@@ -610,22 +604,9 @@ Status VersionSet::WriteSnapshot(log::Writer* log) {
   // Save files
   for (int level = 0; level < config::kNumLevels; level++) {
     const std::vector<FileMetaData*>& files = current_->files_[level];
-    for (int i = 0; i < files.size(); i++) {
+    for (size_t i = 0; i < files.size(); i++) {
       const FileMetaData* f = files[i];
       edit.AddFile(level, f->number, f->file_size, f->smallest, f->largest);
-    }
-  }
-
-  // Save large value refs
-  for (LargeValueMap::const_iterator it = large_value_refs_.begin();
-       it != large_value_refs_.end();
-       ++it) {
-    const LargeValueRef& ref = it->first;
-    const LargeReferencesSet& pointers = it->second;
-    for (LargeReferencesSet::const_iterator j = pointers.begin();
-         j != pointers.end();
-         ++j) {
-      edit.AddLargeValueRef(ref, j->first, j->second);
     }
   }
 
@@ -651,7 +632,7 @@ Status VersionSet::SortLevel(Version* v, uint64_t level) {
 
   if (result.ok() && level > 0) {
     // There should be no overlap
-    for (int i = 1; i < v->files_[level].size(); i++) {
+    for (size_t i = 1; i < v->files_[level].size(); i++) {
       const InternalKey& prev_end = v->files_[level][i-1]->largest;
       const InternalKey& this_begin = v->files_[level][i]->smallest;
       if (icmp_.Compare(prev_end, this_begin) >= 0) {
@@ -676,7 +657,7 @@ uint64_t VersionSet::ApproximateOffsetOf(Version* v, const InternalKey& ikey) {
   uint64_t result = 0;
   for (int level = 0; level < config::kNumLevels; level++) {
     const std::vector<FileMetaData*>& files = v->files_[level];
-    for (int i = 0; i < files.size(); i++) {
+    for (size_t i = 0; i < files.size(); i++) {
       if (icmp_.Compare(files[i]->largest, ikey) <= 0) {
         // Entire file is before "ikey", so just add the file size
         result += files[i]->file_size;
@@ -701,81 +682,7 @@ uint64_t VersionSet::ApproximateOffsetOf(Version* v, const InternalKey& ikey) {
       }
     }
   }
-
-  // Add in large value files which are references from internal keys
-  // stored in the table files
-  //
-  // TODO(opt): this is O(# large values in db).  If this becomes too slow,
-  // we could store an auxiliary data structure indexed by internal key
-  for (LargeValueMap::const_iterator it = large_value_refs_.begin();
-       it != large_value_refs_.end();
-       ++it) {
-    const LargeValueRef& lref = it->first;
-    for (LargeReferencesSet::const_iterator it2 = it->second.begin();
-         it2 != it->second.end();
-         ++it2) {
-      if (icmp_.Compare(it2->second, ikey.Encode()) <= 0) {
-        // Internal key for large value is before our key of interest
-        result += lref.ValueSize();
-      }
-    }
-  }
-
-
   return result;
-}
-
-bool VersionSet::RegisterLargeValueRef(const LargeValueRef& large_ref,
-                                       uint64_t fnum,
-                                       const InternalKey& internal_key) {
-  LargeReferencesSet* refs = &large_value_refs_[large_ref];
-  bool is_first = refs->empty();
-  refs->insert(make_pair(fnum, internal_key.Encode().ToString()));
-  return is_first;
-}
-
-void VersionSet::CleanupLargeValueRefs(const std::set<uint64_t>& live_tables) {
-  for (LargeValueMap::iterator it = large_value_refs_.begin();
-       it != large_value_refs_.end();
-       ) {
-    LargeReferencesSet* refs = &it->second;
-    for (LargeReferencesSet::iterator ref_it = refs->begin();
-         ref_it != refs->end();
-         ) {
-      if (ref_it->first != log_number_ &&               // Not in log file
-          ref_it->first != prev_log_number_ &&          // Not in prev log
-          live_tables.count(ref_it->first) == 0) {      // Not in a live table
-        // No longer live: erase
-        LargeReferencesSet::iterator to_erase = ref_it;
-        ++ref_it;
-        refs->erase(to_erase);
-      } else {
-        // Still live: leave this reference alone
-        ++ref_it;
-      }
-    }
-    if (refs->empty()) {
-      // No longer any live references to this large value: remove from
-      // large_value_refs
-      Log(env_, options_->info_log, "large value is dead: '%s'",
-          LargeValueRefToFilenameString(it->first).c_str());
-      LargeValueMap::iterator to_erase = it;
-      ++it;
-      large_value_refs_.erase(to_erase);
-    } else {
-      ++it;
-    }
-  }
-}
-
-bool VersionSet::LargeValueIsLive(const LargeValueRef& large_ref) {
-  LargeValueMap::iterator it = large_value_refs_.find(large_ref);
-  if (it == large_value_refs_.end()) {
-    return false;
-  } else {
-    assert(!it->second.empty());
-    return true;
-  }
 }
 
 void VersionSet::MaybeDeleteOldVersions() {
@@ -793,7 +700,7 @@ void VersionSet::AddLiveFiles(std::set<uint64_t>* live) {
   for (Version* v = oldest_; v != NULL; v = v->next_) {
     for (int level = 0; level < config::kNumLevels; level++) {
       const std::vector<FileMetaData*>& files = v->files_[level];
-      for (int i = 0; i < files.size(); i++) {
+      for (size_t i = 0; i < files.size(); i++) {
         live->insert(files[i]->number);
       }
     }
@@ -810,7 +717,7 @@ int64_t VersionSet::MaxNextLevelOverlappingBytes() {
   int64_t result = 0;
   std::vector<FileMetaData*> overlaps;
   for (int level = 0; level < config::kNumLevels - 1; level++) {
-    for (int i = 0; i < current_->files_[level].size(); i++) {
+    for (size_t i = 0; i < current_->files_[level].size(); i++) {
       const FileMetaData* f = current_->files_[level][i];
       GetOverlappingInputs(level+1, f->smallest, f->largest, &overlaps);
       const int64_t sum = TotalFileSize(overlaps);
@@ -832,7 +739,7 @@ void VersionSet::GetOverlappingInputs(
   Slice user_begin = begin.user_key();
   Slice user_end = end.user_key();
   const Comparator* user_cmp = icmp_.user_comparator();
-  for (int i = 0; i < current_->files_[level].size(); i++) {
+  for (size_t i = 0; i < current_->files_[level].size(); i++) {
     FileMetaData* f = current_->files_[level][i];
     if (user_cmp->Compare(f->largest.user_key(), user_begin) < 0 ||
         user_cmp->Compare(f->smallest.user_key(), user_end) > 0) {
@@ -852,7 +759,7 @@ void VersionSet::GetRange(const std::vector<FileMetaData*>& inputs,
   assert(!inputs.empty());
   smallest->Clear();
   largest->Clear();
-  for (int i = 0; i < inputs.size(); i++) {
+  for (size_t i = 0; i < inputs.size(); i++) {
     FileMetaData* f = inputs[i];
     if (i == 0) {
       *smallest = f->smallest;
@@ -895,7 +802,7 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
     if (!c->inputs_[which].empty()) {
       if (c->level() + which == 0) {
         const std::vector<FileMetaData*>& files = c->inputs_[which];
-        for (int i = 0; i < files.size(); i++) {
+        for (size_t i = 0; i < files.size(); i++) {
           list[num++] = table_cache_->NewIterator(
               options, files[i]->number, files[i]->file_size);
         }
@@ -927,7 +834,7 @@ Compaction* VersionSet::PickCompaction() {
   c->input_version_->Ref();
 
   // Pick the first file that comes after compact_pointer_[level]
-  for (int i = 0; i < current_->files_[level].size(); i++) {
+  for (size_t i = 0; i < current_->files_[level].size(); i++) {
     FileMetaData* f = current_->files_[level][i];
     if (compact_pointer_[level].empty() ||
         icmp_.Compare(f->largest.Encode(), compact_pointer_[level]) > 0) {
@@ -1062,7 +969,7 @@ bool Compaction::IsTrivialMove() const {
 
 void Compaction::AddInputDeletions(VersionEdit* edit) {
   for (int which = 0; which < 2; which++) {
-    for (int i = 0; i < inputs_[which].size(); i++) {
+    for (size_t i = 0; i < inputs_[which].size(); i++) {
       edit->DeleteFile(level_ + which, inputs_[which][i]->number);
     }
   }

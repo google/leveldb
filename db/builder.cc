@@ -38,15 +38,6 @@ Status BuildTable(const std::string& dbname,
     for (; iter->Valid(); iter->Next()) {
       Slice key = iter->key();
       meta->largest.DecodeFrom(key);
-      if (ExtractValueType(key) == kTypeLargeValueRef) {
-        if (iter->value().size() != LargeValueRef::ByteSize()) {
-          s = Status::Corruption("invalid indirect reference hash value (L0)");
-          break;
-        }
-        edit->AddLargeValueRef(LargeValueRef::FromRef(iter->value()),
-                               meta->number,
-                               iter->key());
-      }
       builder->Add(key, iter->value());
     }
 

@@ -412,17 +412,6 @@ We might want to prefix <code>filename</code> keys with one letter (say '/') and
 over just the metadata do not force us to fetch and cache bulky file
 contents.
 <p>
-<h2>Large Values</h2>
-<p>
-<code>leveldb</code> has special treatment of large values (by default, a value
-of length greater than or equal to 64K is considered large, though a
-field in Options can be used to adjust this threshold).  Each such
-large value is placed in a separate operating system file, and the
-normal database blocks just contain pointers to such files.
-<p>
-Furthermore, if the same large value occurs multiple times in a single
-database, it will be stored just once.
-<p>
 <h1>Checksums</h1>
 <p>
 <code>leveldb</code> associates checksums with all data it stores in the file system.

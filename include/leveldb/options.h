@@ -86,16 +86,6 @@ struct Options {
   // Default: 1000
   int max_open_files;
 
-  // Handle values larger than "large_value_threshold" bytes
-  // specially, by writing them into their own files (to avoid
-  // compaction overhead) and doing content-based elimination of
-  // duplicate values to save space.
-  //
-  // We recommend against changing this value.
-  //
-  // Default: 64K
-  size_t large_value_threshold;
-
   // Control over blocks (user data is stored in a set of blocks, and
   // a block is the unit of reading from disk).
 
@@ -110,7 +100,7 @@ struct Options {
   // compression is enabled.  This parameter can be changed dynamically.
   //
   // Default: 4K
-  int block_size;
+  size_t block_size;
 
   // Number of keys between restart points for delta encoding of keys.
   // This parameter can be changed dynamically.  Most clients should

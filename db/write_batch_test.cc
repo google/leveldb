@@ -29,13 +29,6 @@ static std::string PrintContents(WriteBatch* b) {
         state.append(iter->value().ToString());
         state.append(")");
         break;
-      case kTypeLargeValueRef:
-        state.append("PutRef(");
-        state.append(ikey.user_key.ToString());
-        state.append(", ");
-        state.append(iter->value().ToString());
-        state.append(")");
-        break;
       case kTypeDeletion:
         state.append("Delete(");
         state.append(ikey.user_key.ToString());
@@ -71,22 +64,6 @@ TEST(WriteBatchTest, Multiple) {
   ASSERT_EQ("Put(baz, boo)@102"
             "Delete(box)@101"
             "Put(foo, bar)@100",
-            PrintContents(&batch));
-}
-
-TEST(WriteBatchTest, PutIndirect) {
-  WriteBatch batch;
-  batch.Put(Slice("baz"), Slice("boo"));
-  LargeValueRef h;
-  for (int i = 0; i < LargeValueRef::ByteSize(); i++) {
-    h.data[i] = (i < 20) ? 'a' : 'b';
-  }
-  WriteBatchInternal::PutLargeValueRef(&batch, Slice("foo"), h);
-  WriteBatchInternal::SetSequence(&batch, 100);
-  ASSERT_EQ(100, WriteBatchInternal::Sequence(&batch));
-  ASSERT_EQ(2, WriteBatchInternal::Count(&batch));
-  ASSERT_EQ("Put(baz, boo)@100"
-            "PutRef(foo, aaaaaaaaaaaaaaaaaaaabbbbbbbbb)@101",
             PrintContents(&batch));
 }
 

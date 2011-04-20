@@ -119,9 +119,6 @@ class DBTest {
             case kTypeValue:
               result += iter->value().ToString();
               break;
-            case kTypeLargeValueRef:
-              result += "LARGEVALUE(" + EscapeString(iter->value()) + ")";
-              break;
             case kTypeDeletion:
               result += "DEL";
               break;
@@ -151,26 +148,6 @@ class DBTest {
     uint64_t size;
     db_->GetApproximateSizes(&r, 1, &size);
     return size;
-  }
-
-  std::set<LargeValueRef> LargeValueFiles() const {
-    // Return the set of large value files that exist in the database
-    std::vector<std::string> filenames;
-    env_->GetChildren(dbname_, &filenames); // Ignoring errors on purpose
-    uint64_t number;
-    LargeValueRef large_ref;
-    FileType type;
-    std::set<LargeValueRef> live;
-    for (int i = 0; i < filenames.size(); i++) {
-      if (ParseFileName(filenames[i], &number, &large_ref, &type) &&
-          type == kLargeValueFile) {
-        fprintf(stderr, "  live: %s\n",
-                LargeValueRefToFilenameString(large_ref).c_str());
-        live.insert(large_ref);
-      }
-    }
-    fprintf(stderr, "Found %d live large value files\n", (int)live.size());
-    return live;
   }
 
   void Compact(const Slice& start, const Slice& limit) {
@@ -471,7 +448,6 @@ TEST(DBTest, MinorCompactionsHappen) {
 TEST(DBTest, RecoverWithLargeLog) {
   {
     Options options;
-    options.large_value_threshold = 1048576;
     Reopen(&options);
     ASSERT_OK(Put("big1", std::string(200000, '1')));
     ASSERT_OK(Put("big2", std::string(200000, '2')));
@@ -484,7 +460,6 @@ TEST(DBTest, RecoverWithLargeLog) {
   // we flush table files in the middle of a large log file.
   Options options;
   options.write_buffer_size = 100000;
-  options.large_value_threshold = 1048576;
   Reopen(&options);
   ASSERT_EQ(NumTableFilesAtLevel(0), 3);
   ASSERT_EQ(std::string(200000, '1'), Get("big1"));
@@ -497,7 +472,6 @@ TEST(DBTest, RecoverWithLargeLog) {
 TEST(DBTest, CompactionsGenerateMultipleFiles) {
   Options options;
   options.write_buffer_size = 100000000;        // Large write buffer
-  options.large_value_threshold = 1048576;
   Reopen(&options);
 
   Random rnd(301);
@@ -570,65 +544,53 @@ static bool Between(uint64_t val, uint64_t low, uint64_t high) {
 }
 
 TEST(DBTest, ApproximateSizes) {
-  for (int test = 0; test < 2; test++) {
-    // test==0: default large_value_threshold
-    // test==1: 1 MB large_value_threshold
-    Options options;
-    options.large_value_threshold = (test == 0) ? 65536 : 1048576;
-    options.write_buffer_size = 100000000;        // Large write buffer
-    options.compression = kNoCompression;
-    DestroyAndReopen();
+  Options options;
+  options.write_buffer_size = 100000000;        // Large write buffer
+  options.compression = kNoCompression;
+  DestroyAndReopen();
 
-    ASSERT_TRUE(Between(Size("", "xyz"), 0, 0));
+  ASSERT_TRUE(Between(Size("", "xyz"), 0, 0));
+  Reopen(&options);
+  ASSERT_TRUE(Between(Size("", "xyz"), 0, 0));
+
+  // Write 8MB (80 values, each 100K)
+  ASSERT_EQ(NumTableFilesAtLevel(0), 0);
+  const int N = 80;
+  Random rnd(301);
+  for (int i = 0; i < N; i++) {
+    ASSERT_OK(Put(Key(i), RandomString(&rnd, 100000)));
+  }
+
+  // 0 because GetApproximateSizes() does not account for memtable space
+  ASSERT_TRUE(Between(Size("", Key(50)), 0, 0));
+
+  // Check sizes across recovery by reopening a few times
+  for (int run = 0; run < 3; run++) {
     Reopen(&options);
-    ASSERT_TRUE(Between(Size("", "xyz"), 0, 0));
 
-    // Write 8MB (80 values, each 100K)
-    ASSERT_EQ(NumTableFilesAtLevel(0), 0);
-    const int N = 80;
-    Random rnd(301);
-    for (int i = 0; i < N; i++) {
-      ASSERT_OK(Put(Key(i), RandomString(&rnd, 100000)));
-    }
-    if (test == 1) {
-      // 0 because GetApproximateSizes() does not account for memtable space for
-      // non-large values
-      ASSERT_TRUE(Between(Size("", Key(50)), 0, 0));
-    } else {
-      ASSERT_TRUE(Between(Size("", Key(50)), 100000*50, 100000*50 + 10000));
-      ASSERT_TRUE(Between(Size(Key(20), Key(30)),
-                          100000*10, 100000*10 + 10000));
-    }
-
-    // Check sizes across recovery by reopening a few times
-    for (int run = 0; run < 3; run++) {
-      Reopen(&options);
-
-      for (int compact_start = 0; compact_start < N; compact_start += 10) {
-        for (int i = 0; i < N; i += 10) {
-          ASSERT_TRUE(Between(Size("", Key(i)), 100000*i, 100000*i + 10000));
-          ASSERT_TRUE(Between(Size("", Key(i)+".suffix"),
-                              100000 * (i+1), 100000 * (i+1) + 10000));
-          ASSERT_TRUE(Between(Size(Key(i), Key(i+10)),
-                              100000 * 10, 100000 * 10 + 10000));
-        }
-        ASSERT_TRUE(Between(Size("", Key(50)), 5000000, 5010000));
-        ASSERT_TRUE(Between(Size("", Key(50)+".suffix"), 5100000, 5110000));
-
-        dbfull()->TEST_CompactRange(0,
-                                    Key(compact_start),
-                                    Key(compact_start + 9));
+    for (int compact_start = 0; compact_start < N; compact_start += 10) {
+      for (int i = 0; i < N; i += 10) {
+        ASSERT_TRUE(Between(Size("", Key(i)), 100000*i, 100000*i + 10000));
+        ASSERT_TRUE(Between(Size("", Key(i)+".suffix"),
+                            100000 * (i+1), 100000 * (i+1) + 10000));
+        ASSERT_TRUE(Between(Size(Key(i), Key(i+10)),
+                            100000 * 10, 100000 * 10 + 10000));
       }
+      ASSERT_TRUE(Between(Size("", Key(50)), 5000000, 5010000));
+      ASSERT_TRUE(Between(Size("", Key(50)+".suffix"), 5100000, 5110000));
 
-      ASSERT_EQ(NumTableFilesAtLevel(0), 0);
-      ASSERT_GT(NumTableFilesAtLevel(1), 0);
+      dbfull()->TEST_CompactRange(0,
+                                  Key(compact_start),
+                                  Key(compact_start + 9));
     }
+
+    ASSERT_EQ(NumTableFilesAtLevel(0), 0);
+    ASSERT_GT(NumTableFilesAtLevel(1), 0);
   }
 }
 
 TEST(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
   Options options;
-  options.large_value_threshold = 65536;
   options.compression = kNoCompression;
   Reopen();
 
@@ -801,146 +763,6 @@ TEST(DBTest, ComparatorCheck) {
       << s.ToString();
 }
 
-static bool LargeValuesOK(DBTest* db,
-                          const std::set<LargeValueRef>& expected) {
-  std::set<LargeValueRef> actual = db->LargeValueFiles();
-  if (actual.size() != expected.size()) {
-    fprintf(stderr, "Sets differ in size: %d vs %d\n",
-            (int)actual.size(), (int)expected.size());
-    return false;
-  }
-  for (std::set<LargeValueRef>::const_iterator it = expected.begin();
-       it != expected.end();
-       ++it) {
-    if (actual.count(*it) != 1) {
-      fprintf(stderr, "  key '%s' not found in actual set\n",
-              LargeValueRefToFilenameString(*it).c_str());
-      return false;
-    }
-  }
-  return true;
-}
-
-TEST(DBTest, LargeValues1) {
-  Options options;
-  options.large_value_threshold = 10000;
-  Reopen(&options);
-
-  Random rnd(301);
-
-  std::string big1;
-  test::CompressibleString(&rnd, 1.0, 100000, &big1); // Not compressible
-  std::set<LargeValueRef> expected;
-
-  ASSERT_OK(Put("big1", big1));
-  expected.insert(LargeValueRef::Make(big1, kNoCompression));
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  ASSERT_OK(Delete("big1"));
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  // No handling of deletion markers on memtable compactions, so big1 remains
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  dbfull()->TEST_CompactRange(0, "", "z");
-  expected.erase(LargeValueRef::Make(big1, kNoCompression));
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-}
-
-static bool SnappyCompressionSupported() {
-  std::string out;
-  Slice in = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  return port::Snappy_Compress(in.data(), in.size(), &out);
-}
-
-TEST(DBTest, LargeValues2) {
-  Options options;
-  options.large_value_threshold = 10000;
-  Reopen(&options);
-
-  Random rnd(301);
-
-  std::string big1, big2;
-  test::CompressibleString(&rnd, 1.0, 20000, &big1);  // Not compressible
-  test::CompressibleString(&rnd, 0.6, 40000, &big2);  // Compressible
-  std::set<LargeValueRef> expected;
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  ASSERT_OK(Put("big1", big1));
-  expected.insert(LargeValueRef::Make(big1, kNoCompression));
-  ASSERT_EQ(big1, Get("big1"));
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  ASSERT_OK(Put("big2", big2));
-  ASSERT_EQ(big2, Get("big2"));
-  if (SnappyCompressionSupported()) {
-    expected.insert(LargeValueRef::Make(big2, kSnappyCompression));
-  } else {
-    expected.insert(LargeValueRef::Make(big2, kNoCompression));
-  }
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  dbfull()->TEST_CompactRange(0, "", "z");
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  ASSERT_OK(Put("big2", big2));
-  ASSERT_OK(Put("big2_b", big2));
-  ASSERT_EQ(big1, Get("big1"));
-  ASSERT_EQ(big2, Get("big2"));
-  ASSERT_EQ(big2, Get("big2_b"));
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  ASSERT_OK(Delete("big1"));
-  ASSERT_EQ("NOT_FOUND", Get("big1"));
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-  dbfull()->TEST_CompactRange(0, "", "z");
-  expected.erase(LargeValueRef::Make(big1, kNoCompression));
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-  dbfull()->TEST_CompactRange(1, "", "z");
-
-  ASSERT_OK(Delete("big2"));
-  ASSERT_EQ("NOT_FOUND", Get("big2"));
-  ASSERT_EQ(big2, Get("big2_b"));
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-  dbfull()->TEST_CompactRange(0, "", "z");
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-
-  // Make sure the large value refs survive a reload and compactions after
-  // the reload.
-  Reopen();
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-  ASSERT_OK(Put("foo", "bar"));
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  dbfull()->TEST_CompactRange(0, "", "z");
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-}
-
-TEST(DBTest, LargeValues3) {
-  // Make sure we don't compress values if
-  Options options;
-  options.large_value_threshold = 10000;
-  options.compression = kNoCompression;
-  Reopen(&options);
-
-  Random rnd(301);
-
-  std::string big1 = std::string(100000, 'x');       // Very compressible
-  std::set<LargeValueRef> expected;
-
-  ASSERT_OK(Put("big1", big1));
-  ASSERT_EQ(big1, Get("big1"));
-  expected.insert(LargeValueRef::Make(big1, kNoCompression));
-  ASSERT_TRUE(LargeValuesOK(this, expected));
-}
-
-
 TEST(DBTest, DBOpen_Options) {
   std::string dbname = test::TmpDir() + "/db_options_test";
   DestroyDB(dbname, Options());
@@ -1024,9 +846,6 @@ class ModelDB: public DB {
       switch (it.op()) {
         case kTypeValue:
           map_[it.key().ToString()] = it.value().ToString();
-          break;
-        case kTypeLargeValueRef:
-          assert(false);        // Should not occur
           break;
         case kTypeDeletion:
           map_.erase(it.key().ToString());

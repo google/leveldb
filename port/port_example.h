@@ -89,11 +89,6 @@ class AtomicPointer {
   void NoBarrier_Store(void* v);
 };
 
-// ------------------ Checksumming -------------------
-
-// Store a 160-bit hash of "data[0..len-1]" in "hash_array[0]..hash_array[19]"
-extern void SHA1_Hash(const char* data, size_t len, char* hash_array);
-
 // ------------------ Compression -------------------
 
 // Store the snappy compression of "input[0,input_length-1]" in *output.

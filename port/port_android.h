@@ -10,7 +10,6 @@
 #include <endian.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <sha1.h>
 #include <cstdatomic>
 #include <string>
 #include <cctype>
@@ -132,13 +131,6 @@ inline bool Snappy_Uncompress(
     size_t input_length,
     std::string* output) {
   return false;
-}
-
-inline void SHA1_Hash(const char* data, size_t len, char* hash_array) {
-  SHA1_CTX sha1_ctx;
-  SHA1Init(&sha1_ctx);
-  SHA1Update(&sha1_ctx, (const u_char*)data, len);
-  SHA1Final((u_char*)hash_array, &sha1_ctx);
 }
 
 inline uint64_t ThreadIdentifier() {

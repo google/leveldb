@@ -2,10 +2,10 @@ leveldb: A key-value store
 Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
 
 The code under this directory implements a system for maintaining a
-persistent key/value store.  
+persistent key/value store.
 
 See doc/index.html for more explanation.
-See doc/db_layout.txt for a brief overview of the implementation.
+See doc/impl.html for a brief overview of the implementation.
 
 The public interface is in include/*.h.  Callers should not include or
 rely on the details of any other header files in this package.  Those

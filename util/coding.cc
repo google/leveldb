@@ -85,7 +85,7 @@ char* EncodeVarint64(char* dst, uint64_t v) {
     *(ptr++) = (v & (B-1)) | B;
     v >>= 7;
   }
-  *(ptr++) = v;
+  *(ptr++) = static_cast<unsigned char>(v);
   return reinterpret_cast<char*>(ptr);
 }
 

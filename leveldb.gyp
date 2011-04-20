@@ -96,8 +96,6 @@
         'port/port_example.h',
         'port/port_posix.cc',
         'port/port_posix.h',
-        'port/sha1_portable.cc',
-        'port/sha1_portable.h',
         'table/block.cc',
         'table/block.h',
         'table/block_builder.cc',
@@ -265,16 +263,6 @@
       ],
       'sources': [
         'db/log_test.cc',
-      ],
-    },
-    {
-      'target_name': 'leveldb_sha1_test',
-      'type': 'executable',
-      'dependencies': [
-        'leveldb_testutil',
-      ],
-      'sources': [
-        'port/sha1_test.cc',
       ],
     },
     {

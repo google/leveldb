@@ -8,7 +8,6 @@
 //    data: record[count]
 // record :=
 //    kTypeValue varstring varstring         |
-//    kTypeLargeValueRef varstring varstring |
 //    kTypeDeletion varstring
 // varstring :=
 //    len: varint32
@@ -58,16 +57,6 @@ void WriteBatch::Put(const Slice& key, const Slice& value) {
   PutLengthPrefixedSlice(&rep_, value);
 }
 
-void WriteBatchInternal::PutLargeValueRef(WriteBatch* b,
-                                          const Slice& key,
-                                          const LargeValueRef& large_ref) {
-  WriteBatchInternal::SetCount(b, WriteBatchInternal::Count(b) + 1);
-  b->rep_.push_back(static_cast<char>(kTypeLargeValueRef));
-  PutLengthPrefixedSlice(&b->rep_, key);
-  PutLengthPrefixedSlice(&b->rep_,
-                         Slice(large_ref.data, sizeof(large_ref.data)));
-}
-
 void WriteBatch::Delete(const Slice& key) {
   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
   rep_.push_back(static_cast<char>(kTypeDeletion));
@@ -86,10 +75,6 @@ Status WriteBatchInternal::InsertInto(const WriteBatch* b,
         break;
       case kTypeValue:
         memtable->Add(it.sequence_number(), kTypeValue, it.key(), it.value());
-        break;
-      case kTypeLargeValueRef:
-        memtable->Add(it.sequence_number(), kTypeLargeValueRef,
-                      it.key(), it.value());
         break;
     }
     found++;
@@ -134,7 +119,6 @@ void WriteBatchInternal::Iterator::GetNextEntry() {
   input_.remove_prefix(1);
   switch (tag) {
     case kTypeValue:
-    case kTypeLargeValueRef:
       if (GetLengthPrefixedSlice(&input_, &key_) &&
           GetLengthPrefixedSlice(&input_, &value_)) {
         op_ = static_cast<ValueType>(tag);

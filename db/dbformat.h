@@ -29,7 +29,6 @@ class InternalKey;
 enum ValueType {
   kTypeDeletion = 0x0,
   kTypeValue = 0x1,
-  kTypeLargeValueRef = 0x2,
 };
 // kValueTypeForSeek defines the ValueType that should be passed when
 // constructing a ParsedInternalKey object for seeking to a particular
@@ -37,7 +36,7 @@ enum ValueType {
 // and the value type is embedded as the low 8 bits in the sequence
 // number in internal keys, we need to use the highest-numbered
 // ValueType, not the lowest).
-static const ValueType kValueTypeForSeek = kTypeLargeValueRef;
+static const ValueType kValueTypeForSeek = kTypeValue;
 
 typedef uint64_t SequenceNumber;
 
@@ -139,54 +138,6 @@ inline int InternalKeyComparator::Compare(
   return Compare(a.Encode(), b.Encode());
 }
 
-// LargeValueRef is a 160-bit hash value (20 bytes), plus an 8 byte
-// uncompressed size, and a 1 byte CompressionType code.  An
-// encoded form of it is embedded in the filenames of large value
-// files stored in the database, and the raw binary form is stored as
-// the iter->value() result for values of type kTypeLargeValueRef in
-// the table and log files that make up the database.
-struct LargeValueRef {
-  char data[29];
-
-  // Initialize a large value ref for the given data
-  static LargeValueRef Make(const Slice& data,
-                            CompressionType compression_type);
-
-  // Initialize a large value ref from a serialized, 29-byte reference value
-  static LargeValueRef FromRef(const Slice& ref) {
-    LargeValueRef result;
-    assert(ref.size() == sizeof(result.data));
-    memcpy(result.data, ref.data(), sizeof(result.data));
-    return result;
-  }
-
-  // Return the number of bytes in a LargeValueRef (not the
-  // number of bytes in the value referenced).
-  static size_t ByteSize() { return sizeof(LargeValueRef().data); }
-
-  // Return the number of bytes in the value referenced by "*this".
-  uint64_t ValueSize() const { return DecodeFixed64(&data[20]); }
-
-  CompressionType compression_type() const {
-    return static_cast<CompressionType>(data[28]);
-  }
-
-  bool operator==(const LargeValueRef& b) const {
-    return memcmp(data, b.data, sizeof(data)) == 0;
-  }
-  bool operator<(const LargeValueRef& b) const {
-    return memcmp(data, b.data, sizeof(data)) < 0;
-  }
-};
-
-// Convert the large value ref to a human-readable string suitable
-// for embedding in a large value filename.
-extern std::string LargeValueRefToFilenameString(const LargeValueRef& h);
-
-// Parse the large value filename string in "input" and store it in
-// "*h".  If successful, returns true.  Otherwise returns false.
-extern bool FilenameStringToLargeValueRef(const Slice& in, LargeValueRef* ref);
-
 inline bool ParseInternalKey(const Slice& internal_key,
                              ParsedInternalKey* result) {
   const size_t n = internal_key.size();
@@ -196,7 +147,7 @@ inline bool ParseInternalKey(const Slice& internal_key,
   result->sequence = num >> 8;
   result->type = static_cast<ValueType>(c);
   result->user_key = Slice(internal_key.data(), n - 8);
-  return (c <= static_cast<unsigned char>(kTypeLargeValueRef));
+  return (c <= static_cast<unsigned char>(kTypeValue));
 }
 
 }
