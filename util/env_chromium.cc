@@ -31,7 +31,8 @@
 
 #if defined(OS_MACOSX) || defined(OS_WIN)
 // The following are glibc-specific
-extern "C" {
+namespace {
+
 size_t fread_unlocked(void *ptr, size_t size, size_t n, FILE *file) {
   return fread(ptr, size, n, file);
 }
@@ -51,6 +52,7 @@ int fdatasync(int fildes) {
   return fsync(fildes);
 #endif
 }
+
 }
 #endif
 
