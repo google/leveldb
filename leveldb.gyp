@@ -47,6 +47,13 @@
         'include_dirs': [
           'include/',
         ],
+        'conditions': [
+          ['OS == "win"', {
+            'include_dirs': [
+              'port/win',
+            ],
+          }],
+        ],
       },
       'sources': [
         # Include and then exclude so that all files show up in IDEs, even if
