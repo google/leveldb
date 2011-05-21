@@ -183,13 +183,15 @@ class Repairer {
     // corruptions cause entire commits to be skipped instead of
     // propagating bad information (like overly large sequence
     // numbers).
-    log::Reader reader(lfile, &reporter, false/*do not checksum*/);
+    log::Reader reader(lfile, &reporter, false/*do not checksum*/,
+                       0/*initial_offset*/);
 
     // Read all the records and add to a memtable
     std::string scratch;
     Slice record;
     WriteBatch batch;
-    MemTable mem(icmp_);
+    MemTable* mem = new MemTable(icmp_);
+    mem->Ref();
     int counter = 0;
     while (reader.ReadRecord(&record, &scratch)) {
       if (record.size() < 12) {
@@ -198,7 +200,7 @@ class Repairer {
         continue;
       }
       WriteBatchInternal::SetContents(&batch, record);
-      status = WriteBatchInternal::InsertInto(&batch, &mem);
+      status = WriteBatchInternal::InsertInto(&batch, mem);
       if (status.ok()) {
         counter += WriteBatchInternal::Count(&batch);
       } else {
@@ -215,10 +217,12 @@ class Repairer {
     VersionEdit skipped;
     FileMetaData meta;
     meta.number = next_file_number_++;
-    Iterator* iter = mem.NewIterator();
+    Iterator* iter = mem->NewIterator();
     status = BuildTable(dbname_, env_, options_, table_cache_, iter,
                         &meta, &skipped);
     delete iter;
+    mem->Unref();
+    mem = NULL;
     if (status.ok()) {
       if (meta.file_size > 0) {
         table_numbers_.push_back(meta.number);

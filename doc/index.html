@@ -141,10 +141,18 @@ the batch.
 <p>
 <h1>Concurrency</h1>
 <p>
-A database may only be opened by one process at a time.  The <code>leveldb</code>
-implementation acquires a lock from the operating system to prevent
-misuse.  Within a single process, the same <code>leveldb::DB</code> object may
-be safely used by multiple concurrent threads.
+A database may only be opened by one process at a time.
+The <code>leveldb</code> implementation acquires a lock from the
+operating system to prevent misuse.  Within a single process, the
+same <code>leveldb::DB</code> object may be safely shared by multiple
+concurrent threads.  I.e., different threads may write into or fetch
+iterators or call <code>Get</code> on the same database without any
+external synchronization (the leveldb implementation will
+automatically do the required synchronization).  However other objects
+(like Iterator and WriteBatch) may require external synchronization.
+If two threads share such an object, they must protect access to it
+using their own locking protocol.  More details are available in
+the public header files.
 <p>
 <h1>Iteration</h1>
 <p>

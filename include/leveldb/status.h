@@ -4,12 +4,16 @@
 //
 // A Status encapsulates the result of an operation.  It may indicate success,
 // or it may indicate an error with an associated error message.
+//
+// Multiple threads can invoke const methods on a Status without
+// external synchronization, but if any of the threads may call a
+// non-const method, all threads accessing the same Status must use
+// external synchronization.
 
 #ifndef STORAGE_LEVELDB_INCLUDE_STATUS_H_
 #define STORAGE_LEVELDB_INCLUDE_STATUS_H_
 
 #include <string>
-#include <utility>
 #include "leveldb/slice.h"
 
 namespace leveldb {
@@ -18,7 +22,7 @@ class Status {
  public:
   // Create a success status.
   Status() : state_(NULL) { }
-  ~Status() { delete state_; }
+  ~Status() { delete[] state_; }
 
   // Copy the specified status.
   Status(const Status& s);
@@ -29,7 +33,7 @@ class Status {
 
   // Return error status of an appropriate type.
   static Status NotFound(const Slice& msg, const Slice& msg2 = Slice()) {
-    return Status(kNotFound, msg, Slice());
+    return Status(kNotFound, msg, msg2);
   }
   static Status Corruption(const Slice& msg, const Slice& msg2 = Slice()) {
     return Status(kCorruption, msg, msg2);
@@ -55,6 +59,13 @@ class Status {
   std::string ToString() const;
 
  private:
+  // OK status has a NULL state_.  Otherwise, state_ is a new[] array
+  // of the following form:
+  //    state_[0..3] == length of message
+  //    state_[4]    == code
+  //    state_[5..]  == message
+  const char* state_;
+
   enum Code {
     kOk = 0,
     kNotFound = 1,
@@ -63,21 +74,24 @@ class Status {
     kInvalidArgument = 4,
     kIOError = 5,
   };
-  Code code() const { return (state_ == NULL) ? kOk : state_->first; }
+
+  Code code() const {
+    return (state_ == NULL) ? kOk : static_cast<Code>(state_[4]);
+  }
 
   Status(Code code, const Slice& msg, const Slice& msg2);
-
-  typedef std::pair<Code, std::string> State;
-  State* state_;
+  static const char* CopyState(const char* s);
 };
 
 inline Status::Status(const Status& s) {
-  state_ = (s.state_ == NULL) ? NULL : new State(*s.state_);
+  state_ = (s.state_ == NULL) ? NULL : CopyState(s.state_);
 }
 inline void Status::operator=(const Status& s) {
-  if (this != &s) {
-    delete state_;
-    state_ = (s.state_ == NULL) ? NULL : new State(*s.state_);
+  // The following condition catches both aliasing (when this == &s),
+  // and the common case where both s and *this are ok.
+  if (state_ != s.state_) {
+    delete[] state_;
+    state_ = (s.state_ == NULL) ? NULL : CopyState(s.state_);
   }
 }
 

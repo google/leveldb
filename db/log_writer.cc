@@ -32,6 +32,7 @@ Status Writer::AddRecord(const Slice& slice) {
   // is empty, we still want to iterate once to emit a single
   // zero-length record
   Status s;
+  bool begin = true;
   do {
     const int leftover = kBlockSize - block_offset_;
     assert(leftover >= 0);
@@ -52,7 +53,6 @@ Status Writer::AddRecord(const Slice& slice) {
     const size_t fragment_length = (left < avail) ? left : avail;
 
     RecordType type;
-    const bool begin = (ptr == slice.data());
     const bool end = (left == fragment_length);
     if (begin && end) {
       type = kFullType;
@@ -67,6 +67,7 @@ Status Writer::AddRecord(const Slice& slice) {
     s = EmitPhysicalRecord(type, ptr, fragment_length);
     ptr += fragment_length;
     left -= fragment_length;
+    begin = false;
   } while (s.ok() && left > 0);
   return s;
 }

@@ -3,7 +3,6 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "leveldb/db.h"
-
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/version_set.h"
@@ -802,8 +801,17 @@ TEST(DBTest, DBOpen_Options) {
   db = NULL;
 }
 
+namespace {
+typedef std::map<std::string, std::string> KVMap;
+}
+
 class ModelDB: public DB {
  public:
+  class ModelSnapshot : public Snapshot {
+   public:
+    KVMap map_;
+  };
+
   explicit ModelDB(const Options& options): options_(options) { }
   ~ModelDB() { }
   virtual Status Put(const WriteOptions& o, const Slice& k, const Slice& v) {
@@ -824,35 +832,34 @@ class ModelDB: public DB {
       return new ModelIter(saved, true);
     } else {
       const KVMap* snapshot_state =
-          reinterpret_cast<const KVMap*>(options.snapshot->number_);
+          &(reinterpret_cast<const ModelSnapshot*>(options.snapshot)->map_);
       return new ModelIter(snapshot_state, false);
     }
   }
   virtual const Snapshot* GetSnapshot() {
-    KVMap* saved = new KVMap;
-    *saved = map_;
-    return snapshots_.New(
-        reinterpret_cast<SequenceNumber>(saved));
+    ModelSnapshot* snapshot = new ModelSnapshot;
+    snapshot->map_ = map_;
+    return snapshot;
   }
 
   virtual void ReleaseSnapshot(const Snapshot* snapshot) {
-    const KVMap* saved = reinterpret_cast<const KVMap*>(snapshot->number_);
-    delete saved;
-    snapshots_.Delete(snapshot);
+    delete reinterpret_cast<const ModelSnapshot*>(snapshot);
   }
   virtual Status Write(const WriteOptions& options, WriteBatch* batch) {
     assert(options.post_write_snapshot == NULL);   // Not supported
-    for (WriteBatchInternal::Iterator it(*batch); !it.Done(); it.Next()) {
-      switch (it.op()) {
-        case kTypeValue:
-          map_[it.key().ToString()] = it.value().ToString();
-          break;
-        case kTypeDeletion:
-          map_.erase(it.key().ToString());
-          break;
+    class Handler : public WriteBatch::Handler {
+     public:
+      KVMap* map_;
+      virtual void Put(const Slice& key, const Slice& value) {
+        (*map_)[key.ToString()] = value.ToString();
       }
-    }
-    return Status::OK();
+      virtual void Delete(const Slice& key) {
+        map_->erase(key.ToString());
+      }
+    };
+    Handler handler;
+    handler.map_ = &map_;
+    return batch->Iterate(&handler);
   }
 
   virtual bool GetProperty(const Slice& property, std::string* value) {
@@ -864,7 +871,6 @@ class ModelDB: public DB {
     }
   }
  private:
-  typedef std::map<std::string, std::string> KVMap;
   class ModelIter: public Iterator {
    public:
     ModelIter(const KVMap* map, bool owned)
@@ -897,7 +903,6 @@ class ModelDB: public DB {
   };
   const Options options_;
   KVMap map_;
-  SnapshotList snapshots_;
 };
 
 static std::string RandomKey(Random* rnd) {
@@ -1023,8 +1028,70 @@ TEST(DBTest, Randomized) {
   if (db_snap != NULL) db_->ReleaseSnapshot(db_snap);
 }
 
+std::string MakeKey(unsigned int num) {
+  char buf[30];
+  snprintf(buf, sizeof(buf), "%016u", num);
+  return std::string(buf);
+}
+
+void BM_LogAndApply(int iters, int num_base_files) {
+  std::string dbname = test::TmpDir() + "/leveldb_test_benchmark";
+  DestroyDB(dbname, Options());
+
+  DB* db = NULL;
+  Options opts;
+  opts.create_if_missing = true;
+  Status s = DB::Open(opts, dbname, &db);
+  ASSERT_OK(s);
+  ASSERT_TRUE(db != NULL);
+
+  delete db;
+  db = NULL;
+
+  Env* env = Env::Default();
+
+  InternalKeyComparator cmp(BytewiseComparator());
+  Options options;
+  VersionSet vset(dbname, &options, NULL, &cmp);
+  ASSERT_OK(vset.Recover());
+  VersionEdit vbase;
+  uint64_t fnum = 1;
+  for (int i = 0; i < num_base_files; i++) {
+    InternalKey start(MakeKey(2*fnum), 1, kTypeValue);
+    InternalKey limit(MakeKey(2*fnum+1), 1, kTypeDeletion);
+    vbase.AddFile(2, fnum++, 1 /* file size */, start, limit);
+  }
+  ASSERT_OK(vset.LogAndApply(&vbase));
+
+  uint64_t start_micros = env->NowMicros();
+
+  for (int i = 0; i < iters; i++) {
+    VersionEdit vedit;
+    vedit.DeleteFile(2, fnum);
+    InternalKey start(MakeKey(2*fnum), 1, kTypeValue);
+    InternalKey limit(MakeKey(2*fnum+1), 1, kTypeDeletion);
+    vedit.AddFile(2, fnum++, 1 /* file size */, start, limit);
+    vset.LogAndApply(&vedit);
+  }
+  uint64_t stop_micros = env->NowMicros();
+  unsigned int us = stop_micros - start_micros;
+  char buf[16];
+  snprintf(buf, sizeof(buf), "%d", num_base_files);
+  fprintf(stderr,
+          "BM_LogAndApply/%-6s   %8d iters : %9u us (%7.0f us / iter)\n",
+          buf, iters, us, ((float)us) / iters);
+}
+
 }
 
 int main(int argc, char** argv) {
+  if (argc > 1 && std::string(argv[1]) == "--benchmark") {
+    leveldb::BM_LogAndApply(1000, 1);
+    leveldb::BM_LogAndApply(1000, 100);
+    leveldb::BM_LogAndApply(1000, 10000);
+    leveldb::BM_LogAndApply(100, 100000);
+    return 0;
+  }
+
   return leveldb::test::RunAllTests();
 }

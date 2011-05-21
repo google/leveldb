@@ -37,30 +37,6 @@ class WriteBatchInternal {
   static void SetContents(WriteBatch* batch, const Slice& contents);
 
   static Status InsertInto(const WriteBatch* batch, MemTable* memtable);
-
-  // Iterate over the contents of a write batch.
-  class Iterator {
-   public:
-    explicit Iterator(const WriteBatch& batch);
-    bool Done() const { return done_; }
-    void Next();
-    ValueType op() const { return op_; }
-    const Slice& key() const { return key_; }
-    const Slice& value() const { return value_; }
-    SequenceNumber sequence_number() const { return seq_; }
-    Status status() const { return status_; }
-
-   private:
-    void GetNextEntry();
-
-    Slice input_;
-    bool done_;
-    ValueType op_;
-    Slice key_;
-    Slice value_;
-    SequenceNumber seq_;
-    Status status_;
-  };
 };
 
 }

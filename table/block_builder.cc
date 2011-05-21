@@ -80,7 +80,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
   if (counter_ < options_->block_restart_interval) {
     // See how much sharing to do with previous string
     const size_t min_length = std::min(last_key_piece.size(), key.size());
-    while ((shared < min_length) && (last_key_[shared] == key[shared])) {
+    while ((shared < min_length) && (last_key_piece[shared] == key[shared])) {
       shared++;
     }
   } else {

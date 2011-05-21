@@ -19,8 +19,21 @@ class MemTableIterator;
 
 class MemTable {
  public:
+  // MemTables are reference counted.  The initial reference count
+  // is zero and the caller must call Ref() at least once.
   explicit MemTable(const InternalKeyComparator& comparator);
-  ~MemTable();
+
+  // Increase reference count.
+  void Ref() { ++refs_; }
+
+  // Drop reference count.  Delete if no more references exist.
+  void Unref() {
+    --refs_;
+    assert(refs_ >= 0);
+    if (refs_ <= 0) {
+      delete this;
+    }
+  }
 
   // Returns an estimate of the number of bytes of data in use by this
   // data structure.
@@ -45,6 +58,8 @@ class MemTable {
            const Slice& value);
 
  private:
+  ~MemTable();  // Private since only Unref() should be used to delete it
+
   struct KeyComparator {
     const InternalKeyComparator comparator;
     explicit KeyComparator(const InternalKeyComparator& c) : comparator(c) { }
@@ -56,6 +71,7 @@ class MemTable {
   typedef SkipList<const char*, KeyComparator> Table;
 
   KeyComparator comparator_;
+  int refs_;
   Arena arena_;
   Table table_;
 

@@ -20,10 +20,12 @@ static Slice GetLengthPrefixedSlice(const char* data) {
 
 MemTable::MemTable(const InternalKeyComparator& cmp)
     : comparator_(cmp),
+      refs_(0),
       table_(comparator_, &arena_) {
 }
 
 MemTable::~MemTable() {
+  assert(refs_ == 0);
 }
 
 size_t MemTable::ApproximateMemoryUsage() { return arena_.MemoryUsage(); }
@@ -48,10 +50,15 @@ static const char* EncodeKey(std::string* scratch, const Slice& target) {
 
 class MemTableIterator: public Iterator {
  public:
-  explicit MemTableIterator(MemTable::Table* table) {
+  explicit MemTableIterator(MemTable* mem, MemTable::Table* table) {
+    mem_ = mem;
     iter_ = new MemTable::Table::Iterator(table);
+    mem->Ref();
   }
-  virtual ~MemTableIterator() { delete iter_; }
+  virtual ~MemTableIterator() {
+    delete iter_;
+    mem_->Unref();
+  }
 
   virtual bool Valid() const { return iter_->Valid(); }
   virtual void Seek(const Slice& k) { iter_->Seek(EncodeKey(&tmp_, k)); }
@@ -68,6 +75,7 @@ class MemTableIterator: public Iterator {
   virtual Status status() const { return Status::OK(); }
 
  private:
+  MemTable* mem_;
   MemTable::Table::Iterator* iter_;
   std::string tmp_;       // For passing to EncodeKey
 
@@ -77,7 +85,7 @@ class MemTableIterator: public Iterator {
 };
 
 Iterator* MemTable::NewIterator() {
-  return new MemTableIterator(&table_);
+  return new MemTableIterator(this, &table_);
 }
 
 void MemTable::Add(SequenceNumber s, ValueType type,

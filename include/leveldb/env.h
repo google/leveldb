@@ -6,6 +6,9 @@
 // operating system functionality like the filesystem etc.  Callers
 // may wish to provide a custom Env object when opening a database to
 // get fine gain control; e.g., to rate limit file system operations.
+//
+// All Env implementations are safe for concurrent access from
+// multiple threads without any external synchronization.
 
 #ifndef STORAGE_LEVELDB_INCLUDE_ENV_H_
 #define STORAGE_LEVELDB_INCLUDE_ENV_H_
@@ -160,6 +163,15 @@ class SequentialFile {
   //
   // REQUIRES: External synchronization
   virtual Status Read(size_t n, Slice* result, char* scratch) = 0;
+
+  // Skip "n" bytes from the file. This is guaranteed to be no
+  // slower that reading the same data, but may be faster.
+  //
+  // If end of file is reached, skipping will stop at the end of the
+  // file, and Skip will return OK.
+  //
+  // REQUIRES: External synchronization
+  virtual Status Skip(uint64_t n) = 0;
 };
 
 // A file abstraction for randomly reading the contents of a file.

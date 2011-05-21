@@ -319,13 +319,15 @@ class MemTableConstructor: public Constructor {
       : Constructor(cmp),
         internal_comparator_(cmp) {
     memtable_ = new MemTable(internal_comparator_);
+    memtable_->Ref();
   }
   ~MemTableConstructor() {
-    delete memtable_;
+    memtable_->Unref();
   }
   virtual Status FinishImpl(const Options& options, const KVMap& data) {
-    delete memtable_;
+    memtable_->Unref();
     memtable_ = new MemTable(internal_comparator_);
+    memtable_->Ref();
     int seq = 1;
     for (KVMap::const_iterator it = data.begin();
          it != data.end();
@@ -736,16 +738,17 @@ class MemTableTest { };
 
 TEST(MemTableTest, Simple) {
   InternalKeyComparator cmp(BytewiseComparator());
-  MemTable memtable(cmp);
+  MemTable* memtable = new MemTable(cmp);
+  memtable->Ref();
   WriteBatch batch;
   WriteBatchInternal::SetSequence(&batch, 100);
   batch.Put(std::string("k1"), std::string("v1"));
   batch.Put(std::string("k2"), std::string("v2"));
   batch.Put(std::string("k3"), std::string("v3"));
   batch.Put(std::string("largekey"), std::string("vlarge"));
-  ASSERT_TRUE(WriteBatchInternal::InsertInto(&batch, &memtable).ok());
+  ASSERT_TRUE(WriteBatchInternal::InsertInto(&batch, memtable).ok());
 
-  Iterator* iter = memtable.NewIterator();
+  Iterator* iter = memtable->NewIterator();
   iter->SeekToFirst();
   while (iter->Valid()) {
     fprintf(stderr, "key: '%s' -> '%s'\n",
@@ -755,6 +758,7 @@ TEST(MemTableTest, Simple) {
   }
 
   delete iter;
+  memtable->Unref();
 }
 
 static bool Between(uint64_t val, uint64_t low, uint64_t high) {

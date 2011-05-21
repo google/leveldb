@@ -29,9 +29,51 @@ WriteBatch::WriteBatch() {
 
 WriteBatch::~WriteBatch() { }
 
+WriteBatch::Handler::~Handler() { }
+
 void WriteBatch::Clear() {
   rep_.clear();
   rep_.resize(12);
+}
+
+Status WriteBatch::Iterate(Handler* handler) const {
+  Slice input(rep_);
+  if (input.size() < 12) {
+    return Status::Corruption("malformed WriteBatch (too small)");
+  }
+
+  input.remove_prefix(12);
+  Slice key, value;
+  int found = 0;
+  while (!input.empty()) {
+    found++;
+    char tag = input[0];
+    input.remove_prefix(1);
+    switch (tag) {
+      case kTypeValue:
+        if (GetLengthPrefixedSlice(&input, &key) &&
+            GetLengthPrefixedSlice(&input, &value)) {
+          handler->Put(key, value);
+        } else {
+          return Status::Corruption("bad WriteBatch Put");
+        }
+        break;
+      case kTypeDeletion:
+        if (GetLengthPrefixedSlice(&input, &key)) {
+          handler->Delete(key);
+        } else {
+          return Status::Corruption("bad WriteBatch Delete");
+        }
+        break;
+      default:
+        return Status::Corruption("unknown WriteBatch tag");
+    }
+  }
+  if (found != WriteBatchInternal::Count(this)) {
+    return Status::Corruption("WriteBatch has wrong count");
+  } else {
+    return Status::OK();
+  }
 }
 
 int WriteBatchInternal::Count(const WriteBatch* b) {
@@ -63,86 +105,34 @@ void WriteBatch::Delete(const Slice& key) {
   PutLengthPrefixedSlice(&rep_, key);
 }
 
+namespace {
+class MemTableInserter : public WriteBatch::Handler {
+ public:
+  SequenceNumber sequence_;
+  MemTable* mem_;
+
+  virtual void Put(const Slice& key, const Slice& value) {
+    mem_->Add(sequence_, kTypeValue, key, value);
+    sequence_++;
+  }
+  virtual void Delete(const Slice& key) {
+    mem_->Add(sequence_, kTypeDeletion, key, Slice());
+    sequence_++;
+  }
+};
+}
+
 Status WriteBatchInternal::InsertInto(const WriteBatch* b,
                                       MemTable* memtable) {
-  const int count = WriteBatchInternal::Count(b);
-  int found = 0;
-  Iterator it(*b);
-  for (; !it.Done(); it.Next()) {
-    switch (it.op()) {
-      case kTypeDeletion:
-        memtable->Add(it.sequence_number(), kTypeDeletion, it.key(), Slice());
-        break;
-      case kTypeValue:
-        memtable->Add(it.sequence_number(), kTypeValue, it.key(), it.value());
-        break;
-    }
-    found++;
-  }
-  if (!it.status().ok()) {
-    return it.status();
-  } else if (found != count) {
-    return Status::Corruption("wrong count in WriteBatch");
-  }
-  return Status::OK();
+  MemTableInserter inserter;
+  inserter.sequence_ = WriteBatchInternal::Sequence(b);
+  inserter.mem_ = memtable;
+  return b->Iterate(&inserter);
 }
 
 void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
   assert(contents.size() >= 12);
   b->rep_.assign(contents.data(), contents.size());
-}
-
-WriteBatchInternal::Iterator::Iterator(const WriteBatch& batch)
-    : input_(WriteBatchInternal::Contents(&batch)),
-      done_(false) {
-  if (input_.size() < 12) {
-    done_ = true;
-  } else {
-    seq_ = WriteBatchInternal::Sequence(&batch),
-    input_.remove_prefix(12);
-    GetNextEntry();
-  }
-}
-
-void WriteBatchInternal::Iterator::Next() {
-  assert(!done_);
-  seq_++;
-  GetNextEntry();
-}
-
-void WriteBatchInternal::Iterator::GetNextEntry() {
-  if (input_.empty()) {
-    done_ = true;
-    return;
-  }
-  char tag = input_[0];
-  input_.remove_prefix(1);
-  switch (tag) {
-    case kTypeValue:
-      if (GetLengthPrefixedSlice(&input_, &key_) &&
-          GetLengthPrefixedSlice(&input_, &value_)) {
-        op_ = static_cast<ValueType>(tag);
-      } else {
-        status_ = Status::Corruption("bad WriteBatch Put");
-        done_ = true;
-        input_.clear();
-      }
-      break;
-    case kTypeDeletion:
-      if (GetLengthPrefixedSlice(&input_, &key_)) {
-        op_ = kTypeDeletion;
-      } else {
-        status_ = Status::Corruption("bad WriteBatch Delete");
-        done_ = true;
-        input_.clear();
-      }
-      break;
-    default:
-      status_ = Status::Corruption("unknown WriteBatch tag");
-      done_ = true;
-      input_.clear();
-      break;
-  }
 }
 
 }

@@ -59,8 +59,8 @@ class Version {
 
   VersionSet* vset_;            // VersionSet to which this Version belongs
   Version* next_;               // Next version in linked list
+  Version* prev_;               // Previous version in linked list
   int refs_;                    // Number of live refs to this version
-  MemTable* cleanup_mem_;       // NULL, or table to delete when version dropped
 
   // List of files per level
   std::vector<FileMetaData*> files_[config::kNumLevels];
@@ -72,8 +72,7 @@ class Version {
   int compaction_level_;
 
   explicit Version(VersionSet* vset)
-      : vset_(vset), next_(NULL), refs_(0),
-        cleanup_mem_(NULL),
+      : vset_(vset), next_(this), prev_(this), refs_(0),
         compaction_score_(-1),
         compaction_level_(-1) {
   }
@@ -95,10 +94,8 @@ class VersionSet {
 
   // Apply *edit to the current version to form a new descriptor that
   // is both saved to persistent state and installed as the new
-  // current version.  Iff Apply() returns OK, arrange to delete
-  // cleanup_mem (if cleanup_mem != NULL) when it is no longer needed
-  // by older versions.
-  Status LogAndApply(VersionEdit* edit, MemTable* cleanup_mem);
+  // current version.
+  Status LogAndApply(VersionEdit* edit);
 
   // Recover the last saved descriptor from persistent storage.
   Status Recover();
@@ -171,19 +168,20 @@ class VersionSet {
   // "key" as of version "v".
   uint64_t ApproximateOffsetOf(Version* v, const InternalKey& key);
 
+  // Return a human-readable short (single-line) summary of the number
+  // of files per level.  Uses *scratch as backing store.
+  struct LevelSummaryStorage {
+    char buffer[100];
+  };
+  const char* LevelSummary(LevelSummaryStorage* scratch) const;
+
  private:
   class Builder;
 
   friend class Compaction;
   friend class Version;
 
-  Status Finalize(Version* v);
-
-  // Delete any old versions that are no longer needed.
-  void MaybeDeleteOldVersions();
-
-  struct BySmallestKey;
-  Status SortLevel(Version* v, uint64_t level);
+  void Finalize(Version* v);
 
   void GetOverlappingInputs(
       int level,
@@ -202,6 +200,8 @@ class VersionSet {
 
   void SetupOtherInputs(Compaction* c);
 
+  void AppendVersion(Version* v);
+
   Env* const env_;
   const std::string dbname_;
   const Options* const options_;
@@ -216,10 +216,8 @@ class VersionSet {
   // Opened lazily
   WritableFile* descriptor_file_;
   log::Writer* descriptor_log_;
-
-  // Versions are kept in a singly linked list that is never empty
-  Version* current_;    // Pointer to the last (newest) list entry
-  Version* oldest_;     // Pointer to the first (oldest) list entry
+  Version dummy_versions_;  // Head of circular doubly-linked list of versions.
+  Version* current_;        // == dummy_versions_.prev_
 
   // Per-level key at which the next compaction at that level should start.
   // Either an empty string, or a valid InternalKey.
@@ -265,8 +263,8 @@ class Compaction {
   bool IsBaseLevelForKey(const Slice& user_key);
 
   // Returns true iff we should stop building the current output
-  // before processing "key".
-  bool ShouldStopBefore(const InternalKey& key);
+  // before processing "internal_key".
+  bool ShouldStopBefore(const Slice& internal_key);
 
   // Release the input version for the compaction, once the compaction
   // is successful.

@@ -17,14 +17,14 @@ However the organization of the files that make up the representation
 is somewhat different and is explained below.
 
 <p>
-Each database is represented by a set of file stored in a directory.
+Each database is represented by a set of files stored in a directory.
 There are several different types of files as documented below:
 <p>
 <h2>Log files</h2>
 <p>
 A log file (*.log) stores a sequence of recent updates.  Each update
 is appended to the current log file.  When the log file reaches a
-pre-determined size (approximately 1MB by default), it is converted
+pre-determined size (approximately 4MB by default), it is converted
 to a sorted table (see below) and a new log file is created for future
 updates.
 <p>
@@ -83,19 +83,15 @@ Other files used for miscellaneous purposes may also be present
 <h1>Level 0</h1>
 When the log file grows above a certain size (1MB by default):
 <ul>
-<li>Write the contents of the current memtable to an sstable
-<li>Replace the current memtable by a brand new empty memtable
-<li>Switch to a new log file
+<li>Create a brand new memtable and log file and direct future updates here
+<li>In the background:
+<ul>
+<li>Write the contents of the previous memtable to an sstable
+<li>Discard the memtable
 <li>Delete the old log file and the old memtable
+<li>Add the new sstable to the young (level-0) level.
 </ul>
-Experimental measurements show that generating an sstable from a 1MB
-log file takes ~12ms, which seems like an acceptable latency hiccup to
-add infrequently to a log write.
-
-<p>
-The new sstable is added to a special level-0 level.  level-0 contains
-a set of files (up to 4 by default).  However unlike other levels,
-these files do not cover disjoint ranges, but may overlap each other.
+</ul>
 
 <h1>Compactions</h1>
 
@@ -162,8 +158,8 @@ read.
 <p>
 Solution 1: To reduce this problem, we might want to increase the log
 switching threshold when the number of level-0 files is large.  Though
-the downside is that the larger this threshold, the larger the delay
-that we will add to write latency when a write triggers a log switch.
+the downside is that the larger this threshold, the more memory we will
+need to hold the corresponding memtable.
 
 <p>
 Solution 2: We might want to decrease write rate artificially when the

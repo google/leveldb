@@ -14,10 +14,11 @@ namespace leveldb {
 
 static std::string PrintContents(WriteBatch* b) {
   InternalKeyComparator cmp(BytewiseComparator());
-  MemTable mem(cmp);
+  MemTable* mem = new MemTable(cmp);
+  mem->Ref();
   std::string state;
-  Status s = WriteBatchInternal::InsertInto(b, &mem);
-  Iterator* iter = mem.NewIterator();
+  Status s = WriteBatchInternal::InsertInto(b, mem);
+  Iterator* iter = mem->NewIterator();
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     ParsedInternalKey ikey;
     ASSERT_TRUE(ParseInternalKey(iter->key(), &ikey));
@@ -42,6 +43,7 @@ static std::string PrintContents(WriteBatch* b) {
   if (!s.ok()) {
     state.append("ParseError()");
   }
+  mem->Unref();
   return state;
 }
 

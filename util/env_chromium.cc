@@ -141,6 +141,13 @@ class ChromiumSequentialFile: public SequentialFile {
     }
     return s;
   }
+
+  virtual Status Skip(uint64_t n) {
+    if (fseek(file_, n, SEEK_CUR)) {
+      return Status::IOError(filename_, strerror(errno));
+    }
+    return Status::OK();
+  }
 };
 
 class ChromiumRandomAccessFile: public RandomAccessFile {

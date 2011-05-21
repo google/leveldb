@@ -60,7 +60,6 @@ class LogTest {
 
     virtual Status Read(size_t n, Slice* result, char* scratch) {
       ASSERT_TRUE(!returned_partial_) << "must not Read() after eof/error";
-      ASSERT_EQ(kBlockSize, n);
 
       if (force_error_) {
         force_error_ = false;
@@ -74,6 +73,17 @@ class LogTest {
       }
       *result = Slice(contents_.data(), n);
       contents_.remove_prefix(n);
+      return Status::OK();
+    }
+
+    virtual Status Skip(size_t n) {
+      if (n > contents_.size()) {
+        contents_.clear();
+        return Status::NotFound("in-memory file skipepd past end");
+      }
+
+      contents_.remove_prefix(n);
+
       return Status::OK();
     }
   };
@@ -97,10 +107,15 @@ class LogTest {
   Writer writer_;
   Reader reader_;
 
+  // Record metadata for testing initial offset functionality
+  static size_t initial_offset_record_sizes_[];
+  static uint64_t initial_offset_last_record_offsets_[];
+
  public:
   LogTest() : reading_(false),
               writer_(&dest_),
-              reader_(&source_, &report_, true/*checksum*/) {
+              reader_(&source_, &report_, true/*checksum*/,
+                      0/*initial_offset*/) {
   }
 
   void Write(const std::string& msg) {
@@ -153,6 +168,10 @@ class LogTest {
     return report_.dropped_bytes_;
   }
 
+  std::string ReportMessage() const {
+    return report_.message_;
+  }
+
   // Returns OK iff recorded error message contains "msg"
   std::string MatchError(const std::string& msg) const {
     if (report_.message_.find(msg) == std::string::npos) {
@@ -161,7 +180,60 @@ class LogTest {
       return "OK";
     }
   }
+
+  void WriteInitialOffsetLog() {
+    for (int i = 0; i < 4; i++) {
+      std::string record(initial_offset_record_sizes_[i],
+                         static_cast<char>('a' + i));
+      Write(record);
+    }
+  }
+
+  void CheckOffsetPastEndReturnsNoRecords(uint64_t offset_past_end) {
+    WriteInitialOffsetLog();
+    reading_ = true;
+    source_.contents_ = Slice(dest_.contents_);
+    Reader* offset_reader = new Reader(&source_, &report_, true/*checksum*/,
+                                       WrittenBytes() + offset_past_end);
+    Slice record;
+    std::string scratch;
+    ASSERT_TRUE(!offset_reader->ReadRecord(&record, &scratch));
+    delete offset_reader;
+  }
+
+  void CheckInitialOffsetRecord(uint64_t initial_offset,
+                                int expected_record_offset) {
+    WriteInitialOffsetLog();
+    reading_ = true;
+    source_.contents_ = Slice(dest_.contents_);
+    Reader* offset_reader = new Reader(&source_, &report_, true/*checksum*/,
+                                       initial_offset);
+    Slice record;
+    std::string scratch;
+    ASSERT_TRUE(offset_reader->ReadRecord(&record, &scratch));
+    ASSERT_EQ(initial_offset_record_sizes_[expected_record_offset],
+              record.size());
+    ASSERT_EQ(initial_offset_last_record_offsets_[expected_record_offset],
+              offset_reader->LastRecordOffset());
+    ASSERT_EQ((char)('a' + expected_record_offset), record.data()[0]);
+    delete offset_reader;
+  }
+
 };
+
+size_t LogTest::initial_offset_record_sizes_[] =
+    {10000,  // Two sizable records in first block
+     10000,
+     2 * log::kBlockSize - 1000,  // Span three blocks
+     1};
+
+uint64_t LogTest::initial_offset_last_record_offsets_[] =
+    {0,
+     kHeaderSize + 10000,
+     2 * (kHeaderSize + 10000),
+     2 * (kHeaderSize + 10000) +
+         (2 * log::kBlockSize - 1000) + 3 * kHeaderSize};
+
 
 TEST(LogTest, Empty) {
   ASSERT_EQ("EOF", Read());
@@ -211,6 +283,19 @@ TEST(LogTest, MarginalTrailer) {
   ASSERT_EQ("", Read());
   ASSERT_EQ("bar", Read());
   ASSERT_EQ("EOF", Read());
+}
+
+TEST(LogTest, MarginalTrailer2) {
+  // Make a trailer that is exactly the same length as an empty record.
+  const int n = kBlockSize - 2*kHeaderSize;
+  Write(BigString("foo", n));
+  ASSERT_EQ(kBlockSize - kHeaderSize, WrittenBytes());
+  Write("bar");
+  ASSERT_EQ(BigString("foo", n), Read());
+  ASSERT_EQ("bar", Read());
+  ASSERT_EQ("EOF", Read());
+  ASSERT_EQ(0, DroppedBytes());
+  ASSERT_EQ("", ReportMessage());
 }
 
 TEST(LogTest, ShortTrailer) {
@@ -351,6 +436,60 @@ TEST(LogTest, ErrorJoinsRecords) {
   const int dropped = DroppedBytes();
   ASSERT_LE(dropped, 2*kBlockSize + 100);
   ASSERT_GE(dropped, 2*kBlockSize);
+}
+
+TEST(LogTest, ReadStart) {
+  CheckInitialOffsetRecord(0, 0);
+}
+
+TEST(LogTest, ReadSecondOneOff) {
+  CheckInitialOffsetRecord(1, 1);
+}
+
+TEST(LogTest, ReadSecondTenThousand) {
+  CheckInitialOffsetRecord(10000, 1);
+}
+
+TEST(LogTest, ReadSecondStart) {
+  CheckInitialOffsetRecord(10007, 1);
+}
+
+TEST(LogTest, ReadThirdOneOff) {
+  CheckInitialOffsetRecord(10008, 2);
+}
+
+TEST(LogTest, ReadThirdStart) {
+  CheckInitialOffsetRecord(20014, 2);
+}
+
+TEST(LogTest, ReadFourthOneOff) {
+  CheckInitialOffsetRecord(20015, 3);
+}
+
+TEST(LogTest, ReadFourthFirstBlockTrailer) {
+  CheckInitialOffsetRecord(log::kBlockSize - 4, 3);
+}
+
+TEST(LogTest, ReadFourthMiddleBlock) {
+  CheckInitialOffsetRecord(log::kBlockSize + 1, 3);
+}
+
+TEST(LogTest, ReadFourthLastBlock) {
+  CheckInitialOffsetRecord(2 * log::kBlockSize + 1, 3);
+}
+
+TEST(LogTest, ReadFourthStart) {
+  CheckInitialOffsetRecord(
+      2 * (kHeaderSize + 1000) + (2 * log::kBlockSize - 1000) + 3 * kHeaderSize,
+      3);
+}
+
+TEST(LogTest, ReadEnd) {
+  CheckOffsetPastEndReturnsNoRecords(0);
+}
+
+TEST(LogTest, ReadPastEnd) {
+  CheckOffsetPastEndReturnsNoRecords(5);
 }
 
 }
