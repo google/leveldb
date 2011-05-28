@@ -875,22 +875,49 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   return status;
 }
 
+namespace {
+struct IterState {
+  port::Mutex* mu;
+  Version* version;
+  MemTable* mem;
+  MemTable* imm;
+};
+
+static void CleanupIteratorState(void* arg1, void* arg2) {
+  IterState* state = reinterpret_cast<IterState*>(arg1);
+  state->mu->Lock();
+  state->mem->Unref();
+  if (state->imm != NULL) state->imm->Unref();
+  state->version->Unref();
+  state->mu->Unlock();
+  delete state;
+}
+}
+
 Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
                                       SequenceNumber* latest_snapshot) {
+  IterState* cleanup = new IterState;
   mutex_.Lock();
   *latest_snapshot = versions_->LastSequence();
 
   // Collect together all needed child iterators
   std::vector<Iterator*> list;
   list.push_back(mem_->NewIterator());
+  mem_->Ref();
   if (imm_ != NULL) {
     list.push_back(imm_->NewIterator());
+    imm_->Ref();
   }
   versions_->current()->AddIterators(options, &list);
   Iterator* internal_iter =
       NewMergingIterator(&internal_comparator_, &list[0], list.size());
   versions_->current()->Ref();
-  internal_iter->RegisterCleanup(&DBImpl::Unref, this, versions_->current());
+
+  cleanup->mu = &mutex_;
+  cleanup->mem = mem_;
+  cleanup->imm = imm_;
+  cleanup->version = versions_->current();
+  internal_iter->RegisterCleanup(CleanupIteratorState, cleanup, NULL);
 
   mutex_.Unlock();
   return internal_iter;
@@ -935,13 +962,6 @@ Iterator* DBImpl::NewIterator(const ReadOptions& options) {
       (options.snapshot != NULL
        ? reinterpret_cast<const SnapshotImpl*>(options.snapshot)->number_
        : latest_snapshot));
-}
-
-void DBImpl::Unref(void* arg1, void* arg2) {
-  DBImpl* impl = reinterpret_cast<DBImpl*>(arg1);
-  Version* v = reinterpret_cast<Version*>(arg2);
-  MutexLock l(&impl->mutex_);
-  v->Unref();
 }
 
 const Snapshot* DBImpl::GetSnapshot() {

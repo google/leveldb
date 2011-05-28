@@ -12,10 +12,6 @@ namespace leveldb {
 // This can help avoid virtual function calls and also gives better
 // cache locality.
 class IteratorWrapper {
- private:
-  Iterator* iter_;
-  bool valid_;
-  Slice key_;
  public:
   IteratorWrapper(): iter_(NULL), valid_(false) { }
   explicit IteratorWrapper(Iterator* iter): iter_(NULL) {
@@ -56,9 +52,12 @@ class IteratorWrapper {
       key_ = iter_->key();
     }
   }
+
+  Iterator* iter_;
+  bool valid_;
+  Slice key_;
 };
 
-}
-
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_TABLE_ITERATOR_WRAPPER_H_

@@ -50,33 +50,24 @@ static const char* EncodeKey(std::string* scratch, const Slice& target) {
 
 class MemTableIterator: public Iterator {
  public:
-  explicit MemTableIterator(MemTable* mem, MemTable::Table* table) {
-    mem_ = mem;
-    iter_ = new MemTable::Table::Iterator(table);
-    mem->Ref();
-  }
-  virtual ~MemTableIterator() {
-    delete iter_;
-    mem_->Unref();
-  }
+  explicit MemTableIterator(MemTable::Table* table) : iter_(table) { }
 
-  virtual bool Valid() const { return iter_->Valid(); }
-  virtual void Seek(const Slice& k) { iter_->Seek(EncodeKey(&tmp_, k)); }
-  virtual void SeekToFirst() { iter_->SeekToFirst(); }
-  virtual void SeekToLast() { iter_->SeekToLast(); }
-  virtual void Next() { iter_->Next(); }
-  virtual void Prev() { iter_->Prev(); }
-  virtual Slice key() const { return GetLengthPrefixedSlice(iter_->key()); }
+  virtual bool Valid() const { return iter_.Valid(); }
+  virtual void Seek(const Slice& k) { iter_.Seek(EncodeKey(&tmp_, k)); }
+  virtual void SeekToFirst() { iter_.SeekToFirst(); }
+  virtual void SeekToLast() { iter_.SeekToLast(); }
+  virtual void Next() { iter_.Next(); }
+  virtual void Prev() { iter_.Prev(); }
+  virtual Slice key() const { return GetLengthPrefixedSlice(iter_.key()); }
   virtual Slice value() const {
-    Slice key_slice = GetLengthPrefixedSlice(iter_->key());
+    Slice key_slice = GetLengthPrefixedSlice(iter_.key());
     return GetLengthPrefixedSlice(key_slice.data() + key_slice.size());
   }
 
   virtual Status status() const { return Status::OK(); }
 
  private:
-  MemTable* mem_;
-  MemTable::Table::Iterator* iter_;
+  MemTable::Table::Iterator iter_;
   std::string tmp_;       // For passing to EncodeKey
 
   // No copying allowed
@@ -85,7 +76,7 @@ class MemTableIterator: public Iterator {
 };
 
 Iterator* MemTable::NewIterator() {
-  return new MemTableIterator(this, &table_);
+  return new MemTableIterator(&table_);
 }
 
 void MemTable::Add(SequenceNumber s, ValueType type,

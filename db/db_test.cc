@@ -801,6 +801,101 @@ TEST(DBTest, DBOpen_Options) {
   db = NULL;
 }
 
+// Multi-threaded test:
+namespace {
+
+static const int kNumThreads = 4;
+static const int kTestSeconds = 10;
+static const int kNumKeys = 1000;
+
+struct MTState {
+  DBTest* test;
+  port::AtomicPointer stop;
+  port::AtomicPointer counter[kNumThreads];
+  port::AtomicPointer thread_done[kNumThreads];
+};
+
+struct MTThread {
+  MTState* state;
+  int id;
+};
+
+static void MTThreadBody(void* arg) {
+  MTThread* t = reinterpret_cast<MTThread*>(arg);
+  DB* db = t->state->test->db_;
+  uintptr_t counter = 0;
+  fprintf(stderr, "... starting thread %d\n", t->id);
+  Random rnd(1000 + t->id);
+  std::string value;
+  char valbuf[1500];
+  while (t->state->stop.Acquire_Load() == NULL) {
+    t->state->counter[t->id].Release_Store(reinterpret_cast<void*>(counter));
+
+    int key = rnd.Uniform(kNumKeys);
+    char keybuf[20];
+    snprintf(keybuf, sizeof(keybuf), "%016d", key);
+
+    if (rnd.OneIn(2)) {
+      // Write values of the form <key, my id, counter>.
+      // We add some padding for force compactions.
+      snprintf(valbuf, sizeof(valbuf), "%d.%d.%-1000d",
+               key, t->id, static_cast<int>(counter));
+      ASSERT_OK(db->Put(WriteOptions(), Slice(keybuf), Slice(valbuf)));
+    } else {
+      // Read a value and verify that it matches the pattern written above.
+      Status s = db->Get(ReadOptions(), Slice(keybuf), &value);
+      if (s.IsNotFound()) {
+        // Key has not yet been written
+      } else {
+        // Check that the writer thread counter is >= the counter in the value
+        ASSERT_OK(s);
+        int k, w, c;
+        ASSERT_EQ(3, sscanf(value.c_str(), "%d.%d.%d", &k, &w, &c)) << value;
+        ASSERT_EQ(k, key);
+        ASSERT_GE(w, 0);
+        ASSERT_LT(w, kNumThreads);
+        ASSERT_LE(c, reinterpret_cast<uintptr_t>(
+            t->state->counter[w].Acquire_Load()));
+      }
+    }
+    counter++;
+  }
+  t->state->thread_done[t->id].Release_Store(t);
+  fprintf(stderr, "... stopping thread %d after %d ops\n", t->id, int(counter));
+}
+
+}
+
+TEST(DBTest, MultiThreaded) {
+  // Initialize state
+  MTState mt;
+  mt.test = this;
+  mt.stop.Release_Store(0);
+  for (int id = 0; id < kNumThreads; id++) {
+    mt.counter[id].Release_Store(0);
+    mt.thread_done[id].Release_Store(0);
+  }
+
+  // Start threads
+  MTThread thread[kNumThreads];
+  for (int id = 0; id < kNumThreads; id++) {
+    thread[id].state = &mt;
+    thread[id].id = id;
+    env_->StartThread(MTThreadBody, &thread[id]);
+  }
+
+  // Let them run for a while
+  env_->SleepForMicroseconds(kTestSeconds * 1000000);
+
+  // Stop the threads and wait for them to finish
+  mt.stop.Release_Store(&mt);
+  for (int id = 0; id < kNumThreads; id++) {
+    while (mt.thread_done[id].Acquire_Load() == NULL) {
+      env_->SleepForMicroseconds(100000);
+    }
+  }
+}
+
 namespace {
 typedef std::map<std::string, std::string> KVMap;
 }

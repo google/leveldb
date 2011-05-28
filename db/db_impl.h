@@ -77,10 +77,6 @@ class DBImpl : public DB {
   // Delete any unneeded files and stale in-memory entries.
   void DeleteObsoleteFiles();
 
-  // Called when an iterator over a particular version of the
-  // descriptor goes away.
-  static void Unref(void* arg1, void* arg2);
-
   // Compact the in-memory write buffer to disk.  Switches to a new
   // log-file/memtable and writes a new descriptor iff successful.
   Status CompactMemTable();
