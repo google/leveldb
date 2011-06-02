@@ -35,6 +35,9 @@
         # The base libary is a lightweight abstraction layer for things like
         # threads and IO. http://src.chromium.org/viewvc/chrome/trunk/src/base/
         '../../base/base.gyp:base',
+        # base::LazyInstance is a template that pulls in dynamic_annotations so
+        # we need to explictly link in the code for dynamic_annotations.
+        '../../base/third_party/dynamic_annotations/dynamic_annotations.gyp:dynamic_annotations',
       ],
       'conditions': [
         ['use_snappy', {
