@@ -119,8 +119,7 @@ class DBImpl : public DB {
   // State below is protected by mutex_
   port::Mutex mutex_;
   port::AtomicPointer shutting_down_;
-  port::CondVar bg_cv_;          // Signalled when !bg_compaction_scheduled_
-  port::CondVar compacting_cv_;  // Signalled when !compacting_
+  port::CondVar bg_cv_;          // Signalled when background work finishes
   MemTable* mem_;
   MemTable* imm_;                // Memtable being compacted
   port::AtomicPointer has_imm_;  // So bg thread can detect non-NULL imm_
@@ -135,8 +134,13 @@ class DBImpl : public DB {
   // Has a background compaction been scheduled or is running?
   bool bg_compaction_scheduled_;
 
-  // Is there a compaction running?
-  bool compacting_;
+  // Information for a manual compaction
+  struct ManualCompaction {
+    int level;
+    std::string begin;
+    std::string end;
+  };
+  ManualCompaction* manual_compaction_;
 
   VersionSet* versions_;
 
