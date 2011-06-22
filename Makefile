@@ -28,9 +28,22 @@ PLATFORM_CFLAGS = -DLEVELDB_PLATFORM_POSIX -std=c++0x
 PORT_MODULE = port_posix.o
 endif # UNAME
 
-CFLAGS = -c -I. -I./include $(PLATFORM_CFLAGS) $(OPT)
+# Set 'SNAPPY' to 1 if you have the Snappy compression library
+# installed and want to enable its use in LevelDB
+# (see http://code.google.com/p/snappy/)
+SNAPPY=0
 
-LDFLAGS=-lpthread
+ifeq ($(SNAPPY), 0)
+SNAPPY_CFLAGS=
+SNAPPY_LDFLAGS=
+else
+SNAPPY_CFLAGS=-DSNAPPY
+SNAPPY_LDFLAGS=-lsnappy
+endif
+
+CFLAGS = -c -I. -I./include $(PLATFORM_CFLAGS) $(OPT) $(SNAPPY_CFLAGS)
+
+LDFLAGS=-lpthread $(SNAPPY_LDFLAGS)
 
 LIBOBJECTS = \
 	./db/builder.o \
@@ -85,6 +98,7 @@ TESTS = \
 	skiplist_test \
 	table_test \
 	version_edit_test \
+	version_set_test \
 	write_batch_test
 
 PROGRAMS = db_bench $(TESTS)
@@ -151,17 +165,23 @@ skiplist_test: db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS)
 version_edit_test: db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CC) $(LDFLAGS) db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
+version_set_test: db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS)
+	$(CC) $(LDFLAGS) db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+
 write_batch_test: db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CC) $(LDFLAGS) db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 ifeq ($(PLATFORM), IOS)
 # For iOS, create universal object files to be used on both the simulator and
 # a device.
+SIMULATORROOT=/Developer/Platforms/iPhoneSimulator.platform/Developer
+DEVICEROOT=/Developer/Platforms/iPhoneOS.platform/Developer
+IOSVERSION=$(shell defaults read /Developer/Platforms/iPhoneOS.platform/version CFBundleShortVersionString)
 .cc.o:
 	mkdir -p ios-x86/$(dir $@)
-	$(CC) $(CFLAGS) -isysroot /Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator4.3.sdk -arch i686 $< -o ios-x86/$@
+	$(SIMULATORROOT)/usr/bin/$(CC) $(CFLAGS) -isysroot $(SIMULATORROOT)/SDKs/iPhoneSimulator$(IOSVERSION).sdk -arch i686 $< -o ios-x86/$@
 	mkdir -p ios-arm/$(dir $@)
-	$(CC) $(CFLAGS) -isysroot /Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS4.3.sdk -arch armv6 -arch armv7 $< -o ios-arm/$@
+	$(DEVICEROOT)/usr/bin/$(CC) $(CFLAGS) -isysroot $(DEVICEROOT)/SDKs/iPhoneOS$(IOSVERSION).sdk -arch armv6 -arch armv7 $< -o ios-arm/$@
 	lipo ios-x86/$@ ios-arm/$@ -create -output $@
 else
 .cc.o:

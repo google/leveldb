@@ -19,8 +19,7 @@ Status BuildTable(const std::string& dbname,
                   const Options& options,
                   TableCache* table_cache,
                   Iterator* iter,
-                  FileMetaData* meta,
-                  VersionEdit* edit) {
+                  FileMetaData* meta) {
   Status s;
   meta->file_size = 0;
   iter->SeekToFirst();
@@ -79,8 +78,7 @@ Status BuildTable(const std::string& dbname,
   }
 
   if (s.ok() && meta->file_size > 0) {
-    edit->AddFile(0, meta->number, meta->file_size,
-                  meta->smallest, meta->largest);
+    // Keep it
   } else {
     env->DeleteFile(fname);
   }

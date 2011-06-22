@@ -85,7 +85,7 @@ class DBImpl : public DB {
                         VersionEdit* edit,
                         SequenceNumber* max_sequence);
 
-  Status WriteLevel0Table(MemTable* mem, VersionEdit* edit);
+  Status WriteLevel0Table(MemTable* mem, VersionEdit* edit, Version* base);
 
   Status MakeRoomForWrite(bool force /* compact even if there is room? */);
 
@@ -124,6 +124,7 @@ class DBImpl : public DB {
   MemTable* imm_;                // Memtable being compacted
   port::AtomicPointer has_imm_;  // So bg thread can detect non-NULL imm_
   WritableFile* logfile_;
+  uint64_t logfile_number_;
   log::Writer* log_;
   SnapshotList snapshots_;
 

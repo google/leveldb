@@ -57,6 +57,12 @@ class MemTable {
            const Slice& key,
            const Slice& value);
 
+  // If memtable contains a value for key, store it in *value and return true.
+  // If memtable contains a deletion for key, store a NotFound() error
+  // in *status and return true.
+  // Else, return false.
+  bool Get(const LookupKey& key, std::string* value, Status* s);
+
  private:
   ~MemTable();  // Private since only Unref() should be used to delete it
 

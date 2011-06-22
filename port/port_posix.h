@@ -9,6 +9,9 @@
 
 #include <endian.h>
 #include <pthread.h>
+#ifdef SNAPPY
+#include <snappy.h>
+#endif
 #include <stdint.h>
 #include <string>
 #include <cstdatomic>
@@ -72,15 +75,30 @@ class AtomicPointer {
   }
 };
 
-// TODO(gabor): Implement actual compress
 inline bool Snappy_Compress(const char* input, size_t input_length,
                             std::string* output) {
+#ifdef SNAPPY
+  output->resize(snappy::MaxCompressedLength(input_length));
+  size_t outlen;
+  snappy::RawCompress(input, input_length, &(*output)[0], &outlen);
+  output->resize(outlen);
+  return true;
+#endif
+
   return false;
 }
 
-// TODO(gabor): Implement actual uncompress
 inline bool Snappy_Uncompress(const char* input_data, size_t input_length,
                               std::string* output) {
+#ifdef SNAPPY
+  size_t ulength;
+  if (!snappy::GetUncompressedLength(input_data, ulength, &ulength)) {
+    return false;
+  }
+  output->resize(ulength);
+  return snappy::RawUncompress(input_data, input_length, &(*output)[0]);
+#endif
+
   return false;
 }
 

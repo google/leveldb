@@ -727,11 +727,15 @@ TEST(Harness, RandomizedLongDB) {
   Test(&rnd);
 
   // We must have created enough data to force merging
-  std::string l0_files, l1_files;
-  ASSERT_TRUE(db()->GetProperty("leveldb.num-files-at-level0", &l0_files));
-  ASSERT_TRUE(db()->GetProperty("leveldb.num-files-at-level1", &l1_files));
-  ASSERT_GT(atoi(l0_files.c_str()) + atoi(l1_files.c_str()), 0);
-
+  int files = 0;
+  for (int level = 0; level < config::kNumLevels; level++) {
+    std::string value;
+    char name[100];
+    snprintf(name, sizeof(name), "leveldb.num-files-at-level%d", level);
+    ASSERT_TRUE(db()->GetProperty(name, &value));
+    files += atoi(value.c_str());
+  }
+  ASSERT_GT(files, 0);
 }
 
 class MemTableTest { };

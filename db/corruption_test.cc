@@ -27,13 +27,12 @@ static const int kValueSize = 1000;
 class CorruptionTest {
  public:
   test::ErrorEnv env_;
-  Random rnd_;
   std::string dbname_;
   Cache* tiny_cache_;
   Options options_;
   DB* db_;
 
-  CorruptionTest() : rnd_(test::RandomSeed()) {
+  CorruptionTest() {
     tiny_cache_ = NewLRUCache(100);
     options_.env = &env_;
     dbname_ = test::TmpDir() + "/db_test";
@@ -122,15 +121,17 @@ class CorruptionTest {
     ASSERT_OK(env_.GetChildren(dbname_, &filenames));
     uint64_t number;
     FileType type;
-    std::vector<std::string> candidates;
+    std::string fname;
+    int picked_number = -1;
     for (int i = 0; i < filenames.size(); i++) {
       if (ParseFileName(filenames[i], &number, &type) &&
-          type == filetype) {
-        candidates.push_back(dbname_ + "/" + filenames[i]);
+          type == filetype &&
+          int(number) > picked_number) {  // Pick latest file
+        fname = dbname_ + "/" + filenames[i];
+        picked_number = number;
       }
     }
-    ASSERT_TRUE(!candidates.empty()) << filetype;
-    std::string fname = candidates[rnd_.Uniform(candidates.size())];
+    ASSERT_TRUE(!fname.empty()) << filetype;
 
     struct stat sbuf;
     if (stat(fname.c_str(), &sbuf) != 0) {
@@ -239,8 +240,6 @@ TEST(CorruptionTest, TableFileIndexData) {
   Build(10000);  // Enough to build multiple Tables
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
-  dbi->TEST_CompactRange(0, "", "~");
-  dbi->TEST_CompactRange(1, "", "~");
 
   Corrupt(kTableFile, -2000, 500);
   Reopen();
@@ -296,7 +295,8 @@ TEST(CorruptionTest, CompactionInputError) {
   Build(10);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
-  ASSERT_EQ(1, Property("leveldb.num-files-at-level0"));
+  const int last = config::kNumLevels - 1;
+  ASSERT_EQ(1, Property("leveldb.num-files-at-level" + NumberToString(last)));
 
   Corrupt(kTableFile, 100, 1);
   Check(9, 9);
@@ -304,8 +304,6 @@ TEST(CorruptionTest, CompactionInputError) {
   // Force compactions by writing lots of values
   Build(10000);
   Check(10000, 10000);
-  dbi->TEST_CompactRange(0, "", "~");
-  ASSERT_EQ(0, Property("leveldb.num-files-at-level0"));
 }
 
 TEST(CorruptionTest, CompactionInputErrorParanoid) {
@@ -313,9 +311,16 @@ TEST(CorruptionTest, CompactionInputErrorParanoid) {
   options.paranoid_checks = true;
   options.write_buffer_size = 1048576;
   Reopen(&options);
+  DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
+
+  // Fill levels >= 1 so memtable compaction outputs to level 1
+  for (int level = 1; level < config::kNumLevels; level++) {
+    dbi->Put(WriteOptions(), "", "begin");
+    dbi->Put(WriteOptions(), "~", "end");
+    dbi->TEST_CompactMemTable();
+  }
 
   Build(10);
-  DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
   ASSERT_EQ(1, Property("leveldb.num-files-at-level0"));
 

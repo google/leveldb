@@ -122,6 +122,7 @@ DBImpl::DBImpl(const Options& options, const std::string& dbname)
       mem_(new MemTable(internal_comparator_)),
       imm_(NULL),
       logfile_(NULL),
+      logfile_number_(0),
       log_(NULL),
       bg_compaction_scheduled_(false),
       manual_compaction_(NULL) {
@@ -219,7 +220,7 @@ void DBImpl::DeleteObsoleteFiles() {
       bool keep = true;
       switch (type) {
         case kLogFile:
-          keep = ((number == versions_->LogNumber()) ||
+          keep = ((number >= versions_->LogNumber()) ||
                   (number == versions_->PrevLogNumber()));
           break;
         case kDescriptorFile:
@@ -287,14 +288,39 @@ Status DBImpl::Recover(VersionEdit* edit) {
 
   s = versions_->Recover();
   if (s.ok()) {
-    // Recover from the log files named in the descriptor
     SequenceNumber max_sequence(0);
-    if (versions_->PrevLogNumber() != 0) { // log#==0 means no prev log
-      s = RecoverLogFile(versions_->PrevLogNumber(), edit, &max_sequence);
+
+    // Recover from all newer log files than the ones named in the
+    // descriptor (new log files may have been added by the previous
+    // incarnation without registering them in the descriptor).
+    //
+    // Note that PrevLogNumber() is no longer used, but we pay
+    // attention to it in case we are recovering a database
+    // produced by an older version of leveldb.
+    const uint64_t min_log = versions_->LogNumber();
+    const uint64_t prev_log = versions_->PrevLogNumber();
+    std::vector<std::string> filenames;
+    s = env_->GetChildren(dbname_, &filenames);
+    if (!s.ok()) {
+      return s;
     }
-    if (s.ok() && versions_->LogNumber() != 0) { // log#==0 for initial state
-      s = RecoverLogFile(versions_->LogNumber(), edit, &max_sequence);
+    uint64_t number;
+    FileType type;
+    std::vector<uint64_t> logs;
+    for (size_t i = 0; i < filenames.size(); i++) {
+      if (ParseFileName(filenames[i], &number, &type)
+          && type == kLogFile
+          && ((number >= min_log) || (number == prev_log))) {
+        logs.push_back(number);
+      }
     }
+
+    // Recover in the order in which the logs were generated
+    std::sort(logs.begin(), logs.end());
+    for (size_t i = 0; i < logs.size(); i++) {
+      s = RecoverLogFile(logs[i], edit, &max_sequence);
+    }
+
     if (s.ok()) {
       if (versions_->LastSequence() < max_sequence) {
         versions_->SetLastSequence(max_sequence);
@@ -378,7 +404,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number,
     }
 
     if (mem->ApproximateMemoryUsage() > options_.write_buffer_size) {
-      status = WriteLevel0Table(mem, edit);
+      status = WriteLevel0Table(mem, edit, NULL);
       if (!status.ok()) {
         // Reflect errors immediately so that conditions like full
         // file-systems cause the DB::Open() to fail.
@@ -390,7 +416,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number,
   }
 
   if (status.ok() && mem != NULL) {
-    status = WriteLevel0Table(mem, edit);
+    status = WriteLevel0Table(mem, edit, NULL);
     // Reflect errors immediately so that conditions like full
     // file-systems cause the DB::Open() to fail.
   }
@@ -400,7 +426,8 @@ Status DBImpl::RecoverLogFile(uint64_t log_number,
   return status;
 }
 
-Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit) {
+Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
+                                Version* base) {
   mutex_.AssertHeld();
   const uint64_t start_micros = env_->NowMicros();
   FileMetaData meta;
@@ -413,7 +440,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit) {
   Status s;
   {
     mutex_.Unlock();
-    s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta, edit);
+    s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     mutex_.Lock();
   }
 
@@ -424,10 +451,26 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit) {
   delete iter;
   pending_outputs_.erase(meta.number);
 
+
+  // Note that if file_size is zero, the file has been deleted and
+  // should not be added to the manifest.
+  int level = 0;
+  if (s.ok() && meta.file_size > 0) {
+    if (base != NULL && !base->OverlapInLevel(0, meta.smallest, meta.largest)) {
+      // Push to largest level we can without causing overlaps
+      while (level + 1 < config::kNumLevels &&
+             !base->OverlapInLevel(level + 1, meta.smallest, meta.largest)) {
+        level++;
+      }
+    }
+    edit->AddFile(level, meta.number, meta.file_size,
+                  meta.smallest, meta.largest);
+  }
+
   CompactionStats stats;
   stats.micros = env_->NowMicros() - start_micros;
   stats.bytes_written = meta.file_size;
-  stats_[0].Add(stats);
+  stats_[level].Add(stats);
   return s;
 }
 
@@ -437,11 +480,19 @@ Status DBImpl::CompactMemTable() {
 
   // Save the contents of the memtable as a new Table
   VersionEdit edit;
-  Status s = WriteLevel0Table(imm_, &edit);
+  Version* base = versions_->current();
+  base->Ref();
+  Status s = WriteLevel0Table(imm_, &edit, base);
+  base->Unref();
+
+  if (s.ok() && shutting_down_.Acquire_Load()) {
+    s = Status::IOError("Deleting DB during memtable compaction");
+  }
 
   // Replace immutable memtable with the generated Table
   if (s.ok()) {
     edit.SetPrevLogNumber(0);
+    edit.SetLogNumber(logfile_number_);  // Earlier logs no longer needed
     s = versions_->LogAndApply(&edit);
   }
 
@@ -460,6 +511,9 @@ void DBImpl::TEST_CompactRange(
     int level,
     const std::string& begin,
     const std::string& end) {
+  assert(level >= 0);
+  assert(level + 1 < config::kNumLevels);
+
   MutexLock l(&mutex_);
   while (manual_compaction_ != NULL) {
     bg_cv_.Wait();
@@ -934,22 +988,38 @@ int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
 Status DBImpl::Get(const ReadOptions& options,
                    const Slice& key,
                    std::string* value) {
-  // TODO(opt): faster implementation
-  Iterator* iter = NewIterator(options);
-  iter->Seek(key);
-  bool found = false;
-  if (iter->Valid() && user_comparator()->Compare(key, iter->key()) == 0) {
-    Slice v = iter->value();
-    value->assign(v.data(), v.size());
-    found = true;
+  Status s;
+  MutexLock l(&mutex_);
+  SequenceNumber snapshot;
+  if (options.snapshot != NULL) {
+    snapshot = reinterpret_cast<const SnapshotImpl*>(options.snapshot)->number_;
+  } else {
+    snapshot = versions_->LastSequence();
   }
-  // Non-OK iterator status trumps everything else
-  Status result = iter->status();
-  if (result.ok() && !found) {
-    result = Status::NotFound(Slice());  // Use an empty error message for speed
+
+  // First look in the memtable, then in the immutable memtable (if any).
+  LookupKey lkey(key, snapshot);
+  if (mem_->Get(lkey, value, &s)) {
+    return s;
   }
-  delete iter;
-  return result;
+  if (imm_ != NULL && imm_->Get(lkey, value, &s)) {
+    return s;
+  }
+
+  // Not in memtable(s); try live files in level order
+  Version* current = versions_->current();
+  current->Ref();
+  Version::GetStats stats;
+  { // Unlock while reading from files
+    mutex_.Unlock();
+    s = current->Get(options, lkey, value, &stats);
+    mutex_.Lock();
+  }
+  if (current->UpdateStats(stats)) {
+    MaybeScheduleCompaction();
+  }
+  current->Unref();
+  return s;
 }
 
 Iterator* DBImpl::NewIterator(const ReadOptions& options) {
@@ -1050,18 +1120,10 @@ Status DBImpl::MakeRoomForWrite(bool force) {
       if (!s.ok()) {
         break;
       }
-      VersionEdit edit;
-      edit.SetPrevLogNumber(versions_->LogNumber());
-      edit.SetLogNumber(new_log_number);
-      s = versions_->LogAndApply(&edit);
-      if (!s.ok()) {
-        delete lfile;
-        env_->DeleteFile(LogFileName(dbname_, new_log_number));
-        break;
-      }
       delete log_;
       delete logfile_;
       logfile_ = lfile;
+      logfile_number_ = new_log_number;
       log_ = new log::Writer(lfile);
       imm_ = mem_;
       has_imm_.Release_Store(imm_);
@@ -1183,6 +1245,7 @@ Status DB::Open(const Options& options, const std::string& dbname,
     if (s.ok()) {
       edit.SetLogNumber(new_log_number);
       impl->logfile_ = lfile;
+      impl->logfile_number_ = new_log_number;
       impl->log_ = new log::Writer(lfile);
       s = impl->versions_->LogAndApply(&edit);
     }

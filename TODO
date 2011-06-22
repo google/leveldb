@@ -8,7 +8,6 @@ db
   object stores, etc. can be done in the background anyway, so
   probably not that important.
 
-api changes:
-- Make it wrappable
-
-Faster Get implementation
+After a range is completely deleted, what gets rid of the
+corresponding files if we do no future changes to that range.  Make
+the conditions for triggering compactions fire in more situations?

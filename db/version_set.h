@@ -35,6 +35,21 @@ class Version;
 class VersionSet;
 class WritableFile;
 
+// Return the smallest index i such that files[i]->largest >= key.
+// Return files.size() if there is no such file.
+// REQUIRES: "files" contains a sorted list of non-overlapping files.
+extern int FindFile(const InternalKeyComparator& icmp,
+                    const std::vector<FileMetaData*>& files,
+                    const Slice& key);
+
+// Returns true iff some file in "files" overlaps some part of
+// [smallest,largest].
+extern bool SomeFileOverlapsRange(
+    const InternalKeyComparator& icmp,
+    const std::vector<FileMetaData*>& files,
+    const InternalKey& smallest,
+    const InternalKey& largest);
+
 class Version {
  public:
   // Append to *iters a sequence of iterators that will
@@ -42,10 +57,33 @@ class Version {
   // REQUIRES: This version has been saved (see VersionSet::SaveTo)
   void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters);
 
+  // Lookup the value for key.  If found, store it in *val and
+  // return OK.  Else return a non-OK status.  Fills *stats.
+  // REQUIRES: lock is not held
+  struct GetStats {
+    FileMetaData* seek_file;
+    int seek_file_level;
+  };
+  Status Get(const ReadOptions&, const LookupKey& key, std::string* val,
+             GetStats* stats);
+
+  // Adds "stats" into the current state.  Returns true if a new
+  // compaction may need to be triggered, false otherwise.
+  // REQUIRES: lock is held
+  bool UpdateStats(const GetStats& stats);
+
   // Reference count management (so Versions do not disappear out from
   // under live iterators)
   void Ref();
   void Unref();
+
+  // Returns true iff some file in the specified level overlaps
+  // some part of [smallest,largest].
+  bool OverlapInLevel(int level,
+                      const InternalKey& smallest,
+                      const InternalKey& largest);
+
+  int NumFiles(int level) const { return files_[level].size(); }
 
   // Return a human readable string that describes this version's contents.
   std::string DebugString() const;
@@ -65,6 +103,10 @@ class Version {
   // List of files per level
   std::vector<FileMetaData*> files_[config::kNumLevels];
 
+  // Next file to compact based on seek stats.
+  FileMetaData* file_to_compact_;
+  int file_to_compact_level_;
+
   // Level that should be compacted next and its compaction score.
   // Score < 1 means compaction is not strictly needed.  These fields
   // are initialized by Finalize().
@@ -73,6 +115,8 @@ class Version {
 
   explicit Version(VersionSet* vset)
       : vset_(vset), next_(this), prev_(this), refs_(0),
+        file_to_compact_(NULL),
+        file_to_compact_level_(-1),
         compaction_score_(-1),
         compaction_level_(-1) {
   }
@@ -158,7 +202,10 @@ class VersionSet {
   Iterator* MakeInputIterator(Compaction* c);
 
   // Returns true iff some level needs a compaction.
-  bool NeedsCompaction() const { return current_->compaction_score_ >= 1; }
+  bool NeedsCompaction() const {
+    Version* v = current_;
+    return (v->compaction_score_ >= 1) || (v->file_to_compact_ != NULL);
+  }
 
   // Add all files listed in any live version to *live.
   // May also mutate some internal state.

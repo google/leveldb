@@ -21,15 +21,57 @@ static std::string RandomString(Random* rnd, int len) {
   return r;
 }
 
+// Special Env used to delay background operations
+class SpecialEnv : public EnvWrapper {
+ public:
+  // sstable Sync() calls are blocked while this pointer is non-NULL.
+  port::AtomicPointer delay_sstable_sync_;
+
+  explicit SpecialEnv(Env* base) : EnvWrapper(base) {
+    delay_sstable_sync_.Release_Store(NULL);
+  }
+
+  Status NewWritableFile(const std::string& f, WritableFile** r) {
+    class SSTableFile : public WritableFile {
+     private:
+      SpecialEnv* env_;
+      WritableFile* base_;
+
+     public:
+      SSTableFile(SpecialEnv* env, WritableFile* base)
+          : env_(env),
+            base_(base) {
+      }
+      Status Append(const Slice& data) { return base_->Append(data); }
+      Status Close() { return base_->Close(); }
+      Status Flush() { return base_->Flush(); }
+      Status Sync() {
+        while (env_->delay_sstable_sync_.Acquire_Load() != NULL) {
+          env_->SleepForMicroseconds(100000);
+        }
+        return base_->Sync();
+      }
+    };
+
+    Status s = target()->NewWritableFile(f, r);
+    if (s.ok()) {
+      if (strstr(f.c_str(), ".sst") != NULL) {
+        *r = new SSTableFile(this, *r);
+      }
+    }
+    return s;
+  }
+};
+
 class DBTest {
  public:
   std::string dbname_;
-  Env* env_;
+  SpecialEnv* env_;
   DB* db_;
 
   Options last_options_;
 
-  DBTest() : env_(Env::Default()) {
+  DBTest() : env_(new SpecialEnv(Env::Default())) {
     dbname_ = test::TmpDir() + "/db_test";
     DestroyDB(dbname_, Options());
     db_ = NULL;
@@ -39,6 +81,7 @@ class DBTest {
   ~DBTest() {
     delete db_;
     DestroyDB(dbname_, Options());
+    delete env_;
   }
 
   DBImpl* dbfull() {
@@ -142,6 +185,14 @@ class DBTest {
     return atoi(property.c_str());
   }
 
+  int TotalTableFiles() {
+    int result = 0;
+    for (int level = 0; level < config::kNumLevels; level++) {
+      result += NumTableFilesAtLevel(level);
+    }
+    return result;
+  }
+
   uint64_t Size(const Slice& start, const Slice& limit) {
     Range r(start, limit);
     uint64_t size;
@@ -159,6 +210,16 @@ class DBTest {
     }
     for (int level = 0; level < max_level_with_files; level++) {
       dbfull()->TEST_CompactRange(level, "", "~");
+    }
+  }
+
+  // Prevent pushing of new sstables into deeper levels by adding
+  // tables that cover a specified range to all levels.
+  void FillLevels(const std::string& smallest, const std::string& largest) {
+    for (int level = 0; level < config::kNumLevels; level++) {
+      Put(smallest, "begin");
+      Put(largest, "end");
+      dbfull()->TEST_CompactMemTable();
     }
   }
 
@@ -207,6 +268,80 @@ TEST(DBTest, PutDeleteGet) {
   ASSERT_EQ("v2", Get("foo"));
   ASSERT_OK(db_->Delete(WriteOptions(), "foo"));
   ASSERT_EQ("NOT_FOUND", Get("foo"));
+}
+
+TEST(DBTest, GetFromImmutableLayer) {
+  Options options;
+  options.env = env_;
+  options.write_buffer_size = 100000;  // Small write buffer
+  Reopen(&options);
+
+  ASSERT_OK(Put("foo", "v1"));
+  ASSERT_EQ("v1", Get("foo"));
+
+  env_->delay_sstable_sync_.Release_Store(env_);   // Block sync calls
+  Put("k1", std::string(100000, 'x'));             // Fill memtable
+  Put("k2", std::string(100000, 'y'));             // Trigger compaction
+  ASSERT_EQ("v1", Get("foo"));
+  env_->delay_sstable_sync_.Release_Store(NULL);   // Release sync calls
+}
+
+TEST(DBTest, GetFromVersions) {
+  ASSERT_OK(Put("foo", "v1"));
+  dbfull()->TEST_CompactMemTable();
+  ASSERT_EQ("v1", Get("foo"));
+}
+
+TEST(DBTest, GetSnapshot) {
+  // Try with both a short key and a long key
+  for (int i = 0; i < 2; i++) {
+    std::string key = (i == 0) ? std::string("foo") : std::string(200, 'x');
+    ASSERT_OK(Put(key, "v1"));
+    const Snapshot* s1 = db_->GetSnapshot();
+    ASSERT_OK(Put(key, "v2"));
+    ASSERT_EQ("v2", Get(key));
+    ASSERT_EQ("v1", Get(key, s1));
+    dbfull()->TEST_CompactMemTable();
+    ASSERT_EQ("v2", Get(key));
+    ASSERT_EQ("v1", Get(key, s1));
+    db_->ReleaseSnapshot(s1);
+  }
+}
+
+TEST(DBTest, GetLevel0Ordering) {
+  // Check that we process level-0 files in correct order.  The code
+  // below generates two level-0 files where the earlier one comes
+  // before the later one in the level-0 file list since the earlier
+  // one has a smaller "smallest" key.
+  ASSERT_OK(Put("bar", "b"));
+  ASSERT_OK(Put("foo", "v1"));
+  dbfull()->TEST_CompactMemTable();
+  ASSERT_OK(Put("foo", "v2"));
+  dbfull()->TEST_CompactMemTable();
+  ASSERT_EQ("v2", Get("foo"));
+}
+
+TEST(DBTest, GetOrderedByLevels) {
+  ASSERT_OK(Put("foo", "v1"));
+  Compact("a", "z");
+  ASSERT_EQ("v1", Get("foo"));
+  ASSERT_OK(Put("foo", "v2"));
+  ASSERT_EQ("v2", Get("foo"));
+  dbfull()->TEST_CompactMemTable();
+  ASSERT_EQ("v2", Get("foo"));
+}
+
+TEST(DBTest, GetPicksCorrectFile) {
+  // Arrange to have multiple files in a non-level-0 level.
+  ASSERT_OK(Put("a", "va"));
+  Compact("a", "b");
+  ASSERT_OK(Put("x", "vx"));
+  Compact("x", "y");
+  ASSERT_OK(Put("f", "vf"));
+  Compact("f", "g");
+  ASSERT_EQ("va", Get("a"));
+  ASSERT_EQ("vf", Get("f"));
+  ASSERT_EQ("vx", Get("x"));
 }
 
 TEST(DBTest, IterEmpty) {
@@ -413,6 +548,27 @@ TEST(DBTest, RecoveryWithEmptyLog) {
   ASSERT_EQ("v3", Get("foo"));
 }
 
+// Check that writes done during a memtable compaction are recovered
+// if the database is shutdown during the memtable compaction.
+TEST(DBTest, RecoverDuringMemtableCompaction) {
+  Options options;
+  options.env = env_;
+  options.write_buffer_size = 1000000;
+  Reopen(&options);
+
+  // Trigger a long memtable compaction and reopen the database during it
+  ASSERT_OK(Put("foo", "v1"));                         // Goes to 1st log file
+  ASSERT_OK(Put("big1", std::string(10000000, 'x')));  // Fills memtable
+  ASSERT_OK(Put("big2", std::string(1000, 'y')));      // Triggers compaction
+  ASSERT_OK(Put("bar", "v2"));                         // Goes to new log file
+
+  Reopen(&options);
+  ASSERT_EQ("v1", Get("foo"));
+  ASSERT_EQ("v2", Get("bar"));
+  ASSERT_EQ(std::string(10000000, 'x'), Get("big1"));
+  ASSERT_EQ(std::string(1000, 'y'), Get("big2"));
+}
+
 static std::string Key(int i) {
   char buf[100];
   snprintf(buf, sizeof(buf), "key%06d", i);
@@ -426,11 +582,11 @@ TEST(DBTest, MinorCompactionsHappen) {
 
   const int N = 500;
 
-  int starting_num_tables = NumTableFilesAtLevel(0);
+  int starting_num_tables = TotalTableFiles();
   for (int i = 0; i < N; i++) {
     ASSERT_OK(Put(Key(i), Key(i) + std::string(1000, 'v')));
   }
-  int ending_num_tables = NumTableFilesAtLevel(0);
+  int ending_num_tables = TotalTableFiles();
   ASSERT_GT(ending_num_tables, starting_num_tables);
 
   for (int i = 0; i < N; i++) {
@@ -499,6 +655,8 @@ TEST(DBTest, SparseMerge) {
   options.compression = kNoCompression;
   Reopen(&options);
 
+  FillLevels("A", "Z");
+
   // Suppose there is:
   //    small amount of data with prefix A
   //    large amount of data with prefix B
@@ -514,7 +672,8 @@ TEST(DBTest, SparseMerge) {
     Put(key, value);
   }
   Put("C", "vc");
-  Compact("", "z");
+  dbfull()->TEST_CompactMemTable();
+  dbfull()->TEST_CompactRange(0, "A", "Z");
 
   // Make sparse update
   Put("A",    "va2");
@@ -675,6 +834,8 @@ TEST(DBTest, Snapshot) {
 
 TEST(DBTest, HiddenValuesAreRemoved) {
   Random rnd(301);
+  FillLevels("a", "z");
+
   std::string big = RandomString(&rnd, 50000);
   Put("foo", big);
   Put("pastfoo", "v");
@@ -702,40 +863,54 @@ TEST(DBTest, HiddenValuesAreRemoved) {
 TEST(DBTest, DeletionMarkers1) {
   Put("foo", "v1");
   ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  dbfull()->TEST_CompactRange(0, "", "z");
-  dbfull()->TEST_CompactRange(1, "", "z");
-  ASSERT_EQ(NumTableFilesAtLevel(2), 1);   // foo => v1 is now in level 2 file
+  const int last = config::kNumLevels - 1;
+  ASSERT_EQ(NumTableFilesAtLevel(last), 1);   // foo => v1 is now in last level
+
+  // Place a table at level last-1 to prevent merging with preceding mutation
+  Put("a", "begin");
+  Put("z", "end");
+  dbfull()->TEST_CompactMemTable();
+  ASSERT_EQ(NumTableFilesAtLevel(last), 1);
+  ASSERT_EQ(NumTableFilesAtLevel(last-1), 1);
+
   Delete("foo");
   Put("foo", "v2");
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2, DEL, v1 ]");
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
+  ASSERT_OK(dbfull()->TEST_CompactMemTable());  // Moves to level last-2
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2, DEL, v1 ]");
-  dbfull()->TEST_CompactRange(0, "", "z");
+  dbfull()->TEST_CompactRange(last-2, "", "z");
   // DEL eliminated, but v1 remains because we aren't compacting that level
   // (DEL can be eliminated because v2 hides v1).
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2, v1 ]");
-  dbfull()->TEST_CompactRange(1, "", "z");
-  // Merging L1 w/ L2, so we are the base level for "foo", so DEL is removed.
-  // (as is v1).
+  dbfull()->TEST_CompactRange(last-1, "", "z");
+  // Merging last-1 w/ last, so we are the base level for "foo", so
+  // DEL is removed.  (as is v1).
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2 ]");
 }
 
 TEST(DBTest, DeletionMarkers2) {
   Put("foo", "v1");
   ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  dbfull()->TEST_CompactRange(0, "", "z");
-  dbfull()->TEST_CompactRange(1, "", "z");
-  ASSERT_EQ(NumTableFilesAtLevel(2), 1);   // foo => v1 is now in level 2 file
+  const int last = config::kNumLevels - 1;
+  ASSERT_EQ(NumTableFilesAtLevel(last), 1);   // foo => v1 is now in last level
+
+  // Place a table at level last-1 to prevent merging with preceding mutation
+  Put("a", "begin");
+  Put("z", "end");
+  dbfull()->TEST_CompactMemTable();
+  ASSERT_EQ(NumTableFilesAtLevel(last), 1);
+  ASSERT_EQ(NumTableFilesAtLevel(last-1), 1);
+
   Delete("foo");
   ASSERT_EQ(AllEntriesFor("foo"), "[ DEL, v1 ]");
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
+  ASSERT_OK(dbfull()->TEST_CompactMemTable());  // Moves to level last-2
   ASSERT_EQ(AllEntriesFor("foo"), "[ DEL, v1 ]");
-  dbfull()->TEST_CompactRange(0, "", "z");
-  // DEL kept: L2 file overlaps
+  dbfull()->TEST_CompactRange(last-2, "", "z");
+  // DEL kept: "last" file overlaps
   ASSERT_EQ(AllEntriesFor("foo"), "[ DEL, v1 ]");
-  dbfull()->TEST_CompactRange(1, "", "z");
-  // Merging L1 w/ L2, so we are the base level for "foo", so DEL is removed.
-  // (as is v1).
+  dbfull()->TEST_CompactRange(last-1, "", "z");
+  // Merging last-1 w/ last, so we are the base level for "foo", so
+  // DEL is removed.  (as is v1).
   ASSERT_EQ(AllEntriesFor("foo"), "[ ]");
 }
 
