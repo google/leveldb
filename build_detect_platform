@@ -1,0 +1,69 @@
+#!/bin/sh
+
+# Detects OS we're compiling on and generates build_config.mk,
+# which in turn gets read while processing Makefile.
+
+# build_config.mk will set the following variables:
+# - PORT_CFLAGS will either set:
+#               -DLEVELDB_PLATFORM_POSIX if cstatomic is present
+#               -DLEVELDB_PLATFORM_NOATOMIC if it is not
+# - PLATFORM_CFLAGS with compiler flags for the platform
+# - PLATFORM_LDFLAGS with linker flags for the platform
+
+# Delete existing build_config.mk
+rm -f build_config.mk
+
+# Detect OS
+case `uname -s` in
+    Darwin)
+        PLATFORM=OS_MACOSX
+        echo "PLATFORM_CFLAGS=-pthread -DOS_MACOSX" >> build_config.mk
+        echo "PLATFORM_LDFLAGS=-lpthread"  >> build_config.mk
+        ;;
+    Linux)
+        PLATFORM=OS_LINUX
+        echo "PLATFORM_CFLAGS=-pthread -DOS_LINUX" >> build_config.mk
+        echo "PLATFORM_LDFLAGS=-lpthread"  >> build_config.mk
+        ;;
+    SunOS)
+        PLATFORM=OS_SOLARIS
+        echo "PLATFORM_CFLAGS=-D_REENTRANT -DOS_SOLARIS"  >> build_config.mk
+        echo "PLATFORM_LDFLAGS=-lpthread -lrt" >> build_config.mk
+        ;;
+    *)
+        echo "Unknown platform!"
+        exit 1
+esac
+
+echo "PLATFORM=$PLATFORM" >> build_config.mk
+
+# On GCC, use libc's memcmp, not GCC's memcmp
+PORT_CFLAGS="-fno-builtin-memcmp"
+
+# Detect C++0x -- this determines whether we'll use port_noatomic.h
+# or port_posix.h by:
+# 1. Rrying to compile with -std=c++0x and including <cstdatomic>.
+# 2. If g++ returns error code, we know to use port_posix.h
+g++ $CFLAGS -std=c++0x -x c++ - -o /dev/null 2>/dev/null  <<EOF
+  #include <cstdatomic>
+  int main() {}
+EOF
+if [ "$?" = 0 ]; then
+    PORT_CFLAGS+=" -DLEVELDB_PLATFORM_POSIX -DLEVELDB_CSTDATOMIC_PRESENT -std=c++0x"
+else
+    PORT_CFLAGS+=" -DLEVELDB_PLATFORM_POSIX"
+fi
+
+# Test whether Snappy library is installed
+# http://code.google.com/p/snappy/
+g++ $CFLAGS -x c++ - -o /dev/null 2>/dev/null  <<EOF
+  #include <snappy.h>
+  int main() {}
+EOF
+if [ "$?" = 0 ]; then
+    echo "SNAPPY=1" >> build_config.mk
+else
+    echo "SNAPPY=0" >> build_config.mk
+fi
+
+echo "PORT_CFLAGS=$PORT_CFLAGS" >> build_config.mk
