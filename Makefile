@@ -36,7 +36,7 @@ else
 GOOGLE_PERFTOOLS_LDFLAGS=
 endif
 
-CFLAGS = -c -I. -I./include $(PORT_CFLAGS) $(PLATFORM_CCFLAGS) $(OPT) $(SNAPPY_CFLAGS)
+CFLAGS = -c -I. -I./include $(PORT_CFLAGS) $(PLATFORM_CFLAGS) $(OPT) $(SNAPPY_CFLAGS)
 
 LDFLAGS=$(PLATFORM_LDFLAGS) $(SNAPPY_LDFLAGS) $(GOOGLE_PERFTOOLS_LDFLAGS)
 
@@ -168,6 +168,7 @@ ifeq ($(PLATFORM), IOS)
 SIMULATORROOT=/Developer/Platforms/iPhoneSimulator.platform/Developer
 DEVICEROOT=/Developer/Platforms/iPhoneOS.platform/Developer
 IOSVERSION=$(shell defaults read /Developer/Platforms/iPhoneOS.platform/version CFBundleShortVersionString)
+
 .cc.o:
 	mkdir -p ios-x86/$(dir $@)
 	$(SIMULATORROOT)/usr/bin/$(CC) $(CFLAGS) -isysroot $(SIMULATORROOT)/SDKs/iPhoneSimulator$(IOSVERSION).sdk -arch i686 $< -o ios-x86/$@

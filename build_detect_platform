@@ -17,8 +17,8 @@ rm -f build_config.mk
 case `uname -s` in
     Darwin)
         PLATFORM=OS_MACOSX
-        echo "PLATFORM_CFLAGS=-pthread -DOS_MACOSX" >> build_config.mk
-        echo "PLATFORM_LDFLAGS=-lpthread"  >> build_config.mk
+        echo "PLATFORM_CFLAGS=-DOS_MACOSX" >> build_config.mk
+        echo "PLATFORM_LDFLAGS="  >> build_config.mk
         ;;
     Linux)
         PLATFORM=OS_LINUX
@@ -49,9 +49,9 @@ g++ $CFLAGS -std=c++0x -x c++ - -o /dev/null 2>/dev/null  <<EOF
   int main() {}
 EOF
 if [ "$?" = 0 ]; then
-    PORT_CFLAGS+=" -DLEVELDB_PLATFORM_POSIX -DLEVELDB_CSTDATOMIC_PRESENT -std=c++0x"
+    PORT_CFLAGS="$PORT_CFLAGS -DLEVELDB_PLATFORM_POSIX -DLEVELDB_CSTDATOMIC_PRESENT -std=c++0x"
 else
-    PORT_CFLAGS+=" -DLEVELDB_PLATFORM_POSIX"
+    PORT_CFLAGS="$PORT_CFLAGS -DLEVELDB_PLATFORM_POSIX"
 fi
 
 # Test whether Snappy library is installed
