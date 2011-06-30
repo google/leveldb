@@ -97,7 +97,7 @@ inline bool Snappy_Uncompress(const char* input_data, size_t input_length,
                               ::std::string* output) {
 #ifdef SNAPPY
   size_t ulength;
-  if (!snappy::GetUncompressedLength(input_data, ulength, &ulength)) {
+  if (!snappy::GetUncompressedLength(input_data, input_length, &ulength)) {
     return false;
   }
   output->resize(ulength);
