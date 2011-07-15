@@ -42,13 +42,13 @@ extern int FindFile(const InternalKeyComparator& icmp,
                     const std::vector<FileMetaData*>& files,
                     const Slice& key);
 
-// Returns true iff some file in "files" overlaps some part of
+// Returns true iff some file in "files" overlaps the user key range
 // [smallest,largest].
 extern bool SomeFileOverlapsRange(
     const InternalKeyComparator& icmp,
     const std::vector<FileMetaData*>& files,
-    const InternalKey& smallest,
-    const InternalKey& largest);
+    const Slice& smallest_user_key,
+    const Slice& largest_user_key);
 
 class Version {
  public:
@@ -78,10 +78,10 @@ class Version {
   void Unref();
 
   // Returns true iff some file in the specified level overlaps
-  // some part of [smallest,largest].
+  // some part of [smallest_user_key,largest_user_key].
   bool OverlapInLevel(int level,
-                      const InternalKey& smallest,
-                      const InternalKey& largest);
+                      const Slice& smallest_user_key,
+                      const Slice& largest_user_key);
 
   int NumFiles(int level) const { return files_[level].size(); }
 

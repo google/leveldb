@@ -456,10 +456,13 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   // should not be added to the manifest.
   int level = 0;
   if (s.ok() && meta.file_size > 0) {
-    if (base != NULL && !base->OverlapInLevel(0, meta.smallest, meta.largest)) {
-      // Push to largest level we can without causing overlaps
-      while (level + 1 < config::kNumLevels &&
-             !base->OverlapInLevel(level + 1, meta.smallest, meta.largest)) {
+    const Slice min_user_key = meta.smallest.user_key();
+    const Slice max_user_key = meta.largest.user_key();
+    if (base != NULL && !base->OverlapInLevel(0, min_user_key, max_user_key)) {
+      // Push the new sstable to a higher level if possible to reduce
+      // expensive manifest file ops.
+      while (level < config::kMaxMemCompactLevel &&
+             !base->OverlapInLevel(level + 1, min_user_key, max_user_key)) {
         level++;
       }
     }
@@ -1276,12 +1279,14 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
   }
 
   FileLock* lock;
-  Status result = env->LockFile(LockFileName(dbname), &lock);
+  const std::string lockname = LockFileName(dbname);
+  Status result = env->LockFile(lockname, &lock);
   if (result.ok()) {
     uint64_t number;
     FileType type;
     for (size_t i = 0; i < filenames.size(); i++) {
-      if (ParseFileName(filenames[i], &number, &type)) {
+      if (ParseFileName(filenames[i], &number, &type) &&
+          filenames[i] != lockname) {  // Lock file will be deleted at end
         Status del = env->DeleteFile(dbname + "/" + filenames[i]);
         if (result.ok() && !del.ok()) {
           result = del;
@@ -1289,7 +1294,7 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
       }
     }
     env->UnlockFile(lock);  // Ignore error since state is already gone
-    env->DeleteFile(LockFileName(dbname));
+    env->DeleteFile(lockname);
     env->DeleteDir(dbname);  // Ignore error in case dir contains other files
   }
   return result;

@@ -4,6 +4,7 @@
 
 #include "db/log_reader.h"
 
+#include <stdio.h>
 #include "leveldb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
@@ -72,7 +73,8 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   Slice fragment;
   while (true) {
     uint64_t physical_record_offset = end_of_buffer_offset_ - buffer_.size();
-    switch (ReadPhysicalRecord(&fragment)) {
+    const unsigned int record_type = ReadPhysicalRecord(&fragment);
+    switch (record_type) {
       case kFullType:
         if (in_fragmented_record) {
           // Handle bug in earlier versions of log::Writer where
@@ -144,13 +146,16 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
         }
         break;
 
-      default:
+      default: {
+        char buf[40];
+        snprintf(buf, sizeof(buf), "unknown record type %u", record_type);
         ReportCorruption(
             (fragment.size() + (in_fragmented_record ? scratch->size() : 0)),
-            "unknown record type");
+            buf);
         in_fragmented_record = false;
         scratch->clear();
         break;
+      }
     }
   }
   return false;
@@ -212,16 +217,16 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
       return kBadRecord;
     }
 
+    if (type == kZeroType && length == 0) {
+      // Skip zero length record without reporting any drops since
+      // such records are produced by the mmap based writing code in
+      // env_posix.cc that preallocates file regions.
+      buffer_.clear();
+      return kBadRecord;
+    }
+
     // Check crc
     if (checksum_) {
-      if (type == kZeroType && length == 0) {
-        // Skip zero length record without reporting any drops since
-        // such records are produced by the mmap based writing code in
-        // env_posix.cc that preallocates file regions.
-        buffer_.clear();
-        return kBadRecord;
-      }
-
       uint32_t expected_crc = crc32c::Unmask(DecodeFixed32(header));
       uint32_t actual_crc = crc32c::Value(header + 6, 1 + length);
       if (actual_crc != expected_crc) {

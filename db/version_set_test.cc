@@ -19,11 +19,13 @@ class FindFileTest {
     }
   }
 
-  void Add(const char* smallest, const char* largest) {
+  void Add(const char* smallest, const char* largest,
+           SequenceNumber smallest_seq = 100,
+           SequenceNumber largest_seq = 100) {
     FileMetaData* f = new FileMetaData;
     f->number = files_.size() + 1;
-    f->smallest = InternalKey(smallest, 100, kTypeValue);
-    f->largest = InternalKey(largest, 100, kTypeValue);
+    f->smallest = InternalKey(smallest, smallest_seq, kTypeValue);
+    f->largest = InternalKey(largest, largest_seq, kTypeValue);
     files_.push_back(f);
   }
 
@@ -34,10 +36,8 @@ class FindFileTest {
   }
 
   bool Overlaps(const char* smallest, const char* largest) {
-    InternalKey s(smallest, 100, kTypeValue);
-    InternalKey l(largest, 100, kTypeValue);
     InternalKeyComparator cmp(BytewiseComparator());
-    return SomeFileOverlapsRange(cmp, files_, s, l);
+    return SomeFileOverlapsRange(cmp, files_, smallest, largest);
   }
 };
 
@@ -106,6 +106,15 @@ TEST(FindFileTest, Multiple) {
   ASSERT_TRUE(Overlaps("375", "400"));
   ASSERT_TRUE(Overlaps("450", "450"));
   ASSERT_TRUE(Overlaps("450", "500"));
+}
+
+TEST(FindFileTest, OverlapSequenceChecks) {
+  Add("200", "200", 5000, 3000);
+  ASSERT_TRUE(! Overlaps("199", "199"));
+  ASSERT_TRUE(! Overlaps("201", "300"));
+  ASSERT_TRUE(Overlaps("200", "200"));
+  ASSERT_TRUE(Overlaps("190", "200"));
+  ASSERT_TRUE(Overlaps("200", "210"));
 }
 
 }

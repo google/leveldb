@@ -650,6 +650,25 @@ TEST(DBTest, CompactionsGenerateMultipleFiles) {
   }
 }
 
+TEST(DBTest, RepeatedWritesToSameKey) {
+  Options options;
+  options.env = env_;
+  options.write_buffer_size = 100000;  // Small write buffer
+  Reopen(&options);
+
+  // We must have at most one file per level except for level-0,
+  // which may have up to kL0_StopWritesTrigger files.
+  const int kMaxFiles = config::kNumLevels + config::kL0_StopWritesTrigger;
+
+  Random rnd(301);
+  std::string value = RandomString(&rnd, 2 * options.write_buffer_size);
+  for (int i = 0; i < 5 * kMaxFiles; i++) {
+    Put("key", value);
+    ASSERT_LE(TotalTableFiles(), kMaxFiles);
+    fprintf(stderr, "after %d: %d files\n", int(i+1), TotalTableFiles());
+  }
+}
+
 TEST(DBTest, SparseMerge) {
   Options options;
   options.compression = kNoCompression;
@@ -863,7 +882,7 @@ TEST(DBTest, HiddenValuesAreRemoved) {
 TEST(DBTest, DeletionMarkers1) {
   Put("foo", "v1");
   ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  const int last = config::kNumLevels - 1;
+  const int last = config::kMaxMemCompactLevel;
   ASSERT_EQ(NumTableFilesAtLevel(last), 1);   // foo => v1 is now in last level
 
   // Place a table at level last-1 to prevent merging with preceding mutation
@@ -891,7 +910,7 @@ TEST(DBTest, DeletionMarkers1) {
 TEST(DBTest, DeletionMarkers2) {
   Put("foo", "v1");
   ASSERT_OK(dbfull()->TEST_CompactMemTable());
-  const int last = config::kNumLevels - 1;
+  const int last = config::kMaxMemCompactLevel;
   ASSERT_EQ(NumTableFilesAtLevel(last), 1);   // foo => v1 is now in last level
 
   // Place a table at level last-1 to prevent merging with preceding mutation

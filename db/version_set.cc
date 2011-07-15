@@ -99,11 +99,14 @@ int FindFile(const InternalKeyComparator& icmp,
 bool SomeFileOverlapsRange(
     const InternalKeyComparator& icmp,
     const std::vector<FileMetaData*>& files,
-    const InternalKey& smallest,
-    const InternalKey& largest) {
-  const int index = FindFile(icmp, files, smallest.Encode());
+    const Slice& smallest_user_key,
+    const Slice& largest_user_key) {
+  // Find the earliest possible internal key for smallest_user_key
+  InternalKey small(smallest_user_key, kMaxSequenceNumber, kValueTypeForSeek);
+  const int index = FindFile(icmp, files, small.Encode());
   return ((index < files.size()) &&
-          icmp.Compare(largest, files[index]->smallest) >= 0);
+          icmp.user_comparator()->Compare(
+              largest_user_key, files[index]->smallest.user_key()) >= 0);
 }
 
 // An internal iterator.  For a given version/level pair, yields
@@ -353,9 +356,11 @@ void Version::Unref() {
 }
 
 bool Version::OverlapInLevel(int level,
-                             const InternalKey& smallest,
-                             const InternalKey& largest) {
-  return SomeFileOverlapsRange(vset_->icmp_, files_[level], smallest, largest);
+                             const Slice& smallest_user_key,
+                             const Slice& largest_user_key) {
+  return SomeFileOverlapsRange(vset_->icmp_, files_[level],
+                               smallest_user_key,
+                               largest_user_key);
 }
 
 std::string Version::DebugString() const {

@@ -28,6 +28,10 @@ namespace leveldb {
 
 namespace {
 
+static Status IOError(const std::string& context, int err_number) {
+  return Status::IOError(context, strerror(err_number));
+}
+
 class PosixSequentialFile: public SequentialFile {
  private:
   std::string filename_;
@@ -47,7 +51,7 @@ class PosixSequentialFile: public SequentialFile {
         // We leave status as ok if we hit the end of the file
       } else {
         // A partial read with an error: return a non-ok status
-        s = Status::IOError(filename_, strerror(errno));
+        s = IOError(filename_, errno);
       }
     }
     return s;
@@ -55,7 +59,7 @@ class PosixSequentialFile: public SequentialFile {
 
   virtual Status Skip(uint64_t n) {
     if (fseek(file_, n, SEEK_CUR)) {
-      return Status::IOError(filename_, strerror(errno));
+      return IOError(filename_, errno);
     }
     return Status::OK();
   }
@@ -78,7 +82,7 @@ class PosixRandomAccessFile: public RandomAccessFile {
     *result = Slice(scratch, (r < 0) ? 0 : r);
     if (r < 0) {
       // An error: return a non-ok status
-      s = Status::IOError(filename_, strerror(errno));
+      s = IOError(filename_, errno);
     }
     return s;
   }
@@ -114,13 +118,16 @@ class PosixMmapFile : public WritableFile {
     return s;
   }
 
-  void UnmapCurrentRegion() {
+  bool UnmapCurrentRegion() {
+    bool result = true;
     if (base_ != NULL) {
       if (last_sync_ < limit_) {
         // Defer syncing this data until next Sync() call, if any
         pending_sync_ = true;
       }
-      munmap(base_, limit_ - base_);
+      if (munmap(base_, limit_ - base_) != 0) {
+        result = false;
+      }
       file_offset_ += limit_ - base_;
       base_ = NULL;
       limit_ = NULL;
@@ -132,6 +139,7 @@ class PosixMmapFile : public WritableFile {
         map_size_ *= 2;
       }
     }
+    return result;
   }
 
   bool MapNewRegion() {
@@ -181,8 +189,10 @@ class PosixMmapFile : public WritableFile {
       assert(dst_ <= limit_);
       size_t avail = limit_ - dst_;
       if (avail == 0) {
-        UnmapCurrentRegion();
-        MapNewRegion();
+        if (!UnmapCurrentRegion() ||
+            !MapNewRegion()) {
+          return IOError(filename_, errno);
+        }
       }
 
       size_t n = (left <= avail) ? left : avail;
@@ -197,17 +207,18 @@ class PosixMmapFile : public WritableFile {
   virtual Status Close() {
     Status s;
     size_t unused = limit_ - dst_;
-    UnmapCurrentRegion();
-    if (unused > 0) {
+    if (!UnmapCurrentRegion()) {
+      s = IOError(filename_, errno);
+    } else if (unused > 0) {
       // Trim the extra space at the end of the file
       if (ftruncate(fd_, file_offset_ - unused) < 0) {
-        s = Status::IOError(filename_, strerror(errno));
+        s = IOError(filename_, errno);
       }
     }
 
     if (close(fd_) < 0) {
       if (s.ok()) {
-        s = Status::IOError(filename_, strerror(errno));
+        s = IOError(filename_, errno);
       }
     }
 
@@ -228,7 +239,7 @@ class PosixMmapFile : public WritableFile {
       // Some unmapped data was not synced
       pending_sync_ = false;
       if (fdatasync(fd_) < 0) {
-        s = Status::IOError(filename_, strerror(errno));
+        s = IOError(filename_, errno);
       }
     }
 
@@ -239,7 +250,7 @@ class PosixMmapFile : public WritableFile {
       size_t p2 = TruncateToPageBoundary(dst_ - base_ - 1);
       last_sync_ = dst_;
       if (msync(base_ + p1, p2 - p1 + page_size_, MS_SYNC) < 0) {
-        s = Status::IOError(filename_, strerror(errno));
+        s = IOError(filename_, errno);
       }
     }
 
@@ -276,7 +287,7 @@ class PosixEnv : public Env {
     FILE* f = fopen(fname.c_str(), "r");
     if (f == NULL) {
       *result = NULL;
-      return Status::IOError(fname, strerror(errno));
+      return IOError(fname, errno);
     } else {
       *result = new PosixSequentialFile(fname, f);
       return Status::OK();
@@ -288,7 +299,7 @@ class PosixEnv : public Env {
     int fd = open(fname.c_str(), O_RDONLY);
     if (fd < 0) {
       *result = NULL;
-      return Status::IOError(fname, strerror(errno));
+      return IOError(fname, errno);
     }
     *result = new PosixRandomAccessFile(fname, fd);
     return Status::OK();
@@ -300,7 +311,7 @@ class PosixEnv : public Env {
     const int fd = open(fname.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0644);
     if (fd < 0) {
       *result = NULL;
-      s = Status::IOError(fname, strerror(errno));
+      s = IOError(fname, errno);
     } else {
       *result = new PosixMmapFile(fname, fd, page_size_);
     }
@@ -316,7 +327,7 @@ class PosixEnv : public Env {
     result->clear();
     DIR* d = opendir(dir.c_str());
     if (d == NULL) {
-      return Status::IOError(dir, strerror(errno));
+      return IOError(dir, errno);
     }
     struct dirent* entry;
     while ((entry = readdir(d)) != NULL) {
@@ -329,7 +340,7 @@ class PosixEnv : public Env {
   virtual Status DeleteFile(const std::string& fname) {
     Status result;
     if (unlink(fname.c_str()) != 0) {
-      result = Status::IOError(fname, strerror(errno));
+      result = IOError(fname, errno);
     }
     return result;
   };
@@ -337,7 +348,7 @@ class PosixEnv : public Env {
   virtual Status CreateDir(const std::string& name) {
     Status result;
     if (mkdir(name.c_str(), 0755) != 0) {
-      result = Status::IOError(name, strerror(errno));
+      result = IOError(name, errno);
     }
     return result;
   };
@@ -345,7 +356,7 @@ class PosixEnv : public Env {
   virtual Status DeleteDir(const std::string& name) {
     Status result;
     if (rmdir(name.c_str()) != 0) {
-      result = Status::IOError(name, strerror(errno));
+      result = IOError(name, errno);
     }
     return result;
   };
@@ -355,7 +366,7 @@ class PosixEnv : public Env {
     struct stat sbuf;
     if (stat(fname.c_str(), &sbuf) != 0) {
       *size = 0;
-      s = Status::IOError(fname, strerror(errno));
+      s = IOError(fname, errno);
     } else {
       *size = sbuf.st_size;
     }
@@ -365,7 +376,7 @@ class PosixEnv : public Env {
   virtual Status RenameFile(const std::string& src, const std::string& target) {
     Status result;
     if (rename(src.c_str(), target.c_str()) != 0) {
-      result = Status::IOError(src, strerror(errno));
+      result = IOError(src, errno);
     }
     return result;
   }
@@ -375,9 +386,9 @@ class PosixEnv : public Env {
     Status result;
     int fd = open(fname.c_str(), O_RDWR | O_CREAT, 0644);
     if (fd < 0) {
-      result = Status::IOError(fname, strerror(errno));
+      result = IOError(fname, errno);
     } else if (LockOrUnlock(fd, true) == -1) {
-      result = Status::IOError("lock " + fname, strerror(errno));
+      result = IOError("lock " + fname, errno);
       close(fd);
     } else {
       PosixFileLock* my_lock = new PosixFileLock;
@@ -391,7 +402,7 @@ class PosixEnv : public Env {
     PosixFileLock* my_lock = reinterpret_cast<PosixFileLock*>(lock);
     Status result;
     if (LockOrUnlock(my_lock->fd_, false) == -1) {
-      result = Status::IOError(strerror(errno));
+      result = IOError("unlock", errno);
     }
     close(my_lock->fd_);
     delete my_lock;
