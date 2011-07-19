@@ -5,6 +5,7 @@
 #include "leveldb/table.h"
 
 #include <map>
+#include <string>
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
@@ -25,7 +26,11 @@ namespace leveldb {
 // Used to test non-lexicographic comparators.
 static std::string Reverse(const Slice& key) {
   std::string str(key.ToString());
-  std::string rev(str.rbegin(), str.rend());
+  std::string rev("");
+  for (std::string::reverse_iterator rit = str.rbegin();
+       rit != str.rend(); ++rit) {
+    rev.push_back(*rit);
+  }
   return rev;
 }
 
@@ -411,7 +416,7 @@ enum TestType {
   TABLE_TEST,
   BLOCK_TEST,
   MEMTABLE_TEST,
-  DB_TEST,
+  DB_TEST
 };
 
 struct TestArgs {

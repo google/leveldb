@@ -434,9 +434,14 @@ class VersionSet::Builder {
 
   ~Builder() {
     for (int level = 0; level < config::kNumLevels; level++) {
-      std::vector<FileMetaData*> to_unref(levels_[level].added_files->begin(),
-                                          levels_[level].added_files->end());
-      delete levels_[level].added_files;
+      const FileSet* added = levels_[level].added_files;
+      std::vector<FileMetaData*> to_unref;
+      to_unref.reserve(added->size());
+      for (FileSet::const_iterator it = added->begin();
+          it != added->end(); ++it) {
+        to_unref.push_back(*it);
+      }
+      delete added;
       for (int i = 0; i < to_unref.size(); i++) {
         FileMetaData* f = to_unref[i];
         f->refs--;

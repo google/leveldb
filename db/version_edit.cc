@@ -20,7 +20,7 @@ enum Tag {
   kDeletedFile          = 6,
   kNewFile              = 7,
   // 8 was used for large value refs
-  kPrevLogNumber        = 9,
+  kPrevLogNumber        = 9
 };
 
 void VersionEdit::Clear() {

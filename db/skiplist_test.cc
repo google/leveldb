@@ -238,14 +238,14 @@ class ConcurrentTest {
         current = MakeKey(K, 0);
       } else {
         current = iter.key();
-        ASSERT_TRUE(IsValidKey(current)) << std::hex << current;
+        ASSERT_TRUE(IsValidKey(current)) << current;
       }
       ASSERT_LE(pos, current) << "should not go backwards";
 
       // Verify that everything in [pos,current) was not present in
       // initial_state.
       while (pos < current) {
-        ASSERT_LT(key(pos), K) << std::hex << pos;
+        ASSERT_LT(key(pos), K) << pos;
 
         // Note that generation 0 is never inserted, so it is ok if
         // <*,0,*> is missing.

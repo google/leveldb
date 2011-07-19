@@ -42,6 +42,7 @@ class SpecialEnv : public EnvWrapper {
           : env_(env),
             base_(base) {
       }
+      ~SSTableFile() { delete base_; }
       Status Append(const Slice& data) { return base_->Append(data); }
       Status Close() { return base_->Close(); }
       Status Flush() { return base_->Flush(); }

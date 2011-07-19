@@ -50,6 +50,7 @@ class Repairer {
         icmp_(options.comparator),
         options_(SanitizeOptions(dbname, &icmp_, options)),
         owns_info_log_(options_.info_log != options.info_log),
+        owns_cache_(options_.block_cache != options.block_cache),
         next_file_number_(1) {
     // TableCache can be small since we expect each table to be opened once.
     table_cache_ = new TableCache(dbname_, &options_, 10);
@@ -59,6 +60,9 @@ class Repairer {
     delete table_cache_;
     if (owns_info_log_) {
       delete options_.info_log;
+    }
+    if (owns_cache_) {
+      delete options_.block_cache;
     }
   }
 
@@ -97,6 +101,7 @@ class Repairer {
   InternalKeyComparator const icmp_;
   Options const options_;
   bool owns_info_log_;
+  bool owns_cache_;
   TableCache* table_cache_;
   VersionEdit edit_;
 
