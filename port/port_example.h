@@ -96,11 +96,21 @@ class AtomicPointer {
 extern bool Snappy_Compress(const char* input, size_t input_length,
                             std::string* output);
 
+// If input[0,input_length-1] looks like a valid snappy compressed
+// buffer, store the size of the uncompressed data in *result and
+// return true.  Else return false.
+extern bool Snappy_GetUncompressedLength(const char* input, size_t length,
+                                         size_t* result);
+
 // Attempt to snappy uncompress input[0,input_length-1] into *output.
 // Returns true if successful, false if the input is invalid lightweight
 // compressed data.
+//
+// REQUIRES: at least the first "n" bytes of output[] must be writable
+// where "n" is the result of a successful call to
+// Snappy_GetUncompressedLength.
 extern bool Snappy_Uncompress(const char* input_data, size_t input_length,
-                              std::string* output);
+                              char* output);
 
 // ------------------ Miscellaneous -------------------
 

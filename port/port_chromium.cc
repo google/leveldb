@@ -62,15 +62,19 @@ bool Snappy_Compress(const char* input, size_t input_length,
 #endif
 }
 
-bool Snappy_Uncompress(const char* input_data, size_t input_length,
-                       std::string* output) {
+bool Snappy_GetUncompressedLength(const char* input, size_t length,
+                                  size_t* result) {
 #if defined(USE_SNAPPY)
-  size_t ulength;
-  if (!snappy::GetUncompressedLength(input_data, input_length, &ulength)) {
-    return false;
-  }
-  output->resize(ulength);
-  return snappy::RawUncompress(input_data, input_length, &(*output)[0]);
+  return snappy::GetUncompressedLength(input_data, input_length, result);
+#else
+  return false;
+#endif
+}
+
+bool Snappy_Uncompress(const char* input_data, size_t input_length,
+                       char* output) {
+#if defined(USE_SNAPPY)
+  return snappy::RawUncompress(input_data, input_length, output);
 #else
   return false;
 #endif

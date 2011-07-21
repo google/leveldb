@@ -84,8 +84,10 @@ class AtomicPointer {
 
 bool Snappy_Compress(const char* input, size_t input_length,
                      std::string* output);
+bool Snappy_GetUncompressedLength(const char* input, size_t length,
+                                  size_t* result);
 bool Snappy_Uncompress(const char* input_data, size_t input_length,
-                       std::string* output);
+                       char* output);
 
 inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
   return false;

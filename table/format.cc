@@ -107,16 +107,20 @@ Status ReadBlock(RandomAccessFile* file,
       // Ok
       break;
     case kSnappyCompression: {
-      std::string decompressed;
-      if (!port::Snappy_Uncompress(data, n, &decompressed)) {
+      size_t ulength = 0;
+      if (!port::Snappy_GetUncompressedLength(data, n, &ulength)) {
         delete[] buf;
-        s = Status::Corruption("corrupted compressed block contents");
-        return s;
+        return Status::Corruption("corrupted compressed block contents");
       }
-      delete[] buf;     // Done with uncompressed data
-      buf = new char[decompressed.size()];
-      memcpy(buf, decompressed.data(), decompressed.size());
-      n = decompressed.size();
+      char* ubuf = new char[ulength];
+      if (!port::Snappy_Uncompress(data, n, ubuf)) {
+        delete[] buf;
+        delete[] ubuf;
+        return Status::Corruption("corrupted compressed block contents");
+      }
+      delete[] buf;
+      buf = ubuf;
+      n = ulength;
       break;
     }
     default:

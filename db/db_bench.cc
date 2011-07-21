@@ -472,13 +472,14 @@ class Benchmark {
     std::string compressed;
     bool ok = port::Snappy_Compress(input.data(), input.size(), &compressed);
     int64_t bytes = 0;
-    std::string uncompressed;
+    char* uncompressed = new char[input.size()];
     while (ok && bytes < 1024 * 1048576) {  // Compress 1G
       ok =  port::Snappy_Uncompress(compressed.data(), compressed.size(),
-                                    &uncompressed);
-      bytes += uncompressed.size();
+                                    uncompressed);
+      bytes += input.size();
       FinishedSingleOp();
     }
+    delete[] uncompressed;
 
     if (!ok) {
       message_ = "(snappy failure)";

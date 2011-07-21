@@ -18,14 +18,19 @@ RandomAccessFile::~RandomAccessFile() {
 WritableFile::~WritableFile() {
 }
 
+Logger::~Logger() {
+}
+
 FileLock::~FileLock() {
 }
 
-void Log(Env* env, WritableFile* info_log, const char* format, ...) {
-  va_list ap;
-  va_start(ap, format);
-  env->Logv(info_log, format, ap);
-  va_end(ap);
+void Log(Logger* info_log, const char* format, ...) {
+  if (info_log != NULL) {
+    va_list ap;
+    va_start(ap, format);
+    info_log->Logv(format, ap);
+    va_end(ap);
+  }
 }
 
 Status WriteStringToFile(Env* env, const Slice& data,

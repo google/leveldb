@@ -1124,7 +1124,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
       std::vector<FileMetaData*> expanded1;
       GetOverlappingInputs(level+1, new_start, new_limit, &expanded1);
       if (expanded1.size() == c->inputs_[1].size()) {
-        Log(env_, options_->info_log,
+        Log(options_->info_log,
             "Expanding@%d %d+%d to %d+%d\n",
             level,
             int(c->inputs_[0].size()),
@@ -1147,7 +1147,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
   }
 
   if (false) {
-    Log(env_, options_->info_log, "Compacting %d '%s' .. '%s'",
+    Log(options_->info_log, "Compacting %d '%s' .. '%s'",
         level,
         EscapeString(smallest.Encode()).c_str(),
         EscapeString(largest.Encode()).c_str());

@@ -23,6 +23,7 @@
 #include "leveldb/slice.h"
 #include "port/port.h"
 #include "util/logging.h"
+#include "util/posix_logger.h"
 
 #if defined(OS_WIN)
 #include <io.h>
@@ -406,9 +407,8 @@ class ChromiumEnv : public Env {
     return Status::OK();
   }
 
-  virtual void Logv(WritableFile* info_log, const char* format, va_list ap) {
-    // TODO(jorlow): We may want to just use Chromium's built in logging.
-
+  // TODO(user,user): Use Chromium's built-in logging?
+  static uint64_t gettid() {
     uint64_t thread_id = 0;
     // Coppied from base/logging.cc.
 #if defined(OS_WIN)
@@ -422,65 +422,17 @@ class ChromiumEnv : public Env {
     pthread_t tid = pthread_self();
     memcpy(&thread_id, &tid, min(sizeof(r), sizeof(tid)));
 #endif
+    return thread_id;
+  }
 
-    // We try twice: the first time with a fixed-size stack allocated buffer,
-    // and the second time with a much larger dynamically allocated buffer.
-    char buffer[500];
-    for (int iter = 0; iter < 2; iter++) {
-      char* base;
-      int bufsize;
-      if (iter == 0) {
-        bufsize = sizeof(buffer);
-        base = buffer;
-      } else {
-        bufsize = 30000;
-        base = new char[bufsize];
-      }
-      char* p = base;
-      char* limit = base + bufsize;
-
-      ::base::Time::Exploded t;
-      ::base::Time::Now().LocalExplode(&t);
-      p += snprintf(p, limit - p,
-                    "%04d/%02d/%02d-%02d:%02d:%02d.%06d %llx ",
-                    t.year,
-                    t.month,
-                    t.day_of_month,
-                    t.hour,
-                    t.minute,
-                    t.second,
-                    static_cast<int>(t.millisecond) * 1000,
-                    static_cast<long long unsigned int>(thread_id));
-
-      // Print the message
-      if (p < limit) {
-        va_list backup_ap;
-        va_copy(backup_ap, ap);
-        p += vsnprintf(p, limit - p, format, backup_ap);
-        va_end(backup_ap);
-      }
-
-      // Truncate to available space if necessary
-      if (p >= limit) {
-        if (iter == 0) {
-          continue;       // Try again with larger buffer
-        } else {
-          p = limit - 1;
-        }
-      }
-
-      // Add newline if necessary
-      if (p == base || p[-1] != '\n') {
-        *p++ = '\n';
-      }
-
-      assert(p <= limit);
-      info_log->Append(Slice(base, p - base));
-      info_log->Flush();
-      if (base != buffer) {
-        delete[] base;
-      }
-      break;
+  virtual Status NewLogger(const std::string& fname, Logger** result) {
+    FILE* f = fopen(fname.c_str(), "w");
+    if (f == NULL) {
+      *result = NULL;
+      return Status::IOError(fname, strerror(errno));
+    } else {
+      *result = new PosixLogger(f, &ChromiumEnv::gettid);
+      return Status::OK();
     }
   }
 

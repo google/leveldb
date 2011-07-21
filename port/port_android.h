@@ -126,10 +126,16 @@ inline bool Snappy_Compress(
 }
 
 // TODO(gabor): Implement uncompress
+inline bool Snappy_GetUncompressedLength(const char* input, size_t length,
+                                         size_t* result) {
+  return false;
+}
+
+// TODO(gabor): Implement uncompress
 inline bool Snappy_Uncompress(
     const char* input_data,
     size_t input_length,
-    std::string* output) {
+    char* output) {
   return false;
 }
 
