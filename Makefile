@@ -97,6 +97,7 @@ TESTS = \
 	write_batch_test
 
 PROGRAMS = db_bench $(TESTS)
+BENCHMARKS = db_bench_sqlite3 db_bench_tree_db
 
 LIBRARY = libleveldb.a
 
@@ -106,7 +107,7 @@ check: $(PROGRAMS) $(TESTS)
 	for t in $(TESTS); do echo "***** Running $$t"; ./$$t || exit 1; done
 
 clean:
-	-rm -f $(PROGRAMS) $(LIBRARY) */*.o ios-x86/*/*.o ios-arm/*/*.o
+	-rm -f $(PROGRAMS) $(BENCHMARKS) $(LIBRARY) */*.o */*/*.o ios-x86/*/*.o ios-arm/*/*.o
 	-rm -rf ios-x86/* ios-arm/*
 	-rm build_config.mk
 
@@ -116,6 +117,12 @@ $(LIBRARY): $(LIBOBJECTS)
 
 db_bench: db/db_bench.o $(LIBOBJECTS) $(TESTUTIL)
 	$(CC) $(LDFLAGS) db/db_bench.o $(LIBOBJECTS) $(TESTUTIL) -o $@
+
+db_bench_sqlite3: doc/bench/db_bench_sqlite3.o $(LIBOBJECTS) $(TESTUTIL)
+	$(CC) $(LDFLAGS) -lsqlite3 doc/bench/db_bench_sqlite3.o $(LIBOBJECTS) $(TESTUTIL) -o $@
+
+db_bench_tree_db: doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL)
+	$(CC) $(LDFLAGS) -lkyotocabinet doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL) -o $@
 
 arena_test: util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CC) $(LDFLAGS) util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
