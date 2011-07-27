@@ -176,34 +176,28 @@ parameters are varied.  For the baseline:</p>
 <h3>A. Large Values </h3>
 <p>For this benchmark, we start with an empty database, and write 100,000 byte values (~50% compressible). To keep the benchmark running time reasonable, we stop after writing 1000 values.</p>
 <h4>Sequential Writes</h4>
-<table class="bn">
+<table class="bn bnbase">
 <tr><td class="c1">LevelDB</td>
     <td class="c2">1,060 ops/sec</td>
-    <td class="c3"><div class="bldb" style="width:127px">&nbsp;</div>
-    <td class="c4">(1.17x baseline)</td></tr>
+    <td class="c3"><div class="bldb" style="width:127px">&nbsp;</div></td></tr>
 <tr><td class="c1">Kyoto TreeDB</td>
     <td class="c2">1,020 ops/sec</td>
-    <td class="c3"><div class="bkct" style="width:122px">&nbsp;</div></td>
-    <td class="c4">(2.57x baseline)</td></tr>
+    <td class="c3"><div class="bkct" style="width:122px">&nbsp;</div></td></tr>
 <tr><td class="c1">SQLite3</td>
     <td class="c2">2,910 ops/sec</td>
-    <td class="c3"><div class="bsql" style="width:350px">&nbsp;</div></td>
-    <td class="c4">(93.3x baseline)</td></tr>
+    <td class="c3"><div class="bsql" style="width:350px">&nbsp;</div></td></tr>
 </table>
 <h4>Random Writes</h4>
-<table class="bn">
+<table class="bn bnbase">
 <tr><td class="c1">LevelDB</td>
     <td class="c2">480 ops/sec</td>
-    <td class="c3"><div class="bldb" style="width:77px">&nbsp;</div></td>
-    <td class="c4">(2.52x baseline)</td></tr>
+    <td class="c3"><div class="bldb" style="width:77px">&nbsp;</div></td></tr>
 <tr><td class="c1">Kyoto TreeDB</td>
     <td class="c2">1,100 ops/sec</td>
-    <td class="c3"><div class="bkct" style="width:350px">&nbsp;</div></td>
-    <td class="c4">(10.72x baseline)</td></tr>
+    <td class="c3"><div class="bkct" style="width:350px">&nbsp;</div></td></tr>
 <tr><td class="c1">SQLite3</td>
     <td class="c2">2,200 ops/sec</td>
-    <td class="c3"><div class="bsql" style="width:175px">&nbsp;</div></td>
-    <td class="c4">(4,516x baseline)</td></tr>
+    <td class="c3"><div class="bsql" style="width:175px">&nbsp;</div></td></tr>
 </table>
 <p>LevelDB doesn't perform as well with large values of 100,000 bytes each. This is because LevelDB writes keys and values at least twice: first time to the transaction log, and second time (during a compaction) to a sorted file.
 With larger values, LevelDB's per-operation efficiency is swamped by the
