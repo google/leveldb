@@ -74,7 +74,7 @@ static bool FLAGS_use_existing_db = false;
 static bool FLAGS_transaction = true;
 
 // If true, we enable Write-Ahead Logging
-static bool FLAGS_WAL_enabled = false;
+static bool FLAGS_WAL_enabled = true;
 
 inline
 static void ExecErrorCheck(int status, char *err_msg) {
@@ -448,7 +448,12 @@ class Benchmark {
     // Change journal mode to WAL if WAL enabled flag is on
     if (FLAGS_WAL_enabled) {
       std::string WAL_stmt = "PRAGMA journal_mode = WAL";
+
+      // LevelDB's default cache size is a combined 4 MB
+      std::string WAL_checkpoint = "PRAGMA wal_autocheckpoint = 4096";
       status = sqlite3_exec(db_, WAL_stmt.c_str(), NULL, NULL, &err_msg);
+      ExecErrorCheck(status, err_msg);
+      status = sqlite3_exec(db_, WAL_checkpoint.c_str(), NULL, NULL, &err_msg);
       ExecErrorCheck(status, err_msg);
     }
 
@@ -456,8 +461,7 @@ class Benchmark {
     std::string locking_stmt = "PRAGMA locking_mode = EXCLUSIVE";
     std::string create_stmt =
           "CREATE TABLE test (key blob, value blob, PRIMARY KEY(key))";
-    std::string index_stmt = "CREATE INDEX keyindex ON test (key)";
-    std::string stmt_array[] = { locking_stmt, create_stmt, index_stmt };
+    std::string stmt_array[] = { locking_stmt, create_stmt };
     int stmt_array_length = sizeof(stmt_array) / sizeof(std::string);
     for (int i = 0; i < stmt_array_length; i++) {
       status = sqlite3_exec(db_, stmt_array[i].c_str(), NULL, NULL, &err_msg);
