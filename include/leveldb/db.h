@@ -33,6 +33,7 @@ struct Range {
   Slice start;          // Included in the range
   Slice limit;          // Not included in the range
 
+  Range() { }
   Range(const Slice& s, const Slice& l) : start(s), limit(l) { }
 };
 

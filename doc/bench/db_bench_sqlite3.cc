@@ -23,7 +23,6 @@
 //   fillseq100K   -- write N/1000 100K values in sequential order in async mode
 //   readseq       -- read N times sequentially
 //   readrandom    -- read N times in random order
-//   readseq100K   -- read N/1000 100K values in sequential order in async mode
 //   readrand100K  -- read N/1000 100K values in sequential order in async mode
 static const char* FLAGS_benchmarks =
     "fillseq,"
@@ -38,7 +37,7 @@ static const char* FLAGS_benchmarks =
     "readseq,"
     "fillrand100K,"
     "fillseq100K,"
-    "readseq100K,"
+    "readseq,"
     "readrand100K,"
     ;
 
@@ -387,18 +386,13 @@ class Benchmark {
         Write(write_sync, SEQUENTIAL, FRESH, num_ / 1000, 100 * 1000, 1);
         WalCheckpoint(db_);
       } else if (name == Slice("readseq")) {
-        Read(SEQUENTIAL, 1);
+        ReadSequential();
       } else if (name == Slice("readrandom")) {
         Read(RANDOM, 1);
       } else if (name == Slice("readrand100K")) {
         int n = reads_;
         reads_ /= 1000;
         Read(RANDOM, 1);
-        reads_ = n;
-      } else if (name == Slice("readseq100K")) {
-        int n = reads_;
-        reads_ /= 1000;
-        Read(SEQUENTIAL, 1);
         reads_ = n;
       } else {
         known = false;
@@ -637,6 +631,22 @@ class Benchmark {
     status = sqlite3_finalize(begin_trans_stmt);
     ErrorCheck(status);
     status = sqlite3_finalize(end_trans_stmt);
+    ErrorCheck(status);
+  }
+
+  void ReadSequential() {
+    int status;
+    sqlite3_stmt *pStmt;
+    std::string read_str = "SELECT * FROM test ORDER BY key";
+
+    status = sqlite3_prepare_v2(db_, read_str.c_str(), -1, &pStmt, NULL);
+    ErrorCheck(status);
+    for (int i = 0; i < reads_ && SQLITE_ROW == sqlite3_step(pStmt); i++) {
+      bytes_ += sqlite3_column_bytes(pStmt, 1) + sqlite3_column_bytes(pStmt, 2);
+      FinishedSingleOp();
+    }
+
+    status = sqlite3_finalize(pStmt);
     ErrorCheck(status);
   }
 

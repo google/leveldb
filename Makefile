@@ -42,6 +42,7 @@ LDFLAGS=$(PLATFORM_LDFLAGS) $(SNAPPY_LDFLAGS) $(GOOGLE_PERFTOOLS_LDFLAGS)
 
 LIBOBJECTS = \
 	./db/builder.o \
+	./db/c.o \
 	./db/db_impl.o \
 	./db/db_iter.o \
 	./db/filename.o \
@@ -81,6 +82,7 @@ TESTHARNESS = ./util/testharness.o $(TESTUTIL)
 
 TESTS = \
 	arena_test \
+	c_test \
 	cache_test \
 	coding_test \
 	corruption_test \
@@ -126,6 +128,9 @@ db_bench_tree_db: doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL)
 
 arena_test: util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CC) $(LDFLAGS) util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+
+c_test: db/c_test.o $(LIBOBJECTS) $(TESTHARNESS)
+	$(CC) $(LDFLAGS) db/c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 cache_test: util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CC) $(LDFLAGS) util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
@@ -182,8 +187,19 @@ IOSVERSION=$(shell defaults read /Developer/Platforms/iPhoneOS.platform/version 
 	mkdir -p ios-arm/$(dir $@)
 	$(DEVICEROOT)/usr/bin/$(CC) $(CFLAGS) -isysroot $(DEVICEROOT)/SDKs/iPhoneOS$(IOSVERSION).sdk -arch armv6 -arch armv7 $< -o ios-arm/$@
 	lipo ios-x86/$@ ios-arm/$@ -create -output $@
+
+.c.o:
+	mkdir -p ios-x86/$(dir $@)
+	$(SIMULATORROOT)/usr/bin/$(CC) $(CFLAGS) -isysroot $(SIMULATORROOT)/SDKs/iPhoneSimulator$(IOSVERSION).sdk -arch i686 $< -o ios-x86/$@
+	mkdir -p ios-arm/$(dir $@)
+	$(DEVICEROOT)/usr/bin/$(CC) $(CFLAGS) -isysroot $(DEVICEROOT)/SDKs/iPhoneOS$(IOSVERSION).sdk -arch armv6 -arch armv7 $< -o ios-arm/$@
+	lipo ios-x86/$@ ios-arm/$@ -create -output $@
+
 else
 .cc.o:
+	$(CC) $(CFLAGS) $< -o $@
+
+.c.o:
 	$(CC) $(CFLAGS) $< -o $@
 endif
 
