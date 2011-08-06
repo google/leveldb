@@ -103,7 +103,7 @@ bool SomeFileOverlapsRange(
     const Slice& largest_user_key) {
   // Find the earliest possible internal key for smallest_user_key
   InternalKey small(smallest_user_key, kMaxSequenceNumber, kValueTypeForSeek);
-  const int index = FindFile(icmp, files, small.Encode());
+  const uint32_t index = FindFile(icmp, files, small.Encode());
   return ((index < files.size()) &&
           icmp.user_comparator()->Compare(
               largest_user_key, files[index]->smallest.user_key()) >= 0);
@@ -266,7 +266,7 @@ Status Version::Get(const ReadOptions& options,
       // Level-0 files may overlap each other.  Find all files that
       // overlap user_key and process them in order from newest to oldest.
       tmp.reserve(num_files);
-      for (int i = 0; i < num_files; i++) {
+      for (uint32_t i = 0; i < num_files; i++) {
         FileMetaData* f = files[i];
         if (ucmp->Compare(user_key, f->smallest.user_key()) >= 0 &&
             ucmp->Compare(user_key, f->largest.user_key()) <= 0) {
@@ -297,7 +297,7 @@ Status Version::Get(const ReadOptions& options,
       }
     }
 
-    for (int i = 0; i < num_files; ++i) {
+    for (uint32_t i = 0; i < num_files; ++i) {
       if (last_file_read != NULL && stats->seek_file == NULL) {
         // We have had more than one seek for this read.  Charge the 1st file.
         stats->seek_file = last_file_read;
@@ -442,7 +442,7 @@ class VersionSet::Builder {
         to_unref.push_back(*it);
       }
       delete added;
-      for (int i = 0; i < to_unref.size(); i++) {
+      for (uint32_t i = 0; i < to_unref.size(); i++) {
         FileMetaData* f = to_unref[i];
         f->refs--;
         if (f->refs <= 0) {
@@ -533,7 +533,7 @@ class VersionSet::Builder {
 #ifndef NDEBUG
       // Make sure there is no overlap in levels > 0
       if (level > 0) {
-        for (int i = 1; i < v->files_[level].size(); i++) {
+        for (uint32_t i = 1; i < v->files_[level].size(); i++) {
           const InternalKey& prev_end = v->files_[level][i-1]->largest;
           const InternalKey& this_begin = v->files_[level][i]->smallest;
           if (vset_->icmp_.Compare(prev_end, this_begin) >= 0) {
