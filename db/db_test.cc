@@ -519,6 +519,21 @@ TEST(DBTest, IterSmallAndLargeMix) {
   delete iter;
 }
 
+TEST(DBTest, IterMultiWithDelete) {
+  ASSERT_OK(Put("a", "va"));
+  ASSERT_OK(Put("b", "vb"));
+  ASSERT_OK(Put("c", "vc"));
+  ASSERT_OK(Delete("b"));
+  ASSERT_EQ("NOT_FOUND", Get("b"));
+
+  Iterator* iter = db_->NewIterator(ReadOptions());
+  iter->Seek("c");
+  ASSERT_EQ(IterStatus(iter), "c->vc");
+  iter->Prev();
+  ASSERT_EQ(IterStatus(iter), "a->va");
+  delete iter;
+}
+
 TEST(DBTest, Recover) {
   ASSERT_OK(Put("foo", "v1"));
   ASSERT_OK(Put("baz", "v5"));

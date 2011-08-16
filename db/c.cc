@@ -15,7 +15,26 @@
 #include "leveldb/status.h"
 #include "leveldb/write_batch.h"
 
-namespace leveldb {
+using leveldb::Cache;
+using leveldb::Comparator;
+using leveldb::CompressionType;
+using leveldb::DB;
+using leveldb::Env;
+using leveldb::FileLock;
+using leveldb::Iterator;
+using leveldb::Logger;
+using leveldb::NewLRUCache;
+using leveldb::Options;
+using leveldb::RandomAccessFile;
+using leveldb::Range;
+using leveldb::ReadOptions;
+using leveldb::SequentialFile;
+using leveldb::Slice;
+using leveldb::Snapshot;
+using leveldb::Status;
+using leveldb::WritableFile;
+using leveldb::WriteBatch;
+using leveldb::WriteOptions;
 
 extern "C" {
 
@@ -172,7 +191,7 @@ void leveldb_release_snapshot(
   delete snapshot;
 }
 
-const char* leveldb_property_value(
+char* leveldb_property_value(
     leveldb_t* db,
     const char* propname) {
   std::string tmp;
@@ -449,5 +468,3 @@ void leveldb_env_destroy(leveldb_env_t* env) {
 }
 
 }  // end extern "C"
-
-}

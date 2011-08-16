@@ -216,7 +216,6 @@ void DBIter::FindPrevUserEntry() {
 
   ValueType value_type = kTypeDeletion;
   if (iter_->Valid()) {
-    SaveKey(ExtractUserKey(iter_->key()), &saved_key_);
     do {
       ParsedInternalKey ikey;
       if (ParseKey(&ikey) && ikey.sequence <= sequence_) {
@@ -227,6 +226,7 @@ void DBIter::FindPrevUserEntry() {
         }
         value_type = ikey.type;
         if (value_type == kTypeDeletion) {
+          saved_key_.clear();
           ClearSavedValue();
         } else {
           Slice raw_value = iter_->value();
@@ -234,6 +234,7 @@ void DBIter::FindPrevUserEntry() {
             std::string empty;
             swap(empty, saved_value_);
           }
+          SaveKey(ExtractUserKey(iter_->key()), &saved_key_);
           saved_value_.assign(raw_value.data(), raw_value.size());
         }
       }

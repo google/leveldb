@@ -23,7 +23,7 @@ creating it if necessary:
 <p>
 <pre>
   #include &lt;assert&gt;
-  #include "leveldb/include/db.h"
+  #include "leveldb/db.h"
 
   leveldb::DB* db;
   leveldb::Options options;
@@ -78,7 +78,7 @@ Such problems can be avoided by using the <code>WriteBatch</code> class to
 atomically apply a set of updates:
 <p>
 <pre>
-  #include "leveldb/include/write_batch.h"
+  #include "leveldb/write_batch.h"
   ...
   std::string value;
   leveldb::Status s = db-&gt;Get(leveldb::ReadOptions(), key1, &amp;value);
@@ -296,7 +296,7 @@ subclass of <code>leveldb::Comparator</code> that expresses these rules:
     }
 
     // Ignore the following methods for now:
-    const char* Name() { return "TwoPartComparator"; }
+    const char* Name() const { return "TwoPartComparator"; }
     void FindShortestSeparator(std::string*, const leveldb::Slice&amp;) const { }
     void FindShortSuccessor(std::string*) const { }
   };
@@ -333,7 +333,7 @@ version numbers found in the keys to decide how to interpret them.
 <h1>Performance</h1>
 <p>
 Performance can be tuned by changing the default values of the
-types defined in <code>leveldb/include/options.h</code>.
+types defined in <code>include/leveldb/options.h</code>.
 
 <p>
 <h2>Block size</h2>
@@ -371,7 +371,7 @@ filesystem and each file stores a sequence of compressed blocks.  If
 uncompressed block contents.
 <p>
 <pre>
-  #include "leveldb/include/cache.h"
+  #include "leveldb/cache.h"
 
   leveldb::Options options;
   options.cache = leveldb::NewLRUCache(100 * 1048576);  // 100MB cache
