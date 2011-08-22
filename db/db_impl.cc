@@ -989,27 +989,37 @@ Status DBImpl::Get(const ReadOptions& options,
     snapshot = versions_->LastSequence();
   }
 
-  // First look in the memtable, then in the immutable memtable (if any).
-  LookupKey lkey(key, snapshot);
-  if (mem_->Get(lkey, value, &s)) {
-    return s;
-  }
-  if (imm_ != NULL && imm_->Get(lkey, value, &s)) {
-    return s;
-  }
-
-  // Not in memtable(s); try live files in level order
+  MemTable* mem = mem_;
+  MemTable* imm = imm_;
   Version* current = versions_->current();
+  mem->Ref();
+  if (imm != NULL) imm->Ref();
   current->Ref();
+
+  bool have_stat_update = false;
   Version::GetStats stats;
-  { // Unlock while reading from files
+
+  // Unlock while reading from files and memtables
+  {
     mutex_.Unlock();
-    s = current->Get(options, lkey, value, &stats);
+    // First look in the memtable, then in the immutable memtable (if any).
+    LookupKey lkey(key, snapshot);
+    if (mem_->Get(lkey, value, &s)) {
+      // Done
+    } else if (imm_ != NULL && imm_->Get(lkey, value, &s)) {
+      // Done
+    } else {
+      s = current->Get(options, lkey, value, &stats);
+      have_stat_update = true;
+    }
     mutex_.Lock();
   }
-  if (current->UpdateStats(stats)) {
+
+  if (have_stat_update && current->UpdateStats(stats)) {
     MaybeScheduleCompaction();
   }
+  mem->Unref();
+  if (imm != NULL) imm->Unref();
   current->Unref();
   return s;
 }

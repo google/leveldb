@@ -196,7 +196,8 @@ char* leveldb_property_value(
     const char* propname) {
   std::string tmp;
   if (db->rep->GetProperty(Slice(propname), &tmp)) {
-    return CopyString(tmp);
+    // We use strdup() since we expect human readable output.
+    return strdup(tmp.c_str());
   } else {
     return NULL;
   }
