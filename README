@@ -1,3 +1,15 @@
+Android NDK port for LevelDB.
+
+This git branch contains a make system to build LevelDB
+against the Android NDK: http://developer.android.com/sdk/ndk/index.html
+
+To build:
+- Download install the Android NDK
+- cd into this directory
+- $ ndk-build
+
+====
+
 leveldb: A key-value store
 Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
 
