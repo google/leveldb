@@ -138,14 +138,13 @@ class VersionSet {
 
   // Apply *edit to the current version to form a new descriptor that
   // is both saved to persistent state and installed as the new
-  // current version.
-  Status LogAndApply(VersionEdit* edit);
+  // current version.  Will release *mu while actually writing to the file.
+  // REQUIRES: *mu is held on entry.
+  // REQUIRES: no other thread concurrently calls LogAndApply()
+  Status LogAndApply(VersionEdit* edit, port::Mutex* mu);
 
   // Recover the last saved descriptor from persistent storage.
   Status Recover();
-
-  // Save current contents to *log
-  Status WriteSnapshot(log::Writer* log);
 
   // Return the current version.
   Version* current() const { return current_; }
@@ -170,6 +169,9 @@ class VersionSet {
     assert(s >= last_sequence_);
     last_sequence_ = s;
   }
+
+  // Mark the specified file number as used.
+  void MarkFileNumberUsed(uint64_t number);
 
   // Return the current log file number.
   uint64_t LogNumber() const { return log_number_; }
@@ -246,6 +248,9 @@ class VersionSet {
                  InternalKey* largest);
 
   void SetupOtherInputs(Compaction* c);
+
+  // Save current contents to *log
+  Status WriteSnapshot(log::Writer* log);
 
   void AppendVersion(Version* v);
 

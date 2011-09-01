@@ -10,6 +10,7 @@
 #include "leveldb/env.h"
 #include "leveldb/table.h"
 #include "util/logging.h"
+#include "util/mutexlock.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 
@@ -343,6 +344,41 @@ TEST(DBTest, GetPicksCorrectFile) {
   ASSERT_EQ("va", Get("a"));
   ASSERT_EQ("vf", Get("f"));
   ASSERT_EQ("vx", Get("x"));
+}
+
+TEST(DBTest, GetEncountersEmptyLevel) {
+  // Arrange for the following to happen:
+  //   * sstable A in level 0
+  //   * nothing in level 1
+  //   * sstable B in level 2
+  // Then do enough Get() calls to arrange for an automatic compaction
+  // of sstable A.  A bug would cause the compaction to be marked as
+  // occuring at level 1 (instead of the correct level 0).
+
+  // Step 1: First place sstables in levels 0 and 2
+  int compaction_count = 0;
+  while (NumTableFilesAtLevel(0) == 0 ||
+         NumTableFilesAtLevel(2) == 0) {
+    ASSERT_LE(compaction_count, 100) << "could not fill levels 0 and 2";
+    compaction_count++;
+    Put("a", "begin");
+    Put("z", "end");
+    dbfull()->TEST_CompactMemTable();
+  }
+
+  // Step 2: clear level 1 if necessary.
+  dbfull()->TEST_CompactRange(1, "a", "z");
+  ASSERT_EQ(NumTableFilesAtLevel(0), 1);
+  ASSERT_EQ(NumTableFilesAtLevel(1), 0);
+  ASSERT_EQ(NumTableFilesAtLevel(2), 1);
+
+  // Step 3: read until level 0 compaction disappears.
+  int read_count = 0;
+  while (NumTableFilesAtLevel(0) > 0) {
+    ASSERT_LE(read_count, 10000) << "did not trigger level 0 compaction";
+    read_count++;
+    ASSERT_EQ("NOT_FOUND", Get("missing"));
+  }
 }
 
 TEST(DBTest, IterEmpty) {
@@ -1355,6 +1391,9 @@ void BM_LogAndApply(int iters, int num_base_files) {
 
   Env* env = Env::Default();
 
+  port::Mutex mu;
+  MutexLock l(&mu);
+
   InternalKeyComparator cmp(BytewiseComparator());
   Options options;
   VersionSet vset(dbname, &options, NULL, &cmp);
@@ -1366,7 +1405,7 @@ void BM_LogAndApply(int iters, int num_base_files) {
     InternalKey limit(MakeKey(2*fnum+1), 1, kTypeDeletion);
     vbase.AddFile(2, fnum++, 1 /* file size */, start, limit);
   }
-  ASSERT_OK(vset.LogAndApply(&vbase));
+  ASSERT_OK(vset.LogAndApply(&vbase, &mu));
 
   uint64_t start_micros = env->NowMicros();
 
@@ -1376,7 +1415,7 @@ void BM_LogAndApply(int iters, int num_base_files) {
     InternalKey start(MakeKey(2*fnum), 1, kTypeValue);
     InternalKey limit(MakeKey(2*fnum+1), 1, kTypeDeletion);
     vedit.AddFile(2, fnum++, 1 /* file size */, start, limit);
-    vset.LogAndApply(&vedit);
+    vset.LogAndApply(&vedit, &mu);
   }
   uint64_t stop_micros = env->NowMicros();
   unsigned int us = stop_micros - start_micros;

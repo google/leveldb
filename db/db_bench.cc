@@ -280,6 +280,7 @@ struct ThreadState {
   int tid;             // 0..n-1 when running in n threads
   Random rand;         // Has different seeds for different threads
   Stats stats;
+  SharedState* shared;
 
   ThreadState(int index)
       : tid(index),
@@ -418,13 +419,14 @@ class Benchmark {
 
       // Reset parameters that may be overriddden bwlow
       num_ = FLAGS_num;
-      reads_ = num_;
+      reads_ = (FLAGS_reads < 0 ? FLAGS_num : FLAGS_reads);
       value_size_ = FLAGS_value_size;
       entries_per_batch_ = 1;
       write_options_ = WriteOptions();
 
       void (Benchmark::*method)(ThreadState*) = NULL;
       bool fresh_db = false;
+      int num_threads = FLAGS_threads;
 
       if (name == Slice("fillseq")) {
         fresh_db = true;
@@ -460,6 +462,9 @@ class Benchmark {
       } else if (name == Slice("readrandomsmall")) {
         reads_ /= 1000;
         method = &Benchmark::ReadRandom;
+      } else if (name == Slice("readwhilewriting")) {
+        num_threads++;  // Add extra thread for writing
+        method = &Benchmark::ReadWhileWriting;
       } else if (name == Slice("compact")) {
         method = &Benchmark::Compact;
       } else if (name == Slice("crc32c")) {
@@ -494,7 +499,7 @@ class Benchmark {
       }
 
       if (method != NULL) {
-        RunBenchmark(name, method);
+        RunBenchmark(num_threads, name, method);
       }
     }
   }
@@ -535,8 +540,8 @@ class Benchmark {
     }
   }
 
-  void RunBenchmark(Slice name, void (Benchmark::*method)(ThreadState*)) {
-    const int n = FLAGS_threads;
+  void RunBenchmark(int n, Slice name,
+                    void (Benchmark::*method)(ThreadState*)) {
     SharedState shared;
     shared.total = n;
     shared.num_initialized = 0;
@@ -549,6 +554,7 @@ class Benchmark {
       arg[i].method = method;
       arg[i].shared = &shared;
       arg[i].thread = new ThreadState(i);
+      arg[i].thread->shared = &shared;
       Env::Default()->StartThread(ThreadBody, &arg[i]);
     }
 
@@ -688,7 +694,6 @@ class Benchmark {
     RandomGenerator gen;
     WriteBatch batch;
     Status s;
-    std::string val;
     int64_t bytes = 0;
     for (int i = 0; i < num_; i += entries_per_batch_) {
       batch.Clear();
@@ -757,6 +762,36 @@ class Benchmark {
       snprintf(key, sizeof(key), "%016d", k);
       db_->Get(options, key, &value);
       thread->stats.FinishedSingleOp();
+    }
+  }
+
+  void ReadWhileWriting(ThreadState* thread) {
+    if (thread->tid > 0) {
+      ReadRandom(thread);
+    } else {
+      // Special thread that keeps writing until other threads are done.
+      RandomGenerator gen;
+      while (true) {
+        {
+          MutexLock l(&thread->shared->mu);
+          if (thread->shared->num_done + 1 >= thread->shared->num_initialized) {
+            // Other threads have finished
+            break;
+          }
+        }
+
+        const int k = thread->rand.Next() % FLAGS_num;
+        char key[100];
+        snprintf(key, sizeof(key), "%016d", k);
+        Status s = db_->Put(write_options_, key, gen.Generate(value_size_));
+        if (!s.ok()) {
+          fprintf(stderr, "put error: %s\n", s.ToString().c_str());
+          exit(1);
+        }
+      }
+
+      // Do not count any of the preceding work/delay in stats.
+      thread->stats.Start();
     }
   }
 

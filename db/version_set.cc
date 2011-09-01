@@ -250,6 +250,7 @@ Status Version::Get(const ReadOptions& options,
   stats->seek_file = NULL;
   stats->seek_file_level = -1;
   FileMetaData* last_file_read = NULL;
+  int last_file_read_level = -1;
 
   // We can search level-by-level since entries never hop across
   // levels.  Therefore we are guaranteed that if we find data
@@ -301,11 +302,12 @@ Status Version::Get(const ReadOptions& options,
       if (last_file_read != NULL && stats->seek_file == NULL) {
         // We have had more than one seek for this read.  Charge the 1st file.
         stats->seek_file = last_file_read;
-        stats->seek_file_level = (i == 0 ? level - 1 : level);
+        stats->seek_file_level = last_file_read_level;
       }
 
       FileMetaData* f = files[i];
       last_file_read = f;
+      last_file_read_level = level;
 
       Iterator* iter = vset_->table_cache_->NewIterator(
           options,
@@ -609,7 +611,7 @@ void VersionSet::AppendVersion(Version* v) {
   v->next_->prev_ = v;
 }
 
-Status VersionSet::LogAndApply(VersionEdit* edit) {
+Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
   if (edit->has_log_number_) {
     assert(edit->log_number_ >= log_number_);
     assert(edit->log_number_ < next_file_number_);
@@ -637,6 +639,8 @@ Status VersionSet::LogAndApply(VersionEdit* edit) {
   std::string new_manifest_file;
   Status s;
   if (descriptor_log_ == NULL) {
+    // No reason to unlock *mu here since we only hit this path in the
+    // first call to LogAndApply (when opening the database).
     assert(descriptor_file_ == NULL);
     new_manifest_file = DescriptorFileName(dbname_, manifest_file_number_);
     edit->SetNextFile(next_file_number_);
@@ -647,20 +651,27 @@ Status VersionSet::LogAndApply(VersionEdit* edit) {
     }
   }
 
-  // Write new record to MANIFEST log
-  if (s.ok()) {
-    std::string record;
-    edit->EncodeTo(&record);
-    s = descriptor_log_->AddRecord(record);
-    if (s.ok()) {
-      s = descriptor_file_->Sync();
-    }
-  }
+  // Unlock during expensive MANIFEST log write
+  {
+    mu->Unlock();
 
-  // If we just created a new descriptor file, install it by writing a
-  // new CURRENT file that points to it.
-  if (s.ok() && !new_manifest_file.empty()) {
-    s = SetCurrentFile(env_, dbname_, manifest_file_number_);
+    // Write new record to MANIFEST log
+    if (s.ok()) {
+      std::string record;
+      edit->EncodeTo(&record);
+      s = descriptor_log_->AddRecord(record);
+      if (s.ok()) {
+        s = descriptor_file_->Sync();
+      }
+    }
+
+    // If we just created a new descriptor file, install it by writing a
+    // new CURRENT file that points to it.
+    if (s.ok() && !new_manifest_file.empty()) {
+      s = SetCurrentFile(env_, dbname_, manifest_file_number_);
+    }
+
+    mu->Lock();
   }
 
   // Install the new version
@@ -776,6 +787,9 @@ Status VersionSet::Recover() {
     if (!have_prev_log_number) {
       prev_log_number = 0;
     }
+
+    MarkFileNumberUsed(prev_log_number);
+    MarkFileNumberUsed(log_number);
   }
 
   if (s.ok()) {
@@ -792,6 +806,12 @@ Status VersionSet::Recover() {
   }
 
   return s;
+}
+
+void VersionSet::MarkFileNumberUsed(uint64_t number) {
+  if (next_file_number_ <= number) {
+    next_file_number_ = number + 1;
+  }
 }
 
 static int64_t TotalFileSize(const std::vector<FileMetaData*>& files) {
