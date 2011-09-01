@@ -1,0 +1,42 @@
+INSTRUCTIONS FOR BUILDING LEVELDB ON WINDOWS / MSVC++
+(Tested with Microsoft Visual C++ 2010 Express)
+
+1. Install Boost
+  You'll need the Boost libraries to compile LevelDB on Windows:
+  http://www.boost.org/users/download/
+  You'll need at least the following Boost packages:
+  - date_time
+  - filesystem
+  - thread
+  - interprocess
+
+2. To create your LevelDB project, choose:
+   New -> "Project From Existing Code"
+   and point Visual Studio to the leveldb root directory.
+
+3. To just build the benchmarking tools, choose:
+   Project Type: "Console application project"
+
+4. In the configuration settings, make sure you include
+   Preprocessor definitions: LEVELDB_PLATFORM_WINDOWS;OS_WIN
+   You can also add these later in:
+   Project -> Properties ->
+      Configuration Properties -> C/C++ -> Preprocessor Definitions
+
+   Include the root directory of your LevelDB sources in header search paths.
+   You can also add this later in:
+   Project -> Properties -> 
+      Configuration Properties -> C/C++ -> Additional Include Directories
+
+5. Add boost/lib directory to Linker paths:
+   Project -> Properties -> Linker -> General -> Additional Library Dependencies
+
+6. Manually exclude the following files from the build
+   (Solution Explorer -> right-click on file -> Exclude from Project)
+   - port/port_android.cc
+   - port/port_posix.cc
+   - util/env_chromium.cc
+   - util/env_posix.cc
+
+7. Manually exclude all the *_test.cc and *_bench.cc files you don't want
+   to build. There should only be one .cc file with a main() in your project.

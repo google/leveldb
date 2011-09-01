@@ -1,3 +1,14 @@
+Windows port for LevelDB based on Boost libraries.
+
+See file "WINDOWS" for instructions on how to build this in Windows.
+- You'll need to install some Boost libraries (www.boost.org) to build against
+- You'll need to create a Microsoft Visual C++ project to build this
+- The WINDOWS file explains both of these processes.
+
+We're looking for volunteers to build a true Win32 port of LevelDB for Windows.
+
+====
+
 leveldb: A key-value store
 Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
 
