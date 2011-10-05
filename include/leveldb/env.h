@@ -258,8 +258,8 @@ extern Status ReadFileToString(Env* env, const std::string& fname,
 // functionality of another Env.
 class EnvWrapper : public Env {
  public:
-  // Initialize an EnvWrapper that delegates all calls to *target
-  explicit EnvWrapper(Env* target) : target_(target) { }
+  // Initialize an EnvWrapper that delegates all calls to *t
+  explicit EnvWrapper(Env* t) : target_(t) { }
   virtual ~EnvWrapper();
 
   // Return the target to which this Env forwards all calls

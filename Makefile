@@ -92,6 +92,7 @@ TESTS = \
 	env_test \
 	filename_test \
 	log_test \
+	memenv_test \
 	skiplist_test \
 	table_test \
 	version_edit_test \
@@ -102,6 +103,7 @@ PROGRAMS = db_bench $(TESTS)
 BENCHMARKS = db_bench_sqlite3 db_bench_tree_db
 
 LIBRARY = libleveldb.a
+MEMENVLIBRARY = libmemenv.a
 
 all: $(LIBRARY)
 
@@ -109,7 +111,7 @@ check: $(PROGRAMS) $(TESTS)
 	for t in $(TESTS); do echo "***** Running $$t"; ./$$t || exit 1; done
 
 clean:
-	-rm -f $(PROGRAMS) $(BENCHMARKS) $(LIBRARY) */*.o */*/*.o ios-x86/*/*.o ios-arm/*/*.o
+	-rm -f $(PROGRAMS) $(BENCHMARKS) $(LIBRARY) $(MEMENVLIBRARY) */*.o */*/*.o ios-x86/*/*.o ios-arm/*/*.o
 	-rm -rf ios-x86/* ios-arm/*
 	-rm build_config.mk
 
@@ -174,6 +176,13 @@ version_set_test: db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS)
 write_batch_test: db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CC) $(LDFLAGS) db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
+$(MEMENVLIBRARY) : helpers/memenv/memenv.o
+	rm -f $@
+	$(AR) -rs $@ helpers/memenv/memenv.o
+
+memenv_test : helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHARNESS)
+	$(CC) $(LDFLAGS) helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHARNESS) -o $@
+
 ifeq ($(PLATFORM), IOS)
 # For iOS, create universal object files to be used on both the simulator and
 # a device.
@@ -202,4 +211,3 @@ else
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@
 endif
-
