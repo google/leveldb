@@ -112,6 +112,8 @@ class DB {
   //     where <N> is an ASCII representation of a level number (e.g. "0").
   //  "leveldb.stats" - returns a multi-line string that describes statistics
   //     about the internal operation of the DB.
+  //  "leveldb.sstables" - returns a multi-line string that describes all
+  //     of the sstables that make up the db contents.
   virtual bool GetProperty(const Slice& property, std::string* value) = 0;
 
   // For each i in [0,n-1], store in "sizes[i]", the approximate
@@ -125,8 +127,17 @@ class DB {
   virtual void GetApproximateSizes(const Range* range, int n,
                                    uint64_t* sizes) = 0;
 
-  // Possible extensions:
-  // (1) Add a method to compact a range of keys
+  // Compact the underlying storage for the key range [*begin,*end].
+  // In particular, deleted and overwritten versions are discarded,
+  // and the data is rearranged to reduce the cost of operations
+  // needed to access the data.  This operation should typically only
+  // be invoked by users who understand the underlying implementation.
+  //
+  // begin==NULL is treated as a key before all keys in the database.
+  // end==NULL is treated as a key after all keys in the database.
+  // Therefore the following call will compact the entire database:
+  //    db->CompactRange(NULL, NULL);
+  virtual void CompactRange(const Slice* begin, const Slice* end) = 0;
 
  private:
   // No copying allowed

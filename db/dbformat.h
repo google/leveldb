@@ -149,6 +149,8 @@ class InternalKey {
   }
 
   void Clear() { rep_.clear(); }
+
+  std::string DebugString() const;
 };
 
 inline int InternalKeyComparator::Compare(

@@ -235,9 +235,8 @@ std::string VersionEdit::DebugString() const {
   for (size_t i = 0; i < compact_pointers_.size(); i++) {
     r.append("\n  CompactPointer: ");
     AppendNumberTo(&r, compact_pointers_[i].first);
-    r.append(" '");
-    AppendEscapedStringTo(&r, compact_pointers_[i].second.Encode());
-    r.append("'");
+    r.append(" ");
+    r.append(compact_pointers_[i].second.DebugString());
   }
   for (DeletedFileSet::const_iterator iter = deleted_files_.begin();
        iter != deleted_files_.end();
@@ -255,11 +254,10 @@ std::string VersionEdit::DebugString() const {
     AppendNumberTo(&r, f.number);
     r.append(" ");
     AppendNumberTo(&r, f.file_size);
-    r.append(" '");
-    AppendEscapedStringTo(&r, f.smallest.Encode());
-    r.append("' .. '");
-    AppendEscapedStringTo(&r, f.largest.Encode());
-    r.append("'");
+    r.append(" ");
+    r.append(f.smallest.DebugString());
+    r.append(" .. ");
+    r.append(f.largest.DebugString());
   }
   r.append("\n}\n");
   return r;

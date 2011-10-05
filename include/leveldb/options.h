@@ -177,21 +177,8 @@ struct WriteOptions {
   // Default: false
   bool sync;
 
-  // If "post_write_snapshot" is non-NULL, and the write succeeds,
-  // *post_write_snapshot will be modified to point to a snapshot of
-  // the DB state immediately after this write.  The caller must call
-  // DB::ReleaseSnapshot(*post_write_snapshotsnapshot) when the
-  // snapshot is no longer needed.
-  //
-  // If "post_write_snapshot" is non-NULL, and the write fails,
-  // *post_write_snapshot will be set to NULL.
-  //
-  // Default: NULL
-  const Snapshot** post_write_snapshot;
-
   WriteOptions()
-      : sync(false),
-        post_write_snapshot(NULL) {
+      : sync(false) {
   }
 };
 

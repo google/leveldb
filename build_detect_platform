@@ -35,11 +35,6 @@ case `uname -s` in
         echo "PLATFORM_CFLAGS=-D_REENTRANT -DOS_FREEBSD"  >> build_config.mk
         echo "PLATFORM_LDFLAGS=-lpthread" >> build_config.mk
         ;;
-    GNU/kFreeBSD)
-        PLATFORM=OS_FREEBSD
-        echo "PLATFORM_CFLAGS=-pthread -DOS_FREEBSD"  >> build_config.mk
-        echo "PLATFORM_LDFLAGS=-lpthread -lrt" >> build_config.mk
-        ;;
     *)
         echo "Unknown platform!"
         exit 1
