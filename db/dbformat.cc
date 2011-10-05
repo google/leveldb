@@ -31,6 +31,18 @@ std::string ParsedInternalKey::DebugString() const {
   return result;
 }
 
+std::string InternalKey::DebugString() const {
+  std::string result;
+  ParsedInternalKey parsed;
+  if (ParseInternalKey(rep_, &parsed)) {
+    result = parsed.DebugString();
+  } else {
+    result = "(bad)";
+    result.append(EscapeString(rep_));
+  }
+  return result;
+}
+
 const char* InternalKeyComparator::Name() const {
   return "leveldb.InternalKeyComparator";
 }

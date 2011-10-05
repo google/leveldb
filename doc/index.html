@@ -193,7 +193,7 @@ that a read should operate on a particular version of the DB state.
 If <code>ReadOptions::snapshot</code> is NULL, the read will operate on an
 implicit snapshot of the current state.
 <p>
-Snapshots typically are created by the DB::GetSnapshot() method:
+Snapshots are created by the DB::GetSnapshot() method:
 <p>
 <pre>
   leveldb::ReadOptions options;
@@ -208,26 +208,6 @@ Note that when a snapshot is no longer needed, it should be released
 using the DB::ReleaseSnapshot interface.  This allows the
 implementation to get rid of state that was being maintained just to
 support reading as of that snapshot.
-<p>
-A Write operation can also return a snapshot that
-represents the state of the database just after applying a particular
-set of updates:
-<p>
-<pre>
-  leveldb::Snapshot* snapshot;
-  leveldb::WriteOptions write_options;
-  write_options.post_write_snapshot = &amp;snapshot;
-  leveldb::Status status = db-&gt;Write(write_options, ...);
-  ... perform other mutations to db ...
-
-  leveldb::ReadOptions read_options;
-  read_options.snapshot = snapshot;
-  leveldb::Iterator* iter = db-&gt;NewIterator(read_options);
-  ... read as of the state just after the Write call returned ...
-  delete iter;
-
-  db-&gt;ReleaseSnapshot(snapshot);
-</pre>
 <h1>Slice</h1>
 <p>
 The return value of the <code>it->key()</code> and <code>it->value()</code> calls above

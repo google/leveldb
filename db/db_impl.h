@@ -38,14 +38,12 @@ class DBImpl : public DB {
   virtual void ReleaseSnapshot(const Snapshot* snapshot);
   virtual bool GetProperty(const Slice& property, std::string* value);
   virtual void GetApproximateSizes(const Range* range, int n, uint64_t* sizes);
+  virtual void CompactRange(const Slice* begin, const Slice* end);
 
   // Extra methods (for testing) that are not in the public DB interface
 
-  // Compact any files in the named level that overlap [begin,end]
-  void TEST_CompactRange(
-      int level,
-      const std::string& begin,
-      const std::string& end);
+  // Compact any files in the named level that overlap [*begin,*end]
+  void TEST_CompactRange(int level, const Slice* begin, const Slice* end);
 
   // Force current memtable contents to be compacted.
   Status TEST_CompactMemTable();
@@ -145,8 +143,10 @@ class DBImpl : public DB {
   // Information for a manual compaction
   struct ManualCompaction {
     int level;
-    std::string begin;
-    std::string end;
+    bool done;
+    const InternalKey* begin;   // NULL means beginning of key range
+    const InternalKey* end;     // NULL means end of key range
+    InternalKey tmp_storage;    // Used to keep track of compaction progress
   };
   ManualCompaction* manual_compaction_;
 

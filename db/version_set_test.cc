@@ -12,6 +12,9 @@ namespace leveldb {
 class FindFileTest {
  public:
   std::vector<FileMetaData*> files_;
+  bool disjoint_sorted_files_;
+
+  FindFileTest() : disjoint_sorted_files_(true) { }
 
   ~FindFileTest() {
     for (int i = 0; i < files_.size(); i++) {
@@ -37,13 +40,20 @@ class FindFileTest {
 
   bool Overlaps(const char* smallest, const char* largest) {
     InternalKeyComparator cmp(BytewiseComparator());
-    return SomeFileOverlapsRange(cmp, files_, smallest, largest);
+    Slice s(smallest != NULL ? smallest : "");
+    Slice l(largest != NULL ? largest : "");
+    return SomeFileOverlapsRange(cmp, disjoint_sorted_files_, files_,
+                                 (smallest != NULL ? &s : NULL),
+                                 (largest != NULL ? &l : NULL));
   }
 };
 
 TEST(FindFileTest, Empty) {
   ASSERT_EQ(0, Find("foo"));
   ASSERT_TRUE(! Overlaps("a", "z"));
+  ASSERT_TRUE(! Overlaps(NULL, "z"));
+  ASSERT_TRUE(! Overlaps("a", NULL));
+  ASSERT_TRUE(! Overlaps(NULL, NULL));
 }
 
 TEST(FindFileTest, Single) {
@@ -67,6 +77,13 @@ TEST(FindFileTest, Single) {
   ASSERT_TRUE(Overlaps("p1", "z"));
   ASSERT_TRUE(Overlaps("q", "q"));
   ASSERT_TRUE(Overlaps("q", "q1"));
+
+  ASSERT_TRUE(! Overlaps(NULL, "j"));
+  ASSERT_TRUE(! Overlaps("r", NULL));
+  ASSERT_TRUE(Overlaps(NULL, "p"));
+  ASSERT_TRUE(Overlaps(NULL, "p1"));
+  ASSERT_TRUE(Overlaps("q", NULL));
+  ASSERT_TRUE(Overlaps(NULL, NULL));
 }
 
 
@@ -108,6 +125,26 @@ TEST(FindFileTest, Multiple) {
   ASSERT_TRUE(Overlaps("450", "500"));
 }
 
+TEST(FindFileTest, MultipleNullBoundaries) {
+  Add("150", "200");
+  Add("200", "250");
+  Add("300", "350");
+  Add("400", "450");
+  ASSERT_TRUE(! Overlaps(NULL, "149"));
+  ASSERT_TRUE(! Overlaps("451", NULL));
+  ASSERT_TRUE(Overlaps(NULL, NULL));
+  ASSERT_TRUE(Overlaps(NULL, "150"));
+  ASSERT_TRUE(Overlaps(NULL, "199"));
+  ASSERT_TRUE(Overlaps(NULL, "200"));
+  ASSERT_TRUE(Overlaps(NULL, "201"));
+  ASSERT_TRUE(Overlaps(NULL, "400"));
+  ASSERT_TRUE(Overlaps(NULL, "800"));
+  ASSERT_TRUE(Overlaps("100", NULL));
+  ASSERT_TRUE(Overlaps("200", NULL));
+  ASSERT_TRUE(Overlaps("449", NULL));
+  ASSERT_TRUE(Overlaps("450", NULL));
+}
+
 TEST(FindFileTest, OverlapSequenceChecks) {
   Add("200", "200", 5000, 3000);
   ASSERT_TRUE(! Overlaps("199", "199"));
@@ -115,6 +152,24 @@ TEST(FindFileTest, OverlapSequenceChecks) {
   ASSERT_TRUE(Overlaps("200", "200"));
   ASSERT_TRUE(Overlaps("190", "200"));
   ASSERT_TRUE(Overlaps("200", "210"));
+}
+
+TEST(FindFileTest, OverlappingFiles) {
+  Add("150", "600");
+  Add("400", "500");
+  disjoint_sorted_files_ = false;
+  ASSERT_TRUE(! Overlaps("100", "149"));
+  ASSERT_TRUE(! Overlaps("601", "700"));
+  ASSERT_TRUE(Overlaps("100", "150"));
+  ASSERT_TRUE(Overlaps("100", "200"));
+  ASSERT_TRUE(Overlaps("100", "300"));
+  ASSERT_TRUE(Overlaps("100", "400"));
+  ASSERT_TRUE(Overlaps("100", "500"));
+  ASSERT_TRUE(Overlaps("375", "400"));
+  ASSERT_TRUE(Overlaps("450", "450"));
+  ASSERT_TRUE(Overlaps("450", "500"));
+  ASSERT_TRUE(Overlaps("450", "700"));
+  ASSERT_TRUE(Overlaps("600", "700"));
 }
 
 }
