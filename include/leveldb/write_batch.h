@@ -59,6 +59,6 @@ class WriteBatch {
   // Intentionally copyable
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_

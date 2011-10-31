@@ -37,7 +37,7 @@ static const int kL0_StopWritesTrigger = 12;
 // space if the same key space is being repeatedly overwritten.
 static const int kMaxMemCompactLevel = 2;
 
-}
+}  // namespace config
 
 class InternalKey;
 
@@ -210,6 +210,6 @@ inline LookupKey::~LookupKey() {
   if (start_ != space_) delete[] start_;
 }
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_FORMAT_H_

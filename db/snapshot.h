@@ -61,6 +61,6 @@ class SnapshotList {
   SnapshotImpl list_;
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_SNAPSHOT_H_

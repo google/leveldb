@@ -371,7 +371,7 @@ TEST(SkipTest, Concurrent3) { RunConcurrent(3); }
 TEST(SkipTest, Concurrent4) { RunConcurrent(4); }
 TEST(SkipTest, Concurrent5) { RunConcurrent(5); }
 
-}
+}  // namespace leveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

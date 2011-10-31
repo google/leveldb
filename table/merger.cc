@@ -181,7 +181,7 @@ void MergingIterator::FindLargest() {
   }
   current_ = largest;
 }
-}
+}  // namespace
 
 Iterator* NewMergingIterator(const Comparator* cmp, Iterator** list, int n) {
   assert(n >= 0);
@@ -194,4 +194,4 @@ Iterator* NewMergingIterator(const Comparator* cmp, Iterator** list, int n) {
   }
 }
 
-}
+}  // namespace leveldb

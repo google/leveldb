@@ -120,7 +120,7 @@ class MemTableInserter : public WriteBatch::Handler {
     sequence_++;
   }
 };
-}
+}  // namespace
 
 Status WriteBatchInternal::InsertInto(const WriteBatch* b,
                                       MemTable* memtable) {
@@ -135,4 +135,4 @@ void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
   b->rep_.assign(contents.data(), contents.size());
 }
 
-}
+}  // namespace leveldb

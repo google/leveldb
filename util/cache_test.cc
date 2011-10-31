@@ -179,7 +179,7 @@ TEST(CacheTest, NewId) {
   ASSERT_NE(a, b);
 }
 
-}
+}  // namespace leveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

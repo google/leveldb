@@ -29,6 +29,6 @@ extern Iterator* NewTwoLevelIterator(
     void* arg,
     const ReadOptions& options);
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_TABLE_TWO_LEVEL_ITERATOR_H_

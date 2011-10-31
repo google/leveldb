@@ -115,4 +115,4 @@ LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {
   end_ = dst;
 }
 
-}
+}  // namespace leveldb

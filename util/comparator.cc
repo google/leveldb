@@ -63,11 +63,11 @@ class BytewiseComparatorImpl : public Comparator {
     // *key is a run of 0xffs.  Leave it alone.
   }
 };
-}
+}  // namespace
 static const BytewiseComparatorImpl bytewise;
 
 const Comparator* BytewiseComparator() {
   return &bytewise;
 }
 
-}
+}  // namespace leveldb

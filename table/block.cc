@@ -260,4 +260,4 @@ Iterator* Block::NewIterator(const Comparator* cmp) {
   }
 }
 
-}
+}  // namespace leveldb

@@ -65,6 +65,6 @@ class Table {
   void operator=(const Table&);
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_INCLUDE_TABLE_H_

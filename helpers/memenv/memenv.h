@@ -15,6 +15,6 @@ class Env;
 // *base_env must remain live while the result is in use.
 Env* NewMemEnv(Env* base_env);
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_HELPERS_MEMENV_MEMENV_H_

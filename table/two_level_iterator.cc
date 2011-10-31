@@ -169,7 +169,7 @@ void TwoLevelIterator::InitDataBlock() {
   }
 }
 
-}
+}  // namespace
 
 Iterator* NewTwoLevelIterator(
     Iterator* index_iter,
@@ -179,4 +179,4 @@ Iterator* NewTwoLevelIterator(
   return new TwoLevelIterator(index_iter, block_function, arg, options);
 }
 
-}
+}  // namespace leveldb

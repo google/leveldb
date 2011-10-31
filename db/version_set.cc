@@ -61,7 +61,7 @@ std::string IntSetToString(const std::set<uint64_t>& s) {
   result += "}";
   return result;
 }
-}
+}  // namespace
 
 Version::~Version() {
   assert(refs_ == 0);
@@ -253,7 +253,8 @@ void Version::AddIterators(const ReadOptions& options,
 // If "*iter" points at a value or deletion for user_key, store
 // either the value, or a NotFound error and return true.
 // Else return false.
-static bool GetValue(Iterator* iter, const Slice& user_key,
+static bool GetValue(const Comparator* cmp,
+                     Iterator* iter, const Slice& user_key,
                      std::string* value,
                      Status* s) {
   if (!iter->Valid()) {
@@ -264,7 +265,7 @@ static bool GetValue(Iterator* iter, const Slice& user_key,
     *s = Status::Corruption("corrupted key for ", user_key);
     return true;
   }
-  if (parsed_key.user_key != user_key) {
+  if (cmp->Compare(parsed_key.user_key, user_key) != 0) {
     return false;
   }
   switch (parsed_key.type) {
@@ -360,7 +361,7 @@ Status Version::Get(const ReadOptions& options,
           f->number,
           f->file_size);
       iter->Seek(ikey);
-      const bool done = GetValue(iter, user_key, value, &s);
+      const bool done = GetValue(ucmp, iter, user_key, value, &s);
       if (!iter->status().ok()) {
         s = iter->status();
         delete iter;
@@ -450,16 +451,29 @@ void Version::GetOverlappingInputs(
     user_end = end->user_key();
   }
   const Comparator* user_cmp = vset_->icmp_.user_comparator();
-  for (size_t i = 0; i < files_[level].size(); i++) {
-    FileMetaData* f = files_[level][i];
-    if (begin != NULL &&
-        user_cmp->Compare(f->largest.user_key(), user_begin) < 0) {
+  for (size_t i = 0; i < files_[level].size(); ) {
+    FileMetaData* f = files_[level][i++];
+    const Slice file_start = f->smallest.user_key();
+    const Slice file_limit = f->largest.user_key();
+    if (begin != NULL && user_cmp->Compare(file_limit, user_begin) < 0) {
       // "f" is completely before specified range; skip it
-    } else if (end != NULL &&
-               user_cmp->Compare(f->smallest.user_key(), user_end) > 0) {
+    } else if (end != NULL && user_cmp->Compare(file_start, user_end) > 0) {
       // "f" is completely after specified range; skip it
     } else {
       inputs->push_back(f);
+      if (level == 0) {
+        // Level-0 files may overlap each other.  So check if the newly
+        // added file has expanded the range.  If so, restart search.
+        if (begin != NULL && user_cmp->Compare(file_start, user_begin) < 0) {
+          user_begin = file_start;
+          inputs->clear();
+          i = 0;
+        } else if (end != NULL && user_cmp->Compare(file_limit, user_end) > 0) {
+          user_end = file_limit;
+          inputs->clear();
+          i = 0;
+        }
+      }
     }
   }
 }
@@ -1369,4 +1383,4 @@ void Compaction::ReleaseInputs() {
   }
 }
 
-}
+}  // namespace leveldb

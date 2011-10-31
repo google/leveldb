@@ -102,6 +102,6 @@ class VersionEdit {
   std::vector< std::pair<int, FileMetaData> > new_files_;
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_VERSION_EDIT_H_

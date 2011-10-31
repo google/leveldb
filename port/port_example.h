@@ -119,7 +119,7 @@ extern bool Snappy_Uncompress(const char* input_data, size_t input_length,
 // The concatenation of all "data[0,n-1]" fragments is the heap profile.
 extern bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg);
 
-}
-}
+}  // namespace port
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_EXAMPLE_H_

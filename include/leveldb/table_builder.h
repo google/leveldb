@@ -86,6 +86,6 @@ class TableBuilder {
   void operator=(const TableBuilder&);
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_

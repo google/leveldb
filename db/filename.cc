@@ -132,4 +132,4 @@ Status SetCurrentFile(Env* env, const std::string& dbname,
   return s;
 }
 
-}
+}  // namespace leveldb

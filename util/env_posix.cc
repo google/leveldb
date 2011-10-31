@@ -553,7 +553,7 @@ void PosixEnv::StartThread(void (*function)(void* arg), void* arg) {
               pthread_create(&t, NULL,  &StartThreadWrapper, state));
 }
 
-}
+}  // namespace
 
 static pthread_once_t once = PTHREAD_ONCE_INIT;
 static Env* default_env;
@@ -564,4 +564,4 @@ Env* Env::Default() {
   return default_env;
 }
 
-}
+}  // namespace leveldb

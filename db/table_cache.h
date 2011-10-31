@@ -45,6 +45,6 @@ class TableCache {
   Cache* cache_;
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_TABLE_CACHE_H_

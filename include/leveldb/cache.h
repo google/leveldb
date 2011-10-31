@@ -94,6 +94,6 @@ class Cache {
   void operator=(const Cache&);
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_UTIL_CACHE_H_

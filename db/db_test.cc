@@ -136,6 +136,33 @@ class DBTest {
     return result;
   }
 
+  // Return a string that contains all key,value pairs in order,
+  // formatted like "(k1->v1)(k2->v2)".
+  std::string Contents() {
+    std::vector<std::string> forward;
+    std::string result;
+    Iterator* iter = db_->NewIterator(ReadOptions());
+    for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+      std::string s = IterStatus(iter);
+      result.push_back('(');
+      result.append(s);
+      result.push_back(')');
+      forward.push_back(s);
+    }
+
+    // Check reverse iteration results are the reverse of forward results
+    int matched = 0;
+    for (iter->SeekToLast(); iter->Valid(); iter->Prev()) {
+      ASSERT_LT(matched, forward.size());
+      ASSERT_EQ(IterStatus(iter), forward[forward.size() - matched - 1]);
+      matched++;
+    }
+    ASSERT_EQ(matched, forward.size());
+
+    delete iter;
+    return result;
+  }
+
   std::string AllEntriesFor(const Slice& user_key) {
     Iterator* iter = dbfull()->TEST_NewInternalIterator();
     InternalKey target(user_key, kMaxSequenceNumber, kTypeValue);
@@ -1048,6 +1075,49 @@ TEST(DBTest, OverlapInLevel0) {
   ASSERT_EQ("NOT_FOUND", Get("600"));
 }
 
+TEST(DBTest, L0_CompactionBug_Issue44_a) {
+ Reopen();
+ ASSERT_OK(Put("b", "v"));
+ Reopen();
+ ASSERT_OK(Delete("b"));
+ ASSERT_OK(Delete("a"));
+ Reopen();
+ ASSERT_OK(Delete("a"));
+ Reopen();
+ ASSERT_OK(Put("a", "v"));
+ Reopen();
+ Reopen();
+ ASSERT_EQ("(a->v)", Contents());
+ env_->SleepForMicroseconds(1000000);  // Wait for compaction to finish
+ ASSERT_EQ("(a->v)", Contents());
+}
+
+TEST(DBTest, L0_CompactionBug_Issue44_b) {
+ Reopen();
+ Put("","");
+ Reopen();
+ Delete("e");
+ Put("","");
+ Reopen();
+ Put("c", "cv");
+ Reopen();
+ Put("","");
+ Reopen();
+ Put("","");
+ env_->SleepForMicroseconds(1000000);  // Wait for compaction to finish
+ Reopen();
+ Put("d","dv");
+ Reopen();
+ Put("","");
+ Reopen();
+ Delete("d");
+ Delete("b");
+ Reopen();
+ ASSERT_EQ("(->)(c->cv)", Contents());
+ env_->SleepForMicroseconds(1000000);  // Wait for compaction to finish
+ ASSERT_EQ("(->)(c->cv)", Contents());
+}
+
 TEST(DBTest, ComparatorCheck) {
   class NewComparator : public Comparator {
    public:
@@ -1069,6 +1139,34 @@ TEST(DBTest, ComparatorCheck) {
   ASSERT_TRUE(!s.ok());
   ASSERT_TRUE(s.ToString().find("comparator") != std::string::npos)
       << s.ToString();
+}
+
+TEST(DBTest, CustomComparator) {
+  class NumberComparator : public Comparator {
+   public:
+    virtual const char* Name() const { return "test.NumberComparator"; }
+    virtual int Compare(const Slice& a, const Slice& b) const {
+      return (strtol(a.ToString().c_str(), NULL, 0) -
+              strtol(b.ToString().c_str(), NULL, 0));
+    }
+    virtual void FindShortestSeparator(std::string* s, const Slice& l) const {}
+    virtual void FindShortSuccessor(std::string* key) const {}
+  };
+  NumberComparator cmp;
+  Options new_options;
+  new_options.create_if_missing = true;
+  new_options.comparator = &cmp;
+  DestroyAndReopen(&new_options);
+  ASSERT_OK(Put("10", "ten"));
+  ASSERT_OK(Put("0x14", "twenty"));
+  for (int i = 0; i < 2; i++) {
+    ASSERT_EQ("ten", Get("10"));
+    ASSERT_EQ("ten", Get("0xa"));
+    ASSERT_EQ("twenty", Get("20"));
+    ASSERT_EQ("twenty", Get("0x14"));
+    Compact("0", "9999");
+    fprintf(stderr, "ss\n%s\n", DumpSSTableList().c_str());
+  }
 }
 
 TEST(DBTest, ManualCompaction) {
@@ -1207,7 +1305,7 @@ static void MTThreadBody(void* arg) {
   fprintf(stderr, "... stopping thread %d after %d ops\n", t->id, int(counter));
 }
 
-}
+}  // namespace
 
 TEST(DBTest, MultiThreaded) {
   // Initialize state
@@ -1525,7 +1623,7 @@ void BM_LogAndApply(int iters, int num_base_files) {
           buf, iters, us, ((float)us) / iters);
 }
 
-}
+}  // namespace leveldb
 
 int main(int argc, char** argv) {
   if (argc > 1 && std::string(argv[1]) == "--benchmark") {

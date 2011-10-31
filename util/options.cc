@@ -25,4 +25,4 @@ Options::Options()
 }
 
 
-}
+}  // namespace leveldb

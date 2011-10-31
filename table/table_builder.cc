@@ -224,4 +224,4 @@ uint64_t TableBuilder::FileSize() const {
   return rep_->offset;
 }
 
-}
+}  // namespace leveldb

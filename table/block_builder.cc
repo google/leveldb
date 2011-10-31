@@ -106,4 +106,4 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
   counter_++;
 }
 
-}
+}  // namespace leveldb

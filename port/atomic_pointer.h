@@ -138,7 +138,7 @@ class AtomicPointer {
 #undef ARCH_CPU_X86_FAMILY
 #undef ARCH_CPU_ARM_FAMILY
 
-} // namespace leveldb::port
-} // namespace leveldb
+}  // namespace port
+}  // namespace leveldb
 
 #endif  // PORT_ATOMIC_POINTER_H_

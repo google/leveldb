@@ -225,7 +225,7 @@ TEST(MemEnvTest, DBTest) {
   delete db;
 }
 
-}
+}  // namespace leveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

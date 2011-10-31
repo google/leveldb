@@ -191,4 +191,4 @@ bool GetLengthPrefixedSlice(Slice* input, Slice* result) {
   }
 }
 
-}
+}  // namespace leveldb

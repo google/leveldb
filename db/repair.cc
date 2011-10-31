@@ -377,11 +377,11 @@ class Repairer {
         fname.c_str(), s.ToString().c_str());
   }
 };
-}
+}  // namespace
 
 Status RepairDB(const std::string& dbname, const Options& options) {
   Repairer repairer(dbname, options);
   return repairer.Run();
 }
 
-}
+}  // namespace leveldb

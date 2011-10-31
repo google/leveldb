@@ -328,5 +328,5 @@ uint32_t Extend(uint32_t crc, const char* buf, size_t size) {
   return l ^ 0xffffffffu;
 }
 
-}
-}
+}  // namespace crc32c
+}  // namespace leveldb

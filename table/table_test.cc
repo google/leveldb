@@ -60,7 +60,7 @@ class ReverseKeyComparator : public Comparator {
     *key = Reverse(s);
   }
 };
-}
+}  // namespace
 static ReverseKeyComparator reverse_key_comparator;
 
 static void Increment(const Comparator* cmp, std::string* key) {
@@ -85,7 +85,7 @@ struct STLLessThan {
     return cmp->Compare(Slice(a), Slice(b)) < 0;
   }
 };
-}
+}  // namespace
 
 class StringSink: public WritableFile {
  public:
@@ -847,7 +847,7 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"),    4000,   6000));
 }
 
-}
+}  // namespace leveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

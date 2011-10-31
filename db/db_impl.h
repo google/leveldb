@@ -187,6 +187,6 @@ extern Options SanitizeOptions(const std::string& db,
                                const InternalKeyComparator* icmp,
                                const Options& src);
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_DB_IMPL_H_

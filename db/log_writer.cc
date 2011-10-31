@@ -99,5 +99,5 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr, size_t n) {
   return s;
 }
 
-}
-}
+}  // namespace log
+}  // namespace leveldb

@@ -102,7 +102,7 @@ class Reader {
   void operator=(const Reader&);
 };
 
-}
-}
+}  // namespace log
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_LOG_READER_H_

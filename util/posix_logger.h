@@ -93,6 +93,6 @@ class PosixLogger : public Logger {
   }
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_

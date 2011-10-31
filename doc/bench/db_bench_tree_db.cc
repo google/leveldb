@@ -124,7 +124,7 @@ static Slice TrimSpace(Slice s) {
   return Slice(s.data() + start, limit - start);
 }
 
-}
+}  // namespace
 
 class Benchmark {
  private:
@@ -467,7 +467,7 @@ class Benchmark {
   }
 };
 
-}
+}  // namespace leveldb
 
 int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {

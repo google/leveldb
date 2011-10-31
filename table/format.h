@@ -98,6 +98,6 @@ inline BlockHandle::BlockHandle()
       size_(~static_cast<uint64_t>(0)) {
 }
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_TABLE_FORMAT_H_

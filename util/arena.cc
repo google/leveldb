@@ -65,4 +65,4 @@ char* Arena::AllocateNewBlock(size_t block_bytes) {
   return result;
 }
 
-}
+}  // namespace leveldb

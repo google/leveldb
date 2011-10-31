@@ -33,7 +33,7 @@ class MutexLock {
   void operator=(const MutexLock&);
 };
 
-}
+}  // namespace leveldb
 
 
 #endif  // STORAGE_LEVELDB_UTIL_MUTEXLOCK_H_

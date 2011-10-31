@@ -99,6 +99,6 @@ inline const char* GetVarint32Ptr(const char* p,
   return GetVarint32PtrFallback(p, limit, value);
 }
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_UTIL_CODING_H_

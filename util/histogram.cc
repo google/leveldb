@@ -136,4 +136,4 @@ std::string Histogram::ToString() const {
   return r;
 }
 
-}
+}  // namespace leveldb

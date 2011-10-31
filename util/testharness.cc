@@ -73,5 +73,5 @@ int RandomSeed() {
   return result;
 }
 
-}
-}
+}  // namespace test
+}  // namespace leveldb

@@ -42,7 +42,7 @@ class Writer {
   void operator=(const Writer&);
 };
 
-}
-}
+}  // namespace log
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_LOG_WRITER_H_

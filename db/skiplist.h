@@ -375,4 +375,4 @@ bool SkipList<Key,Comparator>::Contains(const Key& key) const {
   }
 }
 
-}
+}  // namespace leveldb

@@ -47,7 +47,7 @@ class ErrorEnv : public EnvWrapper {
   }
 };
 
-}
-}
+}  // namespace test
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_UTIL_TESTUTIL_H_

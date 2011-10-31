@@ -54,7 +54,7 @@ class EmptyIterator : public Iterator {
  private:
   Status status_;
 };
-}
+}  // namespace
 
 Iterator* NewEmptyIterator() {
   return new EmptyIterator(Status::OK());
@@ -64,4 +64,4 @@ Iterator* NewErrorIterator(const Status& status) {
   return new EmptyIterator(status);
 }
 
-}
+}  // namespace leveldb

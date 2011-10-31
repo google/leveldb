@@ -296,4 +296,4 @@ Iterator* NewDBIterator(
   return new DBIter(dbname, env, user_key_comparator, internal_iter, sequence);
 }
 
-}
+}  // namespace leveldb

@@ -78,4 +78,4 @@ bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
   return (digits > 0);
 }
 
-}
+}  // namespace leveldb

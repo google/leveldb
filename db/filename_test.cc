@@ -115,7 +115,7 @@ TEST(FileNameTest, Construction) {
   ASSERT_EQ(kTempFile, type);
 }
 
-}
+}  // namespace leveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

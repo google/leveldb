@@ -37,6 +37,6 @@ class Histogram {
   double StandardDeviation() const;
 };
 
-}
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_UTIL_HISTOGRAM_H_

@@ -150,7 +150,7 @@ inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
   return false;
 }
 
-}
-}
+}  // namespace port
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_ANDROID_H_

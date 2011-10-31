@@ -365,10 +365,10 @@ class InMemoryEnv : public EnvWrapper {
   FileSystem file_map_;  // Protected by mutex_.
 };
 
-}
+}  // namespace
 
 Env* NewMemEnv(Env* base_env) {
   return new InMemoryEnv(base_env);
 }
 
-}
+}  // namespace leveldb

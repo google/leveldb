@@ -985,7 +985,7 @@ static void CleanupIteratorState(void* arg1, void* arg2) {
   state->mu->Unlock();
   delete state;
 }
-}
+}  // namespace
 
 Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
                                       SequenceNumber* latest_snapshot) {
@@ -1378,4 +1378,4 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
   return result;
 }
 
-}
+}  // namespace leveldb

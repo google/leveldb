@@ -263,4 +263,4 @@ std::string VersionEdit::DebugString() const {
   return r;
 }
 
-}
+}  // namespace leveldb
