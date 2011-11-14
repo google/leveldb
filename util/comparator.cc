@@ -64,10 +64,13 @@ class BytewiseComparatorImpl : public Comparator {
   }
 };
 }  // namespace
-static const BytewiseComparatorImpl bytewise;
+
+// Intentionally not destroyed to prevent destructor racing
+// with background threads.
+static const Comparator* bytewise = new BytewiseComparatorImpl;
 
 const Comparator* BytewiseComparator() {
-  return &bytewise;
+  return bytewise;
 }
 
 }  // namespace leveldb

@@ -1146,26 +1146,50 @@ TEST(DBTest, CustomComparator) {
    public:
     virtual const char* Name() const { return "test.NumberComparator"; }
     virtual int Compare(const Slice& a, const Slice& b) const {
-      return (strtol(a.ToString().c_str(), NULL, 0) -
-              strtol(b.ToString().c_str(), NULL, 0));
+      return ToNumber(a) - ToNumber(b);
     }
-    virtual void FindShortestSeparator(std::string* s, const Slice& l) const {}
-    virtual void FindShortSuccessor(std::string* key) const {}
+    virtual void FindShortestSeparator(std::string* s, const Slice& l) const {
+      ToNumber(*s);     // Check format
+      ToNumber(l);      // Check format
+    }
+    virtual void FindShortSuccessor(std::string* key) const {
+      ToNumber(*key);   // Check format
+    }
+   private:
+    static int ToNumber(const Slice& x) {
+      // Check that there are no extra characters.
+      ASSERT_TRUE(x.size() >= 2 && x[0] == '[' && x[x.size()-1] == ']')
+          << EscapeString(x);
+      int val;
+      char ignored;
+      ASSERT_TRUE(sscanf(x.ToString().c_str(), "[%i]%c", &val, &ignored) == 1)
+          << EscapeString(x);
+      return val;
+    }
   };
   NumberComparator cmp;
   Options new_options;
   new_options.create_if_missing = true;
   new_options.comparator = &cmp;
+  new_options.write_buffer_size = 1000;  // Compact more often
   DestroyAndReopen(&new_options);
-  ASSERT_OK(Put("10", "ten"));
-  ASSERT_OK(Put("0x14", "twenty"));
+  ASSERT_OK(Put("[10]", "ten"));
+  ASSERT_OK(Put("[0x14]", "twenty"));
   for (int i = 0; i < 2; i++) {
-    ASSERT_EQ("ten", Get("10"));
-    ASSERT_EQ("ten", Get("0xa"));
-    ASSERT_EQ("twenty", Get("20"));
-    ASSERT_EQ("twenty", Get("0x14"));
-    Compact("0", "9999");
-    fprintf(stderr, "ss\n%s\n", DumpSSTableList().c_str());
+    ASSERT_EQ("ten", Get("[10]"));
+    ASSERT_EQ("ten", Get("[0xa]"));
+    ASSERT_EQ("twenty", Get("[20]"));
+    ASSERT_EQ("twenty", Get("[0x14]"));
+    Compact("[0]", "[9999]");
+  }
+
+  for (int run = 0; run < 2; run++) {
+    for (int i = 0; i < 1000; i++) {
+      char buf[100];
+      snprintf(buf, sizeof(buf), "[%d]", i*10);
+      ASSERT_OK(Put(buf, buf));
+    }
+    Compact("[0]", "[1000000]");
   }
 }
 
