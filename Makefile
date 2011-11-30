@@ -2,7 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-CC = g++
+CXX ?= g++
+CC  ?= gcc
 
 #-----------------------------------------------
 # Uncomment exactly one of the lines labelled (A), (B), and (C) below
@@ -120,68 +121,68 @@ $(LIBRARY): $(LIBOBJECTS)
 	$(AR) -rs $@ $(LIBOBJECTS)
 
 db_bench: db/db_bench.o $(LIBOBJECTS) $(TESTUTIL)
-	$(CC) $(LDFLAGS) db/db_bench.o $(LIBOBJECTS) $(TESTUTIL) -o $@
+	$(CXX) $(LDFLAGS) db/db_bench.o $(LIBOBJECTS) $(TESTUTIL) -o $@
 
 db_bench_sqlite3: doc/bench/db_bench_sqlite3.o $(LIBOBJECTS) $(TESTUTIL)
-	$(CC) $(LDFLAGS) -lsqlite3 doc/bench/db_bench_sqlite3.o $(LIBOBJECTS) $(TESTUTIL) -o $@
+	$(CXX) $(LDFLAGS) -lsqlite3 doc/bench/db_bench_sqlite3.o $(LIBOBJECTS) $(TESTUTIL) -o $@
 
 db_bench_tree_db: doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL)
-	$(CC) $(LDFLAGS) -lkyotocabinet doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL) -o $@
+	$(CXX) $(LDFLAGS) -lkyotocabinet doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL) -o $@
 
 arena_test: util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 c_test: db/c_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 cache_test: util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 coding_test: util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 corruption_test: db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 crc32c_test: util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 db_test: db/db_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/db_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/db_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 dbformat_test: db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 env_test: util/env_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) util/env_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) util/env_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 filename_test: db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 log_test: db/log_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/log_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/log_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 table_test: table/table_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) table/table_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) table/table_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 skiplist_test: db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 version_edit_test: db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 version_set_test: db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 write_batch_test: db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@
 
 $(MEMENVLIBRARY) : helpers/memenv/memenv.o
 	rm -f $@
 	$(AR) -rs $@ helpers/memenv/memenv.o
 
 memenv_test : helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHARNESS)
-	$(CC) $(LDFLAGS) helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHARNESS) -o $@
+	$(CXX) $(LDFLAGS) helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHARNESS) -o $@
 
 ifeq ($(PLATFORM), IOS)
 # For iOS, create universal object files to be used on both the simulator and
@@ -192,9 +193,9 @@ IOSVERSION=$(shell defaults read /Developer/Platforms/iPhoneOS.platform/version 
 
 .cc.o:
 	mkdir -p ios-x86/$(dir $@)
-	$(SIMULATORROOT)/usr/bin/$(CC) $(CFLAGS) -isysroot $(SIMULATORROOT)/SDKs/iPhoneSimulator$(IOSVERSION).sdk -arch i686 $< -o ios-x86/$@
+	$(SIMULATORROOT)/usr/bin/$(CXX) $(CFLAGS) -isysroot $(SIMULATORROOT)/SDKs/iPhoneSimulator$(IOSVERSION).sdk -arch i686 $< -o ios-x86/$@
 	mkdir -p ios-arm/$(dir $@)
-	$(DEVICEROOT)/usr/bin/$(CC) $(CFLAGS) -isysroot $(DEVICEROOT)/SDKs/iPhoneOS$(IOSVERSION).sdk -arch armv6 -arch armv7 $< -o ios-arm/$@
+	$(DEVICEROOT)/usr/bin/$(CXX) $(CFLAGS) -isysroot $(DEVICEROOT)/SDKs/iPhoneOS$(IOSVERSION).sdk -arch armv6 -arch armv7 $< -o ios-arm/$@
 	lipo ios-x86/$@ ios-arm/$@ -create -output $@
 
 .c.o:
@@ -206,7 +207,7 @@ IOSVERSION=$(shell defaults read /Developer/Platforms/iPhoneOS.platform/version 
 
 else
 .cc.o:
-	$(CC) $(CFLAGS) $< -o $@
+	$(CXX) $(CFLAGS) $< -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) $< -o $@

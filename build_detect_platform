@@ -13,6 +13,10 @@
 # Delete existing build_config.mk
 rm -f build_config.mk
 
+if test -z "$CXX"; then
+    CXX=g++
+fi
+
 # Detect OS
 case `uname -s` in
     Darwin)
@@ -48,8 +52,8 @@ PORT_CFLAGS="-fno-builtin-memcmp"
 # Detect C++0x -- this determines whether we'll use port_noatomic.h
 # or port_posix.h by:
 # 1. Rrying to compile with -std=c++0x and including <cstdatomic>.
-# 2. If g++ returns error code, we know to use port_posix.h
-g++ $CFLAGS -std=c++0x -x c++ - -o /dev/null 2>/dev/null  <<EOF
+# 2. If $CXX returns error code, we know to use port_posix.h
+$CXX $CFLAGS -std=c++0x -x c++ - -o /dev/null 2>/dev/null  <<EOF
   #include <cstdatomic>
   int main() {}
 EOF
@@ -61,7 +65,7 @@ fi
 
 # Test whether Snappy library is installed
 # http://code.google.com/p/snappy/
-g++ $CFLAGS -x c++ - -o /dev/null 2>/dev/null  <<EOF
+$CXX $CFLAGS -x c++ - -o /dev/null 2>/dev/null  <<EOF
   #include <snappy.h>
   int main() {}
 EOF
