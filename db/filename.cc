@@ -11,6 +11,10 @@
 
 namespace leveldb {
 
+// A utility routine: write "data" to the named file and Sync() it.
+extern Status WriteStringToFileSync(Env* env, const Slice& data,
+                                    const std::string& fname);
+
 static std::string MakeFileName(const std::string& name, uint64_t number,
                                 const char* suffix) {
   char buf[100];
@@ -122,7 +126,7 @@ Status SetCurrentFile(Env* env, const std::string& dbname,
   assert(contents.starts_with(dbname + "/"));
   contents.remove_prefix(dbname.size() + 1);
   std::string tmp = TempFileName(dbname, descriptor_number);
-  Status s = WriteStringToFile(env, contents.ToString() + "\n", tmp);
+  Status s = WriteStringToFileSync(env, contents.ToString() + "\n", tmp);
   if (s.ok()) {
     s = env->RenameFile(tmp, CurrentFileName(dbname));
   }

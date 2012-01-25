@@ -28,8 +28,12 @@ class SpecialEnv : public EnvWrapper {
   // sstable Sync() calls are blocked while this pointer is non-NULL.
   port::AtomicPointer delay_sstable_sync_;
 
+  // Simulate no-space errors while this pointer is non-NULL.
+  port::AtomicPointer no_space_;
+
   explicit SpecialEnv(Env* base) : EnvWrapper(base) {
     delay_sstable_sync_.Release_Store(NULL);
+    no_space_.Release_Store(NULL);
   }
 
   Status NewWritableFile(const std::string& f, WritableFile** r) {
@@ -44,7 +48,14 @@ class SpecialEnv : public EnvWrapper {
             base_(base) {
       }
       ~SSTableFile() { delete base_; }
-      Status Append(const Slice& data) { return base_->Append(data); }
+      Status Append(const Slice& data) {
+        if (env_->no_space_.Acquire_Load() != NULL) {
+          // Drop writes on the floor
+          return Status::OK();
+        } else {
+          return base_->Append(data);
+        }
+      }
       Status Close() { return base_->Close(); }
       Status Flush() { return base_->Flush(); }
       Status Sync() {
@@ -237,6 +248,12 @@ class DBTest {
     }
     result.resize(last_non_zero_offset);
     return result;
+  }
+
+  int CountFiles() {
+    std::vector<std::string> files;
+    env_->GetChildren(dbname_, &files);
+    return static_cast<int>(files.size());
   }
 
   uint64_t Size(const Slice& start, const Slice& limit) {
@@ -1266,6 +1283,37 @@ TEST(DBTest, DBOpen_Options) {
   db = NULL;
 }
 
+// Check that number of files does not grow when we are out of space
+TEST(DBTest, NoSpace) {
+  Options options;
+  options.env = env_;
+  Reopen(&options);
+
+  ASSERT_OK(Put("foo", "v1"));
+  ASSERT_EQ("v1", Get("foo"));
+  Compact("a", "z");
+  const int num_files = CountFiles();
+  env_->no_space_.Release_Store(env_);   // Force out-of-space errors
+  for (int i = 0; i < 10; i++) {
+    for (int level = 0; level < config::kNumLevels-1; level++) {
+      dbfull()->TEST_CompactRange(level, NULL, NULL);
+    }
+  }
+  env_->no_space_.Release_Store(NULL);
+  ASSERT_LT(CountFiles(), num_files + 5);
+}
+
+TEST(DBTest, FilesDeletedAfterCompaction) {
+  ASSERT_OK(Put("foo", "v2"));
+  Compact("a", "z");
+  const int num_files = CountFiles();
+  for (int i = 0; i < 10; i++) {
+    ASSERT_OK(Put("foo", "v2"));
+    Compact("a", "z");
+  }
+  ASSERT_EQ(CountFiles(), num_files);
+}
+
 // Multi-threaded test:
 namespace {
 
@@ -1287,14 +1335,15 @@ struct MTThread {
 
 static void MTThreadBody(void* arg) {
   MTThread* t = reinterpret_cast<MTThread*>(arg);
+  int id = t->id;
   DB* db = t->state->test->db_;
   uintptr_t counter = 0;
-  fprintf(stderr, "... starting thread %d\n", t->id);
-  Random rnd(1000 + t->id);
+  fprintf(stderr, "... starting thread %d\n", id);
+  Random rnd(1000 + id);
   std::string value;
   char valbuf[1500];
   while (t->state->stop.Acquire_Load() == NULL) {
-    t->state->counter[t->id].Release_Store(reinterpret_cast<void*>(counter));
+    t->state->counter[id].Release_Store(reinterpret_cast<void*>(counter));
 
     int key = rnd.Uniform(kNumKeys);
     char keybuf[20];
@@ -1304,7 +1353,7 @@ static void MTThreadBody(void* arg) {
       // Write values of the form <key, my id, counter>.
       // We add some padding for force compactions.
       snprintf(valbuf, sizeof(valbuf), "%d.%d.%-1000d",
-               key, t->id, static_cast<int>(counter));
+               key, id, static_cast<int>(counter));
       ASSERT_OK(db->Put(WriteOptions(), Slice(keybuf), Slice(valbuf)));
     } else {
       // Read a value and verify that it matches the pattern written above.
@@ -1325,8 +1374,8 @@ static void MTThreadBody(void* arg) {
     }
     counter++;
   }
-  t->state->thread_done[t->id].Release_Store(t);
-  fprintf(stderr, "... stopping thread %d after %d ops\n", t->id, int(counter));
+  t->state->thread_done[id].Release_Store(t);
+  fprintf(stderr, "... stopping thread %d after %d ops\n", id, int(counter));
 }
 
 }  // namespace

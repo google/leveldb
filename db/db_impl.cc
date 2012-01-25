@@ -655,6 +655,8 @@ void DBImpl::BackgroundCompaction() {
     CompactionState* compact = new CompactionState(c);
     status = DoCompactionWork(compact);
     CleanupCompaction(compact);
+    c->ReleaseInputs();
+    DeleteObsoleteFiles();
   }
   delete c;
 
@@ -672,6 +674,9 @@ void DBImpl::BackgroundCompaction() {
 
   if (is_manual) {
     ManualCompaction* m = manual_compaction_;
+    if (!status.ok()) {
+      m->done = true;
+    }
     if (!m->done) {
       // We only compacted part of the requested range.  Update *m
       // to the range that is left to be compacted.
@@ -793,21 +798,8 @@ Status DBImpl::InstallCompactionResults(CompactionState* compact) {
     compact->compaction->edit()->AddFile(
         level + 1,
         out.number, out.file_size, out.smallest, out.largest);
-    pending_outputs_.erase(out.number);
   }
-  compact->outputs.clear();
-
-  Status s = versions_->LogAndApply(compact->compaction->edit(), &mutex_);
-  if (s.ok()) {
-    compact->compaction->ReleaseInputs();
-    DeleteObsoleteFiles();
-  } else {
-    // Discard any files we may have created during this failed compaction
-    for (size_t i = 0; i < compact->outputs.size(); i++) {
-      env_->DeleteFile(TableFileName(dbname_, compact->outputs[i].number));
-    }
-  }
-  return s;
+  return versions_->LogAndApply(compact->compaction->edit(), &mutex_);
 }
 
 Status DBImpl::DoCompactionWork(CompactionState* compact) {
