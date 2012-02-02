@@ -26,6 +26,11 @@ static const int kTargetFileSize = 2 * 1048576;
 // stop building a single file in a level->level+1 compaction.
 static const int64_t kMaxGrandParentOverlapBytes = 10 * kTargetFileSize;
 
+// Maximum number of bytes in all compacted files.  We avoid expanding
+// the lower level file set of a compaction if it would make the
+// total compaction cover more than this many bytes.
+static const int64_t kExpandedCompactionByteSizeLimit = 25 * kTargetFileSize;
+
 static double MaxBytesForLevel(int level) {
   // Note: the result for level zero is not really used since we set
   // the level-0 compaction threshold based on number of files.
@@ -1223,7 +1228,11 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
   if (!c->inputs_[1].empty()) {
     std::vector<FileMetaData*> expanded0;
     current_->GetOverlappingInputs(level, &all_start, &all_limit, &expanded0);
-    if (expanded0.size() > c->inputs_[0].size()) {
+    const int64_t inputs0_size = TotalFileSize(c->inputs_[0]);
+    const int64_t inputs1_size = TotalFileSize(c->inputs_[1]);
+    const int64_t expanded0_size = TotalFileSize(expanded0);
+    if (expanded0.size() > c->inputs_[0].size() &&
+        inputs1_size + expanded0_size < kExpandedCompactionByteSizeLimit) {
       InternalKey new_start, new_limit;
       GetRange(expanded0, &new_start, &new_limit);
       std::vector<FileMetaData*> expanded1;
@@ -1231,12 +1240,14 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
                                      &expanded1);
       if (expanded1.size() == c->inputs_[1].size()) {
         Log(options_->info_log,
-            "Expanding@%d %d+%d to %d+%d\n",
+            "Expanding@%d %d+%d (%ld+%ld bytes) to %d+%d (%ld+%ld bytes)\n",
             level,
             int(c->inputs_[0].size()),
             int(c->inputs_[1].size()),
+            long(inputs0_size), long(inputs1_size),
             int(expanded0.size()),
-            int(expanded1.size()));
+            int(expanded1.size()),
+            long(expanded0_size), long(inputs1_size));
         smallest = new_start;
         largest = new_limit;
         c->inputs_[0] = expanded0;

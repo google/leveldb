@@ -27,7 +27,7 @@ case `uname -s` in
     Linux)
         PLATFORM=OS_LINUX
         echo "PLATFORM_CFLAGS=-pthread -DOS_LINUX" >> build_config.mk
-        echo "PLATFORM_LDFLAGS=-lpthread"  >> build_config.mk
+        echo "PLATFORM_LDFLAGS=-pthread"  >> build_config.mk
         ;;
     SunOS)
         PLATFORM=OS_SOLARIS
