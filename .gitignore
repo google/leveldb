@@ -1,0 +1,5 @@
+build_config.mk
+*.a
+*.o
+*_test
+db_bench

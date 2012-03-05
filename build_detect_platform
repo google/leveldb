@@ -39,6 +39,21 @@ case `uname -s` in
         echo "PLATFORM_CFLAGS=-D_REENTRANT -DOS_FREEBSD"  >> build_config.mk
         echo "PLATFORM_LDFLAGS=-lpthread" >> build_config.mk
         ;;
+    NetBSD)
+        PLATFORM=OS_NETBSD
+        echo "PLATFORM_CFLAGS=-D_REENTRANT -DOS_NETBSD"  >> build_config.mk
+        echo "PLATFORM_LDFLAGS=-lpthread -lgcc_s" >> build_config.mk
+        ;;
+    OpenBSD)
+        PLATFORM=OS_OPENBSD
+        echo "PLATFORM_CFLAGS=-D_REENTRANT -DOS_OPENBSD"  >> build_config.mk
+        echo "PLATFORM_LDFLAGS=-pthread" >> build_config.mk
+        ;;
+    DragonFly)
+        PLATFORM=OS_DRAGONFLYBSD
+        echo "PLATFORM_CFLAGS=-D_REENTRANT -DOS_DRAGONFLYBSD"  >> build_config.mk
+        echo "PLATFORM_LDFLAGS=-lpthread" >> build_config.mk
+        ;;
     *)
         echo "Unknown platform!"
         exit 1

@@ -7,7 +7,7 @@
 #ifndef STORAGE_LEVELDB_PORT_PORT_POSIX_H_
 #define STORAGE_LEVELDB_PORT_PORT_POSIX_H_
 
-#if defined(OS_MACOSX) || defined(OS_FREEBSD)
+#if defined(OS_MACOSX)
   #include <machine/endian.h>
 #elif defined(OS_SOLARIS)
   #include <sys/isa_defs.h>
@@ -16,6 +16,10 @@
   #else
     #define BIG_ENDIAN
   #endif
+#elif defined(OS_FREEBSD) || defined(OS_OPENBSD) || defined(OS_NETBSD) ||\
+      defined(OS_DRAGONFLYBSD)
+  #include <sys/types.h>
+  #include <sys/endian.h>
 #else
   #include <endian.h>
 #endif
@@ -33,13 +37,17 @@
 #define IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #endif
 
-#if defined(OS_MACOSX) || defined(OS_SOLARIS) || defined(OS_FREEBSD)
+#if defined(OS_MACOSX) || defined(OS_SOLARIS) || defined(OS_FREEBSD) ||\
+    defined(OS_NETBSD) || defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD)
+// Use fread/fwrite/fflush on platforms without _unlocked variants
 #define fread_unlocked fread
 #define fwrite_unlocked fwrite
 #define fflush_unlocked fflush
 #endif
 
-#if defined(OS_MACOSX) || defined(OS_FREEBSD)
+#if defined(OS_MACOSX) || defined(OS_FREEBSD) ||\
+    defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD)
+// Use fsync() on platforms without fdatasync()
 #define fdatasync fsync
 #endif
 
