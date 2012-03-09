@@ -23,6 +23,9 @@
 
 namespace leveldb {
 
+// WriteBatch header has an 8-byte sequence number followed by a 4-byte count.
+static const size_t kHeader = 12;
+
 WriteBatch::WriteBatch() {
   Clear();
 }
@@ -33,16 +36,16 @@ WriteBatch::Handler::~Handler() { }
 
 void WriteBatch::Clear() {
   rep_.clear();
-  rep_.resize(12);
+  rep_.resize(kHeader);
 }
 
 Status WriteBatch::Iterate(Handler* handler) const {
   Slice input(rep_);
-  if (input.size() < 12) {
+  if (input.size() < kHeader) {
     return Status::Corruption("malformed WriteBatch (too small)");
   }
 
-  input.remove_prefix(12);
+  input.remove_prefix(kHeader);
   Slice key, value;
   int found = 0;
   while (!input.empty()) {
@@ -131,8 +134,14 @@ Status WriteBatchInternal::InsertInto(const WriteBatch* b,
 }
 
 void WriteBatchInternal::SetContents(WriteBatch* b, const Slice& contents) {
-  assert(contents.size() >= 12);
+  assert(contents.size() >= kHeader);
   b->rep_.assign(contents.data(), contents.size());
+}
+
+void WriteBatchInternal::Append(WriteBatch* dst, const WriteBatch* src) {
+  SetCount(dst, Count(dst) + Count(src));
+  assert(src->rep_.size() >= kHeader);
+  dst->rep_.append(src->rep_.data() + kHeader, src->rep_.size() - kHeader);
 }
 
 }  // namespace leveldb

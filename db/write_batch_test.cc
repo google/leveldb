@@ -18,6 +18,7 @@ static std::string PrintContents(WriteBatch* b) {
   mem->Ref();
   std::string state;
   Status s = WriteBatchInternal::InsertInto(b, mem);
+  int count = 0;
   Iterator* iter = mem->NewIterator();
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     ParsedInternalKey ikey;
@@ -29,11 +30,13 @@ static std::string PrintContents(WriteBatch* b) {
         state.append(", ");
         state.append(iter->value().ToString());
         state.append(")");
+        count++;
         break;
       case kTypeDeletion:
         state.append("Delete(");
         state.append(ikey.user_key.ToString());
         state.append(")");
+        count++;
         break;
     }
     state.append("@");
@@ -42,6 +45,8 @@ static std::string PrintContents(WriteBatch* b) {
   delete iter;
   if (!s.ok()) {
     state.append("ParseError()");
+  } else if (count != WriteBatchInternal::Count(b)) {
+    state.append("CountMismatch()");
   }
   mem->Unref();
   return state;
@@ -80,6 +85,32 @@ TEST(WriteBatchTest, Corruption) {
   ASSERT_EQ("Put(foo, bar)@200"
             "ParseError()",
             PrintContents(&batch));
+}
+
+TEST(WriteBatchTest, Append) {
+  WriteBatch b1, b2;
+  WriteBatchInternal::SetSequence(&b1, 200);
+  WriteBatchInternal::SetSequence(&b2, 300);
+  WriteBatchInternal::Append(&b1, &b2);
+  ASSERT_EQ("",
+            PrintContents(&b1));
+  b2.Put("a", "va");
+  WriteBatchInternal::Append(&b1, &b2);
+  ASSERT_EQ("Put(a, va)@200",
+            PrintContents(&b1));
+  b2.Clear();
+  b2.Put("b", "vb");
+  WriteBatchInternal::Append(&b1, &b2);
+  ASSERT_EQ("Put(a, va)@200"
+            "Put(b, vb)@201",
+            PrintContents(&b1));
+  b2.Delete("foo");
+  WriteBatchInternal::Append(&b1, &b2);
+  ASSERT_EQ("Put(a, va)@200"
+            "Put(b, vb)@202"
+            "Put(b, vb)@201"
+            "Delete(foo)@203",
+            PrintContents(&b1));
 }
 
 }  // namespace leveldb
