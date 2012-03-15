@@ -205,7 +205,7 @@ class BlockConstructor: public Constructor {
     block_size_ = block_data.size();
     char* block_data_copy = new char[block_size_];
     memcpy(block_data_copy, block_data.data(), block_size_);
-    block_ = new Block(block_data_copy, block_size_);
+    block_ = new Block(block_data_copy, block_size_, true /* take ownership */);
     return Status::OK();
   }
   virtual size_t NumBytes() const { return block_size_; }

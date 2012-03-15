@@ -66,8 +66,10 @@ Status Footer::DecodeFrom(Slice* input) {
 Status ReadBlock(RandomAccessFile* file,
                  const ReadOptions& options,
                  const BlockHandle& handle,
-                 Block** block) {
+                 Block** block,
+                 bool* may_cache) {
   *block = NULL;
+  *may_cache = false;
 
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
@@ -100,8 +102,14 @@ Status ReadBlock(RandomAccessFile* file,
     case kNoCompression:
       if (data != buf) {
         // File implementation gave us pointer to some other data.
-        // Copy into buf[].
-        memcpy(buf, data, n + kBlockTrailerSize);
+        // Use it directly under the assumption that it will be live
+        // while the file is open.
+        delete[] buf;
+        *block = new Block(data, n, false /* do not take ownership */);
+        *may_cache = false;  // Do not double-cache
+      } else {
+        *block = new Block(buf, n, true /* take ownership */);
+        *may_cache = true;
       }
 
       // Ok
@@ -119,8 +127,8 @@ Status ReadBlock(RandomAccessFile* file,
         return Status::Corruption("corrupted compressed block contents");
       }
       delete[] buf;
-      buf = ubuf;
-      n = ulength;
+      *block = new Block(ubuf, ulength, true /* take ownership */);
+      *may_cache = true;
       break;
     }
     default:
@@ -128,7 +136,6 @@ Status ReadBlock(RandomAccessFile* file,
       return Status::Corruption("bad block type");
   }
 
-  *block = new Block(buf, n);  // Block takes ownership of buf[]
   return Status::OK();
 }
 

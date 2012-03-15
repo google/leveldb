@@ -66,6 +66,7 @@ class PosixSequentialFile: public SequentialFile {
   }
 };
 
+// pread() based random-access
 class PosixRandomAccessFile: public RandomAccessFile {
  private:
   std::string filename_;
@@ -84,6 +85,32 @@ class PosixRandomAccessFile: public RandomAccessFile {
     if (r < 0) {
       // An error: return a non-ok status
       s = IOError(filename_, errno);
+    }
+    return s;
+  }
+};
+
+// mmap() based random-access
+class PosixMmapReadableFile: public RandomAccessFile {
+ private:
+  std::string filename_;
+  void* mmapped_region_;
+  size_t length_;
+
+ public:
+  // base[0,length-1] contains the mmapped contents of the file.
+  PosixMmapReadableFile(const std::string& fname, void* base, size_t length)
+      : filename_(fname), mmapped_region_(base), length_(length) { }
+  virtual ~PosixMmapReadableFile() { munmap(mmapped_region_, length_); }
+
+  virtual Status Read(uint64_t offset, size_t n, Slice* result,
+                      char* scratch) const {
+    Status s;
+    if (offset + n > length_) {
+      *result = Slice();
+      s = IOError(filename_, EINVAL);
+    } else {
+      *result = Slice(reinterpret_cast<char*>(mmapped_region_) + offset, n);
     }
     return s;
   }
@@ -297,13 +324,28 @@ class PosixEnv : public Env {
 
   virtual Status NewRandomAccessFile(const std::string& fname,
                                      RandomAccessFile** result) {
+    *result = NULL;
+    Status s;
     int fd = open(fname.c_str(), O_RDONLY);
     if (fd < 0) {
-      *result = NULL;
-      return IOError(fname, errno);
+      s = IOError(fname, errno);
+    } else if (sizeof(void*) >= 8) {
+      // Use mmap when virtual address-space is plentiful.
+      uint64_t size;
+      s = GetFileSize(fname, &size);
+      if (s.ok()) {
+        void* base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+        if (base != MAP_FAILED) {
+          *result = new PosixMmapReadableFile(fname, base, size);
+        } else {
+          s = IOError(fname, errno);
+        }
+      }
+      close(fd);
+    } else {
+      *result = new PosixRandomAccessFile(fname, fd);
     }
-    *result = new PosixRandomAccessFile(fname, fd);
-    return Status::OK();
+    return s;
   }
 
   virtual Status NewWritableFile(const std::string& fname,

@@ -49,7 +49,9 @@ Status Table::Open(const Options& options,
   // Read the index block
   Block* index_block = NULL;
   if (s.ok()) {
-    s = ReadBlock(file, ReadOptions(), footer.index_handle(), &index_block);
+    bool may_cache;  // Ignored result
+    s = ReadBlock(file, ReadOptions(), footer.index_handle(), &index_block,
+                  &may_cache);
   }
 
   if (s.ok()) {
@@ -105,6 +107,7 @@ Iterator* Table::BlockReader(void* arg,
   // can add more features in the future.
 
   if (s.ok()) {
+    bool may_cache;
     if (block_cache != NULL) {
       char cache_key_buffer[16];
       EncodeFixed64(cache_key_buffer, table->rep_->cache_id);
@@ -114,14 +117,14 @@ Iterator* Table::BlockReader(void* arg,
       if (cache_handle != NULL) {
         block = reinterpret_cast<Block*>(block_cache->Value(cache_handle));
       } else {
-        s = ReadBlock(table->rep_->file, options, handle, &block);
-        if (s.ok() && options.fill_cache) {
+        s = ReadBlock(table->rep_->file, options, handle, &block, &may_cache);
+        if (s.ok() && may_cache && options.fill_cache) {
           cache_handle = block_cache->Insert(
               key, block, block->size(), &DeleteCachedBlock);
         }
       }
     } else {
-      s = ReadBlock(table->rep_->file, options, handle, &block);
+      s = ReadBlock(table->rep_->file, options, handle, &block, &may_cache);
     }
   }
 
