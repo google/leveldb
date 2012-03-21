@@ -10,7 +10,7 @@
 #include <endian.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <cstdatomic>
+#include <unistd.h>
 #include <string>
 #include <cctype>
 
