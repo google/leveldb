@@ -105,7 +105,8 @@ class SkipList {
   port::AtomicPointer max_height_;   // Height of the entire list
 
   inline int GetMaxHeight() const {
-    return reinterpret_cast<intptr_t>(max_height_.NoBarrier_Load());
+    return static_cast<int>(
+        reinterpret_cast<intptr_t>(max_height_.NoBarrier_Load()));
   }
 
   // Read/written only by Insert().

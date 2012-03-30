@@ -5,6 +5,9 @@
 #
 # build_config.mk will set the following variables:
 #   PLATFORM_LDFLAGS            Linker flags
+#   PLATFORM_SHARED_EXT         Extension for shared libraries
+#   PLATFORM_SHARED_LDFLAGS     Flags for building shared library
+#   PLATFORM_SHARED_CFLAGS      Flags for compiling objects for shared library
 #   PLATFORM_CCFLAGS            C compiler flags
 #   PLATFORM_CXXFLAGS           C++ compiler flags.  Will contain:
 #       -DLEVELDB_PLATFORM_POSIX if cstdatomic is present
@@ -29,12 +32,17 @@ COMMON_FLAGS=
 PLATFORM_CCFLAGS=
 PLATFORM_CXXFLAGS=
 PLATFORM_LDFLAGS=
+PLATFORM_SHARED_EXT="so"
+PLATFORM_SHARED_LDFLAGS="-shared -Wl,-soname -Wl,"
+PLATFORM_SHARED_CFLAGS="-fPIC"
 
 # On GCC, we pick libc's memcmp over GCC's memcmp via -fno-builtin-memcmp
 case "$TARGET_OS" in
     Darwin)
         PLATFORM=OS_MACOSX
         COMMON_FLAGS="-fno-builtin-memcmp -DOS_MACOSX"
+        PLATFORM_SHARED_EXT=dylib
+        PLATFORM_SHARED_LDFLAGS="-dynamiclib -install_name "
         PORT_FILE=port/port_posix.cc
         ;;
     Linux)
@@ -143,3 +151,6 @@ echo "PLATFORM=$PLATFORM" >> build_config.mk
 echo "PLATFORM_LDFLAGS=$PLATFORM_LDFLAGS" >> build_config.mk
 echo "PLATFORM_CCFLAGS=$PLATFORM_CCFLAGS" >> build_config.mk
 echo "PLATFORM_CXXFLAGS=$PLATFORM_CXXFLAGS" >> build_config.mk
+echo "PLATFORM_SHARED_CFLAGS=$PLATFORM_SHARED_CFLAGS" >> build_config.mk
+echo "PLATFORM_SHARED_EXT=$PLATFORM_SHARED_EXT" >> build_config.mk
+echo "PLATFORM_SHARED_LDFLAGS=$PLATFORM_SHARED_LDFLAGS" >> build_config.mk
