@@ -12,9 +12,11 @@ namespace leveldb {
 
 class Block;
 class BlockHandle;
+class Footer;
 struct Options;
 class RandomAccessFile;
 struct ReadOptions;
+class TableCache;
 
 // A Table is a sorted map from strings to strings.  Tables are
 // immutable and persistent.  A Table may be safely accessed from
@@ -59,6 +61,19 @@ class Table {
 
   explicit Table(Rep* rep) { rep_ = rep; }
   static Iterator* BlockReader(void*, const ReadOptions&, const Slice&);
+
+  // Calls (*handle_result)(arg, ...) with the entry found after a call
+  // to Seek(key).  May not make such a call if filter policy says
+  // that key is not present.
+  friend class TableCache;
+  Status InternalGet(
+      const ReadOptions&, const Slice& key,
+      void* arg,
+      void (*handle_result)(void* arg, const Slice& k, const Slice& v));
+
+
+  void ReadMeta(const Footer& footer);
+  void ReadFilter(const Slice& filter_handle_value);
 
   // No copying allowed
   Table(const Table&);

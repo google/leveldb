@@ -47,6 +47,47 @@ the BlockHandle of the metaindex and index blocks as well as a magic number.
        			 	       // (40==2*BlockHandle::kMaxEncodedLength)
        magic:		       fixed64;    // == 0xdb4775248b80fb57
 
+"filter" Meta Block
+-------------------
+
+If a "FilterPolicy" was specified when the database was opened, a
+filter block is stored in each table.  The "metaindex" block contains
+an entry that maps from "filter.<N>" to the BlockHandle for the filter
+block where "<N>" is the string returned by the filter policy's
+"Name()" method.
+
+The filter block stores a sequence of filters, where filter i contains
+the output of FilterPolicy::CreateFilter() on all keys that are stored
+in a block whose file offset falls within the range
+
+    [ i*base ... (i+1)*base-1 ]
+
+Currently, "base" is 2KB.  So for example, if blocks X and Y start in
+the range [ 0KB .. 2KB-1 ], all of the keys in X and Y will be
+converted to a filter by calling FilterPolicy::CreateFilter(), and the
+resulting filter will be stored as the first filter in the filter
+block.
+
+The filter block is formatted as follows:
+
+     [filter 0]
+     [filter 1]
+     [filter 2]
+     ...
+     [filter N-1]
+
+     [offset of filter 0]                  : 4 bytes
+     [offset of filter 1]                  : 4 bytes
+     [offset of filter 2]                  : 4 bytes
+     ...
+     [offset of filter N-1]                : 4 bytes
+
+     [offset of beginning of offset array] : 4 bytes
+     lg(base)                              : 1 byte
+
+The offset array at the end of the filter block allows efficient
+mapping from a data block offset to the corresponding filter.
+
 "stats" Meta Block
 ------------------
 

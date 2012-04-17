@@ -122,6 +122,31 @@ static const char* CmpName(void* arg) {
   return "foo";
 }
 
+// Custom filter policy
+static unsigned char fake_filter_result = 1;
+static void FilterDestroy(void* arg) { }
+static const char* FilterName(void* arg) {
+  return "TestFilter";
+}
+static char* FilterCreate(
+    void* arg,
+    const char* const* key_array, const size_t* key_length_array,
+    int num_keys,
+    size_t* filter_length) {
+  *filter_length = 4;
+  char* result = malloc(4);
+  memcpy(result, "fake", 4);
+  return result;
+}
+unsigned char FilterKeyMatch(
+    void* arg,
+    const char* key, size_t length,
+    const char* filter, size_t filter_length) {
+  CheckCondition(filter_length == 4);
+  CheckCondition(memcmp(filter, "fake", 4) == 0);
+  return fake_filter_result;
+}
+
 int main(int argc, char** argv) {
   leveldb_t* db;
   leveldb_comparator_t* cmp;
@@ -131,6 +156,7 @@ int main(int argc, char** argv) {
   leveldb_readoptions_t* roptions;
   leveldb_writeoptions_t* woptions;
   char* err = NULL;
+  int run = -1;
 
   snprintf(dbname, sizeof(dbname), "/tmp/leveldb_c_test-%d",
            ((int) geteuid()));
@@ -178,6 +204,14 @@ int main(int argc, char** argv) {
   StartPhase("put");
   leveldb_put(db, woptions, "foo", 3, "hello", 5, &err);
   CheckNoError(err);
+  CheckGet(db, roptions, "foo", "hello");
+
+  StartPhase("compactall");
+  leveldb_compact_range(db, NULL, 0, NULL, 0);
+  CheckGet(db, roptions, "foo", "hello");
+
+  StartPhase("compactrange");
+  leveldb_compact_range(db, "a", 1, "z", 1);
   CheckGet(db, roptions, "foo", "hello");
 
   StartPhase("writebatch");
@@ -279,6 +313,49 @@ int main(int argc, char** argv) {
     CheckGet(db, roptions, "foo", NULL);
     CheckGet(db, roptions, "bar", NULL);
     CheckGet(db, roptions, "box", "c");
+    leveldb_options_set_create_if_missing(options, 1);
+    leveldb_options_set_error_if_exists(options, 1);
+  }
+
+  StartPhase("filter");
+  for (run = 0; run < 2; run++) {
+    // First run uses custom filter, second run uses bloom filter
+    CheckNoError(err);
+    leveldb_filterpolicy_t* policy;
+    if (run == 0) {
+      policy = leveldb_filterpolicy_create(
+          NULL, FilterDestroy, FilterCreate, FilterKeyMatch, FilterName);
+    } else {
+      policy = leveldb_filterpolicy_create_bloom(10);
+    }
+
+    // Create new database
+    leveldb_close(db);
+    leveldb_destroy_db(options, dbname, &err);
+    leveldb_options_set_filter_policy(options, policy);
+    db = leveldb_open(options, dbname, &err);
+    CheckNoError(err);
+    leveldb_put(db, woptions, "foo", 3, "foovalue", 8, &err);
+    CheckNoError(err);
+    leveldb_put(db, woptions, "bar", 3, "barvalue", 8, &err);
+    CheckNoError(err);
+    leveldb_compact_range(db, NULL, 0, NULL, 0);
+
+    fake_filter_result = 1;
+    CheckGet(db, roptions, "foo", "foovalue");
+    CheckGet(db, roptions, "bar", "barvalue");
+    if (phase == 0) {
+      // Must not find value when custom filter returns false
+      fake_filter_result = 0;
+      CheckGet(db, roptions, "foo", NULL);
+      CheckGet(db, roptions, "bar", NULL);
+      fake_filter_result = 1;
+
+      CheckGet(db, roptions, "foo", "foovalue");
+      CheckGet(db, roptions, "bar", "barvalue");
+    }
+    leveldb_options_set_filter_policy(options, NULL);
+    leveldb_filterpolicy_destroy(policy);
   }
 
   StartPhase("cleanup");

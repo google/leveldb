@@ -87,12 +87,14 @@ static void ClipToRange(T* ptr, V minvalue, V maxvalue) {
 }
 Options SanitizeOptions(const std::string& dbname,
                         const InternalKeyComparator* icmp,
+                        const InternalFilterPolicy* ipolicy,
                         const Options& src) {
   Options result = src;
   result.comparator = icmp;
-  ClipToRange(&result.max_open_files,           20,     50000);
-  ClipToRange(&result.write_buffer_size,        64<<10, 1<<30);
-  ClipToRange(&result.block_size,               1<<10,  4<<20);
+  result.filter_policy = (src.filter_policy != NULL) ? ipolicy : NULL;
+  ClipToRange(&result.max_open_files,            20,     50000);
+  ClipToRange(&result.write_buffer_size,         64<<10, 1<<30);
+  ClipToRange(&result.block_size,                1<<10,  4<<20);
   if (result.info_log == NULL) {
     // Open a log file in the same directory as the db
     src.env->CreateDir(dbname);  // In case it does not exist
@@ -112,7 +114,9 @@ Options SanitizeOptions(const std::string& dbname,
 DBImpl::DBImpl(const Options& options, const std::string& dbname)
     : env_(options.env),
       internal_comparator_(options.comparator),
-      options_(SanitizeOptions(dbname, &internal_comparator_, options)),
+      internal_filter_policy_(options.filter_policy),
+      options_(SanitizeOptions(
+          dbname, &internal_comparator_, &internal_filter_policy_, options)),
       owns_info_log_(options_.info_log != options.info_log),
       owns_cache_(options_.block_cache != options.block_cache),
       dbname_(dbname),

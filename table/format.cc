@@ -66,10 +66,10 @@ Status Footer::DecodeFrom(Slice* input) {
 Status ReadBlock(RandomAccessFile* file,
                  const ReadOptions& options,
                  const BlockHandle& handle,
-                 Block** block,
-                 bool* may_cache) {
-  *block = NULL;
-  *may_cache = false;
+                 BlockContents* result) {
+  result->data = Slice();
+  result->cachable = false;
+  result->heap_allocated = false;
 
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
@@ -105,11 +105,13 @@ Status ReadBlock(RandomAccessFile* file,
         // Use it directly under the assumption that it will be live
         // while the file is open.
         delete[] buf;
-        *block = new Block(data, n, false /* do not take ownership */);
-        *may_cache = false;  // Do not double-cache
+        result->data = Slice(data, n);
+        result->heap_allocated = false;
+        result->cachable = false;  // Do not double-cache
       } else {
-        *block = new Block(buf, n, true /* take ownership */);
-        *may_cache = true;
+        result->data = Slice(buf, n);
+        result->heap_allocated = true;
+        result->cachable = true;
       }
 
       // Ok
@@ -127,8 +129,9 @@ Status ReadBlock(RandomAccessFile* file,
         return Status::Corruption("corrupted compressed block contents");
       }
       delete[] buf;
-      *block = new Block(ubuf, ulength, true /* take ownership */);
-      *may_cache = true;
+      result->data = Slice(ubuf, ulength);
+      result->heap_allocated = true;
+      result->cachable = true;
       break;
     }
     default:

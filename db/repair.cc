@@ -48,7 +48,8 @@ class Repairer {
       : dbname_(dbname),
         env_(options.env),
         icmp_(options.comparator),
-        options_(SanitizeOptions(dbname, &icmp_, options)),
+        ipolicy_(options.filter_policy),
+        options_(SanitizeOptions(dbname, &icmp_, &ipolicy_, options)),
         owns_info_log_(options_.info_log != options.info_log),
         owns_cache_(options_.block_cache != options.block_cache),
         next_file_number_(1) {
@@ -99,6 +100,7 @@ class Repairer {
   std::string const dbname_;
   Env* const env_;
   InternalKeyComparator const icmp_;
+  InternalFilterPolicy const ipolicy_;
   Options const options_;
   bool owns_info_log_;
   bool owns_cache_;

@@ -11,14 +11,13 @@
 
 namespace leveldb {
 
+struct BlockContents;
 class Comparator;
 
 class Block {
  public:
   // Initialize the block with the specified contents.
-  // Takes ownership of data[] and will delete[] it when done iff
-  // "take_ownership is true.
-  Block(const char* data, size_t size, bool take_ownership);
+  explicit Block(const BlockContents& contents);
 
   ~Block();
 

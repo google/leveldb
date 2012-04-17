@@ -12,6 +12,7 @@ namespace leveldb {
 class Cache;
 class Comparator;
 class Env;
+class FilterPolicy;
 class Logger;
 class Snapshot;
 
@@ -126,6 +127,13 @@ struct Options {
   // incompressible, the kSnappyCompression implementation will
   // efficiently detect that and will switch to uncompressed mode.
   CompressionType compression;
+
+  // If non-NULL, use the specified filter policy to reduce disk reads.
+  // Many applications will benefit from passing the result of
+  // NewBloomFilterPolicy() here.
+  //
+  // Default: NULL
+  const FilterPolicy* filter_policy;
 
   // Create an Options object with default values for all fields.
   Options();

@@ -55,6 +55,7 @@ typedef struct leveldb_cache_t         leveldb_cache_t;
 typedef struct leveldb_comparator_t    leveldb_comparator_t;
 typedef struct leveldb_env_t           leveldb_env_t;
 typedef struct leveldb_filelock_t      leveldb_filelock_t;
+typedef struct leveldb_filterpolicy_t  leveldb_filterpolicy_t;
 typedef struct leveldb_iterator_t      leveldb_iterator_t;
 typedef struct leveldb_logger_t        leveldb_logger_t;
 typedef struct leveldb_options_t       leveldb_options_t;
@@ -127,6 +128,11 @@ extern void leveldb_approximate_sizes(
     const char* const* range_limit_key, const size_t* range_limit_key_len,
     uint64_t* sizes);
 
+extern void leveldb_compact_range(
+    leveldb_t* db,
+    const char* start_key, size_t start_key_len,
+    const char* limit_key, size_t limit_key_len);
+
 /* Management operations */
 
 extern void leveldb_destroy_db(
@@ -177,6 +183,9 @@ extern void leveldb_options_destroy(leveldb_options_t*);
 extern void leveldb_options_set_comparator(
     leveldb_options_t*,
     leveldb_comparator_t*);
+extern void leveldb_options_set_filter_policy(
+    leveldb_options_t*,
+    leveldb_filterpolicy_t*);
 extern void leveldb_options_set_create_if_missing(
     leveldb_options_t*, unsigned char);
 extern void leveldb_options_set_error_if_exists(
@@ -208,6 +217,26 @@ extern leveldb_comparator_t* leveldb_comparator_create(
         const char* b, size_t blen),
     const char* (*name)(void*));
 extern void leveldb_comparator_destroy(leveldb_comparator_t*);
+
+/* Filter policy */
+
+extern leveldb_filterpolicy_t* leveldb_filterpolicy_create(
+    void* state,
+    void (*destructor)(void*),
+    char* (*create_filter)(
+        void*,
+        const char* const* key_array, const size_t* key_length_array,
+        int num_keys,
+        size_t* filter_length),
+    unsigned char (*key_may_match)(
+        void*,
+        const char* key, size_t length,
+        const char* filter, size_t filter_length),
+    const char* (*name)(void*));
+extern void leveldb_filterpolicy_destroy(leveldb_filterpolicy_t*);
+
+extern leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(
+    int bits_per_key);
 
 /* Read options */
 

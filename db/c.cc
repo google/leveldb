@@ -10,6 +10,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
 #include "leveldb/env.h"
+#include "leveldb/filter_policy.h"
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
 #include "leveldb/status.h"
@@ -21,8 +22,10 @@ using leveldb::CompressionType;
 using leveldb::DB;
 using leveldb::Env;
 using leveldb::FileLock;
+using leveldb::FilterPolicy;
 using leveldb::Iterator;
 using leveldb::Logger;
+using leveldb::NewBloomFilterPolicy;
 using leveldb::NewLRUCache;
 using leveldb::Options;
 using leveldb::RandomAccessFile;
@@ -76,6 +79,47 @@ struct leveldb_comparator_t : public Comparator {
   // No-ops since the C binding does not support key shortening methods.
   virtual void FindShortestSeparator(std::string*, const Slice&) const { }
   virtual void FindShortSuccessor(std::string* key) const { }
+};
+
+struct leveldb_filterpolicy_t : public FilterPolicy {
+  void* state_;
+  void (*destructor_)(void*);
+  const char* (*name_)(void*);
+  char* (*create_)(
+      void*,
+      const char* const* key_array, const size_t* key_length_array,
+      int num_keys,
+      size_t* filter_length);
+  unsigned char (*key_match_)(
+      void*,
+      const char* key, size_t length,
+      const char* filter, size_t filter_length);
+
+  virtual ~leveldb_filterpolicy_t() {
+    (*destructor_)(state_);
+  }
+
+  virtual const char* Name() const {
+    return (*name_)(state_);
+  }
+
+  virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const {
+    std::vector<const char*> key_pointers(n);
+    std::vector<size_t> key_sizes(n);
+    for (int i = 0; i < n; i++) {
+      key_pointers[i] = keys[i].data();
+      key_sizes[i] = keys[i].size();
+    }
+    size_t len;
+    char* filter = (*create_)(state_, &key_pointers[0], &key_sizes[0], n, &len);
+    dst->append(filter, len);
+    free(filter);
+  }
+
+  virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const {
+    return (*key_match_)(state_, key.data(), key.size(),
+                         filter.data(), filter.size());
+  }
 };
 
 struct leveldb_env_t {
@@ -218,6 +262,17 @@ void leveldb_approximate_sizes(
   delete[] ranges;
 }
 
+void leveldb_compact_range(
+    leveldb_t* db,
+    const char* start_key, size_t start_key_len,
+    const char* limit_key, size_t limit_key_len) {
+  Slice a, b;
+  db->rep->CompactRange(
+      // Pass NULL Slice if corresponding "const char*" is NULL
+      (start_key ? (a = Slice(start_key, start_key_len), &a) : NULL),
+      (limit_key ? (b = Slice(limit_key, limit_key_len), &b) : NULL));
+}
+
 void leveldb_destroy_db(
     const leveldb_options_t* options,
     const char* name,
@@ -340,6 +395,12 @@ void leveldb_options_set_comparator(
   opt->rep.comparator = cmp;
 }
 
+void leveldb_options_set_filter_policy(
+    leveldb_options_t* opt,
+    leveldb_filterpolicy_t* policy) {
+  opt->rep.filter_policy = policy;
+}
+
 void leveldb_options_set_create_if_missing(
     leveldb_options_t* opt, unsigned char v) {
   opt->rep.create_if_missing = v;
@@ -405,6 +466,55 @@ leveldb_comparator_t* leveldb_comparator_create(
 
 void leveldb_comparator_destroy(leveldb_comparator_t* cmp) {
   delete cmp;
+}
+
+leveldb_filterpolicy_t* leveldb_filterpolicy_create(
+    void* state,
+    void (*destructor)(void*),
+    char* (*create_filter)(
+        void*,
+        const char* const* key_array, const size_t* key_length_array,
+        int num_keys,
+        size_t* filter_length),
+    unsigned char (*key_may_match)(
+        void*,
+        const char* key, size_t length,
+        const char* filter, size_t filter_length),
+    const char* (*name)(void*)) {
+  leveldb_filterpolicy_t* result = new leveldb_filterpolicy_t;
+  result->state_ = state;
+  result->destructor_ = destructor;
+  result->create_ = create_filter;
+  result->key_match_ = key_may_match;
+  result->name_ = name;
+  return result;
+}
+
+void leveldb_filterpolicy_destroy(leveldb_filterpolicy_t* filter) {
+  delete filter;
+}
+
+leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(int bits_per_key) {
+  // Make a leveldb_filterpolicy_t, but override all of its methods so
+  // they delegate to a NewBloomFilterPolicy() instead of user
+  // supplied C functions.
+  struct Wrapper : public leveldb_filterpolicy_t {
+    const FilterPolicy* rep_;
+    ~Wrapper() { delete rep_; }
+    const char* Name() const { return rep_->Name(); }
+    void CreateFilter(const Slice* keys, int n, std::string* dst) const {
+      return rep_->CreateFilter(keys, n, dst);
+    }
+    bool KeyMayMatch(const Slice& key, const Slice& filter) const {
+      return rep_->KeyMayMatch(key, filter);
+    }
+    static void DoNothing(void*) { }
+  };
+  Wrapper* wrapper = new Wrapper;
+  wrapper->rep_ = NewBloomFilterPolicy(bits_per_key);
+  wrapper->state_ = NULL;
+  wrapper->destructor_ = &Wrapper::DoNothing;
+  return wrapper;
 }
 
 leveldb_readoptions_t* leveldb_readoptions_create() {

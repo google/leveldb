@@ -400,6 +400,69 @@ We might want to prefix <code>filename</code> keys with one letter (say '/') and
 over just the metadata do not force us to fetch and cache bulky file
 contents.
 <p>
+<h2>Filters</h2>
+<p>
+Because of the way <code>leveldb</code> data is organized on disk,
+a single <code>Get()</code> call may involve multiple reads from disk.
+The optional <code>FilterPolicy</code> mechanism can be used to reduce
+the number of disk reads substantially.
+<pre>
+   leveldb::Options options;
+   options.filter_policy = NewBloomFilter(10);
+   leveldb::DB* db;
+   leveldb::DB::Open(options, "/tmp/testdb", &amp;db);
+   ... use the database ...
+   delete db;
+   delete options.filter_policy;
+</pre>
+The preceding code associates a
+<a href="http://en.wikipedia.org/wiki/Bloom_filter">Bloom filter</a>
+based filtering policy with the database.  Bloom filter based
+filtering relies on keeping some number of bits of data in memory per
+key (in this case 10 bits per key since that is the argument we passed
+to NewBloomFilter).  This filter will reduce the number of unnecessary
+disk reads needed for <code>Get()</code> calls by a factor of
+approximately a 100.  Increasing the bits per key will lead to a
+larger reduction at the cost of more memory usage.  We recommend that
+applications whose working set does not fit in memory and that do a
+lot of random reads set a filter policy.
+<p>
+If you are using a custom comparator, you should ensure that the filter
+policy you are using is compatible with your comparator.  For example,
+consider a comparator that ignores trailing spaces when comparing keys.
+<code>NewBloomFilter</code> must not be used with such a comparator.
+Instead, the application should provide a custom filter policy that
+also ignores trailing spaces.  For example:
+<pre>
+  class CustomFilterPolicy : public leveldb::FilterPolicy {
+   private:
+    FilterPolicy* builtin_policy_;
+   public:
+    CustomFilterPolicy() : builtin_policy_(NewBloomFilter(10)) { }
+    ~CustomFilterPolicy() { delete builtin_policy_; }
+
+    const char* Name() const { return "IgnoreTrailingSpacesFilter"; }
+
+    void CreateFilter(const Slice* keys, int n, std::string* dst) const {
+      // Use builtin bloom filter code after removing trailing spaces
+      std::vector&lt;Slice&gt; trimmed(n);
+      for (int i = 0; i &lt; n; i++) {
+        trimmed[i] = RemoveTrailingSpaces(keys[i]);
+      }
+      return builtin_policy_-&gt;CreateFilter(&amp;trimmed[i], n, dst);
+    }
+
+    bool KeyMayMatch(const Slice& key, const Slice& filter) const {
+      // Use builtin bloom filter code after removing trailing spaces
+      return builtin_policy_-&gt;KeyMayMatch(RemoveTrailingSpaces(key), filter);
+    }
+  };
+</pre>
+<p>
+Advanced applications may provide a filter policy that does not use
+a bloom filter but uses some other mechanism for summarizing a set
+of keys.  See <code>leveldb/filter_policy.h</code> for detail.
+<p>
 <h1>Checksums</h1>
 <p>
 <code>leveldb</code> associates checksums with all data it stores in the file system.

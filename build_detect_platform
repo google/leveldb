@@ -1,9 +1,9 @@
 #!/bin/sh
 #
-# Detects OS we're compiling on and generates build_config.mk,
-# which in turn gets read while processing Makefile.
+# Detects OS we're compiling on and outputs a file specified by the first
+# argument, which in turn gets read while processing Makefile.
 #
-# build_config.mk will set the following variables:
+# The output will set the following variables:
 #   PLATFORM_LDFLAGS            Linker flags
 #   PLATFORM_SHARED_EXT         Extension for shared libraries
 #   PLATFORM_SHARED_LDFLAGS     Flags for building shared library
@@ -13,11 +13,15 @@
 #       -DLEVELDB_PLATFORM_POSIX if cstdatomic is present
 #       -DLEVELDB_PLATFORM_NOATOMIC if it is not
 
-SCRIPT_DIR=`dirname $0`
+OUTPUT=$1
+if test -z "$OUTPUT"; then
+  echo "usage: $0 <output-filename>"
+  exit 1
+fi
 
-# Delete existing build_config.mk
-rm -f build_config.mk
-touch build_config.mk
+# Delete existing output, if it exists
+rm -f $OUTPUT
+touch $OUTPUT
 
 if test -z "$CXX"; then
     CXX=g++
@@ -96,7 +100,7 @@ esac
 # except for the test and benchmark files. By default, find will output a list
 # of all files matching either rule, so we need to append -print to make the
 # prune take effect.
-DIRS="$SCRIPT_DIR/util $SCRIPT_DIR/db $SCRIPT_DIR/table"
+DIRS="util db table"
 set -f # temporarily disable globbing so that our patterns aren't expanded
 PRUNE_TEST="-name *test*.cc -prune"
 PRUNE_BENCH="-name *_bench.cc -prune"
@@ -105,8 +109,8 @@ set +f # re-enable globbing
 
 # The sources consist of the portable files, plus the platform-specific port
 # file.
-echo "SOURCES=$PORTABLE_FILES $PORT_FILE" >> build_config.mk
-echo "MEMENV_SOURCES=helpers/memenv/memenv.cc" >> build_config.mk
+echo "SOURCES=$PORTABLE_FILES $PORT_FILE" >> $OUTPUT
+echo "MEMENV_SOURCES=helpers/memenv/memenv.cc" >> $OUTPUT
 
 if [ "$PLATFORM" = "OS_ANDROID_CROSSCOMPILE" ]; then
     # Cross-compiling; do not try any compilation tests.
@@ -147,10 +151,10 @@ fi
 PLATFORM_CCFLAGS="$PLATFORM_CCFLAGS $COMMON_FLAGS"
 PLATFORM_CXXFLAGS="$PLATFORM_CXXFLAGS $COMMON_FLAGS"
 
-echo "PLATFORM=$PLATFORM" >> build_config.mk
-echo "PLATFORM_LDFLAGS=$PLATFORM_LDFLAGS" >> build_config.mk
-echo "PLATFORM_CCFLAGS=$PLATFORM_CCFLAGS" >> build_config.mk
-echo "PLATFORM_CXXFLAGS=$PLATFORM_CXXFLAGS" >> build_config.mk
-echo "PLATFORM_SHARED_CFLAGS=$PLATFORM_SHARED_CFLAGS" >> build_config.mk
-echo "PLATFORM_SHARED_EXT=$PLATFORM_SHARED_EXT" >> build_config.mk
-echo "PLATFORM_SHARED_LDFLAGS=$PLATFORM_SHARED_LDFLAGS" >> build_config.mk
+echo "PLATFORM=$PLATFORM" >> $OUTPUT
+echo "PLATFORM_LDFLAGS=$PLATFORM_LDFLAGS" >> $OUTPUT
+echo "PLATFORM_CCFLAGS=$PLATFORM_CCFLAGS" >> $OUTPUT
+echo "PLATFORM_CXXFLAGS=$PLATFORM_CXXFLAGS" >> $OUTPUT
+echo "PLATFORM_SHARED_CFLAGS=$PLATFORM_SHARED_CFLAGS" >> $OUTPUT
+echo "PLATFORM_SHARED_EXT=$PLATFORM_SHARED_EXT" >> $OUTPUT
+echo "PLATFORM_SHARED_LDFLAGS=$PLATFORM_SHARED_LDFLAGS" >> $OUTPUT

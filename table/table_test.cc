@@ -168,8 +168,6 @@ class Constructor {
   // Construct the data structure from the data in "data"
   virtual Status FinishImpl(const Options& options, const KVMap& data) = 0;
 
-  virtual size_t NumBytes() const = 0;
-
   virtual Iterator* NewIterator() const = 0;
 
   virtual const KVMap& data() { return data_; }
@@ -185,7 +183,6 @@ class BlockConstructor: public Constructor {
   explicit BlockConstructor(const Comparator* cmp)
       : Constructor(cmp),
         comparator_(cmp),
-        block_size_(-1),
         block_(NULL) { }
   ~BlockConstructor() {
     delete block_;
@@ -201,22 +198,21 @@ class BlockConstructor: public Constructor {
       builder.Add(it->first, it->second);
     }
     // Open the block
-    Slice block_data = builder.Finish();
-    block_size_ = block_data.size();
-    char* block_data_copy = new char[block_size_];
-    memcpy(block_data_copy, block_data.data(), block_size_);
-    block_ = new Block(block_data_copy, block_size_, true /* take ownership */);
+    data_ = builder.Finish().ToString();
+    BlockContents contents;
+    contents.data = data_;
+    contents.cachable = false;
+    contents.heap_allocated = false;
+    block_ = new Block(contents);
     return Status::OK();
   }
-  virtual size_t NumBytes() const { return block_size_; }
-
   virtual Iterator* NewIterator() const {
     return block_->NewIterator(comparator_);
   }
 
  private:
   const Comparator* comparator_;
-  int block_size_;
+  std::string data_;
   Block* block_;
 
   BlockConstructor();
@@ -253,7 +249,6 @@ class TableConstructor: public Constructor {
     table_options.comparator = options.comparator;
     return Table::Open(table_options, source_, sink.contents().size(), &table_);
   }
-  virtual size_t NumBytes() const { return source_->Size(); }
 
   virtual Iterator* NewIterator() const {
     return table_->NewIterator(ReadOptions());
@@ -342,10 +337,6 @@ class MemTableConstructor: public Constructor {
     }
     return Status::OK();
   }
-  virtual size_t NumBytes() const {
-    return memtable_->ApproximateMemoryUsage();
-  }
-
   virtual Iterator* NewIterator() const {
     return new KeyConvertingIterator(memtable_->NewIterator());
   }
@@ -379,13 +370,6 @@ class DBConstructor: public Constructor {
     }
     return Status::OK();
   }
-  virtual size_t NumBytes() const {
-    Range r("", "\xff\xff");
-    uint64_t size;
-    db_->GetApproximateSizes(&r, 1, &size);
-    return size;
-  }
-
   virtual Iterator* NewIterator() const {
     return db_->NewIterator(ReadOptions());
   }
@@ -809,7 +793,7 @@ TEST(TableTest, ApproximateOffsetOfPlain) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k05"),  210000, 211000));
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k06"),  510000, 511000));
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k07"),  510000, 511000));
-  ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"),  610000, 611000));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"),  610000, 612000));
 
 }
 

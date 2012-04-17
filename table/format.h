@@ -83,16 +83,18 @@ static const uint64_t kTableMagicNumber = 0xdb4775248b80fb57ull;
 // 1-byte type + 32-bit crc
 static const size_t kBlockTrailerSize = 5;
 
-// Read the block identified by "handle" from "file".  On success,
-// store a pointer to the heap-allocated result in *block and return
-// OK.  On failure store NULL in *block and return non-OK.
-// On success, stores true in *may_cache if the result may be
-// cached, false if it must not be cached.
+struct BlockContents {
+  Slice data;           // Actual contents of data
+  bool cachable;        // True iff data can be cached
+  bool heap_allocated;  // True iff caller should delete[] data.data()
+};
+
+// Read the block identified by "handle" from "file".  On failure
+// return non-OK.  On success fill *result and return OK.
 extern Status ReadBlock(RandomAccessFile* file,
                         const ReadOptions& options,
                         const BlockHandle& handle,
-                        Block** block,
-                        bool* may_cache);
+                        BlockContents* result);
 
 // Implementation details follow.  Clients should ignore,
 

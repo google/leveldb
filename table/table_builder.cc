@@ -5,14 +5,15 @@
 #include "leveldb/table_builder.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
+#include "leveldb/filter_policy.h"
+#include "leveldb/options.h"
 #include "table/block_builder.h"
+#include "table/filter_block.h"
 #include "table/format.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
-#include "util/logging.h"
 
 namespace leveldb {
 
@@ -27,6 +28,7 @@ struct TableBuilder::Rep {
   std::string last_key;
   int64_t num_entries;
   bool closed;          // Either Finish() or Abandon() has been called.
+  FilterBlockBuilder* filter_block;
 
   // We do not emit the index entry for a block until we have seen the
   // first key for the next data block.  This allows us to use shorter
@@ -51,6 +53,8 @@ struct TableBuilder::Rep {
         index_block(&index_block_options),
         num_entries(0),
         closed(false),
+        filter_block(opt.filter_policy == NULL ? NULL
+                     : new FilterBlockBuilder(opt.filter_policy)),
         pending_index_entry(false) {
     index_block_options.block_restart_interval = 1;
   }
@@ -58,10 +62,14 @@ struct TableBuilder::Rep {
 
 TableBuilder::TableBuilder(const Options& options, WritableFile* file)
     : rep_(new Rep(options, file)) {
+  if (rep_->filter_block != NULL) {
+    rep_->filter_block->StartBlock(0);
+  }
 }
 
 TableBuilder::~TableBuilder() {
   assert(rep_->closed);  // Catch errors where caller forgot to call Finish()
+  delete rep_->filter_block;
   delete rep_;
 }
 
@@ -98,6 +106,10 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
     r->pending_index_entry = false;
   }
 
+  if (r->filter_block != NULL) {
+    r->filter_block->AddKey(key);
+  }
+
   r->last_key.assign(key.data(), key.size());
   r->num_entries++;
   r->data_block.Add(key, value);
@@ -118,6 +130,9 @@ void TableBuilder::Flush() {
   if (ok()) {
     r->pending_index_entry = true;
     r->status = r->file->Flush();
+  }
+  if (r->filter_block != NULL) {
+    r->filter_block->StartBlock(r->offset);
   }
 }
 
@@ -152,6 +167,15 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       break;
     }
   }
+  WriteRawBlock(block_contents, type, handle);
+  r->compressed_output.clear();
+  block->Reset();
+}
+
+void TableBuilder::WriteRawBlock(const Slice& block_contents,
+                                 CompressionType type,
+                                 BlockHandle* handle) {
+  Rep* r = rep_;
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
   r->status = r->file->Append(block_contents);
@@ -166,8 +190,6 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       r->offset += block_contents.size() + kBlockTrailerSize;
     }
   }
-  r->compressed_output.clear();
-  block->Reset();
 }
 
 Status TableBuilder::status() const {
@@ -179,13 +201,32 @@ Status TableBuilder::Finish() {
   Flush();
   assert(!r->closed);
   r->closed = true;
-  BlockHandle metaindex_block_handle;
-  BlockHandle index_block_handle;
+
+  BlockHandle filter_block_handle, metaindex_block_handle, index_block_handle;
+
+  // Write filter block
+  if (ok() && r->filter_block != NULL) {
+    WriteRawBlock(r->filter_block->Finish(), kNoCompression,
+                  &filter_block_handle);
+  }
+
+  // Write metaindex block
   if (ok()) {
     BlockBuilder meta_index_block(&r->options);
+    if (r->filter_block != NULL) {
+      // Add mapping from "filter.Name" to location of filter data
+      std::string key = "filter.";
+      key.append(r->options.filter_policy->Name());
+      std::string handle_encoding;
+      filter_block_handle.EncodeTo(&handle_encoding);
+      meta_index_block.Add(key, handle_encoding);
+    }
+
     // TODO(postrelease): Add stats and other meta blocks
     WriteBlock(&meta_index_block, &metaindex_block_handle);
   }
+
+  // Write index block
   if (ok()) {
     if (r->pending_index_entry) {
       r->options.comparator->FindShortSuccessor(&r->last_key);
@@ -196,6 +237,8 @@ Status TableBuilder::Finish() {
     }
     WriteBlock(&r->index_block, &index_block_handle);
   }
+
+  // Write footer
   if (ok()) {
     Footer footer;
     footer.set_metaindex_handle(metaindex_block_handle);

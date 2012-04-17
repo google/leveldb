@@ -78,6 +78,9 @@ class CondVar {
 // On ARM chipsets <V6, 0xffff0fa0 is the hard coded address of a 
 // memory barrier function provided by the kernel.
 typedef void (*LinuxKernelMemoryBarrierFunc)(void);
+// TODO(user): ATTRIBUTE_WEAK is undefined, so this fails to build on
+// non-ARMV6_OR_7. We may be able to replace it with __attribute__((weak)) for
+// older ARM builds, but x86 builds will require a different memory barrier.
 LinuxKernelMemoryBarrierFunc pLinuxKernelMemoryBarrier ATTRIBUTE_WEAK =
     (LinuxKernelMemoryBarrierFunc) 0xffff0fa0;
 #endif
