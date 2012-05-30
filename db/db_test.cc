@@ -56,12 +56,18 @@ class SpecialEnv : public EnvWrapper {
   // Simulate no-space errors while this pointer is non-NULL.
   port::AtomicPointer no_space_;
 
+  // Simulate non-writable file system while this pointer is non-NULL
+  port::AtomicPointer non_writable_;
+
   bool count_random_reads_;
   AtomicCounter random_read_counter_;
+
+  AtomicCounter sleep_counter_;
 
   explicit SpecialEnv(Env* base) : EnvWrapper(base) {
     delay_sstable_sync_.Release_Store(NULL);
     no_space_.Release_Store(NULL);
+    non_writable_.Release_Store(NULL);
     count_random_reads_ = false;
   }
 
@@ -95,6 +101,10 @@ class SpecialEnv : public EnvWrapper {
       }
     };
 
+    if (non_writable_.Acquire_Load() != NULL) {
+      return Status::IOError("simulated write error");
+    }
+
     Status s = target()->NewWritableFile(f, r);
     if (s.ok()) {
       if (strstr(f.c_str(), ".sst") != NULL) {
@@ -127,6 +137,11 @@ class SpecialEnv : public EnvWrapper {
     }
     return s;
   }
+
+  virtual void SleepForMicroseconds(int micros) {
+    sleep_counter_.Increment();
+    target()->SleepForMicroseconds(micros);
+  }
 };
 
 class DBTest {
@@ -137,6 +152,7 @@ class DBTest {
   enum OptionConfig {
     kDefault,
     kFilter,
+    kUncompressed,
     kEnd
   };
   int option_config_;
@@ -167,10 +183,10 @@ class DBTest {
   // Switch to a fresh database with the next option configuration to
   // test.  Return false if there are no more configurations to test.
   bool ChangeOptions() {
-    if (option_config_ == kEnd) {
+    option_config_++;
+    if (option_config_ >= kEnd) {
       return false;
     } else {
-      option_config_++;
       DestroyAndReopen();
       return true;
     }
@@ -182,6 +198,9 @@ class DBTest {
     switch (option_config_) {
       case kFilter:
         options.filter_policy = filter_policy_;
+        break;
+      case kUncompressed:
+        options.compression = kNoCompression;
         break;
       default:
         break;
@@ -552,13 +571,15 @@ TEST(DBTest, GetEncountersEmptyLevel) {
     ASSERT_EQ(NumTableFilesAtLevel(1), 0);
     ASSERT_EQ(NumTableFilesAtLevel(2), 1);
 
-    // Step 3: read until level 0 compaction disappears.
-    int read_count = 0;
-    while (NumTableFilesAtLevel(0) > 0) {
-      ASSERT_LE(read_count, 10000) << "did not trigger level 0 compaction";
-      read_count++;
+    // Step 3: read a bunch of times
+    for (int i = 0; i < 1000; i++) {
       ASSERT_EQ("NOT_FOUND", Get("missing"));
     }
+
+    // Step 4: Wait for compaction to finish
+    env_->SleepForMicroseconds(1000000);
+
+    ASSERT_EQ(NumTableFilesAtLevel(0), 0);
   } while (ChangeOptions());
 }
 
@@ -1432,13 +1453,37 @@ TEST(DBTest, NoSpace) {
   Compact("a", "z");
   const int num_files = CountFiles();
   env_->no_space_.Release_Store(env_);   // Force out-of-space errors
-  for (int i = 0; i < 10; i++) {
+  env_->sleep_counter_.Reset();
+  for (int i = 0; i < 5; i++) {
     for (int level = 0; level < config::kNumLevels-1; level++) {
       dbfull()->TEST_CompactRange(level, NULL, NULL);
     }
   }
   env_->no_space_.Release_Store(NULL);
-  ASSERT_LT(CountFiles(), num_files + 5);
+  ASSERT_LT(CountFiles(), num_files + 3);
+
+  // Check that compaction attempts slept after errors
+  ASSERT_GE(env_->sleep_counter_.Read(), 5);
+}
+
+TEST(DBTest, NonWritableFileSystem) {
+  Options options = CurrentOptions();
+  options.write_buffer_size = 1000;
+  options.env = env_;
+  Reopen(&options);
+  ASSERT_OK(Put("foo", "v1"));
+  env_->non_writable_.Release_Store(env_);  // Force errors for new files
+  std::string big(100000, 'x');
+  int errors = 0;
+  for (int i = 0; i < 20; i++) {
+    fprintf(stderr, "iter %d; errors %d\n", i, errors);
+    if (!Put("foo", big).ok()) {
+      errors++;
+      env_->SleepForMicroseconds(100000);
+    }
+  }
+  ASSERT_GT(errors, 0);
+  env_->non_writable_.Release_Store(NULL);
 }
 
 TEST(DBTest, FilesDeletedAfterCompaction) {

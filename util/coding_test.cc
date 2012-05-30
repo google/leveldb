@@ -51,6 +51,29 @@ TEST(Coding, Fixed64) {
   }
 }
 
+// Test that encoding routines generate little-endian encodings
+TEST(Coding, EncodingOutput) {
+  std::string dst;
+  PutFixed32(&dst, 0x04030201);
+  ASSERT_EQ(4, dst.size());
+  ASSERT_EQ(0x01, static_cast<int>(dst[0]));
+  ASSERT_EQ(0x02, static_cast<int>(dst[1]));
+  ASSERT_EQ(0x03, static_cast<int>(dst[2]));
+  ASSERT_EQ(0x04, static_cast<int>(dst[3]));
+
+  dst.clear();
+  PutFixed64(&dst, 0x0807060504030201ull);
+  ASSERT_EQ(8, dst.size());
+  ASSERT_EQ(0x01, static_cast<int>(dst[0]));
+  ASSERT_EQ(0x02, static_cast<int>(dst[1]));
+  ASSERT_EQ(0x03, static_cast<int>(dst[2]));
+  ASSERT_EQ(0x04, static_cast<int>(dst[3]));
+  ASSERT_EQ(0x05, static_cast<int>(dst[4]));
+  ASSERT_EQ(0x06, static_cast<int>(dst[5]));
+  ASSERT_EQ(0x07, static_cast<int>(dst[6]));
+  ASSERT_EQ(0x08, static_cast<int>(dst[7]));
+}
+
 TEST(Coding, Varint32) {
   std::string s;
   for (uint32_t i = 0; i < (32 * 32); i++) {

@@ -19,6 +19,13 @@ static void StartPhase(const char* name) {
   phase = name;
 }
 
+static const char* GetTempDir(void) {
+    const char* ret = getenv("TEST_TMPDIR");
+    if (ret == NULL || ret[0] == '\0')
+        ret = "/tmp";
+    return ret;
+}
+
 #define CheckNoError(err)                                               \
   if ((err) != NULL) {                                                  \
     fprintf(stderr, "%s:%d: %s: %s\n", __FILE__, __LINE__, phase, (err)); \
@@ -158,7 +165,9 @@ int main(int argc, char** argv) {
   char* err = NULL;
   int run = -1;
 
-  snprintf(dbname, sizeof(dbname), "/tmp/leveldb_c_test-%d",
+  snprintf(dbname, sizeof(dbname),
+           "%s/leveldb_c_test-%d",
+           GetTempDir(),
            ((int) geteuid()));
 
   StartPhase("create_objects");

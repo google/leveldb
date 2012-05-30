@@ -132,7 +132,7 @@ bool SomeFileOverlapsRange(
   const Comparator* ucmp = icmp.user_comparator();
   if (!disjoint_sorted_files) {
     // Need to check against all files
-    for (int i = 0; i < files.size(); i++) {
+    for (size_t i = 0; i < files.size(); i++) {
       const FileMetaData* f = files[i];
       if (AfterFile(ucmp, smallest_user_key, f) ||
           BeforeFile(ucmp, largest_user_key, f)) {
@@ -1297,7 +1297,7 @@ Compaction* VersionSet::CompactRange(
   // Avoid compacting too much in one shot in case the range is large.
   const uint64_t limit = MaxFileSizeForLevel(level);
   uint64_t total = 0;
-  for (int i = 0; i < inputs.size(); i++) {
+  for (size_t i = 0; i < inputs.size(); i++) {
     uint64_t s = inputs[i]->file_size;
     total += s;
     if (total >= limit) {

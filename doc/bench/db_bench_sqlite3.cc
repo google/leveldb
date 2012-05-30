@@ -75,6 +75,9 @@ static bool FLAGS_transaction = true;
 // If true, we enable Write-Ahead Logging
 static bool FLAGS_WAL_enabled = true;
 
+// Use the db with the following name.
+static const char* FLAGS_db = NULL;
+
 inline
 static void ExecErrorCheck(int status, char *err_msg) {
   if (status != SQLITE_OK) {
@@ -317,11 +320,16 @@ class Benchmark {
     bytes_(0),
     rand_(301) {
     std::vector<std::string> files;
-    Env::Default()->GetChildren("/tmp", &files);
+    std::string test_dir;
+    Env::Default()->GetTestDirectory(&test_dir);
+    Env::Default()->GetChildren(test_dir, &files);
     if (!FLAGS_use_existing_db) {
       for (int i = 0; i < files.size(); i++) {
         if (Slice(files[i]).starts_with("dbbench_sqlite3")) {
-          Env::Default()->DeleteFile("/tmp/" + files[i]);
+          std::string file_name(test_dir);
+          file_name += "/";
+          file_name += files[i];
+          Env::Default()->DeleteFile(file_name.c_str());
         }
       }
     }
@@ -415,7 +423,11 @@ class Benchmark {
     db_num_++;
 
     // Open database
-    snprintf(file_name, sizeof(file_name), "/tmp/dbbench_sqlite3-%d.db",
+    std::string tmp_dir;
+    Env::Default()->GetTestDirectory(&tmp_dir);
+    snprintf(file_name, sizeof(file_name),
+             "%s/dbbench_sqlite3-%d.db",
+             tmp_dir.c_str(),
              db_num_);
     status = sqlite3_open(file_name, &db_);
     if (status) {
@@ -655,6 +667,7 @@ class Benchmark {
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
+  std::string default_db_path;
   for (int i = 1; i < argc; i++) {
     double d;
     int n;
@@ -684,10 +697,19 @@ int main(int argc, char** argv) {
     } else if (sscanf(argv[i], "--WAL_enabled=%d%c", &n, &junk) == 1 &&
                (n == 0 || n == 1)) {
       FLAGS_WAL_enabled = n;
+    } else if (strncmp(argv[i], "--db=", 5) == 0) {
+      FLAGS_db = argv[i] + 5;
     } else {
       fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
       exit(1);
     }
+  }
+
+  // Choose a location for the test database if none given with --db=<path>
+  if (FLAGS_db == NULL) {
+      leveldb::Env::Default()->GetTestDirectory(&default_db_path);
+      default_db_path += "/dbbench";
+      FLAGS_db = default_db_path.c_str();
   }
 
   leveldb::Benchmark benchmark;

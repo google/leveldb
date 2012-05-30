@@ -173,6 +173,15 @@ class VersionSet {
   // Allocate and return a new file number
   uint64_t NewFileNumber() { return next_file_number_++; }
 
+  // Arrange to reuse "file_number" unless a newer file number has
+  // already been allocated.
+  // REQUIRES: "file_number" was returned by a call to NewFileNumber().
+  void ReuseFileNumber(uint64_t file_number) {
+    if (next_file_number_ == file_number + 1) {
+      next_file_number_ = file_number;
+    }
+  }
+
   // Return the number of Table files at the specified level.
   int NumLevelFiles(int level) const;
 

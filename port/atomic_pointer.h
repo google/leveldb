@@ -73,13 +73,21 @@ inline void MemoryBarrier() {
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
 
-// ARM
-#elif defined(ARCH_CPU_ARM_FAMILY)
+// ARM Linux
+#elif defined(ARCH_CPU_ARM_FAMILY) && defined(__linux__)
 typedef void (*LinuxKernelMemoryBarrierFunc)(void);
-LinuxKernelMemoryBarrierFunc pLinuxKernelMemoryBarrier __attribute__((weak)) =
-    (LinuxKernelMemoryBarrierFunc) 0xffff0fa0;
+// The Linux ARM kernel provides a highly optimized device-specific memory
+// barrier function at a fixed memory address that is mapped in every
+// user-level process.
+//
+// This beats using CPU-specific instructions which are, on single-core
+// devices, un-necessary and very costly (e.g. ARMv7-A "dmb" takes more
+// than 180ns on a Cortex-A8 like the one on a Nexus One). Benchmarking
+// shows that the extra function call cost is completely negligible on
+// multi-core devices.
+//
 inline void MemoryBarrier() {
-  pLinuxKernelMemoryBarrier();
+  (*(LinuxKernelMemoryBarrierFunc)0xffff0fa0)();
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
 

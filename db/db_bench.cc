@@ -100,7 +100,7 @@ static int FLAGS_bloom_bits = -1;
 static bool FLAGS_use_existing_db = false;
 
 // Use the db with the following name.
-static const char* FLAGS_db = "/tmp/dbbench";
+static const char* FLAGS_db = NULL;
 
 namespace leveldb {
 
@@ -925,6 +925,7 @@ class Benchmark {
 int main(int argc, char** argv) {
   FLAGS_write_buffer_size = leveldb::Options().write_buffer_size;
   FLAGS_open_files = leveldb::Options().max_open_files;
+  std::string default_db_path;
 
   for (int i = 1; i < argc; i++) {
     double d;
@@ -962,6 +963,13 @@ int main(int argc, char** argv) {
       fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
       exit(1);
     }
+  }
+
+  // Choose a location for the test database if none given with --db=<path>
+  if (FLAGS_db == NULL) {
+      leveldb::Env::Default()->GetTestDirectory(&default_db_path);
+      default_db_path += "/dbbench";
+      FLAGS_db = default_db_path.c_str();
   }
 
   leveldb::Benchmark benchmark;

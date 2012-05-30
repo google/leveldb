@@ -3,8 +3,6 @@
 # found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 # Inherit some settings from environment variables, if available
-CXX ?= g++
-CC  ?= gcc
 INSTALL_PATH ?= $(CURDIR)
 
 #-----------------------------------------------
@@ -63,6 +61,13 @@ default: all
 
 # Should we build shared libraries?
 ifneq ($(PLATFORM_SHARED_EXT),)
+
+ifneq ($(PLATFORM_SHARED_VERSIONED),true)
+SHARED1 = libleveldb.$(PLATFORM_SHARED_EXT)
+SHARED2 = $(SHARED1)
+SHARED3 = $(SHARED1)
+SHARED = $(SHARED1)
+else
 # Update db.h if you change these.
 SHARED_MAJOR = 1
 SHARED_MINOR = 4
@@ -70,13 +75,16 @@ SHARED1 = libleveldb.$(PLATFORM_SHARED_EXT)
 SHARED2 = $(SHARED1).$(SHARED_MAJOR)
 SHARED3 = $(SHARED1).$(SHARED_MAJOR).$(SHARED_MINOR)
 SHARED = $(SHARED1) $(SHARED2) $(SHARED3)
-$(SHARED3):
-	$(CXX) $(LDFLAGS) $(PLATFORM_SHARED_LDFLAGS)$(INSTALL_PATH)/$(SHARED2) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(SOURCES) -o $(SHARED3)
-$(SHARED2): $(SHARED3)
-	ln -fs $(SHARED3) $(SHARED2)
 $(SHARED1): $(SHARED3)
 	ln -fs $(SHARED3) $(SHARED1)
+$(SHARED2): $(SHARED3)
+	ln -fs $(SHARED3) $(SHARED2)
 endif
+
+$(SHARED3):
+	$(CXX) $(LDFLAGS) $(PLATFORM_SHARED_LDFLAGS)$(SHARED2) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(SOURCES) -o $(SHARED3)
+
+endif  # PLATFORM_SHARED_EXT
 
 all: $(SHARED) $(LIBRARY)
 
@@ -164,9 +172,10 @@ memenv_test : helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHAR
 ifeq ($(PLATFORM), IOS)
 # For iOS, create universal object files to be used on both the simulator and
 # a device.
-SIMULATORROOT=/Developer/Platforms/iPhoneSimulator.platform/Developer
-DEVICEROOT=/Developer/Platforms/iPhoneOS.platform/Developer
-IOSVERSION=$(shell defaults read /Developer/Platforms/iPhoneOS.platform/version CFBundleShortVersionString)
+PLATFORMSROOT=/Applications/Xcode.app/Contents/Developer/Platforms
+SIMULATORROOT=$(PLATFORMSROOT)/iPhoneSimulator.platform/Developer
+DEVICEROOT=$(PLATFORMSROOT)/iPhoneOS.platform/Developer
+IOSVERSION=$(shell defaults read $(PLATFORMSROOT)/iPhoneOS.platform/version CFBundleShortVersionString)
 
 .cc.o:
 	mkdir -p ios-x86/$(dir $@)

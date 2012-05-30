@@ -7,17 +7,22 @@
 #ifndef STORAGE_LEVELDB_PORT_PORT_POSIX_H_
 #define STORAGE_LEVELDB_PORT_PORT_POSIX_H_
 
+#undef PLATFORM_IS_LITTLE_ENDIAN
 #if defined(OS_MACOSX)
   #include <machine/endian.h>
+  #if defined(__DARWIN_LITTLE_ENDIAN) && defined(__DARWIN_BYTE_ORDER)
+    #define PLATFORM_IS_LITTLE_ENDIAN \
+        (__DARWIN_BYTE_ORDER == __DARWIN_LITTLE_ENDIAN)
+  #endif
 #elif defined(OS_SOLARIS)
   #include <sys/isa_defs.h>
   #ifdef _LITTLE_ENDIAN
-    #define LITTLE_ENDIAN
+    #define PLATFORM_IS_LITTLE_ENDIAN true
   #else
-    #define BIG_ENDIAN
+    #define PLATFORM_IS_LITTLE_ENDIAN false
   #endif
 #elif defined(OS_FREEBSD) || defined(OS_OPENBSD) || defined(OS_NETBSD) ||\
-      defined(OS_DRAGONFLYBSD)
+      defined(OS_DRAGONFLYBSD) || defined(OS_ANDROID)
   #include <sys/types.h>
   #include <sys/endian.h>
 #else
@@ -31,14 +36,13 @@
 #include <string>
 #include "port/atomic_pointer.h"
 
-#ifdef LITTLE_ENDIAN
-#define IS_LITTLE_ENDIAN true
-#else
-#define IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
+#ifndef PLATFORM_IS_LITTLE_ENDIAN
+#define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #endif
 
 #if defined(OS_MACOSX) || defined(OS_SOLARIS) || defined(OS_FREEBSD) ||\
-    defined(OS_NETBSD) || defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD)
+    defined(OS_NETBSD) || defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD) ||\
+    defined(OS_ANDROID)
 // Use fread/fwrite/fflush on platforms without _unlocked variants
 #define fread_unlocked fread
 #define fwrite_unlocked fwrite
@@ -51,10 +55,17 @@
 #define fdatasync fsync
 #endif
 
+#if defined(OS_ANDROID) && __ANDROID_API__ < 9
+// fdatasync() was only introduced in API level 9 on Android. Use fsync()
+// when targetting older platforms.
+#define fdatasync fsync
+#endif
+
 namespace leveldb {
 namespace port {
 
-static const bool kLittleEndian = IS_LITTLE_ENDIAN;
+static const bool kLittleEndian = PLATFORM_IS_LITTLE_ENDIAN;
+#undef PLATFORM_IS_LITTLE_ENDIAN
 
 class CondVar;
 
@@ -87,6 +98,10 @@ class CondVar {
   pthread_cond_t cv_;
   Mutex* mu_;
 };
+
+typedef pthread_once_t OnceType;
+#define LEVELDB_ONCE_INIT PTHREAD_ONCE_INIT
+extern void InitOnce(OnceType* once, void (*initializer)());
 
 inline bool Snappy_Compress(const char* input, size_t length,
                             ::std::string* output) {
