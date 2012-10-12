@@ -23,8 +23,9 @@
 #
 
 OUTPUT=$1
-if test -z "$OUTPUT"; then
-  echo "usage: $0 <output-filename>" >&2
+PREFIX=$2
+if test -z "$OUTPUT" || test -z "$PREFIX"; then
+  echo "usage: $0 <output-filename> <directory_prefix>" >&2
   exit 1
 fi
 
@@ -55,57 +56,71 @@ PLATFORM_SHARED_LDFLAGS="-shared -Wl,-soname -Wl,"
 PLATFORM_SHARED_CFLAGS="-fPIC"
 PLATFORM_SHARED_VERSIONED=true
 
-# On GCC, we pick libc's memcmp over GCC's memcmp via -fno-builtin-memcmp
+MEMCMP_FLAG=
+if [ "$CXX" = "g++" ]; then
+    # Use libc's memcmp instead of GCC's memcmp.  This results in ~40%
+    # performance improvement on readrandom under gcc 4.4.3 on Linux/x86.
+    MEMCMP_FLAG="-fno-builtin-memcmp"
+fi
+
 case "$TARGET_OS" in
     Darwin)
         PLATFORM=OS_MACOSX
-        COMMON_FLAGS="-fno-builtin-memcmp -DOS_MACOSX"
+        COMMON_FLAGS="$MEMCMP_FLAG -DOS_MACOSX"
         PLATFORM_SHARED_EXT=dylib
         PLATFORM_SHARED_LDFLAGS="-dynamiclib -install_name "
         PORT_FILE=port/port_posix.cc
         ;;
     Linux)
         PLATFORM=OS_LINUX
-        COMMON_FLAGS="-fno-builtin-memcmp -pthread -DOS_LINUX"
+        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX"
         PLATFORM_LDFLAGS="-pthread"
         PORT_FILE=port/port_posix.cc
         ;;
     SunOS)
         PLATFORM=OS_SOLARIS
-        COMMON_FLAGS="-fno-builtin-memcmp -D_REENTRANT -DOS_SOLARIS"
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_SOLARIS"
         PLATFORM_LDFLAGS="-lpthread -lrt"
         PORT_FILE=port/port_posix.cc
         ;;
     FreeBSD)
         PLATFORM=OS_FREEBSD
-        COMMON_FLAGS="-fno-builtin-memcmp -D_REENTRANT -DOS_FREEBSD"
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_FREEBSD"
         PLATFORM_LDFLAGS="-lpthread"
         PORT_FILE=port/port_posix.cc
         ;;
     NetBSD)
         PLATFORM=OS_NETBSD
-        COMMON_FLAGS="-fno-builtin-memcmp -D_REENTRANT -DOS_NETBSD"
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_NETBSD"
         PLATFORM_LDFLAGS="-lpthread -lgcc_s"
         PORT_FILE=port/port_posix.cc
         ;;
     OpenBSD)
         PLATFORM=OS_OPENBSD
-        COMMON_FLAGS="-fno-builtin-memcmp -D_REENTRANT -DOS_OPENBSD"
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_OPENBSD"
         PLATFORM_LDFLAGS="-pthread"
         PORT_FILE=port/port_posix.cc
         ;;
     DragonFly)
         PLATFORM=OS_DRAGONFLYBSD
-        COMMON_FLAGS="-fno-builtin-memcmp -D_REENTRANT -DOS_DRAGONFLYBSD"
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_DRAGONFLYBSD"
         PLATFORM_LDFLAGS="-lpthread"
         PORT_FILE=port/port_posix.cc
         ;;
     OS_ANDROID_CROSSCOMPILE)
         PLATFORM=OS_ANDROID
-        COMMON_FLAGS="-fno-builtin-memcmp -D_REENTRANT -DOS_ANDROID -DLEVELDB_PLATFORM_POSIX"
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_ANDROID -DLEVELDB_PLATFORM_POSIX"
         PLATFORM_LDFLAGS=""  # All pthread features are in the Android C library
         PORT_FILE=port/port_posix.cc
         CROSS_COMPILE=true
+        ;;
+    HP-UX)
+        PLATFORM=OS_HPUX
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_HPUX"
+        PLATFORM_LDFLAGS="-pthread"
+        PORT_FILE=port/port_posix.cc
+        # man ld: +h internal_name
+        PLATFORM_SHARED_LDFLAGS="-shared -Wl,+h -Wl,"
         ;;
     *)
         echo "Unknown platform!" >&2
@@ -116,11 +131,13 @@ esac
 # except for the test and benchmark files. By default, find will output a list
 # of all files matching either rule, so we need to append -print to make the
 # prune take effect.
-DIRS="util db table"
+DIRS="$PREFIX/db $PREFIX/util $PREFIX/table"
+
 set -f # temporarily disable globbing so that our patterns aren't expanded
 PRUNE_TEST="-name *test*.cc -prune"
 PRUNE_BENCH="-name *_bench.cc -prune"
-PORTABLE_FILES=`find $DIRS $PRUNE_TEST -o $PRUNE_BENCH -o -name '*.cc' -print | sort | tr "\n" " "`
+PORTABLE_FILES=`find $DIRS $PRUNE_TEST -o $PRUNE_BENCH -o -name '*.cc' -print | sort | sed "s,^$PREFIX/,," | tr "\n" " "`
+
 set +f # re-enable globbing
 
 # The sources consist of the portable files, plus the platform-specific port
@@ -133,7 +150,7 @@ if [ "$CROSS_COMPILE" = "true" ]; then
     true
 else
     # If -std=c++0x works, use <cstdatomic>.  Otherwise use port_posix.h.
-    $CXX $CFLAGS -std=c++0x -x c++ - -o /dev/null 2>/dev/null  <<EOF
+    $CXX $CXXFLAGS -std=c++0x -x c++ - -o /dev/null 2>/dev/null  <<EOF
       #include <cstdatomic>
       int main() {}
 EOF
@@ -146,7 +163,7 @@ EOF
 
     # Test whether Snappy library is installed
     # http://code.google.com/p/snappy/
-    $CXX $CFLAGS -x c++ - -o /dev/null 2>/dev/null  <<EOF
+    $CXX $CXXFLAGS -x c++ - -o /dev/null 2>/dev/null  <<EOF
       #include <snappy.h>
       int main() {}
 EOF
@@ -156,7 +173,7 @@ EOF
     fi
 
     # Test whether tcmalloc is available
-    $CXX $CFLAGS -x c++ - -o /dev/null -ltcmalloc 2>/dev/null  <<EOF
+    $CXX $CXXFLAGS -x c++ - -o /dev/null -ltcmalloc 2>/dev/null  <<EOF
       int main() {}
 EOF
     if [ "$?" = 0 ]; then

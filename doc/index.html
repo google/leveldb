@@ -408,7 +408,7 @@ The optional <code>FilterPolicy</code> mechanism can be used to reduce
 the number of disk reads substantially.
 <pre>
    leveldb::Options options;
-   options.filter_policy = NewBloomFilter(10);
+   options.filter_policy = NewBloomFilterPolicy(10);
    leveldb::DB* db;
    leveldb::DB::Open(options, "/tmp/testdb", &amp;db);
    ... use the database ...

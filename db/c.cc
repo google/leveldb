@@ -578,4 +578,8 @@ void leveldb_env_destroy(leveldb_env_t* env) {
   delete env;
 }
 
+void leveldb_free(void* ptr) {
+  free(ptr);
+}
+
 }  // end extern "C"

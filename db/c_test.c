@@ -204,6 +204,12 @@ int main(int argc, char** argv) {
   CheckCondition(err != NULL);
   Free(&err);
 
+  StartPhase("leveldb_free");
+  db = leveldb_open(options, dbname, &err);
+  CheckCondition(err != NULL);
+  leveldb_free(err);
+  err = NULL;
+
   StartPhase("open");
   leveldb_options_set_create_if_missing(options, 1);
   db = leveldb_open(options, dbname, &err);
