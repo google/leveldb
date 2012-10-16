@@ -165,6 +165,9 @@ int main(int argc, char** argv) {
   char* err = NULL;
   int run = -1;
 
+  CheckCondition(leveldb_major_version() >= 1);
+  CheckCondition(leveldb_minor_version() >= 1);
+
   snprintf(dbname, sizeof(dbname),
            "%s/leveldb_c_test-%d",
            GetTempDir(),

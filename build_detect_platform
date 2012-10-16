@@ -7,8 +7,11 @@
 #   CC                          C Compiler path
 #   CXX                         C++ Compiler path
 #   PLATFORM_LDFLAGS            Linker flags
+#   PLATFORM_LIBS               Libraries flags
 #   PLATFORM_SHARED_EXT         Extension for shared libraries
 #   PLATFORM_SHARED_LDFLAGS     Flags for building shared library
+#                               This flag is embedded just before the name
+#                               of the shared library without intervening spaces
 #   PLATFORM_SHARED_CFLAGS      Flags for compiling objects for shared library
 #   PLATFORM_CCFLAGS            C compiler flags
 #   PLATFORM_CXXFLAGS           C++ compiler flags.  Will contain:
@@ -51,6 +54,7 @@ CROSS_COMPILE=
 PLATFORM_CCFLAGS=
 PLATFORM_CXXFLAGS=
 PLATFORM_LDFLAGS=
+PLATFORM_LIBS=
 PLATFORM_SHARED_EXT="so"
 PLATFORM_SHARED_LDFLAGS="-shared -Wl,-soname -Wl,"
 PLATFORM_SHARED_CFLAGS="-fPIC"
@@ -68,7 +72,8 @@ case "$TARGET_OS" in
         PLATFORM=OS_MACOSX
         COMMON_FLAGS="$MEMCMP_FLAG -DOS_MACOSX"
         PLATFORM_SHARED_EXT=dylib
-        PLATFORM_SHARED_LDFLAGS="-dynamiclib -install_name "
+        [ -z "$INSTALL_PATH" ] && INSTALL_PATH=`pwd`
+        PLATFORM_SHARED_LDFLAGS="-dynamiclib -install_name $INSTALL_PATH/"
         PORT_FILE=port/port_posix.cc
         ;;
     Linux)
@@ -80,19 +85,19 @@ case "$TARGET_OS" in
     SunOS)
         PLATFORM=OS_SOLARIS
         COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_SOLARIS"
-        PLATFORM_LDFLAGS="-lpthread -lrt"
+        PLATFORM_LIBS="-lpthread -lrt"
         PORT_FILE=port/port_posix.cc
         ;;
     FreeBSD)
         PLATFORM=OS_FREEBSD
         COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_FREEBSD"
-        PLATFORM_LDFLAGS="-lpthread"
+        PLATFORM_LIBS="-lpthread"
         PORT_FILE=port/port_posix.cc
         ;;
     NetBSD)
         PLATFORM=OS_NETBSD
         COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_NETBSD"
-        PLATFORM_LDFLAGS="-lpthread -lgcc_s"
+        PLATFORM_LIBS="-lpthread -lgcc_s"
         PORT_FILE=port/port_posix.cc
         ;;
     OpenBSD)
@@ -104,7 +109,7 @@ case "$TARGET_OS" in
     DragonFly)
         PLATFORM=OS_DRAGONFLYBSD
         COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_DRAGONFLYBSD"
-        PLATFORM_LDFLAGS="-lpthread"
+        PLATFORM_LIBS="-lpthread"
         PORT_FILE=port/port_posix.cc
         ;;
     OS_ANDROID_CROSSCOMPILE)
@@ -169,7 +174,7 @@ EOF
 EOF
     if [ "$?" = 0 ]; then
         COMMON_FLAGS="$COMMON_FLAGS -DSNAPPY"
-        PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS -lsnappy"
+        PLATFORM_LIBS="$PLATFORM_LIBS -lsnappy"
     fi
 
     # Test whether tcmalloc is available
@@ -177,7 +182,7 @@ EOF
       int main() {}
 EOF
     if [ "$?" = 0 ]; then
-        PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS -ltcmalloc"
+        PLATFORM_LIBS="$PLATFORM_LIBS -ltcmalloc"
     fi
 fi
 
@@ -188,6 +193,7 @@ echo "CC=$CC" >> $OUTPUT
 echo "CXX=$CXX" >> $OUTPUT
 echo "PLATFORM=$PLATFORM" >> $OUTPUT
 echo "PLATFORM_LDFLAGS=$PLATFORM_LDFLAGS" >> $OUTPUT
+echo "PLATFORM_LIBS=$PLATFORM_LIBS" >> $OUTPUT
 echo "PLATFORM_CCFLAGS=$PLATFORM_CCFLAGS" >> $OUTPUT
 echo "PLATFORM_CXXFLAGS=$PLATFORM_CXXFLAGS" >> $OUTPUT
 echo "PLATFORM_SHARED_CFLAGS=$PLATFORM_SHARED_CFLAGS" >> $OUTPUT

@@ -2,9 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-# Inherit some settings from environment variables, if available
-INSTALL_PATH ?= $(CURDIR)
-
 #-----------------------------------------------
 # Uncomment exactly one of the lines labelled (A), (B), and (C) below
 # to switch between compilation modes.
@@ -24,6 +21,7 @@ CFLAGS += -I. -I./include $(PLATFORM_CCFLAGS) $(OPT)
 CXXFLAGS += -I. -I./include $(PLATFORM_CXXFLAGS) $(OPT)
 
 LDFLAGS += $(PLATFORM_LDFLAGS)
+LIBS += $(PLATFORM_LIBS)
 
 LIBOBJECTS = $(SOURCES:.cc=.o)
 MEMENVOBJECTS = $(MEMENV_SOURCES:.cc=.o)
@@ -71,7 +69,7 @@ SHARED = $(SHARED1)
 else
 # Update db.h if you change these.
 SHARED_MAJOR = 1
-SHARED_MINOR = 6
+SHARED_MINOR = 7
 SHARED1 = libleveldb.$(PLATFORM_SHARED_EXT)
 SHARED2 = $(SHARED1).$(SHARED_MAJOR)
 SHARED3 = $(SHARED1).$(SHARED_MAJOR).$(SHARED_MINOR)
@@ -83,7 +81,7 @@ $(SHARED2): $(SHARED3)
 endif
 
 $(SHARED3):
-	$(CXX) $(SOURCES) $(LDFLAGS) $(PLATFORM_SHARED_LDFLAGS)$(INSTALL_PATH)$(SHARED2) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) -o $(SHARED3)
+	$(CXX) $(LDFLAGS) $(PLATFORM_SHARED_LDFLAGS)$(SHARED2) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(SOURCES) -o $(SHARED3) $(LIBS)
 
 endif  # PLATFORM_SHARED_EXT
 
@@ -101,74 +99,74 @@ $(LIBRARY): $(LIBOBJECTS)
 	$(AR) -rs $@ $(LIBOBJECTS)
 
 db_bench: db/db_bench.o $(LIBOBJECTS) $(TESTUTIL)
-	$(CXX) db/db_bench.o $(LIBOBJECTS) $(TESTUTIL) -o $@  $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/db_bench.o $(LIBOBJECTS) $(TESTUTIL) -o $@ $(LIBS)
 
 db_bench_sqlite3: doc/bench/db_bench_sqlite3.o $(LIBOBJECTS) $(TESTUTIL)
-	$(CXX) doc/bench/db_bench_sqlite3.o $(LIBOBJECTS) $(TESTUTIL) -o $@ $(LDFLAGS) -lsqlite3
+	$(CXX) $(LDFLAGS) doc/bench/db_bench_sqlite3.o $(LIBOBJECTS) $(TESTUTIL) -o $@ -lsqlite3 $(LIBS)
 
 db_bench_tree_db: doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL)
-	$(CXX) doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL) -o $@ $(LDFLAGS) -lkyotocabinet
+	$(CXX) $(LDFLAGS) doc/bench/db_bench_tree_db.o $(LIBOBJECTS) $(TESTUTIL) -o $@ -lkyotocabinet $(LIBS)
 
 arena_test: util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) util/arena_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 bloom_test: util/bloom_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) util/bloom_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) util/bloom_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 c_test: db/c_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 cache_test: util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) util/cache_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 coding_test: util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) util/coding_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 corruption_test: db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/corruption_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 crc32c_test: util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) util/crc32c_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 db_test: db/db_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/db_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/db_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 dbformat_test: db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 env_test: util/env_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) util/env_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) util/env_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 filename_test: db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 filter_block_test: table/filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) table/filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) table/filter_block_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 log_test: db/log_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/log_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/log_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 table_test: table/table_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) table/table_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) table/table_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 skiplist_test: db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/skiplist_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 version_edit_test: db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/version_edit_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 version_set_test: db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/version_set_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 write_batch_test: db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS)
-	$(CXX) db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) db/write_batch_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 $(MEMENVLIBRARY) : $(MEMENVOBJECTS)
 	rm -f $@
 	$(AR) -rs $@ $(MEMENVOBJECTS)
 
 memenv_test : helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHARNESS)
-	$(CXX) helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHARNESS) -o $@ $(LDFLAGS)
+	$(CXX) $(LDFLAGS) helpers/memenv/memenv_test.o $(MEMENVLIBRARY) $(LIBRARY) $(TESTHARNESS) -o $@ $(LIBS)
 
 ifeq ($(PLATFORM), IOS)
 # For iOS, create universal object files to be used on both the simulator and
