@@ -310,15 +310,23 @@ Status DBImpl::Recover(VersionEdit* edit) {
     if (!s.ok()) {
       return s;
     }
+    std::set<uint64_t> expected;
+    versions_->AddLiveFiles(&expected);
     uint64_t number;
     FileType type;
     std::vector<uint64_t> logs;
     for (size_t i = 0; i < filenames.size(); i++) {
-      if (ParseFileName(filenames[i], &number, &type)
-          && type == kLogFile
-          && ((number >= min_log) || (number == prev_log))) {
-        logs.push_back(number);
+      if (ParseFileName(filenames[i], &number, &type)) {
+        expected.erase(number);
+        if (type == kLogFile && ((number >= min_log) || (number == prev_log)))
+          logs.push_back(number);
       }
+    }
+    if (!expected.empty()) {
+      char buf[50];
+      snprintf(buf, sizeof(buf), "%d missing files; e.g.",
+               static_cast<int>(expected.size()));
+      return Status::Corruption(buf, TableFileName(dbname_, *(expected.begin())));
     }
 
     // Recover in the order in which the logs were generated
