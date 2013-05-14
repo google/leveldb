@@ -385,7 +385,7 @@ class PosixEnv : public Env {
   PosixEnv();
   virtual ~PosixEnv() {
     fprintf(stderr, "Destroying Env::Default()\n");
-    exit(1);
+    abort();
   }
 
   virtual Status NewSequentialFile(const std::string& fname,
@@ -588,7 +588,7 @@ class PosixEnv : public Env {
   void PthreadCall(const char* label, int result) {
     if (result != 0) {
       fprintf(stderr, "pthread %s: %s\n", label, strerror(result));
-      exit(1);
+      abort();
     }
   }
 
