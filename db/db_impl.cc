@@ -35,6 +35,8 @@
 
 namespace leveldb {
 
+const int kNumNonTableCacheFiles = 10;
+
 // Information kept for every waiting writer
 struct DBImpl::Writer {
   Status status;
@@ -92,9 +94,9 @@ Options SanitizeOptions(const std::string& dbname,
   Options result = src;
   result.comparator = icmp;
   result.filter_policy = (src.filter_policy != NULL) ? ipolicy : NULL;
-  ClipToRange(&result.max_open_files,            20,     50000);
-  ClipToRange(&result.write_buffer_size,         64<<10, 1<<30);
-  ClipToRange(&result.block_size,                1<<10,  4<<20);
+  ClipToRange(&result.max_open_files,    64 + kNumNonTableCacheFiles, 50000);
+  ClipToRange(&result.write_buffer_size, 64<<10,                      1<<30);
+  ClipToRange(&result.block_size,        1<<10,                       4<<20);
   if (result.info_log == NULL) {
     // Open a log file in the same directory as the db
     src.env->CreateDir(dbname);  // In case it does not exist
@@ -130,12 +132,13 @@ DBImpl::DBImpl(const Options& options, const std::string& dbname)
       log_(NULL),
       tmp_batch_(new WriteBatch),
       bg_compaction_scheduled_(false),
-      manual_compaction_(NULL) {
+      manual_compaction_(NULL),
+      consecutive_compaction_errors_(0) {
   mem_->Ref();
   has_imm_.Release_Store(NULL);
 
   // Reserve ten files or so for other uses and give the rest to TableCache.
-  const int table_cache_size = options.max_open_files - 10;
+  const int table_cache_size = options.max_open_files - kNumNonTableCacheFiles;
   table_cache_ = new TableCache(dbname_, &options_, table_cache_size);
 
   versions_ = new VersionSet(dbname_, &options_, table_cache_,
@@ -619,6 +622,7 @@ void DBImpl::BackgroundCall() {
     Status s = BackgroundCompaction();
     if (s.ok()) {
       // Success
+      consecutive_compaction_errors_ = 0;
     } else if (shutting_down_.Acquire_Load()) {
       // Error most likely due to shutdown; do not wait
     } else {
@@ -630,7 +634,12 @@ void DBImpl::BackgroundCall() {
       Log(options_.info_log, "Waiting after background compaction error: %s",
           s.ToString().c_str());
       mutex_.Unlock();
-      env_->SleepForMicroseconds(1000000);
+      ++consecutive_compaction_errors_;
+      int seconds_to_sleep = 1;
+      for (int i = 0; i < 3 && i < consecutive_compaction_errors_ - 1; ++i) {
+        seconds_to_sleep *= 2;
+      }
+      env_->SleepForMicroseconds(seconds_to_sleep * 1000000);
       mutex_.Lock();
     }
   }
