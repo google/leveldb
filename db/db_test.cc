@@ -147,7 +147,7 @@ class SpecialEnv : public EnvWrapper {
 
     Status s = target()->NewWritableFile(f, r);
     if (s.ok()) {
-      if (strstr(f.c_str(), ".sst") != NULL) {
+      if (strstr(f.c_str(), ".ldb") != NULL) {
         *r = new SSTableFile(this, *r);
       } else if (strstr(f.c_str(), "MANIFEST") != NULL) {
         *r = new ManifestFile(this, *r);
@@ -483,6 +483,24 @@ class DBTest {
       }
     }
     return false;
+  }
+
+  // Returns number of files renamed.
+  int RenameLDBToSST() {
+    std::vector<std::string> filenames;
+    ASSERT_OK(env_->GetChildren(dbname_, &filenames));
+    uint64_t number;
+    FileType type;
+    int files_renamed = 0;
+    for (size_t i = 0; i < filenames.size(); i++) {
+      if (ParseFileName(filenames[i], &number, &type) && type == kTableFile) {
+        const std::string from = TableFileName(dbname_, number);
+        const std::string to = SSTTableFileName(dbname_, number);
+        ASSERT_OK(env_->RenameFile(from, to));
+        files_renamed++;
+      }
+    }
+    return files_renamed;
   }
 };
 
@@ -1630,6 +1648,22 @@ TEST(DBTest, MissingSSTFile) {
   ASSERT_TRUE(!s.ok());
   ASSERT_TRUE(s.ToString().find("issing") != std::string::npos)
       << s.ToString();
+}
+
+TEST(DBTest, StillReadSST) {
+  ASSERT_OK(Put("foo", "bar"));
+  ASSERT_EQ("bar", Get("foo"));
+
+  // Dump the memtable to disk.
+  dbfull()->TEST_CompactMemTable();
+  ASSERT_EQ("bar", Get("foo"));
+  Close();
+  ASSERT_GT(RenameLDBToSST(), 0);
+  Options options = CurrentOptions();
+  options.paranoid_checks = true;
+  Status s = TryReopen(&options);
+  ASSERT_TRUE(s.ok());
+  ASSERT_EQ("bar", Get("foo"));
 }
 
 TEST(DBTest, FilesDeletedAfterCompaction) {
