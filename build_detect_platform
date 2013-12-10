@@ -131,6 +131,16 @@ case "$TARGET_OS" in
         # man ld: +h internal_name
         PLATFORM_SHARED_LDFLAGS="-shared -Wl,+h -Wl,"
         ;;
+    IOS)
+        PLATFORM=IOS
+        COMMON_FLAGS="$MEMCMP_FLAG -DOS_MACOSX"
+        [ -z "$INSTALL_PATH" ] && INSTALL_PATH=`pwd`
+        PORT_FILE=port/port_posix.cc
+        PLATFORM_SHARED_EXT=
+        PLATFORM_SHARED_LDFLAGS=
+        PLATFORM_SHARED_CFLAGS=
+        PLATFORM_SHARED_VERSIONED=
+        ;;
     *)
         echo "Unknown platform!" >&2
         exit 1
