@@ -1047,15 +1047,16 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
     list.push_back(imm_->NewIterator());
     imm_->Ref();
   }
-  versions_->current()->AddIterators(options, &list);
+  Version* current = versions_->current();
+  current->AddIterators(options, &list);
   Iterator* internal_iter =
       NewMergingIterator(&internal_comparator_, &list[0], list.size());
-  versions_->current()->Ref();
+  current->Ref();
 
   cleanup->mu = &mutex_;
   cleanup->mem = mem_;
   cleanup->imm = imm_;
-  cleanup->version = versions_->current();
+  cleanup->version = current;
   internal_iter->RegisterCleanup(CleanupIteratorState, cleanup, NULL);
 
   *seed = ++seed_;
@@ -1407,8 +1408,8 @@ void DBImpl::GetApproximateSizes(
   Version* v;
   {
     MutexLock l(&mutex_);
-    versions_->current()->Ref();
     v = versions_->current();
+    v->Ref();
   }
 
   for (int i = 0; i < n; i++) {
