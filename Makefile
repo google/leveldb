@@ -59,6 +59,10 @@ BENCHMARKS = \
 	doc/bench/db_bench_sqlite3 \
 	doc/bench/db_bench_tree_db
 
+PREFIX ?= /usr/local
+LIBDIR ?= lib
+INCLUDEDIR ?= include
+
 CFLAGS += -I. -I./include $(PLATFORM_CCFLAGS) $(OPT)
 CXXFLAGS += -I. -I./include $(PLATFORM_CXXFLAGS) $(OPT)
 
@@ -136,16 +140,35 @@ endif
 $(SHARED_OUTDIR)/$(SHARED_LIB3): $(SHARED_LIBOBJECTS)
 	$(CXX) $(LDFLAGS) $(PLATFORM_SHARED_LDFLAGS)$(SHARED_LIB2) $(SHARED_LIBOBJECTS) -o $(SHARED_OUTDIR)/$(SHARED_LIB3) $(LIBS)
 
+PKG_CONFIG = leveldb.pc
+$(PKG_CONFIG): $(PKG_CONFIG).in
+	sed -e 's![@]prefix[@]!$(PREFIX)!g' \
+	    -e 's![@]version[@]!$(SHARED_MAJOR).$(SHARED_MINOR)!g' \
+	    $(PKG_CONFIG).in > $@
+
 endif  # PLATFORM_SHARED_EXT
 
-all: $(SHARED_LIBS) $(SHARED_PROGRAMS) $(STATIC_OUTDIR)/libleveldb.a $(STATIC_OUTDIR)/libmemenv.a $(STATIC_PROGRAMS)
+all: $(SHARED_LIBS) $(SHARED_PROGRAMS) $(STATIC_OUTDIR)/libleveldb.a $(STATIC_OUTDIR)/libmemenv.a $(STATIC_PROGRAMS) $(PKG_CONFIG)
+
+install: all
+	install -d $(DESTDIR)$(PREFIX)/$(LIBDIR)
+	install -d $(DESTDIR)$(PREFIX)/$(INCLUDEDIR)/leveldb
+	install -m 0644 $(LIBRARY) $(DESTDIR)$(PREFIX)/$(LIBDIR)
+ifneq ($(PLATFORM_SHARED_EXT),)
+	install -d $(DESTDIR)$(PREFIX)/$(LIBDIR)/pkgconfig
+	install -m 0644 $(PKG_CONFIG) $(DESTDIR)$(PREFIX)/$(LIBDIR)/pkgconfig
+	install -m 0644 $(SHARED3) $(DESTDIR)$(PREFIX)/$(LIBDIR)
+	cd $(DESTDIR)$(PREFIX)/$(LIBDIR) && ln -sf $(SHARED3) $(SHARED2)
+	cd $(DESTDIR)$(PREFIX)/$(LIBDIR) && ln -sf $(SHARED3) $(SHARED1)
+endif
+	install -m 0644 include/leveldb/* $(DESTDIR)$(PREFIX)/$(INCLUDEDIR)/leveldb
 
 check: $(STATIC_PROGRAMS)
 	for t in $(notdir $(TESTS)); do echo "***** Running $$t"; $(STATIC_OUTDIR)/$$t || exit 1; done
 
 clean:
 	-rm -rf out-static out-shared out-ios-x86 out-ios-arm out-ios-universal
-	-rm -f build_config.mk
+	-rm -f build_config.mk $(PKG_CONFIG)
 	-rm -rf ios-x86 ios-arm
 
 $(STATIC_OUTDIR):
