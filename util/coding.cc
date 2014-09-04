@@ -10,10 +10,9 @@ void EncodeFixed32(char* buf, uint32_t value) {
   if (port::kLittleEndian) {
     memcpy(buf, &value, sizeof(value));
   } else {
-    buf[0] = value & 0xff;
-    buf[1] = (value >> 8) & 0xff;
-    buf[2] = (value >> 16) & 0xff;
-    buf[3] = (value >> 24) & 0xff;
+    for (size_t i=0; i < 4; i ++) {
+      buf[i] = (value >> (i*8)) & 0xff;
+    }
   }
 }
 
@@ -21,14 +20,9 @@ void EncodeFixed64(char* buf, uint64_t value) {
   if (port::kLittleEndian) {
     memcpy(buf, &value, sizeof(value));
   } else {
-    buf[0] = value & 0xff;
-    buf[1] = (value >> 8) & 0xff;
-    buf[2] = (value >> 16) & 0xff;
-    buf[3] = (value >> 24) & 0xff;
-    buf[4] = (value >> 32) & 0xff;
-    buf[5] = (value >> 40) & 0xff;
-    buf[6] = (value >> 48) & 0xff;
-    buf[7] = (value >> 56) & 0xff;
+    for (int i = 0; i < 8; i++) {
+      buf[i] = (value >> (i*8)) & 0xff;
+    }
   }
 }
 
@@ -48,27 +42,11 @@ char* EncodeVarint32(char* dst, uint32_t v) {
   // Operate on characters as unsigneds
   unsigned char* ptr = reinterpret_cast<unsigned char*>(dst);
   static const int B = 128;
-  if (v < (1<<7)) {
-    *(ptr++) = v;
-  } else if (v < (1<<14)) {
-    *(ptr++) = v | B;
-    *(ptr++) = v>>7;
-  } else if (v < (1<<21)) {
-    *(ptr++) = v | B;
-    *(ptr++) = (v>>7) | B;
-    *(ptr++) = v>>14;
-  } else if (v < (1<<28)) {
-    *(ptr++) = v | B;
-    *(ptr++) = (v>>7) | B;
-    *(ptr++) = (v>>14) | B;
-    *(ptr++) = v>>21;
-  } else {
-    *(ptr++) = v | B;
-    *(ptr++) = (v>>7) | B;
-    *(ptr++) = (v>>14) | B;
-    *(ptr++) = (v>>21) | B;
-    *(ptr++) = v>>28;
+  while (v >= B) {
+    *(ptr++) = (v & (B-1)) | B;
+    v >>= 7;
   }
+  *(ptr++) = static_cast<unsigned char>(v);
   return reinterpret_cast<char*>(ptr);
 }
 
