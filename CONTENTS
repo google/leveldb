@@ -1,6 +1,3 @@
-leveldb: A key-value store
-Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
-
 The code under this directory implements a system for maintaining a
 persistent key/value store.
 
