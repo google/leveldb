@@ -49,6 +49,7 @@ TESTS = \
 	db_test \
 	dbformat_test \
 	env_test \
+	fault_injection_test \
 	filename_test \
 	filter_block_test \
 	hash_test \
@@ -154,6 +155,9 @@ dbformat_test: db/dbformat_test.o $(LIBOBJECTS) $(TESTHARNESS)
 
 env_test: util/env_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) $(LDFLAGS) util/env_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
+
+fault_injection_test: db/fault_injection_test.o $(LIBOBJECTS) $(TESTHARNESS)
+	$(CXX) $(LDFLAGS) db/fault_injection_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 filename_test: db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) $(LDFLAGS) db/filename_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
