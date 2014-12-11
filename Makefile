@@ -57,6 +57,7 @@ TESTS = \
 	issue200_test \
 	log_test \
 	memenv_test \
+	recovery_test \
 	skiplist_test \
 	table_test \
 	version_edit_test \
@@ -176,6 +177,9 @@ issue200_test: issues/issue200_test.o $(LIBOBJECTS) $(TESTHARNESS)
 
 log_test: db/log_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) $(LDFLAGS) db/log_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
+
+recovery_test: db/recovery_test.o $(LIBOBJECTS) $(TESTHARNESS)
+	$(CXX) $(LDFLAGS) db/recovery_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
 table_test: table/table_test.o $(LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) $(LDFLAGS) table/table_test.o $(LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)

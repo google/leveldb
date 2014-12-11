@@ -106,7 +106,7 @@ struct FileState {
 // is written to or sync'ed.
 class TestWritableFile : public WritableFile {
  public:
-  TestWritableFile(const std::string& fname,
+  TestWritableFile(const FileState& state,
                    WritableFile* f,
                    FaultInjectionTestEnv* env);
   virtual ~TestWritableFile();
@@ -130,6 +130,8 @@ class FaultInjectionTestEnv : public EnvWrapper {
   virtual ~FaultInjectionTestEnv() { }
   virtual Status NewWritableFile(const std::string& fname,
                                  WritableFile** result);
+  virtual Status NewAppendableFile(const std::string& fname,
+                                   WritableFile** result);
   virtual Status DeleteFile(const std::string& f);
   virtual Status RenameFile(const std::string& s, const std::string& t);
 
@@ -154,15 +156,14 @@ class FaultInjectionTestEnv : public EnvWrapper {
   bool filesystem_active_;  // Record flushes, syncs, writes
 };
 
-TestWritableFile::TestWritableFile(const std::string& fname,
+TestWritableFile::TestWritableFile(const FileState& state,
                                    WritableFile* f,
                                    FaultInjectionTestEnv* env)
-    : state_(fname),
+    : state_(state),
       target_(f),
       writable_file_opened_(true),
       env_(env) {
   assert(f != NULL);
-  state_.pos_ = 0;
 }
 
 TestWritableFile::~TestWritableFile() {
@@ -228,12 +229,35 @@ Status FaultInjectionTestEnv::NewWritableFile(const std::string& fname,
   WritableFile* actual_writable_file;
   Status s = target()->NewWritableFile(fname, &actual_writable_file);
   if (s.ok()) {
-    *result = new TestWritableFile(fname, actual_writable_file, this);
-    // WritableFile doesn't append to files, so if the same file is opened again
-    // then it will be truncated - so forget our saved state.
+    FileState state(fname);
+    state.pos_ = 0;
+    *result = new TestWritableFile(state, actual_writable_file, this);
+    // NewWritableFile doesn't append to files, so if the same file is
+    // opened again then it will be truncated - so forget our saved
+    // state.
     UntrackFile(fname);
     MutexLock l(&mutex_);
     new_files_since_last_dir_sync_.insert(fname);
+  }
+  return s;
+}
+
+Status FaultInjectionTestEnv::NewAppendableFile(const std::string& fname,
+                                                WritableFile** result) {
+  WritableFile* actual_writable_file;
+  Status s = target()->NewAppendableFile(fname, &actual_writable_file);
+  if (s.ok()) {
+    FileState state(fname);
+    state.pos_ = 0;
+    {
+      MutexLock l(&mutex_);
+      if (db_file_state_.count(fname) == 0) {
+        new_files_since_last_dir_sync_.insert(fname);
+      } else {
+        state = db_file_state_[fname];
+      }
+    }
+    *result = new TestWritableFile(state, actual_writable_file, this);
   }
   return s;
 }
@@ -301,9 +325,10 @@ Status FaultInjectionTestEnv::RenameFile(const std::string& s,
 }
 
 void FaultInjectionTestEnv::ResetState() {
+  // Since we are not destroying the database, the existing files
+  // should keep their recorded synced/flushed state. Therefore
+  // we do not reset db_file_state_ and new_files_since_last_dir_sync_.
   MutexLock l(&mutex_);
-  db_file_state_.clear();
-  new_files_since_last_dir_sync_.clear();
   SetFilesystemActive(true);
 }
 
@@ -342,51 +367,28 @@ class FaultInjectionTest {
   Options options_;
   DB* db_;
 
-  FaultInjectionTest() : env_(NULL), tiny_cache_(NULL), db_(NULL) { NewDB(); }
-
-  ~FaultInjectionTest() { ASSERT_OK(TearDown()); }
-
-  Status NewDB() {
-    assert(db_ == NULL);
-    assert(tiny_cache_ == NULL);
-    assert(env_ == NULL);
-
-    env_ = new FaultInjectionTestEnv();
-
-    options_ = Options();
+  FaultInjectionTest()
+      : env_(new FaultInjectionTestEnv),
+        tiny_cache_(NewLRUCache(100)),
+        db_(NULL) {
+    dbname_ = test::TmpDir() + "/fault_test";
+    DestroyDB(dbname_, Options());  // Destroy any db from earlier run
+    options_.reuse_logs = true;
     options_.env = env_;
     options_.paranoid_checks = true;
-
-    tiny_cache_ = NewLRUCache(100);
     options_.block_cache = tiny_cache_;
-    dbname_ = test::TmpDir() + "/fault_test";
-
     options_.create_if_missing = true;
-    Status s = OpenDB();
-    options_.create_if_missing = false;
-    return s;
   }
 
-  Status SetUp() {
-    Status s = TearDown();
-    if (s.ok()) {
-      s = NewDB();
-    }
-    return s;
-  }
-
-  Status TearDown() {
+  ~FaultInjectionTest() {
     CloseDB();
-
-    Status s = DestroyDB(dbname_, Options());
-
+    DestroyDB(dbname_, Options());
     delete tiny_cache_;
-    tiny_cache_ = NULL;
-
     delete env_;
-    env_ = NULL;
+  }
 
-    return s;
+  void ReuseLogs(bool reuse) {
+    options_.reuse_logs = reuse;
   }
 
   void Build(int start_idx, int num_vals) {
@@ -506,33 +508,43 @@ class FaultInjectionTest {
     ResetDBState(reset_method);
     ASSERT_OK(OpenDB());
   }
+
+  void DoTest() {
+    Random rnd(0);
+    ASSERT_OK(OpenDB());
+    for (size_t idx = 0; idx < kNumIterations; idx++) {
+      int num_pre_sync = rnd.Uniform(kMaxNumValues);
+      int num_post_sync = rnd.Uniform(kMaxNumValues);
+
+      PartialCompactTestPreFault(num_pre_sync, num_post_sync);
+      PartialCompactTestReopenWithFault(RESET_DROP_UNSYNCED_DATA,
+                                        num_pre_sync,
+                                        num_post_sync);
+
+      NoWriteTestPreFault();
+      NoWriteTestReopenWithFault(RESET_DROP_UNSYNCED_DATA);
+
+      PartialCompactTestPreFault(num_pre_sync, num_post_sync);
+      // No new files created so we expect all values since no files will be
+      // dropped.
+      PartialCompactTestReopenWithFault(RESET_DELETE_UNSYNCED_FILES,
+                                        num_pre_sync + num_post_sync,
+                                        0);
+
+      NoWriteTestPreFault();
+      NoWriteTestReopenWithFault(RESET_DELETE_UNSYNCED_FILES);
+    }
+  }
 };
 
-TEST(FaultInjectionTest, FaultTest) {
-  Random rnd(0);
-  ASSERT_OK(SetUp());
-  for (size_t idx = 0; idx < kNumIterations; idx++) {
-    int num_pre_sync = rnd.Uniform(kMaxNumValues);
-    int num_post_sync = rnd.Uniform(kMaxNumValues);
+TEST(FaultInjectionTest, FaultTestNoLogReuse) {
+  ReuseLogs(false);
+  DoTest();
+}
 
-    PartialCompactTestPreFault(num_pre_sync, num_post_sync);
-    PartialCompactTestReopenWithFault(RESET_DROP_UNSYNCED_DATA,
-                                      num_pre_sync,
-                                      num_post_sync);
-
-    NoWriteTestPreFault();
-    NoWriteTestReopenWithFault(RESET_DROP_UNSYNCED_DATA);
-
-    PartialCompactTestPreFault(num_pre_sync, num_post_sync);
-    // No new files created so we expect all values since no files will be
-    // dropped.
-    PartialCompactTestReopenWithFault(RESET_DELETE_UNSYNCED_FILES,
-                                      num_pre_sync + num_post_sync,
-                                      0);
-
-    NoWriteTestPreFault();
-    NoWriteTestReopenWithFault(RESET_DELETE_UNSYNCED_FILES);
-  }
+TEST(FaultInjectionTest, FaultTestWithLogReuse) {
+  ReuseLogs(true);
+  DoTest();
 }
 
 }  // namespace leveldb

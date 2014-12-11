@@ -104,7 +104,7 @@ class LogTest {
   StringSource source_;
   ReportCollector report_;
   bool reading_;
-  Writer writer_;
+  Writer* writer_;
   Reader reader_;
 
   // Record metadata for testing initial offset functionality
@@ -113,14 +113,23 @@ class LogTest {
 
  public:
   LogTest() : reading_(false),
-              writer_(&dest_),
+              writer_(new Writer(&dest_)),
               reader_(&source_, &report_, true/*checksum*/,
                       0/*initial_offset*/) {
   }
 
+  ~LogTest() {
+    delete writer_;
+  }
+
+  void ReopenForAppend() {
+    delete writer_;
+    writer_ = new Writer(&dest_, dest_.contents_.size());
+  }
+
   void Write(const std::string& msg) {
     ASSERT_TRUE(!reading_) << "Write() after starting to read";
-    writer_.AddRecord(Slice(msg));
+    writer_->AddRecord(Slice(msg));
   }
 
   size_t WrittenBytes() const {
@@ -315,6 +324,15 @@ TEST(LogTest, AlignedEof) {
   Write(BigString("foo", n));
   ASSERT_EQ(kBlockSize - kHeaderSize + 4, WrittenBytes());
   ASSERT_EQ(BigString("foo", n), Read());
+  ASSERT_EQ("EOF", Read());
+}
+
+TEST(LogTest, OpenForAppend) {
+  Write("hello");
+  ReopenForAppend();
+  Write("world");
+  ASSERT_EQ("hello", Read());
+  ASSERT_EQ("world", Read());
   ASSERT_EQ("EOF", Read());
 }
 
