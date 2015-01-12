@@ -229,3 +229,19 @@ else
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
 endif
+
+INSTALL_ROOT =
+INSTALL_PREFIX= usr/local
+
+install: $(SHARED) $(LIBRARY)
+	install -d -m 0755 $(INSTALL_ROOT)/$(INSTALL_PREFIX)/include/leveldb
+	install -D -m 0644 include/leveldb/*.h $(INSTALL_ROOT)/$(INSTALL_PREFIX)/include/leveldb
+	install -d -m 0755 $(INSTALL_ROOT)/$(INSTALL_PREFIX)/lib
+  ifneq (,$(LIBRARY))
+	install -m 0644 $(LIBRARY) $(INSTALL_ROOT)/$(INSTALL_PREFIX)/lib
+  endif
+  ifneq (,$(SHARED))
+	install -m 0755 $(SHARED3) $(INSTALL_ROOT)/$(INSTALL_PREFIX)/lib
+	ln -sf $(SHARED3) $(INSTALL_ROOT)/$(INSTALL_PREFIX)/lib/$(SHARED1)
+	ln -sf $(SHARED3) $(INSTALL_ROOT)/$(INSTALL_PREFIX)/lib/$(SHARED2)
+  endif
