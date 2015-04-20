@@ -823,7 +823,7 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
       Log(options_.info_log,
           "Generated table #%llu@%d: %lld keys, %lld bytes",
           (unsigned long long) output_number,
-		  compact->compaction->level(),
+          compact->compaction->level(),
           (unsigned long long) current_entries,
           (unsigned long long) current_bytes);
     }
