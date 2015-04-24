@@ -64,6 +64,12 @@ static const char* FLAGS_benchmarks =
 // Number of key/values to place in database
 static int FLAGS_num = 1000000;
 
+static int FLAGS_seed = 0;
+
+static int FLAGS_sync = 0;
+
+static int FLAGS_writes_per_second = 0;
+
 // Number of read operations to do.  If negative, do FLAGS_num reads.
 static int FLAGS_reads = -1;
 
@@ -86,7 +92,7 @@ static int FLAGS_write_buffer_size = 0;
 
 // Number of bytes to use as a cache of uncompressed data.
 // Negative means use default settings.
-static int FLAGS_cache_size = -1;
+static long FLAGS_cache_size = -1;
 
 // Maximum number of files to keep open at the same time (use default if == 0)
 static int FLAGS_open_files = 0;
@@ -294,7 +300,7 @@ struct ThreadState {
 
   ThreadState(int index)
       : tid(index),
-        rand(1000 + index) {
+        rand((FLAGS_seed ? FLAGS_seed : 1000) + index) {
   }
 };
 
@@ -442,6 +448,8 @@ class Benchmark {
       void (Benchmark::*method)(ThreadState*) = NULL;
       bool fresh_db = false;
       int num_threads = FLAGS_threads;
+
+      write_options_.sync = FLAGS_sync;
 
       if (name == Slice("open")) {
         method = &Benchmark::OpenBench;
@@ -875,6 +883,18 @@ class Benchmark {
     } else {
       // Special thread that keeps writing until other threads are done.
       RandomGenerator gen;
+
+      double last = Env::Default()->NowMicros();
+      int writes_per_second_by_10 = 0;
+      int num_writes = 0;
+      int64_t bytes = 0;
+  
+      // --writes_per_second rate limit is enforced per 100 milliseconds
+      // intervals to avoid a burst of writes at the start of each second.
+
+      if (FLAGS_writes_per_second > 0)
+        writes_per_second_by_10 = FLAGS_writes_per_second / 10;
+
       while (true) {
         {
           MutexLock l(&thread->shared->mu);
@@ -891,6 +911,20 @@ class Benchmark {
         if (!s.ok()) {
           fprintf(stderr, "put error: %s\n", s.ToString().c_str());
           exit(1);
+        }
+
+        ++num_writes;
+        if (writes_per_second_by_10 && num_writes >= writes_per_second_by_10) {
+          double now = Env::Default()->NowMicros();
+          double usecs_since_last = now - last;
+
+          num_writes = 0;
+          last = now;
+
+          if (usecs_since_last < 100000.0) {
+            Env::Default()->SleepForMicroseconds(100000.0 - usecs_since_last);
+            last = Env::Default()->NowMicros();
+          }
         }
       }
 
@@ -943,6 +977,7 @@ int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
     double d;
     int n;
+    long l;
     char junk;
     if (leveldb::Slice(argv[i]).starts_with("--benchmarks=")) {
       FLAGS_benchmarks = argv[i] + strlen("--benchmarks=");
@@ -958,14 +993,20 @@ int main(int argc, char** argv) {
       FLAGS_num = n;
     } else if (sscanf(argv[i], "--reads=%d%c", &n, &junk) == 1) {
       FLAGS_reads = n;
+    } else if (sscanf(argv[i], "--sync=%d%c", &n, &junk) == 1) {
+      FLAGS_sync = n;
+    } else if (sscanf(argv[i], "--seed=%d%c", &n, &junk) == 1) {
+      FLAGS_seed = n;
+    } else if (sscanf(argv[i], "--writes_per_second=%d%c", &n, &junk) == 1) {
+      FLAGS_writes_per_second = n;
     } else if (sscanf(argv[i], "--threads=%d%c", &n, &junk) == 1) {
       FLAGS_threads = n;
     } else if (sscanf(argv[i], "--value_size=%d%c", &n, &junk) == 1) {
       FLAGS_value_size = n;
     } else if (sscanf(argv[i], "--write_buffer_size=%d%c", &n, &junk) == 1) {
       FLAGS_write_buffer_size = n;
-    } else if (sscanf(argv[i], "--cache_size=%d%c", &n, &junk) == 1) {
-      FLAGS_cache_size = n;
+    } else if (sscanf(argv[i], "--cache_size=%ld%c", &l, &junk) == 1) {
+      FLAGS_cache_size = l;
     } else if (sscanf(argv[i], "--bloom_bits=%d%c", &n, &junk) == 1) {
       FLAGS_bloom_bits = n;
     } else if (sscanf(argv[i], "--open_files=%d%c", &n, &junk) == 1) {

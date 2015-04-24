@@ -159,7 +159,7 @@ struct ReadOptions {
   const Snapshot* snapshot;
 
   ReadOptions()
-      : verify_checksums(false),
+      : verify_checksums(true),
         fill_cache(true),
         snapshot(NULL) {
   }
