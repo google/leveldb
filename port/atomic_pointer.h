@@ -39,6 +39,18 @@
 #define ARCH_CPU_ARM64_FAMILY 1
 #elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
 #define ARCH_CPU_PPC_FAMILY 1
+#elif defined(__ia64__)
+#define ARCH_CPU_IA64_FAMILY 1
+#elif defined(__alpha__)
+#define ARCH_CPU_ALPHA_FAMILY 1
+#elif defined(__s390x__) || defined(__s390__)
+#define ARCH_CPU_S390_FAMILY 1
+#elif defined(__sparc__) || defined(__sparc64__)
+#define ARCH_CPU_SPARC_FAMILY 1
+#elif defined(__sh__)
+#define ARCH_CPU_SH_FAMILY 1
+#elif defined(__hppa__) || defined(__parisc__)
+#define ARCH_CPU_PARISC_FAMILY 1
 #endif
 
 namespace leveldb {
@@ -53,14 +65,25 @@ namespace port {
 
 // Mac OS
 #elif defined(OS_MACOSX)
-inline void MemoryBarrier() {
+inline void ReadMemoryBarrier() {
+  OSMemoryBarrier();
+}
+inline void WriteMemoryBarrier() {
   OSMemoryBarrier();
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
 
+#define ReadMemoryBarrier MemoryBarrier()
+#define WriteMemoryBarrier MemoryBarrier()
+
 // Gcc on x86
 #elif defined(ARCH_CPU_X86_FAMILY) && defined(__GNUC__)
-inline void MemoryBarrier() {
+inline void ReadMemoryBarrier() {
+  // See http://gcc.gnu.org/ml/gcc/2003-04/msg01180.html for a discussion on
+  // this idiom. Also see http://en.wikipedia.org/wiki/Memory_ordering.
+  __asm__ __volatile__("" : : : "memory");
+}
+inline void WriteMemoryBarrier() {
   // See http://gcc.gnu.org/ml/gcc/2003-04/msg01180.html for a discussion on
   // this idiom. Also see http://en.wikipedia.org/wiki/Memory_ordering.
   __asm__ __volatile__("" : : : "memory");
@@ -69,7 +92,12 @@ inline void MemoryBarrier() {
 
 // Sun Studio
 #elif defined(ARCH_CPU_X86_FAMILY) && defined(__SUNPRO_CC)
-inline void MemoryBarrier() {
+inline void ReadMemoryBarrier() {
+  // See http://gcc.gnu.org/ml/gcc/2003-04/msg01180.html for a discussion on
+  // this idiom. Also see http://en.wikipedia.org/wiki/Memory_ordering.
+  asm volatile("" : : : "memory");
+}
+inline void WriteMemoryBarrier() {
   // See http://gcc.gnu.org/ml/gcc/2003-04/msg01180.html for a discussion on
   // this idiom. Also see http://en.wikipedia.org/wiki/Memory_ordering.
   asm volatile("" : : : "memory");
@@ -89,7 +117,10 @@ typedef void (*LinuxKernelMemoryBarrierFunc)(void);
 // shows that the extra function call cost is completely negligible on
 // multi-core devices.
 //
-inline void MemoryBarrier() {
+inline void ReadMemoryBarrier() {
+  (*(LinuxKernelMemoryBarrierFunc)0xffff0fa0)();
+}
+inline void WriteMemoryBarrier() {
   (*(LinuxKernelMemoryBarrierFunc)0xffff0fa0)();
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
@@ -103,10 +134,89 @@ inline void MemoryBarrier() {
 
 // PPC
 #elif defined(ARCH_CPU_PPC_FAMILY) && defined(__GNUC__)
-inline void MemoryBarrier() {
-  // TODO for some powerpc expert: is there a cheaper suitable variant?
-  // Perhaps by having separate barriers for acquire and release ops.
-  asm volatile("sync" : : : "memory");
+
+inline void ReadMemoryBarrier() {
+#ifdef __powerpc64__
+  __asm__ __volatile__ ("lwsync" : : : "memory");
+#else
+  __asm__ __volatile__ ("sync" : : : "memory");
+#endif
+}
+inline void WriteMemoryBarrier() {
+  __asm__ __volatile__ ("sync" : : : "memory");
+}
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
+// IA64
+#elif defined(ARCH_CPU_IA64_FAMILY)
+inline void ReadMemoryBarrier() {
+  __asm__ __volatile__ ("mf" : : : "memory");
+}
+inline void WriteMemoryBarrier() {
+  __asm__ __volatile__ ("mf" : : : "memory");
+}
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
+// ALPHA
+#elif defined(ARCH_CPU_ALPHA_FAMILY)
+
+inline void ReadMemoryBarrier() {
+  __asm__ __volatile__("mb" : : : "memory");
+}
+inline void WriteMemoryBarrier() {
+  __asm__ __volatile__("wmb" : : : "memory");
+}
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
+// S390
+#elif defined(ARCH_CPU_S390_FAMILY)
+
+inline void ReadMemoryBarrier() {
+  asm volatile("bcr 15,0" : : : "memory");
+}
+inline void WriteMemoryBarrier() {
+  asm volatile("bcr 15,0" : : : "memory");
+}
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
+// SPARC
+#elif defined(ARCH_CPU_SPARC_FAMILY)
+
+inline void ReadMemoryBarrier() {
+  __asm__ __volatile__("" : : : "memory");
+}
+inline void WriteMemoryBarrier() {
+  __asm__ __volatile__("" : : : "memory");
+}
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
+// SH
+#elif defined(ARCH_CPU_SH_FAMILY)
+#if defined(__SH4A__) || defined(__SH5__)
+inline void ReadMemoryBarrier() {
+  __asm__ __volatile__ ("synco": : :"memory");
+}
+inline void WriteMemoryBarrier() {
+  __asm__ __volatile__ ("synco": : :"memory");
+}
+#else
+inline void ReadMemoryBarrier() {
+  __asm__ __volatile__ ("": : :"memory");
+}
+inline void WriteMemoryBarrier() {
+  __asm__ __volatile__ ("": : :"memory");
+}
+#endif
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
+// PARISC
+#elif defined(ARCH_CPU_PARISC_FAMILY)
+
+inline void ReadMemoryBarrier() {
+  __asm__ __volatile__("" : : : "memory");
+}
+inline void WriteMemoryBarrier() {
+  __asm__ __volatile__("" : : : "memory");
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
 
@@ -124,11 +234,11 @@ class AtomicPointer {
   inline void NoBarrier_Store(void* v) { rep_ = v; }
   inline void* Acquire_Load() const {
     void* result = rep_;
-    MemoryBarrier();
+    ReadMemoryBarrier();
     return result;
   }
   inline void Release_Store(void* v) {
-    MemoryBarrier();
+    WriteMemoryBarrier();
     rep_ = v;
   }
 };
@@ -226,6 +336,12 @@ class AtomicPointer {
 #undef ARCH_CPU_ARM_FAMILY
 #undef ARCH_CPU_ARM64_FAMILY
 #undef ARCH_CPU_PPC_FAMILY
+#undef ARCH_CPU_IA64_FAMILY
+#undef ARCH_CPU_ALPHA_FAMILY
+#undef ARCH_CPU_S390_FAMILY
+#undef ARCH_CPU_SPARC_FAMILY
+#undef ARCH_CPU_SH_FAMILY
+#undef ARCH_CPU_PARISC_FAMILY
 
 }  // namespace port
 }  // namespace leveldb
