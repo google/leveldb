@@ -167,7 +167,13 @@ void DBIter::Next() {
     SaveKey(ExtractUserKey(iter_->key()), &saved_key_);
   }
 
-  FindNextUserEntry(true, &saved_key_);
+  iter_->Next();
+  if (!iter_->Valid()) {
+    valid_ = false;
+    saved_key_.clear();
+  } else {
+    FindNextUserEntry(true, &saved_key_);
+  }
 }
 
 void DBIter::FindNextUserEntry(bool skipping, std::string* skip) {
