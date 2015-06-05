@@ -35,6 +35,8 @@
 #define ARCH_CPU_X86_FAMILY 1
 #elif defined(__ARMEL__)
 #define ARCH_CPU_ARM_FAMILY 1
+#elif defined(__aarch64__)
+#define ARCH_CPU_ARM64_FAMILY 1
 #elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
 #define ARCH_CPU_PPC_FAMILY 1
 #endif
@@ -89,6 +91,13 @@ typedef void (*LinuxKernelMemoryBarrierFunc)(void);
 //
 inline void MemoryBarrier() {
   (*(LinuxKernelMemoryBarrierFunc)0xffff0fa0)();
+}
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
+// ARM64
+#elif defined(ARCH_CPU_ARM64_FAMILY)
+inline void MemoryBarrier() {
+  asm volatile("dmb sy" : : : "memory");
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
 
@@ -215,6 +224,7 @@ class AtomicPointer {
 #undef LEVELDB_HAVE_MEMORY_BARRIER
 #undef ARCH_CPU_X86_FAMILY
 #undef ARCH_CPU_ARM_FAMILY
+#undef ARCH_CPU_ARM64_FAMILY
 #undef ARCH_CPU_PPC_FAMILY
 
 }  // namespace port
