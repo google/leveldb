@@ -1017,6 +1017,9 @@ Status VersionSet::Recover(bool *save_manifest) {
 
 bool VersionSet::ReuseManifest(const std::string& dscname,
                                const std::string& dscbase) {
+  if (!options_->reuse_logs) {
+    return false;
+  }
   FileType manifest_type;
   uint64_t manifest_number;
   uint64_t manifest_size;
