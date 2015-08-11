@@ -25,7 +25,8 @@ Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
       eof_(false),
       last_record_offset_(0),
       end_of_buffer_offset_(0),
-      initial_offset_(initial_offset) {
+      initial_offset_(initial_offset),
+      resyncing_(initial_offset > 0) {
 }
 
 Reader::~Reader() {
@@ -74,6 +75,17 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   while (true) {
     uint64_t physical_record_offset = end_of_buffer_offset_ - buffer_.size();
     const unsigned int record_type = ReadPhysicalRecord(&fragment);
+    if (resyncing_) {
+      if (record_type == kMiddleType) {
+        continue;
+      } else if (record_type == kLastType) {
+        resyncing_ = false;
+        continue;
+      } else {
+        resyncing_ = false;
+      }
+    }
+
     switch (record_type) {
       case kFullType:
         if (in_fragmented_record) {
