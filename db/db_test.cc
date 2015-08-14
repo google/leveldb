@@ -1894,6 +1894,8 @@ class ModelDB: public DB {
   }
   virtual void CompactRange(const Slice* start, const Slice* end) {
   }
+  virtual void ClearCache() {
+  }
 
  private:
   class ModelIter: public Iterator {

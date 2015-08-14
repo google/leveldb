@@ -124,4 +124,8 @@ void TableCache::Evict(uint64_t file_number) {
   cache_->Erase(Slice(buf, sizeof(buf)));
 }
 
+void TableCache::ClearCache() {
+  cache_->ClearCache();
+}
+
 }  // namespace leveldb

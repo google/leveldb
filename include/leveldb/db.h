@@ -140,6 +140,9 @@ class DB {
   //    db->CompactRange(NULL, NULL);
   virtual void CompactRange(const Slice* begin, const Slice* end) = 0;
 
+  // Clear all cache that safely evictable.
+  virtual void ClearCache() = 0;
+
  private:
   // No copying allowed
   DB(const DB&);
