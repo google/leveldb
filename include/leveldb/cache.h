@@ -81,6 +81,9 @@ class Cache {
   // its cache keys.
   virtual uint64_t NewId() = 0;
 
+  // Clear all cache entries that has no reference.
+  virtual void ClearCache() = 0;
+
  private:
   void LRU_Remove(Handle* e);
   void LRU_Append(Handle* e);

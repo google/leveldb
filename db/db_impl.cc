@@ -550,6 +550,12 @@ void DBImpl::CompactRange(const Slice* begin, const Slice* end) {
   }
 }
 
+void DBImpl::ClearCache() {
+  MutexLock l(&mutex_);
+  table_cache_->ClearCache();
+  options_.block_cache->ClearCache();
+}
+
 void DBImpl::TEST_CompactRange(int level, const Slice* begin,const Slice* end) {
   assert(level >= 0);
   assert(level + 1 < config::kNumLevels);
