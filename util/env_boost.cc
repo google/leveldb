@@ -402,8 +402,10 @@ class PosixEnv : public Env {
       boost::interprocess::file_lock fl(fname.c_str());
       BoostFileLock * my_lock = new BoostFileLock();
       my_lock->fl_ = std::move(fl);
-      my_lock->fl_.lock();
-      *lock = my_lock;
+      if (my_lock->fl_.try_lock())
+        *lock = my_lock;
+      else
+        result = Status::IOError("acquiring lock " + fname + " failed");
     } catch (const std::exception & e) {
       result = Status::IOError("lock " + fname, e.what());
     }
