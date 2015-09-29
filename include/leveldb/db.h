@@ -115,6 +115,8 @@ class DB {
   //     about the internal operation of the DB.
   //  "leveldb.sstables" - returns a multi-line string that describes all
   //     of the sstables that make up the db contents.
+  //  "leveldb.approximate-memory-usage" - returns the approximate number of
+  //     bytes of memory in use by the DB.
   virtual bool GetProperty(const Slice& property, std::string* value) = 0;
 
   // For each i in [0,n-1], store in "sizes[i]", the approximate

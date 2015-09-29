@@ -1425,6 +1425,19 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
   } else if (in == "sstables") {
     *value = versions_->current()->DebugString();
     return true;
+  } else if (in == "approximate-memory-usage") {
+    size_t total_usage = options_.block_cache->TotalCharge();
+    if (mem_) {
+      total_usage += mem_->ApproximateMemoryUsage();
+    }
+    if (imm_) {
+      total_usage += imm_->ApproximateMemoryUsage();
+    }
+    char buf[50];
+    snprintf(buf, sizeof(buf), "%llu",
+             static_cast<unsigned long long>(total_usage));
+    value->append(buf);
+    return true;
   }
 
   return false;
