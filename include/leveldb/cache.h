@@ -88,6 +88,10 @@ class Cache {
   // leveldb may change Prune() to a pure abstract method.
   virtual void Prune() {}
 
+  // Return an estimate of the combined charges of all elements stored in the
+  // cache.
+  virtual size_t TotalCharge() const = 0;
+
  private:
   void LRU_Remove(Handle* e);
   void LRU_Append(Handle* e);

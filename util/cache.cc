@@ -148,6 +148,10 @@ class LRUCache {
   void Release(Cache::Handle* handle);
   void Erase(const Slice& key, uint32_t hash);
   void Prune();
+  size_t TotalCharge() const {
+    MutexLock l(&mutex_);
+    return usage_;
+  }
 
  private:
   void LRU_Remove(LRUHandle* e);
@@ -158,7 +162,7 @@ class LRUCache {
   size_t capacity_;
 
   // mutex_ protects the following state.
-  port::Mutex mutex_;
+  mutable port::Mutex mutex_;
   size_t usage_;
 
   // Dummy head of LRU list.
@@ -332,6 +336,13 @@ class ShardedLRUCache : public Cache {
     for (int s = 0; s < kNumShards; s++) {
       shard_[s].Prune();
     }
+  }
+  virtual size_t TotalCharge() const {
+    size_t total = 0;
+    for (int s = 0; s < kNumShards; s++) {
+      total += shard_[s].TotalCharge();
+    }
+    return total;
   }
 };
 

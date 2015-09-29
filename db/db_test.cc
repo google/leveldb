@@ -563,6 +563,17 @@ TEST(DBTest, GetFromVersions) {
   } while (ChangeOptions());
 }
 
+TEST(DBTest, GetMemUsage) {
+  do {
+    ASSERT_OK(Put("foo", "v1"));
+    std::string val;
+    ASSERT_TRUE(db_->GetProperty("leveldb.approximate-memory-usage", &val));
+    int mem_usage = atoi(val.c_str());
+    ASSERT_GT(mem_usage, 0);
+    ASSERT_LT(mem_usage, 5*1024*1024);
+  } while (ChangeOptions());
+}
+
 TEST(DBTest, GetSnapshot) {
   do {
     // Try with both a short key and a long key
