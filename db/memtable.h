@@ -63,6 +63,11 @@ class MemTable {
   // Else, return false.
   bool Get(const LookupKey& key, std::string* value, Status* s);
 
+  // Returns last sequence number for table
+  inline SequenceNumber GetSequence() const {
+    return last_sequence_;
+  }
+
  private:
   ~MemTable();  // Private since only Unref() should be used to delete it
 
@@ -80,6 +85,7 @@ class MemTable {
   int refs_;
   Arena arena_;
   Table table_;
+  SequenceNumber last_sequence_;
 
   // No copying allowed
   MemTable(const MemTable&);

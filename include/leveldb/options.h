@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
 namespace leveldb {
 
@@ -14,6 +15,7 @@ class Comparator;
 class Env;
 class FilterPolicy;
 class Logger;
+class SequencePolicy;
 class Snapshot;
 
 // DB contents are stored in a set of blocks, each of which holds a
@@ -135,6 +137,20 @@ struct Options {
   // Default: NULL
   const FilterPolicy* filter_policy;
 
+  // Next sequence for write could be chosen by applying user-defined
+  // logic, say generating timestamps instead of default counter.
+  //
+  // Default: NULL
+  const SequencePolicy* sequence_policy;
+
+  // If custom sequence policy used we will store additional metadata
+  // to keep track of "last sequence" for file.
+  //
+  // This feature is backward compatible with the existing databases,
+  // so we could read "old" data with no problem, but "new" data
+  // could not be read by old code, so use it with caution!
+  bool AllowNewMetadata() const { return sequence_policy != NULL; }
+
   // Create an Options object with default values for all fields.
   Options();
 };
@@ -158,10 +174,16 @@ struct ReadOptions {
   // Default: NULL
   const Snapshot* snapshot;
 
+  // If specified, will limit age (in terms of SequencePolicy) of records
+  // read from underlying storage.
+  // Default: 0
+  uint64_t min_sequence;
+
   ReadOptions()
       : verify_checksums(false),
         fill_cache(true),
-        snapshot(NULL) {
+        snapshot(NULL),
+        min_sequence(0) {
   }
 };
 

@@ -25,6 +25,7 @@
 #include "leveldb/status.h"
 #include "leveldb/table.h"
 #include "leveldb/table_builder.h"
+#include "leveldb/sequence_policy.h"
 #include "port/port.h"
 #include "table/block.h"
 #include "table/merger.h"
@@ -62,6 +63,7 @@ struct DBImpl::CompactionState {
     uint64_t number;
     uint64_t file_size;
     InternalKey smallest, largest;
+    SequenceNumber last_sequence;
   };
   std::vector<Output> outputs;
 
@@ -190,7 +192,7 @@ Status DBImpl::NewDB() {
   {
     log::Writer log(file);
     std::string record;
-    new_db.EncodeTo(&record);
+    new_db.EncodeTo(&record, options_.AllowNewMetadata());
     s = log.AddRecord(record);
     if (s.ok()) {
       s = file->Close();
@@ -460,6 +462,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   const uint64_t start_micros = env_->NowMicros();
   FileMetaData meta;
   meta.number = versions_->NewFileNumber();
+  meta.last_sequence = mem->GetSequence();
   pending_outputs_.insert(meta.number);
   Iterator* iter = mem->NewIterator();
   Log(options_.info_log, "Level-0 table #%llu: started",
@@ -479,7 +482,6 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   delete iter;
   pending_outputs_.erase(meta.number);
 
-
   // Note that if file_size is zero, the file has been deleted and
   // should not be added to the manifest.
   int level = 0;
@@ -490,7 +492,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
     edit->AddFile(level, meta.number, meta.file_size,
-                  meta.smallest, meta.largest);
+                  meta.smallest, meta.largest, meta.last_sequence);
   }
 
   CompactionStats stats;
@@ -689,7 +691,7 @@ void DBImpl::BackgroundCompaction() {
     FileMetaData* f = c->input(0, 0);
     c->edit()->DeleteFile(c->level(), f->number);
     c->edit()->AddFile(c->level() + 1, f->number, f->file_size,
-                       f->smallest, f->largest);
+                       f->smallest, f->largest, f->last_sequence);
     status = versions_->LogAndApply(c->edit(), &mutex_);
     if (!status.ok()) {
       RecordBackgroundError(status);
@@ -766,6 +768,7 @@ Status DBImpl::OpenCompactionOutputFile(CompactionState* compact) {
     out.number = file_number;
     out.smallest.Clear();
     out.largest.Clear();
+    out.last_sequence = 0;
     compact->outputs.push_back(out);
     mutex_.Unlock();
   }
@@ -847,8 +850,13 @@ Status DBImpl::InstallCompactionResults(CompactionState* compact) {
     const CompactionState::Output& out = compact->outputs[i];
     compact->compaction->edit()->AddFile(
         level + 1,
-        out.number, out.file_size, out.smallest, out.largest);
+        out.number, out.file_size, out.smallest, out.largest, out.last_sequence);
   }
+
+  // Check for expired files
+  versions_->CollectExpiredFiles(compact->compaction->edit());
+
+  // Apply changes
   return versions_->LogAndApply(compact->compaction->edit(), &mutex_);
 }
 
@@ -923,9 +931,10 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
       if (last_sequence_for_key <= compact->smallest_snapshot) {
         // Hidden by an newer entry for same user key
         drop = true;    // (A)
-      } else if (ikey.type == kTypeDeletion &&
-                 ikey.sequence <= compact->smallest_snapshot &&
-                 compact->compaction->IsBaseLevelForKey(ikey.user_key)) {
+      } else if (ikey.sequence <= compact->smallest_snapshot &&
+                (ikey.type == kTypeDeletion ||
+                  IsSequenceExpired(options_.sequence_policy, ikey.sequence)) &&
+                compact->compaction->IsBaseLevelForKey(ikey.user_key)) {
         // For this user key:
         // (1) there is no data in higher levels
         // (2) data in lower levels will have larger sequence numbers
@@ -933,6 +942,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         //     smaller sequence numbers will be dropped in the next
         //     few iterations of this loop (by rule (A) above).
         // Therefore this deletion marker is obsolete and can be dropped.
+        // Expired records can be dropped too.
         drop = true;
       }
 
@@ -956,10 +966,12 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
           break;
         }
       }
+      CompactionState::Output* out = compact->current_output();
       if (compact->builder->NumEntries() == 0) {
-        compact->current_output()->smallest.DecodeFrom(key);
+        out->smallest.DecodeFrom(key);
       }
-      compact->current_output()->largest.DecodeFrom(key);
+      out->largest.DecodeFrom(key);
+      out->last_sequence = last_sequence_for_key;
       compact->builder->Add(key, input->value());
 
       // Close output file if it is big enough
@@ -1180,8 +1192,10 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* my_batch) {
   Writer* last_writer = &w;
   if (status.ok() && my_batch != NULL) {  // NULL batch is for compactions
     WriteBatch* updates = BuildBatchGroup(&last_writer);
-    WriteBatchInternal::SetSequence(updates, last_sequence + 1);
-    last_sequence += WriteBatchInternal::Count(updates);
+    WriteBatchInternal::SetSequence(updates,
+      NextSequence(options_.sequence_policy, last_sequence, 1));
+    last_sequence = NextSequence(options_.sequence_policy, last_sequence,
+      WriteBatchInternal::Count(updates));
 
     // Add to log and apply to memtable.  We can release the lock
     // during this phase since &w is currently responsible for logging

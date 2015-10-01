@@ -21,7 +21,8 @@ static Slice GetLengthPrefixedSlice(const char* data) {
 MemTable::MemTable(const InternalKeyComparator& cmp)
     : comparator_(cmp),
       refs_(0),
-      table_(comparator_, &arena_) {
+      table_(comparator_, &arena_),
+      last_sequence_(0) {
 }
 
 MemTable::~MemTable() {
@@ -103,6 +104,8 @@ void MemTable::Add(SequenceNumber s, ValueType type,
   memcpy(p, value.data(), val_size);
   assert((p + val_size) - buf == encoded_len);
   table_.Insert(buf);
+  // store last sequence number to stamp table
+  last_sequence_ = s;
 }
 
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {

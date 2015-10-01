@@ -20,7 +20,9 @@ enum Tag {
   kDeletedFile          = 6,
   kNewFile              = 7,
   // 8 was used for large value refs
-  kPrevLogNumber        = 9
+  kPrevLogNumber        = 9,
+  // new version with last_sequence
+  kNewFile_v2           = 10,
 };
 
 void VersionEdit::Clear() {
@@ -38,7 +40,7 @@ void VersionEdit::Clear() {
   new_files_.clear();
 }
 
-void VersionEdit::EncodeTo(std::string* dst) const {
+void VersionEdit::EncodeTo(std::string* dst, bool allowNewMetadata) const {
   if (has_comparator_) {
     PutVarint32(dst, kComparator);
     PutLengthPrefixedSlice(dst, comparator_);
@@ -76,12 +78,22 @@ void VersionEdit::EncodeTo(std::string* dst) const {
 
   for (size_t i = 0; i < new_files_.size(); i++) {
     const FileMetaData& f = new_files_[i].second;
-    PutVarint32(dst, kNewFile);
-    PutVarint32(dst, new_files_[i].first);  // level
-    PutVarint64(dst, f.number);
-    PutVarint64(dst, f.file_size);
-    PutLengthPrefixedSlice(dst, f.smallest.Encode());
-    PutLengthPrefixedSlice(dst, f.largest.Encode());
+    if (allowNewMetadata) {
+      PutVarint32(dst, kNewFile_v2);
+      PutVarint32(dst, new_files_[i].first);  // level
+      PutVarint64(dst, f.number);
+      PutVarint64(dst, f.file_size);
+      PutVarint64(dst, f.last_sequence);
+      PutLengthPrefixedSlice(dst, f.smallest.Encode());
+      PutLengthPrefixedSlice(dst, f.largest.Encode());
+    } else {
+      PutVarint32(dst, kNewFile);
+      PutVarint32(dst, new_files_[i].first);  // level
+      PutVarint64(dst, f.number);
+      PutVarint64(dst, f.file_size);
+      PutLengthPrefixedSlice(dst, f.smallest.Encode());
+      PutLengthPrefixedSlice(dst, f.largest.Encode());
+    }
   }
 }
 
@@ -186,6 +198,20 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
             GetVarint64(&input, &f.file_size) &&
             GetInternalKey(&input, &f.smallest) &&
             GetInternalKey(&input, &f.largest)) {
+          f.last_sequence = 0;
+          new_files_.push_back(std::make_pair(level, f));
+        } else {
+          msg = "new-file entry";
+        }
+        break;
+
+      case kNewFile_v2:
+        if (GetLevel(&input, &level) &&
+            GetVarint64(&input, &f.number) &&
+            GetVarint64(&input, &f.file_size) &&
+            GetVarint64(&input, &f.last_sequence) &&
+            GetInternalKey(&input, &f.smallest) &&
+            GetInternalKey(&input, &f.largest)) {
           new_files_.push_back(std::make_pair(level, f));
         } else {
           msg = "new-file entry";
@@ -254,6 +280,8 @@ std::string VersionEdit::DebugString() const {
     AppendNumberTo(&r, f.number);
     r.append(" ");
     AppendNumberTo(&r, f.file_size);
+    r.append(" ");
+    AppendNumberTo(&r, f.last_sequence);
     r.append(" ");
     r.append(f.smallest.DebugString());
     r.append(" .. ");

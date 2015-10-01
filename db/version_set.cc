@@ -12,6 +12,7 @@
 #include "db/memtable.h"
 #include "db/table_cache.h"
 #include "leveldb/env.h"
+#include "leveldb/sequence_policy.h"
 #include "leveldb/table_builder.h"
 #include "table/merger.h"
 #include "table/two_level_iterator.h"
@@ -154,9 +155,11 @@ bool SomeFileOverlapsRange(
 class Version::LevelFileNumIterator : public Iterator {
  public:
   LevelFileNumIterator(const InternalKeyComparator& icmp,
-                       const std::vector<FileMetaData*>* flist)
+                       const std::vector<FileMetaData*>* flist,
+                       const ReadOptions& options)
       : icmp_(icmp),
         flist_(flist),
+        min_sequence_(options.min_sequence),
         index_(flist->size()) {        // Marks as invalid
   }
   virtual bool Valid() const {
@@ -164,14 +167,24 @@ class Version::LevelFileNumIterator : public Iterator {
   }
   virtual void Seek(const Slice& target) {
     index_ = FindFile(icmp_, *flist_, target);
+    SkipForward();
   }
-  virtual void SeekToFirst() { index_ = 0; }
+  virtual void SeekToFirst() {
+    index_ = 0;
+    SkipForward();
+  }
   virtual void SeekToLast() {
-    index_ = flist_->empty() ? 0 : flist_->size() - 1;
+    if (flist_->empty()) {
+      index_ = 0;
+    } else {
+      index_ = flist_->size() - 1;
+      SkipBackward();
+    }
   }
   virtual void Next() {
     assert(Valid());
     index_++;
+    SkipForward();
   }
   virtual void Prev() {
     assert(Valid());
@@ -179,6 +192,7 @@ class Version::LevelFileNumIterator : public Iterator {
       index_ = flist_->size();  // Marks as invalid
     } else {
       index_--;
+      SkipBackward();
     }
   }
   Slice key() const {
@@ -195,10 +209,29 @@ class Version::LevelFileNumIterator : public Iterator {
  private:
   const InternalKeyComparator icmp_;
   const std::vector<FileMetaData*>* const flist_;
+  const SequenceNumber min_sequence_;
   uint32_t index_;
 
   // Backing store for value().  Holds the file number and size.
   mutable char value_buf_[16];
+
+  void SkipForward() {
+    while (index_ < flist_->size() && ShouldSkip((*flist_)[index_])) {
+      index_++;
+    }
+  }
+  void SkipBackward() {
+    while (index_ < flist_->size() && ShouldSkip((*flist_)[index_])) {
+      if (index_ == 0) {
+        index_ = flist_->size();  // Marks as invalid
+      } else {
+        index_--;
+      }
+    }
+  }
+  bool ShouldSkip(const FileMetaData* file) const {
+    return file->last_sequence > 0 && file->last_sequence < min_sequence_;
+  }
 };
 
 static Iterator* GetFileIterator(void* arg,
@@ -218,7 +251,7 @@ static Iterator* GetFileIterator(void* arg,
 Iterator* Version::NewConcatenatingIterator(const ReadOptions& options,
                                             int level) const {
   return NewTwoLevelIterator(
-      new LevelFileNumIterator(vset_->icmp_, &files_[level]),
+      new LevelFileNumIterator(vset_->icmp_, &files_[level], options),
       &GetFileIterator, vset_->table_cache_, options);
 }
 
@@ -855,7 +888,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
     // Write new record to MANIFEST log
     if (s.ok()) {
       std::string record;
-      edit->EncodeTo(&record);
+      edit->EncodeTo(&record, options_->AllowNewMetadata());
       s = descriptor_log_->AddRecord(record);
       if (s.ok()) {
         s = descriptor_file_->Sync();
@@ -947,10 +980,6 @@ Status VersionSet::Recover() {
         }
       }
 
-      if (s.ok()) {
-        builder.Apply(&edit);
-      }
-
       if (edit.has_log_number_) {
         log_number = edit.log_number_;
         have_log_number = true;
@@ -969,6 +998,20 @@ Status VersionSet::Recover() {
       if (edit.has_last_sequence_) {
         last_sequence = edit.last_sequence_;
         have_last_sequence = true;
+      }
+
+      if (have_last_sequence) {
+        // assign sequence number to old-format file records
+        for (size_t i = 0; i < edit.new_files_.size(); i++) {
+          FileMetaData& f = edit.new_files_[i].second;
+          if (!f.last_sequence) {
+            f.last_sequence = last_sequence;
+          }
+        }
+      }
+
+      if (s.ok()) {
+        builder.Apply(&edit);
       }
     }
   }
@@ -1072,12 +1115,13 @@ Status VersionSet::WriteSnapshot(log::Writer* log) {
     const std::vector<FileMetaData*>& files = current_->files_[level];
     for (size_t i = 0; i < files.size(); i++) {
       const FileMetaData* f = files[i];
-      edit.AddFile(level, f->number, f->file_size, f->smallest, f->largest);
+      edit.AddFile(level, f->number, f->file_size, f->smallest, f->largest,
+        f->last_sequence);
     }
   }
 
   std::string record;
-  edit.EncodeTo(&record);
+  edit.EncodeTo(&record, options_->AllowNewMetadata());
   return log->AddRecord(record);
 }
 
@@ -1142,6 +1186,23 @@ void VersionSet::AddLiveFiles(std::set<uint64_t>* live) {
       const std::vector<FileMetaData*>& files = v->files_[level];
       for (size_t i = 0; i < files.size(); i++) {
         live->insert(files[i]->number);
+      }
+    }
+  }
+}
+
+void VersionSet::CollectExpiredFiles(VersionEdit* edit) {
+  for (Version* v = dummy_versions_.next_;
+       v != &dummy_versions_;
+       v = v->next_) {
+    for (int level = 0; level < config::kNumLevels; level++) {
+      const std::vector<FileMetaData*>& files = v->files_[level];
+      for (size_t i = 0; i < files.size(); i++) {
+        if (IsSequenceExpired(options_->sequence_policy, files[i]->last_sequence)) {
+          Log(options_->info_log, "Expired file #%lu found at level %d will be deleted.",
+            files[i]->number, level);
+          edit->DeleteFile(level, files[i]->number);
+        }
       }
     }
   }
@@ -1229,7 +1290,7 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
       } else {
         // Create concatenating iterator for the files from this level
         list[num++] = NewTwoLevelIterator(
-            new Version::LevelFileNumIterator(icmp_, &c->inputs_[which]),
+            new Version::LevelFileNumIterator(icmp_, &c->inputs_[which], options),
             &GetFileIterator, table_cache_, options);
       }
     }

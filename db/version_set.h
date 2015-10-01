@@ -257,6 +257,9 @@ class VersionSet {
   // May also mutate some internal state.
   void AddLiveFiles(std::set<uint64_t>* live);
 
+  // Registers all expired files for deletion.
+  void CollectExpiredFiles(VersionEdit* edit);
+
   // Return the approximate offset in the database of the data for
   // "key" as of version "v".
   uint64_t ApproximateOffsetOf(Version* v, const InternalKey& key);

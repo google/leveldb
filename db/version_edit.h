@@ -21,8 +21,9 @@ struct FileMetaData {
   uint64_t file_size;         // File size in bytes
   InternalKey smallest;       // Smallest internal key served by table
   InternalKey largest;        // Largest internal key served by table
+  SequenceNumber last_sequence; // Last sequence number for keys served by table
 
-  FileMetaData() : refs(0), allowed_seeks(1 << 30), file_size(0) { }
+  FileMetaData() : refs(0), allowed_seeks(1 << 30), file_size(0), last_sequence(0) { }
 };
 
 class VersionEdit {
@@ -62,12 +63,14 @@ class VersionEdit {
   void AddFile(int level, uint64_t file,
                uint64_t file_size,
                const InternalKey& smallest,
-               const InternalKey& largest) {
+               const InternalKey& largest,
+               SequenceNumber last_sequence) {
     FileMetaData f;
     f.number = file;
     f.file_size = file_size;
     f.smallest = smallest;
     f.largest = largest;
+    f.last_sequence = last_sequence;
     new_files_.push_back(std::make_pair(level, f));
   }
 
@@ -76,7 +79,7 @@ class VersionEdit {
     deleted_files_.insert(std::make_pair(level, file));
   }
 
-  void EncodeTo(std::string* dst) const;
+  void EncodeTo(std::string* dst, bool allowNewMetadata = false) const;
   Status DecodeFrom(const Slice& src);
 
   std::string DebugString() const;
