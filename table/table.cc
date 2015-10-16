@@ -4,10 +4,13 @@
 
 #include "leveldb/table.h"
 
+#include <map>
+#include <string>
 #include "leveldb/cache.h"
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 #include "leveldb/filter_policy.h"
+#include "leveldb/meta.h"
 #include "leveldb/options.h"
 #include "table/block.h"
 #include "table/filter_block.h"
@@ -16,6 +19,89 @@
 #include "util/coding.h"
 
 namespace leveldb {
+
+namespace {
+  typedef std::map<std::string, BlockHandle> MetaBlockMap;
+
+  class MetaBlockReader: public MetaBlock {
+   public:
+    MetaBlockReader()
+      : block_content_(NULL) {
+    }
+    ~MetaBlockReader() {
+      delete [] block_content_;
+    }
+    virtual Slice data() const {
+      return block_.data;
+    }
+    Status Read(RandomAccessFile* file, MetaBlockMap::const_iterator iter) {
+      delete [] block_content_;
+      block_content_ = NULL;
+      Status s = ReadBlock(file, ReadOptions(), iter->second, &block_);
+      if (s.ok() && block_.heap_allocated) {
+          block_content_ = block_.data.data(); // Will need to delete later
+      }
+      return s;
+    }
+   private:
+    BlockContents block_;
+    const char* block_content_;
+  };
+
+  class MetaBlockIterator: public Iterator {
+   public:
+    MetaBlockIterator(RandomAccessFile* file, const MetaBlockMap* map)
+      : file_(file), map_(map), iter_(map_->end()) {
+    }
+    virtual void SeekToFirst() {
+      iter_ = map_->begin();
+      DoRead(true);
+    }
+    virtual void SeekToLast() {
+      if (map_->empty()) {
+        iter_ = map_->end();
+      } else {
+        iter_ = map_->find(map_->rbegin()->first);
+        DoRead(false);
+      }
+    }
+    virtual void Seek(const Slice& k) {
+      iter_ = map_->lower_bound(k.ToString());
+      DoRead(true);
+    }
+    virtual void Next() {
+      ++iter_;
+      DoRead(true);
+    }
+    virtual void Prev() {
+      --iter_;
+      DoRead(false);
+    }
+    virtual bool Valid() const { return iter_ != map_->end(); }
+    virtual Slice key() const { return iter_->first; }
+    virtual Slice value() const { return block_reader_.data(); }
+    virtual Status status() const { return Status::OK(); }
+   private:
+    void DoRead(bool forward) {
+      while (iter_ != map_->end()) {
+        Status s = block_reader_.Read(file_, iter_);
+        if (s.ok()) {
+          break;
+        }
+        // Just skip invalid meta block
+        if (forward) {
+          ++iter_;
+        } else {
+          --iter_;
+        }
+      }
+    }
+    RandomAccessFile* const file_;
+    const MetaBlockMap* const map_;
+    MetaBlockMap::const_iterator iter_;
+    MetaBlockReader block_reader_;
+  };
+}
 
 struct Table::Rep {
   ~Rep() {
@@ -33,6 +119,7 @@ struct Table::Rep {
 
   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
   Block* index_block;
+  MetaBlockMap meta_blocks;
 };
 
 Status Table::Open(const Options& options,
@@ -89,10 +176,6 @@ Status Table::Open(const Options& options,
 }
 
 void Table::ReadMeta(const Footer& footer) {
-  if (rep_->options.filter_policy == NULL) {
-    return;  // Do not need any metadata
-  }
-
   // TODO(sanjay): Skip this if footer.metaindex_handle() size indicates
   // it is an empty block.
   ReadOptions opt;
@@ -107,11 +190,24 @@ void Table::ReadMeta(const Footer& footer) {
   Block* meta = new Block(contents);
 
   Iterator* iter = meta->NewIterator(BytewiseComparator());
-  std::string key = "filter.";
-  key.append(rep_->options.filter_policy->Name());
-  iter->Seek(key);
-  if (iter->Valid() && iter->key() == Slice(key)) {
-    ReadFilter(iter->value());
+  iter->SeekToFirst();
+  for (; iter->Valid(); iter->Next()) {
+    Slice key = iter->key();
+    if (key.starts_with("filter.")) {
+      key.remove_prefix(7);
+      if (rep_->options.filter_policy != NULL
+          && key == rep_->options.filter_policy->Name()) {
+        ReadFilter(iter->value());
+      }
+    } else if (key.starts_with("meta.")) {
+      Slice v = iter->value();
+      BlockHandle block_handle;
+      if (block_handle.DecodeFrom(&v).ok()) {
+        key.remove_prefix(5);
+        rep_->meta_blocks.insert(
+          MetaBlockMap::value_type(key.ToString(), block_handle));
+      }
+    }
   }
   delete iter;
   delete meta;
@@ -221,6 +317,25 @@ Iterator* Table::NewIterator(const ReadOptions& options) const {
   return NewTwoLevelIterator(
       rep_->index_block->NewIterator(rep_->options.comparator),
       &Table::BlockReader, const_cast<Table*>(this), options);
+}
+
+Iterator* Table::NewMetaIterator() const {
+  return new MetaBlockIterator(rep_->file, &rep_->meta_blocks);
+}
+
+Status Table::ReadMeta(const Slice& key, MetaBlock** meta) const {
+  MetaBlockMap::const_iterator iter = rep_->meta_blocks.find(key.ToString());
+  if (iter == rep_->meta_blocks.end()) {
+    return Status::NotFound("meta block not defined");
+  }
+  MetaBlockReader* reader = new MetaBlockReader();
+  Status s = reader->Read(rep_->file, iter);
+  if (!s.ok()) {
+    delete reader;
+    return s;
+  }
+  *meta = reader;
+  return s;
 }
 
 Status Table::InternalGet(const ReadOptions& options, const Slice& k,

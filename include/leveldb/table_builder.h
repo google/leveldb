@@ -21,6 +21,7 @@ namespace leveldb {
 
 class BlockBuilder;
 class BlockHandle;
+class MetaBlockBuilder;
 class WritableFile;
 
 class TableBuilder {
@@ -40,6 +41,10 @@ class TableBuilder {
   // structure passed to this method, this method will return an error
   // without changing any fields.
   Status ChangeOptions(const Options& options);
+
+  // Add meta block with some user-defined data.
+  // REQUIRES: Finish(), Abandon() have not been called
+  void AddMetaBlock(MetaBlockBuilder* builder);
 
   // Add key,value to the table being constructed.
   // REQUIRES: key is after any previously added key according to comparator.

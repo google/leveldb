@@ -12,6 +12,7 @@
 #include "db/memtable.h"
 #include "db/table_cache.h"
 #include "leveldb/env.h"
+#include "leveldb/meta.h"
 #include "leveldb/table_builder.h"
 #include "table/merger.h"
 #include "table/two_level_iterator.h"
@@ -481,6 +482,37 @@ void Version::Unref() {
   if (refs_ == 0) {
     delete this;
   }
+}
+
+Status Version::VisitMeta(
+    const Slice& meta,
+    const InternalKey* begin,
+    const InternalKey* end,
+    MetaBlockVisitor* visitor) {
+  Status s;
+  std::vector<FileMetaData*> inputs;
+  for (int level = 0; level < leveldb::config::kNumLevels && s.ok(); ++level) {
+    GetOverlappingInputs(level, begin, end, &inputs);
+    for (size_t i = 0; i < inputs.size() && s.ok(); i++) {
+      if (!visitor->PreVisit(level, inputs[i]->number)) {
+        continue;
+      }
+      Table* table;
+      leveldb::Iterator* iter = vset_->table_cache_->NewIterator(
+        ReadOptions(), inputs[i]->number, inputs[i]->file_size, &table);
+      s = iter->status();
+      if (s.ok()) {
+        leveldb::MetaBlock* meta_block;
+        s = table->ReadMeta(meta, &meta_block);
+        if (s.ok()) {
+          s = visitor->Visit(level, inputs[i]->number, meta_block->data());
+          delete meta_block;
+        }
+      }
+      delete iter;
+    }
+  }
+  return s;
 }
 
 bool Version::OverlapInLevel(int level,
@@ -1299,7 +1331,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
   InternalKey smallest, largest;
   GetRange(c->inputs_[0], &smallest, &largest);
 
-  current_->GetOverlappingInputs(level+1, &smallest, &largest, &c->inputs_[1]);
+    current_->GetOverlappingInputs(level + 1, &smallest, &largest, &c->inputs_[1]);
 
   // Get entire range covered by compaction
   InternalKey all_start, all_limit;

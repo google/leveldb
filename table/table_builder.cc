@@ -5,9 +5,13 @@
 #include "leveldb/table_builder.h"
 
 #include <assert.h>
+#include <map>
+#include <string>
+#include <vector>
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 #include "leveldb/filter_policy.h"
+#include "leveldb/meta.h"
 #include "leveldb/options.h"
 #include "table/block_builder.h"
 #include "table/filter_block.h"
@@ -29,6 +33,7 @@ struct TableBuilder::Rep {
   int64_t num_entries;
   bool closed;          // Either Finish() or Abandon() has been called.
   FilterBlockBuilder* filter_block;
+  std::vector<MetaBlockBuilder*> meta_blocks;
 
   // We do not emit the index entry for a block until we have seen the
   // first key for the next data block.  This allows us to use shorter
@@ -70,6 +75,9 @@ TableBuilder::TableBuilder(const Options& options, WritableFile* file)
 TableBuilder::~TableBuilder() {
   assert(rep_->closed);  // Catch errors where caller forgot to call Finish()
   delete rep_->filter_block;
+  for (size_t i = 0; i < rep_->meta_blocks.size(); ++i) {
+    delete rep_->meta_blocks[i];
+  }
   delete rep_;
 }
 
@@ -87,6 +95,13 @@ Status TableBuilder::ChangeOptions(const Options& options) {
   rep_->index_block_options = options;
   rep_->index_block_options.block_restart_interval = 1;
   return Status::OK();
+}
+
+void TableBuilder::AddMetaBlock(MetaBlockBuilder* builder) {
+  Rep* r = rep_;
+  assert(!r->closed);
+  if (!ok()) return;
+  r->meta_blocks.push_back(builder);
 }
 
 void TableBuilder::Add(const Slice& key, const Slice& value) {
@@ -108,6 +123,10 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
 
   if (r->filter_block != NULL) {
     r->filter_block->AddKey(key);
+  }
+
+  for (size_t i = 0; i < r->meta_blocks.size(); ++i) {
+    r->meta_blocks[i]->Add(key, value);
   }
 
   r->last_key.assign(key.data(), key.size());
@@ -210,9 +229,25 @@ Status TableBuilder::Finish() {
                   &filter_block_handle);
   }
 
+  // Write meta blocks
+  typedef std::map<std::string, BlockHandle> MetaBlockMap;
+  MetaBlockMap meta_blocks;
+  for (size_t i = 0; i < r->meta_blocks.size() && ok(); ++i) {
+    BlockHandle block_handle;
+    WriteRawBlock(r->meta_blocks[i]->Finish(), kNoCompression,
+                  &block_handle);
+    if (ok()) {
+      std::string key = "meta.";
+      key.append(r->meta_blocks[i]->Name());
+      meta_blocks.insert(MetaBlockMap::value_type(key, block_handle));
+    }
+  }
+
   // Write metaindex block
   if (ok()) {
-    BlockBuilder meta_index_block(&r->options);
+    Options opts(r->options);
+    opts.comparator = BytewiseComparator();
+    BlockBuilder meta_index_block(&opts);
     if (r->filter_block != NULL) {
       // Add mapping from "filter.Name" to location of filter data
       std::string key = "filter.";
@@ -221,8 +256,13 @@ Status TableBuilder::Finish() {
       filter_block_handle.EncodeTo(&handle_encoding);
       meta_index_block.Add(key, handle_encoding);
     }
-
-    // TODO(postrelease): Add stats and other meta blocks
+    // Add meta blocks mapping
+    MetaBlockMap::const_iterator it = meta_blocks.begin();
+    for (; it != meta_blocks.end(); ++it) {
+      std::string handle_encoding;
+      it->second.EncodeTo(&handle_encoding);
+      meta_index_block.Add(it->first, handle_encoding);
+    }
     WriteBlock(&meta_index_block, &metaindex_block_handle);
   }
 

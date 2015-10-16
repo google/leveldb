@@ -30,6 +30,7 @@ namespace log { class Writer; }
 class Compaction;
 class Iterator;
 class MemTable;
+class MetaBlockVisitor;
 class TableBuilder;
 class TableCache;
 class Version;
@@ -88,6 +89,12 @@ class Version {
   // under live iterators)
   void Ref();
   void Unref();
+
+  Status VisitMeta(
+      const Slice& meta,
+      const InternalKey* begin,         // NULL means before all keys
+      const InternalKey* end,           // NULL means after all keys
+      MetaBlockVisitor* visitor);
 
   void GetOverlappingInputs(
       int level,
