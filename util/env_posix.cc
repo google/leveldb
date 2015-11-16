@@ -312,13 +312,13 @@ class PosixEnv : public Env {
   virtual Status NewRandomAccessFile(const std::string& fname,
                                      RandomAccessFile** result) {
     *result = NULL;
-    Status s;
     int fd = open(fname.c_str(), O_RDONLY);
     if (fd < 0) {
-      s = IOError(fname, errno);
-    } else if (mmap_limit_.Acquire()) {
+      return IOError(fname, errno);
+    }
+    if (mmap_limit_.Acquire()) {
       uint64_t size;
-      s = GetFileSize(fname, &size);
+      Status s = GetFileSize(fname, &size);
       if (s.ok()) {
         void* base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
         if (base != MAP_FAILED) {
@@ -327,14 +327,14 @@ class PosixEnv : public Env {
           s = IOError(fname, errno);
         }
       }
-      close(fd);
-      if (!s.ok()) {
-        mmap_limit_.Release();
+      if (s.ok()) {
+        close(fd);
+        return Status();
       }
-    } else {
-      *result = new PosixRandomAccessFile(fname, fd);
+      mmap_limit_.Release();
     }
-    return s;
+    *result = new PosixRandomAccessFile(fname, fd);
+    return Status();
   }
 
   virtual Status NewWritableFile(const std::string& fname,
