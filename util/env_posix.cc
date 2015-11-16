@@ -89,74 +89,21 @@ class PosixRandomAccessFile: public RandomAccessFile {
   }
 };
 
-// Helper class to limit mmap file usage so that we do not end up
-// running out virtual memory or running into kernel performance
-// problems for very large databases.
-class MmapLimiter {
- public:
-  // Up to 1000 mmaps for 64-bit binaries; none for smaller pointer sizes.
-  MmapLimiter() {
-    SetAllowed(sizeof(void*) >= 8 ? 1000 : 0);
-  }
-
-  // If another mmap slot is available, acquire it and return true.
-  // Else return false.
-  bool Acquire() {
-    if (GetAllowed() <= 0) {
-      return false;
-    }
-    MutexLock l(&mu_);
-    intptr_t x = GetAllowed();
-    if (x <= 0) {
-      return false;
-    } else {
-      SetAllowed(x - 1);
-      return true;
-    }
-  }
-
-  // Release a slot acquired by a previous call to Acquire() that returned true.
-  void Release() {
-    MutexLock l(&mu_);
-    SetAllowed(GetAllowed() + 1);
-  }
-
- private:
-  port::Mutex mu_;
-  port::AtomicPointer allowed_;
-
-  intptr_t GetAllowed() const {
-    return reinterpret_cast<intptr_t>(allowed_.Acquire_Load());
-  }
-
-  // REQUIRES: mu_ must be held
-  void SetAllowed(intptr_t v) {
-    allowed_.Release_Store(reinterpret_cast<void*>(v));
-  }
-
-  MmapLimiter(const MmapLimiter&);
-  void operator=(const MmapLimiter&);
-};
-
 // mmap() based random-access
 class PosixMmapReadableFile: public RandomAccessFile {
  private:
   std::string filename_;
   void* mmapped_region_;
   size_t length_;
-  MmapLimiter* limiter_;
 
  public:
   // base[0,length-1] contains the mmapped contents of the file.
-  PosixMmapReadableFile(const std::string& fname, void* base, size_t length,
-                        MmapLimiter* limiter)
-      : filename_(fname), mmapped_region_(base), length_(length),
-        limiter_(limiter) {
+  PosixMmapReadableFile(const std::string& fname, void* base, size_t length)
+      : filename_(fname), mmapped_region_(base), length_(length) {
   }
 
   virtual ~PosixMmapReadableFile() {
     munmap(mmapped_region_, length_);
-    limiter_->Release();
   }
 
   virtual Status Read(uint64_t offset, size_t n, Slice* result,
@@ -316,22 +263,19 @@ class PosixEnv : public Env {
     if (fd < 0) {
       return IOError(fname, errno);
     }
-    if (mmap_limit_.Acquire()) {
-      uint64_t size;
-      Status s = GetFileSize(fname, &size);
-      if (s.ok()) {
-        void* base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
-        if (base != MAP_FAILED) {
-          *result = new PosixMmapReadableFile(fname, base, size, &mmap_limit_);
-        } else {
-          s = IOError(fname, errno);
-        }
+    uint64_t size;
+    Status s = GetFileSize(fname, &size);
+    if (s.ok()) {
+      void* base = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+      if (base != MAP_FAILED) {
+        *result = new PosixMmapReadableFile(fname, base, size);
+      } else {
+        s = IOError(fname, errno);
       }
-      if (s.ok()) {
-        close(fd);
-        return Status();
-      }
-      mmap_limit_.Release();
+    }
+    if (s.ok()) {
+      close(fd);
+      return Status();
     }
     *result = new PosixRandomAccessFile(fname, fd);
     return Status();
@@ -519,7 +463,6 @@ class PosixEnv : public Env {
   BGQueue queue_;
 
   PosixLockTable locks_;
-  MmapLimiter mmap_limit_;
 };
 
 PosixEnv::PosixEnv() : started_bgthread_(false) {
