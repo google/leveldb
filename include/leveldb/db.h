@@ -128,6 +128,15 @@ class DB {
   virtual void GetApproximateSizes(const Range* range, int n,
                                    uint64_t* sizes) = 0;
 
+  // Get the total file size of all level files
+  //
+  // Note that the returned sizes measure file system space usage, so
+  // if the user data compresses by a factor of ten, the returned
+  // sizes will be one-tenth the size of the corresponding user data size.
+  //
+  // The results may not include the sizes of recently written data.
+  virtual void GetDbSize(uint64_t* size) = 0;
+
   // Compact the underlying storage for the key range [*begin,*end].
   // In particular, deleted and overwritten versions are discarded,
   // and the data is rearranged to reduce the cost of operations

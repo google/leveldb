@@ -1400,6 +1400,21 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
   return false;
 }
 
+void GetDbSize(uint64_t* size) {
+  Version* v;
+  {
+    MutexLock l(&mutex_);
+    versions_->current()->Ref();
+    v = versions_->current();
+  }
+  *size = versions_->GetVersionDbSize(v);
+ 
+  {
+    MutexLock l(&mutex_);
+    v->Unref();
+  }
+}
+
 void DBImpl::GetApproximateSizes(
     const Range* range, int n,
     uint64_t* sizes) {
