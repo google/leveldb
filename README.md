@@ -12,7 +12,9 @@ Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
   * Forward and backward iteration is supported over the data.
   * Data is automatically compressed using the [Snappy compression library](http://code.google.com/p/snappy).
   * External activity (file system operations etc.) is relayed through a virtual interface so users can customize the operating system interactions.
-  * [Detailed documentation](http://htmlpreview.github.io/?https://github.com/google/leveldb/blob/master/doc/index.html) about how to use the library is included with the source code.
+
+# Documentation
+  [LevelDB library documentation](https://rawgit.com/google/leveldb/master/doc/index.html) is online and bundled with the source code.
 
 
 # Limitations
