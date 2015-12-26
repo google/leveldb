@@ -179,6 +179,19 @@ TEST(CacheTest, NewId) {
   ASSERT_NE(a, b);
 }
 
+TEST(CacheTest, Prune) {
+  Insert(1, 100);
+  Insert(2, 200);
+
+  Cache::Handle* handle = cache_->Lookup(EncodeKey(1));
+  ASSERT_TRUE(handle);
+  cache_->Prune();
+  cache_->Release(handle);
+
+  ASSERT_EQ(100, Lookup(1));
+  ASSERT_EQ(-1, Lookup(2));
+}
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
