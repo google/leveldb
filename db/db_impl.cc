@@ -851,8 +851,9 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
     delete iter;
     if (s.ok()) {
       Log(options_.info_log,
-          "Generated table #%llu: %lld keys, %lld bytes",
+          "Generated table #%llu@%d: %lld keys, %lld bytes",
           (unsigned long long) output_number,
+          compact->compaction->level(),
           (unsigned long long) current_entries,
           (unsigned long long) current_bytes);
     }
