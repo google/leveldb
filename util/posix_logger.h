@@ -49,7 +49,7 @@ class PosixLogger : public Logger {
       const time_t seconds = now_tv.tv_sec;
       struct tm t;
       localtime_r(&seconds, &t);
-      p += snprintf(p, limit - p,
+      int len = snprintf(p, limit - p,
                     "%04d/%02d/%02d-%02d:%02d:%02d.%06d %llx ",
                     t.tm_year + 1900,
                     t.tm_mon + 1,
@@ -59,12 +59,26 @@ class PosixLogger : public Logger {
                     t.tm_sec,
                     static_cast<int>(now_tv.tv_usec),
                     static_cast<long long unsigned int>(thread_id));
+      if (len < 0) {
+        // XXX should handle error, but how?
+      } else if (len >= limit - p) {
+        p = limit;
+      } else {
+        p += len;
+      }
 
       // Print the message
       if (p < limit) {
         va_list backup_ap;
         va_copy(backup_ap, ap);
-        p += vsnprintf(p, limit - p, format, backup_ap);
+        len = vsnprintf(p, limit - p, format, backup_ap);
+        if (len < 0) {
+          // XXX should handle error, but how?
+        } else if (len >= limit - p) {
+          p = limit;
+        } else {
+          p += len;
+        }
         va_end(backup_ap);
       }
 
