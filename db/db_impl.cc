@@ -1486,7 +1486,7 @@ Status DB::Delete(const WriteOptions& opt, const Slice& key) {
 
 DB::~DB() { }
 
-Status DB::Open(const Options& options, const std::string& dbname,
+Status DB::Open(Options& options, const std::string& dbname,
                 DB** dbptr) {
   *dbptr = NULL;
 
@@ -1500,7 +1500,7 @@ Status DB::Open(const Options& options, const std::string& dbname,
     // Create new log and a corresponding memtable.
     uint64_t new_log_number = impl->versions_->NewFileNumber();
     WritableFile* lfile;
-    s = options.env->NewWritableFile(LogFileName(dbname, new_log_number),
+    s = options.env->NewWritableFile(LogFileName(dbname, new_log_number), // or modifications to what's pointed to by env should be hidden in a method for Options
                                      &lfile);
     if (s.ok()) {
       edit.SetLogNumber(new_log_number);
