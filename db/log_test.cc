@@ -110,6 +110,7 @@ class LogTest {
   // Record metadata for testing initial offset functionality
   static size_t initial_offset_record_sizes_[];
   static uint64_t initial_offset_last_record_offsets_[];
+  static int num_initial_offset_records_;
 
  public:
   LogTest() : reading_(false),
@@ -192,7 +193,7 @@ class LogTest {
   }
 
   void WriteInitialOffsetLog() {
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < num_initial_offset_records_; i++) {
       std::string record(initial_offset_record_sizes_[i],
                          static_cast<char>('a' + i));
       Write(record);
@@ -223,14 +224,20 @@ class LogTest {
     source_.contents_ = Slice(dest_.contents_);
     Reader* offset_reader = new Reader(&source_, &report_, true/*checksum*/,
                                        initial_offset);
-    Slice record;
-    std::string scratch;
-    ASSERT_TRUE(offset_reader->ReadRecord(&record, &scratch));
-    ASSERT_EQ(initial_offset_record_sizes_[expected_record_offset],
-              record.size());
-    ASSERT_EQ(initial_offset_last_record_offsets_[expected_record_offset],
-              offset_reader->LastRecordOffset());
-    ASSERT_EQ((char)('a' + expected_record_offset), record.data()[0]);
+
+    // Read all records from expected_record_offset through the last one.
+    ASSERT_LT(expected_record_offset, num_initial_offset_records_);
+    for (; expected_record_offset < num_initial_offset_records_;
+         ++expected_record_offset) {
+      Slice record;
+      std::string scratch;
+      ASSERT_TRUE(offset_reader->ReadRecord(&record, &scratch));
+      ASSERT_EQ(initial_offset_record_sizes_[expected_record_offset],
+                record.size());
+      ASSERT_EQ(initial_offset_last_record_offsets_[expected_record_offset],
+                offset_reader->LastRecordOffset());
+      ASSERT_EQ((char)('a' + expected_record_offset), record.data()[0]);
+    }
     delete offset_reader;
   }
 };
@@ -239,15 +246,26 @@ size_t LogTest::initial_offset_record_sizes_[] =
     {10000,  // Two sizable records in first block
      10000,
      2 * log::kBlockSize - 1000,  // Span three blocks
-     1};
+     1,
+     13716,  // Consume all but two bytes of block 3.
+     log::kBlockSize - kHeaderSize, // Consume the entirety of block 4.
+    };
 
 uint64_t LogTest::initial_offset_last_record_offsets_[] =
     {0,
      kHeaderSize + 10000,
      2 * (kHeaderSize + 10000),
      2 * (kHeaderSize + 10000) +
-         (2 * log::kBlockSize - 1000) + 3 * kHeaderSize};
+         (2 * log::kBlockSize - 1000) + 3 * kHeaderSize,
+     2 * (kHeaderSize + 10000) +
+         (2 * log::kBlockSize - 1000) + 3 * kHeaderSize
+         + kHeaderSize + 1,
+     3 * log::kBlockSize,
+    };
 
+// LogTest::initial_offset_last_record_offsets_ must be defined before this.
+int LogTest::num_initial_offset_records_ =
+    sizeof(LogTest::initial_offset_last_record_offsets_)/sizeof(uint64_t);
 
 TEST(LogTest, Empty) {
   ASSERT_EQ("EOF", Read());
@@ -551,6 +569,10 @@ TEST(LogTest, ReadFourthStart) {
   CheckInitialOffsetRecord(
       2 * (kHeaderSize + 1000) + (2 * log::kBlockSize - 1000) + 3 * kHeaderSize,
       3);
+}
+
+TEST(LogTest, ReadInitialOffsetIntoBlockPadding) {
+  CheckInitialOffsetRecord(3 * log::kBlockSize - 3, 5);
 }
 
 TEST(LogTest, ReadEnd) {
