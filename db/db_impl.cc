@@ -264,7 +264,9 @@ void DBImpl::DeleteObsoleteFiles() {
         Log(options_.info_log, "Delete type=%d #%lld\n",
             int(type),
             static_cast<unsigned long long>(number));
+        mutex_.Unlock();
         env_->DeleteFile(dbname_ + "/" + filenames[i]);
+        mutex_.Lock();
       }
     }
   }
