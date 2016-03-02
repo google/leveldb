@@ -13,13 +13,13 @@ Iterator::Iterator() {
 
 Iterator::~Iterator() {
   if (cleanup_.function != NULL) {
-    (*cleanup_.function)(cleanup_.arg1, cleanup_.arg2);
     for (Cleanup* c = cleanup_.next; c != NULL; ) {
       (*c->function)(c->arg1, c->arg2);
       Cleanup* next = c->next;
       delete c;
       c = next;
     }
+    (*cleanup_.function)(cleanup_.arg1, cleanup_.arg2);
   }
 }
 
