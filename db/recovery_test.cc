@@ -104,10 +104,10 @@ class RecoveryTest {
     return GetFiles(kLogFile)[0];
   }
 
-  std::vector<std::uint64_t> GetFiles(FileType t) {
+  std::vector<uint64_t> GetFiles(FileType t) {
     std::vector<std::string> filenames;
     ASSERT_OK(env_->GetChildren(dbname_, &filenames));
-    std::vector<std::uint64_t> result;
+    std::vector<uint64_t> result;
     for (size_t i = 0; i < filenames.size(); i++) {
       uint64_t number;
       FileType type;
