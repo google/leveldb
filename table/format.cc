@@ -30,9 +30,7 @@ Status BlockHandle::DecodeFrom(Slice* input) {
 }
 
 void Footer::EncodeTo(std::string* dst) const {
-#ifndef NDEBUG
   const size_t original_size = dst->size();
-#endif
   metaindex_handle_.EncodeTo(dst);
   index_handle_.EncodeTo(dst);
   dst->resize(2 * BlockHandle::kMaxEncodedLength);  // Padding
