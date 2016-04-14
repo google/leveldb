@@ -37,6 +37,7 @@ void Footer::EncodeTo(std::string* dst) const {
   PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber & 0xffffffffu));
   PutFixed32(dst, static_cast<uint32_t>(kTableMagicNumber >> 32));
   assert(dst->size() == original_size + kEncodedLength);
+  (void)original_size;
 }
 
 Status Footer::DecodeFrom(Slice* input) {
