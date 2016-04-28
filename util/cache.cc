@@ -147,6 +147,11 @@ class LRUCache {
   Cache::Handle* Lookup(const Slice& key, uint32_t hash);
   void Release(Cache::Handle* handle);
   void Erase(const Slice& key, uint32_t hash);
+  void Prune();
+  size_t TotalCharge() const {
+    MutexLock l(&mutex_);
+    return usage_;
+  }
 
  private:
   void LRU_Remove(LRUHandle* e);
@@ -157,7 +162,7 @@ class LRUCache {
   size_t capacity_;
 
   // mutex_ protects the following state.
-  port::Mutex mutex_;
+  mutable port::Mutex mutex_;
   size_t usage_;
 
   // Dummy head of LRU list.
@@ -264,6 +269,19 @@ void LRUCache::Erase(const Slice& key, uint32_t hash) {
   }
 }
 
+void LRUCache::Prune() {
+  MutexLock l(&mutex_);
+  for (LRUHandle* e = lru_.next; e != &lru_; ) {
+    LRUHandle* next = e->next;
+    if (e->refs == 1) {
+      table_.Remove(e->key(), e->hash);
+      LRU_Remove(e);
+      Unref(e);
+    }
+    e = next;
+  }
+}
+
 static const int kNumShardBits = 4;
 static const int kNumShards = 1 << kNumShardBits;
 
@@ -313,6 +331,18 @@ class ShardedLRUCache : public Cache {
   virtual uint64_t NewId() {
     MutexLock l(&id_mutex_);
     return ++(last_id_);
+  }
+  virtual void Prune() {
+    for (int s = 0; s < kNumShards; s++) {
+      shard_[s].Prune();
+    }
+  }
+  virtual size_t TotalCharge() const {
+    size_t total = 0;
+    for (int s = 0; s < kNumShards; s++) {
+      total += shard_[s].TotalCharge();
+    }
+    return total;
   }
 };
 

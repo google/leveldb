@@ -39,6 +39,8 @@
 #define ARCH_CPU_ARM64_FAMILY 1
 #elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
 #define ARCH_CPU_PPC_FAMILY 1
+#elif defined(__mips__)
+#define ARCH_CPU_MIPS_FAMILY 1
 #endif
 
 namespace leveldb {
@@ -107,6 +109,13 @@ inline void MemoryBarrier() {
   // TODO for some powerpc expert: is there a cheaper suitable variant?
   // Perhaps by having separate barriers for acquire and release ops.
   asm volatile("sync" : : : "memory");
+}
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
+// MIPS
+#elif defined(ARCH_CPU_MIPS_FAMILY) && defined(__GNUC__)
+inline void MemoryBarrier() {
+  __asm__ __volatile__("sync" : : : "memory");
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
 
