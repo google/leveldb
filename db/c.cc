@@ -131,15 +131,33 @@ struct leveldb_env_t {
 
 static bool SaveError(char** errptr, const Status& s) {
   assert(errptr != NULL);
+  static char errbuff[256] = {0};
+  const char *pstr = NULL;
+  size_t slen = 0;
+
   if (s.ok()) {
+	errbuff[0] = 0;
     return false;
-  } else if (*errptr == NULL) {
+  } /*else if (*errptr == NULL) {
     *errptr = strdup(s.ToString().c_str());
   } else {
-    // TODO(sanjay): Merge with existing error?
+    // TODO(sanjay): Merge with existing error? 
+	//(kma):I think so!
     free(*errptr);
     *errptr = strdup(s.ToString().c_str());
+  }*/
+  else
+  {
+	  pstr = s.ToString().c_str();
+	  slen = strlen(pstr) + 1;
+	  if(sizeof(errbuff) < slen)
+		  slen = sizeof(errbuff);
+	
+	  memcpy(errbuff, pstr, slen);
+	  errbuff[sizeof(errbuff) - 1] = 0;//keep errbuff null terminated
+	  *errptr = errbuff;
   }
+
   return true;
 }
 

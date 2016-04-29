@@ -200,17 +200,14 @@ int main(int argc, char** argv) {
 
   StartPhase("destroy");
   leveldb_destroy_db(options, dbname, &err);
-  Free(&err);
 
   StartPhase("open_error");
   db = leveldb_open(options, dbname, &err);
   CheckCondition(err != NULL);
-  Free(&err);
 
   StartPhase("leveldb_free");
   db = leveldb_open(options, dbname, &err);
   CheckCondition(err != NULL);
-  leveldb_free(err);
   err = NULL;
 
   StartPhase("open");
