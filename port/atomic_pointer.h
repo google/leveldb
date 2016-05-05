@@ -235,6 +235,7 @@ class AtomicPointer {
 #undef ARCH_CPU_ARM_FAMILY
 #undef ARCH_CPU_ARM64_FAMILY
 #undef ARCH_CPU_PPC_FAMILY
+#undef ARCH_CPU_MIPS_FAMILY
 
 }  // namespace port
 }  // namespace leveldb
