@@ -926,16 +926,10 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
     }
 
     Slice key = input->key();
-    if (compact->compaction->ShouldStopBefore(key) &&
-        compact->builder != NULL) {
-      status = FinishCompactionOutputFile(compact, input);
-      if (!status.ok()) {
-        break;
-      }
-    }
 
     // Handle key/value, add to state, etc.
     bool drop = false;
+    bool first_occurrence = false;
     if (!ParseInternalKey(key, &ikey)) {
       // Do not hide error keys
       current_user_key.clear();
@@ -947,6 +941,8 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
                                      Slice(current_user_key)) != 0) {
         // First occurrence of this user key
         current_user_key.assign(ikey.user_key.data(), ikey.user_key.size());
+        // Don't rotate at this key if last key is an error key.
+        first_occurrence = last_sequence_for_key != kMaxSequenceNumber;
         has_current_user_key = true;
         last_sequence_for_key = kMaxSequenceNumber;
       }
@@ -980,6 +976,19 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 #endif
 
     if (!drop) {
+      // Close output file if it is overlapping too much grandparents
+      // or big enough. We never put keys with same user key to
+      // different files in same level in level compaction.
+      if (compact->builder != NULL && first_occurrence &&
+          (compact->compaction->ShouldStopBefore(key) ||
+           compact->builder->FileSize() >=
+           compact->compaction->MaxOutputFileSize())) {
+        status = FinishCompactionOutputFile(compact, input);
+        if (!status.ok()) {
+          break;
+        }
+      }
+
       // Open output file if necessary
       if (compact->builder == NULL) {
         status = OpenCompactionOutputFile(compact);
@@ -992,15 +1001,6 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
       }
       compact->current_output()->largest.DecodeFrom(key);
       compact->builder->Add(key, input->value());
-
-      // Close output file if it is big enough
-      if (compact->builder->FileSize() >=
-          compact->compaction->MaxOutputFileSize()) {
-        status = FinishCompactionOutputFile(compact, input);
-        if (!status.ok()) {
-          break;
-        }
-      }
     }
 
     input->Next();
