@@ -135,6 +135,9 @@
     <ClCompile Include="util\env_windows.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="db\c.cc">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="db\builder.h">

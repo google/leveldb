@@ -150,6 +150,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="db\builder.cc" />
+    <ClCompile Include="db\c.cc" />
     <ClCompile Include="db\dbformat.cc" />
     <ClCompile Include="db\db_impl.cc" />
     <ClCompile Include="db\db_iter.cc" />
