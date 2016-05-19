@@ -4,6 +4,29 @@ build_config.mk
 *.dylib*
 *.so
 *.so.*
+*.db
+*.opendb
 *_test
 db_bench
 leveldbutil
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studo 2015 cache/options directory
+.vs/
