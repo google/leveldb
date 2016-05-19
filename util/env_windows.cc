@@ -463,8 +463,24 @@ void PosixEnv::BGThread() {
   }
 }
 
+struct StartThreadContext {
+	void(*function)(void* arg);
+	void* arg;
+};
+
+DWORD WINAPI StartThreadCallback(LPVOID lpThreadParameter) {
+	StartThreadContext* context = (StartThreadContext*)lpThreadParameter;
+	void(*function)(void* arg) = context->function;
+	void* arg = context->arg;
+	delete context;
+	function(arg);
+}
+
 void PosixEnv::StartThread(void(*function)(void* arg), void* arg) {
-  CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)function, arg, 0, NULL);
+	StartThreadContext* context = new StartThreadContext;
+	context->function = function;
+	context->arg = arg;
+	CreateThread(NULL, 0, StartThreadCallback, context, 0, NULL);
 }
 
 }
