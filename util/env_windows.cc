@@ -474,6 +474,7 @@ DWORD WINAPI StartThreadCallback(LPVOID lpThreadParameter) {
 	void* arg = context->arg;
 	delete context;
 	function(arg);
+	return 0;
 }
 
 void PosixEnv::StartThread(void(*function)(void* arg), void* arg) {
