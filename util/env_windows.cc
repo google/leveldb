@@ -301,8 +301,12 @@ class PosixEnv : public Env {
   }
 
   virtual Status RenameFile(const std::string& src, const std::string& target) {
-    std::tr2::sys::rename(src, target);
-	return Status::OK();
+	  std::error_code ec;
+	  std::tr2::sys::rename(src, target, ec);
+	  if (ec) {
+		  return Status::IOError(src, ec.message());
+	  }
+	  return Status::OK();
   }
 
   virtual Status LockFile(const std::string& fname, FileLock** lock) {
