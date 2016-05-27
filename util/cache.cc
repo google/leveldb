@@ -251,7 +251,7 @@ Cache::Handle* LRUCache::Insert(
   }
 
   while (usage_ > capacity_ && lru_.next != &lru_) {
-    LRUHandle* old = lru_.next;
+    old = lru_.next;
     LRU_Remove(old);
     table_.Remove(old->key(), old->hash);
     Unref(old);
