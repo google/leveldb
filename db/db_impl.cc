@@ -224,9 +224,9 @@ void DBImpl::DeleteObsoleteFiles() {
     return;
   }
 
-  uint64_t log_number = versions_->LogNumber();
-  uint64_t prev_log_number = versions_->PrevLogNumber();
-  uint64_t manifest_file_number = versions_->ManifestFileNumber();
+  const uint64_t log_number = versions_->LogNumber();
+  const uint64_t prev_log_number = versions_->PrevLogNumber();
+  const uint64_t manifest_file_number = versions_->ManifestFileNumber();
 
   // Make a set of all of the live files
   std::set<uint64_t> live = pending_outputs_;
@@ -235,7 +235,9 @@ void DBImpl::DeleteObsoleteFiles() {
   std::vector<std::string> filenames;
   env_->GetChildren(dbname_, &filenames); // Ignoring errors on purpose
 
+  // Unlock while deleting obsolete files
   mutex_.Unlock();
+
   uint64_t number;
   FileType type;
   for (size_t i = 0; i < filenames.size(); i++) {
