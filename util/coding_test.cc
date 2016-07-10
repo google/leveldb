@@ -92,7 +92,7 @@ TEST(Coding, Varint32) {
     ASSERT_EQ(expected, actual);
     ASSERT_EQ(VarintLength(actual), p - start);
   }
-  ASSERT_EQ(p, s.data() + s.size());
+  ASSERT_EQ(p, limit);
 }
 
 TEST(Coding, Varint64) {
