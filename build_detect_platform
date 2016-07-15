@@ -74,7 +74,7 @@ fi
 case "$TARGET_OS" in
     CYGWIN_*)
         PLATFORM=OS_LINUX
-        COMMON_FLAGS="$MEMCMP_FLAG -lpthread -DOS_LINUX -DCYGWIN"
+        COMMON_FLAGS="$MEMCMP_FLAG -lpthread -DOS_LINUX -DCYGWIN -D_BSD_SOURCE"
         PLATFORM_LDFLAGS="-lpthread"
         PORT_FILE=port/port_posix.cc
         ;;
