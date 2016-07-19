@@ -396,8 +396,19 @@ Status Version::Get(const ReadOptions& options,
       saver.ucmp = ucmp;
       saver.user_key = user_key;
       saver.value = value;
+
+      //whc change
+      if (level>0)
       s = vset_->table_cache_->Get(options, f->number, f->file_size,
                                    ikey, &saver, SaveValue);
+      else {
+    	  vset_->table_cache_->SwitchtoSSD();
+    	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
+    	                                    ikey, &saver, SaveValue);
+    	  vset_->table_cache_->SwitchtoDB();
+      }
+
+
       if (!s.ok()) {
         return s;
       }
@@ -1260,10 +1271,19 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
     if (!c->inputs_[which].empty()) {
       if (c->level() + which == 0) {
         const std::vector<FileMetaData*>& files = c->inputs_[which];
+
+        // whc change
+        table_cache_->SwitchtoSSD();
+       // std::cout<<"in version set, pathname is:"<<std::endl;
+        //table_cache_->PrintfPathname();
+
         for (size_t i = 0; i < files.size(); i++) {
           list[num++] = table_cache_->NewIterator(
               options, files[i]->number, files[i]->file_size);
         }
+
+        // whc change
+                table_cache_->SwitchtoDB();
       } else {
         // Create concatenating iterator for the files from this level
         list[num++] = NewTwoLevelIterator(

@@ -284,9 +284,10 @@ void leveldb_destroy_db(
 
 void leveldb_repair_db(
     const leveldb_options_t* options,
+	const char* ssdname,
     const char* name,
     char** errptr) {
-  SaveError(errptr, RepairDB(name, options->rep));
+  SaveError(errptr, RepairDB(name, options->rep,ssdname));
 }
 
 void leveldb_iter_destroy(leveldb_iterator_t* iter) {

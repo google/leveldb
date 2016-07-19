@@ -116,6 +116,9 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
 
   const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
   if (estimated_block_size >= r->options.block_size) {
+	  //whc add
+	 // printf("estimated_block_size:%d\n",estimated_block_size);
+
     Flush();
   }
 }
@@ -126,7 +129,9 @@ void TableBuilder::Flush() {
   if (!ok()) return;
   if (r->data_block.empty()) return;
   assert(!r->pending_index_entry);
-  WriteBlock(&r->data_block, &r->pending_handle);
+  //whc add
+ // printf("write data block\n");
+ WriteBlock(&r->data_block, &r->pending_handle,0);
   if (ok()) {
     r->pending_index_entry = true;
     r->status = r->file->Flush();
@@ -136,7 +141,7 @@ void TableBuilder::Flush() {
   }
 }
 
-void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
+void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle,int flag) {
   // File format contains a sequence of blocks where each block has:
   //    block_data: uint8[n]
   //    type: uint8
@@ -147,6 +152,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
 
   Slice block_contents;
   CompressionType type = r->options.compression;
+  int itype=0;
   // TODO(postrelease): Support more compression options: zlib?
   switch (type) {
     case kNoCompression:
@@ -158,6 +164,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       if (port::Snappy_Compress(raw.data(), raw.size(), compressed) &&
           compressed->size() < raw.size() - (raw.size() / 8u)) {
         block_contents = *compressed;
+        itype =1;
       } else {
         // Snappy not supported, or compressed less than 12.5%, so just
         // store uncompressed form
@@ -170,6 +177,9 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
   WriteRawBlock(block_contents, type, handle);
   r->compressed_output.clear();
   block->Reset();
+  //whc add
+ // if (flag==0)
+  //printf("type:%d blocksize:%d \n",itype,raw.size());
 }
 
 void TableBuilder::WriteRawBlock(const Slice& block_contents,
@@ -223,7 +233,7 @@ Status TableBuilder::Finish() {
     }
 
     // TODO(postrelease): Add stats and other meta blocks
-    WriteBlock(&meta_index_block, &metaindex_block_handle);
+    WriteBlock(&meta_index_block, &metaindex_block_handle,2);
   }
 
   // Write index block
@@ -235,7 +245,10 @@ Status TableBuilder::Finish() {
       r->index_block.Add(r->last_key, Slice(handle_encoding));
       r->pending_index_entry = false;
     }
-    WriteBlock(&r->index_block, &index_block_handle);
+    //whc add
+    //printf(" write index block!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+    WriteBlock(&r->index_block, &index_block_handle,1);
+    //printf("index_handle size:%d\n",index_block_handle.size());
   }
 
   // Write footer

@@ -1,4 +1,4 @@
-/* Copyright (c) 2011 The LevelDB Authors. All rights reserved.
+ /* Copyright (c) 2011 The LevelDB Authors. All rights reserved.
   Use of this source code is governed by a BSD-style license that can be
   found in the LICENSE file. See the AUTHORS file for names of contributors.
 
@@ -47,6 +47,8 @@ extern "C" {
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+#include<string.h>
+//#include <iostream>
 
 /* Exported types */
 
@@ -142,6 +144,7 @@ extern void leveldb_destroy_db(
 
 extern void leveldb_repair_db(
     const leveldb_options_t* options,
+	const char* ssdname,
     const char* name,
     char** errptr);
 

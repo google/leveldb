@@ -160,6 +160,9 @@ class Env {
   // Sleep/delay the thread for the prescribed number of micro-seconds.
   virtual void SleepForMicroseconds(int micros) = 0;
 
+  //whc add
+  virtual int CopyFile(const std::string& SourceFile,const std::string& NewFile) = 0;
+
  private:
   // No copying allowed
   Env(const Env&);
@@ -215,10 +218,18 @@ class RandomAccessFile {
   virtual Status Read(uint64_t offset, size_t n, Slice* result,
                       char* scratch) const = 0;
 
+  // whc add
+  void SetFilename(const std::string& fname){filename = fname;}
+
+   std::string GetFilename(){return filename;}
+
  private:
   // No copying allowed
   RandomAccessFile(const RandomAccessFile&);
   void operator=(const RandomAccessFile&);
+
+  //whc add
+  std::string filename;
 };
 
 // A file abstraction for sequential writing.  The implementation
@@ -341,6 +352,11 @@ class EnvWrapper : public Env {
   }
   void SleepForMicroseconds(int micros) {
     target_->SleepForMicroseconds(micros);
+  }
+
+  //whc add
+  int CopyFile(const std::string& SourceFile,const std::string& NewFile) {
+	  return   target_->CopyFile(SourceFile,NewFile);
   }
  private:
   Env* target_;
