@@ -23,6 +23,9 @@
 #include "util/logging.h"
 #include "util/mutexlock.h"
 #include "util/posix_logger.h"
+#include <iostream>
+//#include <iostream>
+#include <fstream>
 
 namespace leveldb {
 
@@ -334,6 +337,11 @@ class PosixEnv : public Env {
     } else {
       *result = new PosixRandomAccessFile(fname, fd);
     }
+
+    //whc add
+    //RandomAccessFile::filename = fname;
+    (**result).SetFilename(fname);
+
     return s;
   }
 
@@ -341,6 +349,10 @@ class PosixEnv : public Env {
                                  WritableFile** result) {
     Status s;
     FILE* f = fopen(fname.c_str(), "w");
+
+    //whc add
+    //std::cout<<"newwritablefile"<<std::endl;
+
     if (f == NULL) {
       *result = NULL;
       s = IOError(fname, errno);
@@ -475,6 +487,7 @@ class PosixEnv : public Env {
     }
     // Directory may already exist
     CreateDir(*result);
+    std::cout<<*result<<std::endl;
     return Status::OK();
   }
 
@@ -504,6 +517,39 @@ class PosixEnv : public Env {
 
   virtual void SleepForMicroseconds(int micros) {
     usleep(micros);
+  }
+
+  virtual int CopyFile(const std::string& SourceFile,const std::string& NewFile)
+  {
+  std::ifstream in;
+  std::ofstream out;
+  const char* source;
+  const char* newfile;
+  source = SourceFile.c_str();
+  newfile = NewFile.c_str();
+  in.open(source,std::ios::binary);//打开源文件
+  if(in.fail())//打开源文件失败
+  {
+     std::cout<<"Error 1: Fail to open the source file."<<std::endl;
+     in.close();
+     out.close();
+     return 0;
+  }
+  out.open(newfile,std::ios::binary);//创建目标文件
+  if(out.fail())//创建文件失败
+  {
+    std:: cout<<"Error 2: Fail to create the new file."<<std::endl;
+     out.close();
+     in.close();
+     return 0;
+  }
+  else//复制文件
+  {
+     out<<in.rdbuf();
+     out.close();
+     in.close();
+     return 1;
+  }
   }
 
  private:

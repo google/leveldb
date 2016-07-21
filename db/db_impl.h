@@ -64,6 +64,9 @@ class DBImpl : public DB {
   // bytes.
   void RecordReadSample(Slice key);
 
+  //whc add
+ const  std::string&  GetSSDpath(){return ssdname_; }
+
  private:
   friend class DB;
   struct CompactionState;
@@ -126,6 +129,9 @@ class DBImpl : public DB {
   bool owns_info_log_;
   bool owns_cache_;
   const std::string dbname_;
+
+  //whc add
+  const std::string ssdname_ = "/tmp/vssd";
 
   // table_cache_ provides its own synchronization
   TableCache* table_cache_;

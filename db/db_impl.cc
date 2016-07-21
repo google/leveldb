@@ -32,6 +32,8 @@
 #include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
+#include <iostream>
+#include "db/filename.h"
 
 namespace leveldb {
 
@@ -138,7 +140,8 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
 
   // Reserve ten files or so for other uses and give the rest to TableCache.
   const int table_cache_size = options_.max_open_files - kNumNonTableCacheFiles;
-  table_cache_ = new TableCache(dbname_, &options_, table_cache_size);
+  //whc change
+  table_cache_ = new TableCache(dbname_, &options_, table_cache_size,ssdname_);
 
   versions_ = new VersionSet(dbname_, &options_, table_cache_,
                              &internal_comparator_);
@@ -268,6 +271,29 @@ void DBImpl::DeleteObsoleteFiles() {
       }
     }
   }
+
+  //whc add
+
+  std::vector<std::string> ssd_filenames;
+    env_->GetChildren(ssdname_, &ssd_filenames); // Ignoring errors on purpose
+    //uint64_t number;
+   // FileType type;
+    for (size_t i = 0; i < ssd_filenames.size(); i++) {
+    	  bool keep = true;
+      if (ParseFileName(ssd_filenames[i], &number, &type)) {
+        keep = (live.find(number) != live.end());
+        }
+
+        if (!keep) {
+            table_cache_->Evict(number);
+          Log(options_.info_log, "Delete type=%d #%lld\n",
+              int(type),
+              static_cast<unsigned long long>(number));
+          env_->DeleteFile(ssdname_ + "/" + ssd_filenames[i]);
+        }
+      }
+
+
 }
 
 Status DBImpl::Recover(VersionEdit* edit, bool *save_manifest) {
@@ -494,13 +520,26 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Iterator* iter = mem->NewIterator();
   Log(options_.info_log, "Level-0 table #%llu: started",
       (unsigned long long) meta.number);
-
+  //whc add
+   // std::cout<<"write level 0 table is come in "<<std::endl;
+//whc change
   Status s;
+  /*
   {
     mutex_.Unlock();
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     mutex_.Lock();
   }
+*/
+  //whc add
+  {
+      mutex_.Unlock();
+      s = BuildTable(ssdname_, env_, options_, table_cache_, iter, &meta);
+      mutex_.Lock();
+    }
+
+  //whc add
+   // std::cout<<"write level 0 table is success 1"<<std::endl;
 
   Log(options_.info_log, "Level-0 table #%llu: %lld bytes %s",
       (unsigned long long) meta.number,
@@ -509,16 +548,28 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   delete iter;
   pending_outputs_.erase(meta.number);
 
-
+  //whc add
+    //std::cout<<"write level 0 table is success 2"<<std::endl;
   // Note that if file_size is zero, the file has been deleted and
   // should not be added to the manifest.
   int level = 0;
   if (s.ok() && meta.file_size > 0) {
     const Slice min_user_key = meta.smallest.user_key();
     const Slice max_user_key = meta.largest.user_key();
+
+
     if (base != NULL) {
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
+    //whc change
+    if (level!=0){
+        	 //std::cout<<"copy ssd to db"<<level<<std::endl;
+        	const std::string ssdfilename  = TableFileName(ssdname_, meta.number);
+        	const std::string dbfilename = TableFileName(dbname_,meta.number);
+        	env_-> CopyFile(ssdfilename,dbfilename);
+        	remove(ssdfilename.c_str());
+        }
+
     edit->AddFile(level, meta.number, meta.file_size,
                   meta.smallest, meta.largest);
   }
@@ -527,6 +578,9 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   stats.micros = env_->NowMicros() - start_micros;
   stats.bytes_written = meta.file_size;
   stats_[level].Add(stats);
+
+  //whc add
+  //std::cout<<"write level 0 table is success"<<std::endl;
   return s;
 }
 
@@ -561,6 +615,8 @@ void DBImpl::CompactMemTable() {
   } else {
     RecordBackgroundError(s);
   }
+  //whc add
+ // std::cout<<"compact mem success"<<std::endl;
 }
 
 void DBImpl::CompactRange(const Slice* begin, const Slice* end) {
@@ -602,9 +658,14 @@ void DBImpl::TEST_CompactRange(int level, const Slice* begin,const Slice* end) {
     manual.end = &end_storage;
   }
 
+  //whc add
+  printf("begin key and end key are right\n");
+
   MutexLock l(&mutex_);
   while (!manual.done && !shutting_down_.Acquire_Load() && bg_error_.ok()) {
     if (manual_compaction_ == NULL) {  // Idle
+    	//whc add
+    	printf("manual do\n");
       manual_compaction_ = &manual;
       MaybeScheduleCompaction();
     } else {  // Running either my compaction or another compaction.
@@ -710,16 +771,33 @@ void DBImpl::BackgroundCompaction() {
     c = versions_->PickCompaction();
   }
 
+  //whc add
+  /*
+  if (c!=NULL){
+  std::cout<<"now compact level"<<c->level()<<std::endl;
+  }*/
+
   Status status;
   if (c == NULL) {
     // Nothing to do
-  } else if (!is_manual && c->IsTrivialMove()) {
+ } else if (!is_manual && c->IsTrivialMove()) {
+	  //whc change
+  //} else if (0>1) {
     // Move file to next level
     assert(c->num_input_files(0) == 1);
+    //std::cout<<"IsTrivialMove"<<c->level()<<std::endl;
     FileMetaData* f = c->input(0, 0);
     c->edit()->DeleteFile(c->level(), f->number);
     c->edit()->AddFile(c->level() + 1, f->number, f->file_size,
                        f->smallest, f->largest);
+    //whc add
+    if (c->level() == 0){
+    	// std::cout<<"copy ssd to db"<<c->level()<<std::endl;
+    	const std::string ssdfilename  = TableFileName(ssdname_, f->number);
+    	const std::string dbfilename = TableFileName(dbname_, f->number);
+    	env_-> CopyFile(ssdfilename,dbfilename);
+    	remove(ssdfilename.c_str());
+    }
     status = versions_->LogAndApply(c->edit(), &mutex_);
     if (!status.ok()) {
       RecordBackgroundError(status);
@@ -1562,6 +1640,31 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
     env->DeleteDir(dbname);  // Ignore error in case dir contains other files
   }
   return result;
+}
+
+// whc add
+Status DestroySSD(const std::string& ssdname, const Options& options) {
+	Env* env = options.env;
+	    std::vector<std::string> filenames;
+	    // Ignore error in case directory does not exist
+	    //std::cout<<"ssdname is " + ssdname <<std::endl;
+	    env->GetChildren(ssdname, &filenames);
+	    //printf("filenames size is %d \n",filenames.size());
+	    if (filenames.empty()) {
+	      return Status::OK();
+	    }
+
+	   // FileLock* lock;
+	    //const std::string lockname = LockFileName(dbname);
+	   // Status result = env->LockFile(lockname, &lock);
+
+	      uint64_t number;
+	      for (size_t i = 0; i < filenames.size(); i++) {
+	          Status del = env->DeleteFile(ssdname + "/" + filenames[i]);
+	          //std::cout<<ssdname + "/" + filenames[i]<<std::endl;
+	        }
+
+	    return Status::OK();
 }
 
 }  // namespace leveldb

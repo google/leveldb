@@ -28,6 +28,8 @@ class CorruptionTest {
  public:
   test::ErrorEnv env_;
   std::string dbname_;
+  //whc add
+  std::string ssdname_;
   Cache* tiny_cache_;
   Options options_;
   DB* db_;
@@ -37,6 +39,8 @@ class CorruptionTest {
     options_.env = &env_;
     options_.block_cache = tiny_cache_;
     dbname_ = test::TmpDir() + "/corruption_test";
+    //whc add
+    ssdname_ = "/tmp/vssd";
     DestroyDB(dbname_, options_);
 
     db_ = NULL;
@@ -64,7 +68,7 @@ class CorruptionTest {
   void RepairDB() {
     delete db_;
     db_ = NULL;
-    ASSERT_OK(::leveldb::RepairDB(dbname_, options_));
+    ASSERT_OK(::leveldb::RepairDB(dbname_, options_,ssdname_));
   }
 
   void Build(int n) {
