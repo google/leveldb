@@ -271,7 +271,7 @@ void DBImpl::DeleteObsoleteFiles() {
       }
     }
   }
-
+#ifdef SSD_LEVEL0_USE
   //whc add
 
   std::vector<std::string> ssd_filenames;
@@ -292,7 +292,7 @@ void DBImpl::DeleteObsoleteFiles() {
           env_->DeleteFile(ssdname_ + "/" + ssd_filenames[i]);
         }
       }
-
+#endif
 
 }
 
@@ -522,22 +522,27 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
       (unsigned long long) meta.number);
   //whc add
    // std::cout<<"write level 0 table is come in "<<std::endl;
+
 //whc change
   Status s;
-  /*
+#ifndef SSD_LEVEL0_USE
+
   {
+	 //whc add
+	  //std::cout<<"write level0 right"<<std::endl;
     mutex_.Unlock();
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     mutex_.Lock();
   }
-*/
+
+#else
   //whc add
   {
       mutex_.Unlock();
       s = BuildTable(ssdname_, env_, options_, table_cache_, iter, &meta);
       mutex_.Lock();
     }
-
+#endif
   //whc add
    // std::cout<<"write level 0 table is success 1"<<std::endl;
 
@@ -562,6 +567,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
     //whc change
+#ifdef SSD_LEVEL0_USE
     if (level!=0){
         	 //std::cout<<"copy ssd to db"<<level<<std::endl;
         	const std::string ssdfilename  = TableFileName(ssdname_, meta.number);
@@ -569,6 +575,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
         	env_-> CopyFile(ssdfilename,dbfilename);
         	remove(ssdfilename.c_str());
         }
+#endif
 
     edit->AddFile(level, meta.number, meta.file_size,
                   meta.smallest, meta.largest);
@@ -659,13 +666,13 @@ void DBImpl::TEST_CompactRange(int level, const Slice* begin,const Slice* end) {
   }
 
   //whc add
-  printf("begin key and end key are right\n");
+  //printf("begin key and end key are right\n");
 
   MutexLock l(&mutex_);
   while (!manual.done && !shutting_down_.Acquire_Load() && bg_error_.ok()) {
     if (manual_compaction_ == NULL) {  // Idle
     	//whc add
-    	printf("manual do\n");
+    	//printf("manual do\n");
       manual_compaction_ = &manual;
       MaybeScheduleCompaction();
     } else {  // Running either my compaction or another compaction.
@@ -791,6 +798,7 @@ void DBImpl::BackgroundCompaction() {
     c->edit()->AddFile(c->level() + 1, f->number, f->file_size,
                        f->smallest, f->largest);
     //whc add
+#ifdef SSD_LEVEL0_USE
     if (c->level() == 0){
     	// std::cout<<"copy ssd to db"<<c->level()<<std::endl;
     	const std::string ssdfilename  = TableFileName(ssdname_, f->number);
@@ -798,6 +806,8 @@ void DBImpl::BackgroundCompaction() {
     	env_-> CopyFile(ssdfilename,dbfilename);
     	remove(ssdfilename.c_str());
     }
+#endif
+
     status = versions_->LogAndApply(c->edit(), &mutex_);
     if (!status.ok()) {
       RecordBackgroundError(status);

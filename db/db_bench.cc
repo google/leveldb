@@ -18,6 +18,7 @@
 #include "util/random.h"
 #include "util/testutil.h"
 #include <iostream>
+#include "db/dbformat.h"
 
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
@@ -63,7 +64,7 @@ static const char* FLAGS_benchmarks =
     ;
 
 // Number of key/values to place in database
-static int FLAGS_num = 10000000;
+static int FLAGS_num = 1000000;
 
 // Number of read operations to do.  If negative, do FLAGS_num reads.
 static int FLAGS_reads = -1;
@@ -575,7 +576,9 @@ class Benchmark {
       }
     }
     //whc add
+#ifdef SSD_LEVEL0_USE
               DestroySSD_1(FLAGS_ssd, Options() );
+#endif
   }
 
  private:
