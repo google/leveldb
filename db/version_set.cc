@@ -324,6 +324,9 @@ Status Version::Get(const ReadOptions& options,
                     const LookupKey& k,
                     std::string* value,
                     GetStats* stats) {
+	//whc add
+	std::cout<<"version get begin"<<std::endl;
+
   Slice ikey = k.internal_key();
   Slice user_key = k.user_key();
   const Comparator* ucmp = vset_->icmp_.user_comparator();
@@ -402,10 +405,17 @@ Status Version::Get(const ReadOptions& options,
       s = vset_->table_cache_->Get(options, f->number, f->file_size,
                                    ikey, &saver, SaveValue);
       else {
+#ifdef SSD_LEVEL0_USE
     	  vset_->table_cache_->SwitchtoSSD();
     	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
     	                                    ikey, &saver, SaveValue);
     	  vset_->table_cache_->SwitchtoDB();
+#else
+    	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
+    	     	                                    ikey, &saver, SaveValue);
+    	  //whc add
+    	  	//std::cout<<"version get come in right"<<std::endl;
+#endif
       }
 
 
@@ -426,7 +436,8 @@ Status Version::Get(const ReadOptions& options,
       }
     }
   }
-
+  //whc add
+  	std::cout<<"version get end"<<std::endl;
   return Status::NotFound(Slice());  // Use an empty error message for speed
 }
 
@@ -1273,7 +1284,9 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
         const std::vector<FileMetaData*>& files = c->inputs_[which];
 
         // whc change
+#ifdef SSD_LEVEL0_USE
         table_cache_->SwitchtoSSD();
+#endif
        // std::cout<<"in version set, pathname is:"<<std::endl;
         //table_cache_->PrintfPathname();
 
@@ -1283,7 +1296,9 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
         }
 
         // whc change
+#ifdef SSD_LEVEL0_USE
                 table_cache_->SwitchtoDB();
+#endif
       } else {
         // Create concatenating iterator for the files from this level
         list[num++] = NewTwoLevelIterator(
