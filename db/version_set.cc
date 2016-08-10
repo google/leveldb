@@ -406,7 +406,7 @@ Status Version::Get(const ReadOptions& options,
                                    ikey, &saver, SaveValue);
       else {
 #ifdef SSD_LEVEL0_USE
-    	  std::cout<<"version get from ssd"<<std::endl;
+    	  //std::cout<<"version get from ssd"<<std::endl;
     	  /*
     	  vset_->table_cache_->SwitchtoSSD();
     	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
@@ -415,7 +415,7 @@ Status Version::Get(const ReadOptions& options,
     	  */
     	  s = vset_->table_cache_->GetFromSSD(options, f->number, f->file_size,
     	      	                                    ikey, &saver, SaveValue);
-    	  std::cout<<"version get from ssd end"<<std::endl;
+    	  //std::cout<<"version get from ssd end"<<std::endl;
 #else
     	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
     	     	                                    ikey, &saver, SaveValue);

@@ -318,15 +318,15 @@ class PosixEnv : public Env {
     Status s;
 
     // whc add
-    std::cout<<"come in"<<std::endl;
-    std::cout<<"read file: "<<fname<<std::endl;
+   // std::cout<<"come in"<<std::endl;
+    //std::cout<<"read file: "<<fname<<std::endl;
     int fd = open(fname.c_str(), O_RDONLY);
     // whc add
-        std::cout<<"file open success"<<std::endl;
+        //std::cout<<"file open success"<<std::endl;
     if (fd < 0) {
       s = IOError(fname, errno);
       // whc add
-             std::cout<<"io error"<<std::endl;
+             //std::cout<<"io error"<<std::endl;
     } else if (mmap_limit_.Acquire()) {
       uint64_t size;
       s = GetFileSize(fname, &size);
@@ -351,7 +351,7 @@ class PosixEnv : public Env {
     (**result).SetFilename(fname);
 
     // whc add
-       std::cout<<"end "<<std::endl;
+      // std::cout<<"end "<<std::endl;
     return s;
   }
 

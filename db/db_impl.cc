@@ -780,9 +780,9 @@ void DBImpl::BackgroundCompaction() {
 
   //whc add
 
-  if (c!=NULL){
-  std::cout<<"now compact level"<<c->level()<<std::endl;
-  }
+ // if (c!=NULL){
+  //std::cout<<"now compact level"<<c->level()<<std::endl;
+  //}
 
   Status status;
   if (c == NULL) {

@@ -70,8 +70,8 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
     RandomAccessFile* file = NULL;
     Table* table = NULL;
     // whc add
-                std::cout<<"in findtable path  is :" + pathname_<<std::endl;
-                std::cout<<"in findtable fname  is :" + fname<<std::endl;
+               // std::cout<<"in findtable path  is :" + pathname_<<std::endl;
+                //std::cout<<"in findtable fname  is :" + fname<<std::endl;
     s = env_->NewRandomAccessFile(fname, &file);
 
     // whc add
@@ -202,8 +202,8 @@ Status TableCache::FindTableFromSSD(uint64_t file_number, uint64_t file_size,
     RandomAccessFile* file = NULL;
     Table* table = NULL;
     // whc add
-                std::cout<<"in findtable path  is :" + pathname_<<std::endl;
-                std::cout<<"in findtable fname  is :" + fname<<std::endl;
+                //std::cout<<"in findtable path  is :" + pathname_<<std::endl;
+               // std::cout<<"in findtable fname  is :" + fname<<std::endl;
     s = env_->NewRandomAccessFile(fname, &file);
 
     // whc add
