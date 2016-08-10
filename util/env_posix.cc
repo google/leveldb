@@ -316,9 +316,17 @@ class PosixEnv : public Env {
                                      RandomAccessFile** result) {
     *result = NULL;
     Status s;
+
+    // whc add
+    std::cout<<"come in"<<std::endl;
+    std::cout<<"read file: "<<fname<<std::endl;
     int fd = open(fname.c_str(), O_RDONLY);
+    // whc add
+        std::cout<<"file open success"<<std::endl;
     if (fd < 0) {
       s = IOError(fname, errno);
+      // whc add
+             std::cout<<"io error"<<std::endl;
     } else if (mmap_limit_.Acquire()) {
       uint64_t size;
       s = GetFileSize(fname, &size);
@@ -342,6 +350,8 @@ class PosixEnv : public Env {
     //RandomAccessFile::filename = fname;
     (**result).SetFilename(fname);
 
+    // whc add
+       std::cout<<"end "<<std::endl;
     return s;
   }
 
