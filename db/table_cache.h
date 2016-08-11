@@ -56,6 +56,15 @@ class TableCache {
   void PrintfPathname(){std::cout<<pathname_<<std::endl;}
   void PrintfSSDname(){std::cout<<ssdname_<<std::endl;}
 
+  Status GetFromSSD(const ReadOptions& options,
+               uint64_t file_number,
+               uint64_t file_size,
+               const Slice& k,
+               void* arg,
+               void (*handle_result)(void*, const Slice&, const Slice&));
+
+
+
  private:
   Env* const env_;
   const std::string dbname_;
@@ -67,6 +76,8 @@ class TableCache {
   const std::string ssdname_;
 
   Status FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle**);
+  //whc add
+  Status FindTableFromSSD(uint64_t file_number, uint64_t file_size, Cache::Handle**);
 };
 
 }  // namespace leveldb

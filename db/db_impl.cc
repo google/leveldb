@@ -779,10 +779,10 @@ void DBImpl::BackgroundCompaction() {
   }
 
   //whc add
-  /*
-  if (c!=NULL){
-  std::cout<<"now compact level"<<c->level()<<std::endl;
-  }*/
+
+ // if (c!=NULL){
+  //std::cout<<"now compact level"<<c->level()<<std::endl;
+  //}
 
   Status status;
   if (c == NULL) {
@@ -929,7 +929,8 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
   }
   delete compact->outfile;
   compact->outfile = NULL;
-
+// whc change
+  /*
   if (s.ok() && current_entries > 0) {
     // Verify that the table is usable
     Iterator* iter = table_cache_->NewIterator(ReadOptions(),
@@ -945,7 +946,7 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
           (unsigned long long) current_entries,
           (unsigned long long) current_bytes);
     }
-  }
+  }*/
   return s;
 }
 

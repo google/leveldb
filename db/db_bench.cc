@@ -497,7 +497,7 @@ class Benchmark {
 
       else if (name == Slice("overwrite")) {
     	  // whc change
-        fresh_db = true;
+        fresh_db = false;
         //method = &Benchmark::WriteRandom;
       }
       else if (name == Slice("fillsync")) {

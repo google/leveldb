@@ -325,7 +325,7 @@ Status Version::Get(const ReadOptions& options,
                     std::string* value,
                     GetStats* stats) {
 	//whc add
-	std::cout<<"version get begin"<<std::endl;
+	//std::cout<<"version get begin"<<std::endl;
 
   Slice ikey = k.internal_key();
   Slice user_key = k.user_key();
@@ -406,10 +406,16 @@ Status Version::Get(const ReadOptions& options,
                                    ikey, &saver, SaveValue);
       else {
 #ifdef SSD_LEVEL0_USE
+    	  //std::cout<<"version get from ssd"<<std::endl;
+    	  /*
     	  vset_->table_cache_->SwitchtoSSD();
     	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
     	                                    ikey, &saver, SaveValue);
     	  vset_->table_cache_->SwitchtoDB();
+    	  */
+    	  s = vset_->table_cache_->GetFromSSD(options, f->number, f->file_size,
+    	      	                                    ikey, &saver, SaveValue);
+    	  //std::cout<<"version get from ssd end"<<std::endl;
 #else
     	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
     	     	                                    ikey, &saver, SaveValue);
@@ -437,7 +443,7 @@ Status Version::Get(const ReadOptions& options,
     }
   }
   //whc add
-  	std::cout<<"version get end"<<std::endl;
+  	//std::cout<<"version get end"<<std::endl;
   return Status::NotFound(Slice());  // Use an empty error message for speed
 }
 

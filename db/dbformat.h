@@ -5,7 +5,7 @@
 #ifndef STORAGE_LEVELDB_DB_DBFORMAT_H_
 #define STORAGE_LEVELDB_DB_DBFORMAT_H_
 
-//#define SSD_LEVEL0_USE
+#define SSD_LEVEL0_USE
 
 #include <stdio.h>
 #include "leveldb/comparator.h"
