@@ -36,7 +36,7 @@
   #define PLATFORM_IS_LITTLE_ENDIAN  (_BYTE_ORDER == _LITTLE_ENDIAN)
 #else
 #ifdef FASTO
-  #include "common/portable_endian.h"
+  #include <common/portable_endian.h>
   #define PLATFORM_IS_LITTLE_ENDIAN  (__BYTE_ORDER == __LITTLE_ENDIAN)
 #else
   #include <endian.h>
