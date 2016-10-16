@@ -8,7 +8,10 @@
 #   CXX                         C++ Compiler path
 #   PLATFORM_LDFLAGS            Linker flags
 #   PLATFORM_LIBS               Libraries flags
-#   PLATFORM_SHARED_EXT         Extension for shared libraries
+#   PLATFORM_SHARED             Set to 'true' if shared libraries should be
+#                               built, empty otherwise.
+#   PLATFORM_SHARED_BASE        Base filename for shared libraries (before version)
+#   PLATFORM_SHARED_EXT         Extension for shared libraries (after version)
 #   PLATFORM_SHARED_LDFLAGS     Flags for building shared library
 #                               This flag is embedded just before the name
 #                               of the shared library without intervening spaces
@@ -60,7 +63,9 @@ PLATFORM_CCFLAGS=
 PLATFORM_CXXFLAGS=
 PLATFORM_LDFLAGS=
 PLATFORM_LIBS=
-PLATFORM_SHARED_EXT="so"
+PLATFORM_SHARED=true
+PLATFORM_SHARED_BASE="libleveldb.so"
+PLATFORM_SHARED_EXT=
 PLATFORM_SHARED_LDFLAGS="-shared -Wl,-soname -Wl,"
 PLATFORM_SHARED_CFLAGS="-fPIC -fvisibility=hidden"
 PLATFORM_SHARED_VERSIONED=true
@@ -82,7 +87,8 @@ case "$TARGET_OS" in
     Darwin)
         PLATFORM=OS_MACOSX
         COMMON_FLAGS="$MEMCMP_FLAG"
-        PLATFORM_SHARED_EXT=dylib
+        PLATFORM_SHARED_BASE=libleveldb
+        PLATFORM_SHARED_EXT=.dylib
         [ -z "$INSTALL_PATH" ] && INSTALL_PATH=`pwd`
         PLATFORM_SHARED_LDFLAGS="-dynamiclib -install_name $INSTALL_PATH/"
         PORT_FILE=port/port_posix.cc
@@ -143,7 +149,7 @@ case "$TARGET_OS" in
         COMMON_FLAGS="$MEMCMP_FLAG"
         [ -z "$INSTALL_PATH" ] && INSTALL_PATH=`pwd`
         PORT_FILE=port/port_posix.cc
-        PLATFORM_SHARED_EXT=
+        PLATFORM_SHARED=false
         PLATFORM_SHARED_LDFLAGS=
         PLATFORM_SHARED_CFLAGS=
         PLATFORM_SHARED_VERSIONED=
@@ -256,6 +262,8 @@ echo "PLATFORM_LDFLAGS=$PLATFORM_LDFLAGS" >> $OUTPUT
 echo "PLATFORM_LIBS=$PLATFORM_LIBS" >> $OUTPUT
 echo "PLATFORM_CCFLAGS=$PLATFORM_CCFLAGS" >> $OUTPUT
 echo "PLATFORM_CXXFLAGS=$PLATFORM_CXXFLAGS" >> $OUTPUT
+echo "PLATFORM_SHARED=$PLATFORM_SHARED" >> $OUTPUT
+echo "PLATFORM_SHARED_BASE=$PLATFORM_SHARED_BASE" >> $OUTPUT
 echo "PLATFORM_SHARED_CFLAGS=$PLATFORM_SHARED_CFLAGS" >> $OUTPUT
 echo "PLATFORM_SHARED_EXT=$PLATFORM_SHARED_EXT" >> $OUTPUT
 echo "PLATFORM_SHARED_LDFLAGS=$PLATFORM_SHARED_LDFLAGS" >> $OUTPUT
