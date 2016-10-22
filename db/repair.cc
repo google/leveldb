@@ -447,7 +447,7 @@ class Repairer {
     new_file.append("/");
     new_file.append((slash == NULL) ? fname.c_str() : slash + 1);
     Status s = env_->RenameFile(fname, new_file);
-    Log(options_.info_log, "Archiving %s: %s\n",
+    Log(options_.info_log, "Archiving %s: %s",
         fname.c_str(), s.ToString().c_str());
   }
 };

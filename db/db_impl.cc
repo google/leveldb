@@ -262,7 +262,7 @@ void DBImpl::DeleteObsoleteFiles() {
         if (type == kTableFile) {
           table_cache_->Evict(number);
         }
-        Log(options_.info_log, "Delete type=%d #%lld\n",
+        Log(options_.info_log, "Delete type=%d #%lld",
             int(type),
             static_cast<unsigned long long>(number));
         env_->DeleteFile(dbname_ + "/" + filenames[i]);
@@ -459,7 +459,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
     uint64_t lfile_size;
     if (env_->GetFileSize(fname, &lfile_size).ok() &&
         env_->NewAppendableFile(fname, &logfile_).ok()) {
-      Log(options_.info_log, "Reusing old log %s \n", fname.c_str());
+      Log(options_.info_log, "Reusing old log %s", fname.c_str());
       log_ = new log::Writer(logfile_, lfile_size);
       logfile_number_ = log_number;
       if (mem != NULL) {
@@ -702,7 +702,7 @@ void DBImpl::BackgroundCompaction() {
       manual_end = c->input(0, c->num_input_files(0) - 1)->largest;
     }
     Log(options_.info_log,
-        "Manual compaction at level-%d from %s .. %s; will stop at %s\n",
+        "Manual compaction at level-%d from %s .. %s; will stop at %s",
         m->level,
         (m->begin ? m->begin->DebugString().c_str() : "(begin)"),
         (m->end ? m->end->DebugString().c_str() : "(end)"),
@@ -726,7 +726,7 @@ void DBImpl::BackgroundCompaction() {
       RecordBackgroundError(status);
     }
     VersionSet::LevelSummaryStorage tmp;
-    Log(options_.info_log, "Moved #%lld to level-%d %lld bytes %s: %s\n",
+    Log(options_.info_log, "Moved #%lld to level-%d %lld bytes %s: %s",
         static_cast<unsigned long long>(f->number),
         c->level() + 1,
         static_cast<unsigned long long>(f->file_size),
@@ -1345,11 +1345,11 @@ Status DBImpl::MakeRoomForWrite(bool force) {
     } else if (imm_ != NULL) {
       // We have filled up the current memtable, but the previous
       // one is still being compacted, so we wait.
-      Log(options_.info_log, "Current memtable full; waiting...\n");
+      Log(options_.info_log, "Current memtable full; waiting...");
       bg_cv_.Wait();
     } else if (versions_->NumLevelFiles(0) >= config::kL0_StopWritesTrigger) {
       // There are too many level-0 files.
-      Log(options_.info_log, "Too many L0 files; waiting...\n");
+      Log(options_.info_log, "Too many L0 files; waiting...");
       bg_cv_.Wait();
     } else {
       // Attempt to switch to a new memtable and trigger compaction of old
