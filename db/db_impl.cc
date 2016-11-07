@@ -1488,6 +1488,9 @@ DB::~DB() { }
 
 Status DB::Open(const Options& options, const std::string& dbname,
                 DB** dbptr) {
+  printf("yushi:open db in leveldb\n");
+  fflush(stdout);
+    //exit(0);
   *dbptr = NULL;
 
   DBImpl* impl = new DBImpl(options, dbname);
