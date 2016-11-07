@@ -26,7 +26,9 @@
 #include <windows.h>
 #endif
 #ifdef OS_MACOSX
+#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED < 101200
 #include <libkern/OSAtomic.h>
+#endif
 #endif
 
 #if defined(_M_X64) || defined(__x86_64__)
@@ -56,7 +58,11 @@ namespace port {
 // Mac OS
 #elif defined(OS_MACOSX)
 inline void MemoryBarrier() {
+#if defined(__MAC_OS_X_VERSION_MIN_REQUIRED) && __MAC_OS_X_VERSION_MIN_REQUIRED < 101200
   OSMemoryBarrier();
+#else
+  atomic_thread_fence(std::memory_order_seq_cst);
+#endif
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
 
