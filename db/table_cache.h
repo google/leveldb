@@ -13,6 +13,7 @@
 #include "leveldb/cache.h"
 #include "leveldb/table.h"
 #include "port/port.h"
+#include <iostream>
 
 namespace leveldb {
 
@@ -20,7 +21,9 @@ class Env;
 
 class TableCache {
  public:
-  TableCache(const std::string& dbname, const Options* options, int entries);
+	//whc change
+  //TableCache(const std::string& dbname, const Options* options, int entries);
+	TableCache(const std::string& dbname, const Options* options, int entries,const std::string& ssdname);
   ~TableCache();
 
   // Return an iterator for the specified file number (the corresponding
@@ -47,13 +50,34 @@ class TableCache {
   // Evict any entry for the specified file number
   void Evict(uint64_t file_number);
 
+  //whc add
+  void SwitchtoSSD(){this->pathname_  = ssdname_;}
+  void SwitchtoDB(){this->pathname_ = dbname_;}
+  void PrintfPathname(){std::cout<<pathname_<<std::endl;}
+  void PrintfSSDname(){std::cout<<ssdname_<<std::endl;}
+
+  Status GetFromSSD(const ReadOptions& options,
+               uint64_t file_number,
+               uint64_t file_size,
+               const Slice& k,
+               void* arg,
+               void (*handle_result)(void*, const Slice&, const Slice&));
+
+
+
  private:
   Env* const env_;
   const std::string dbname_;
   const Options* options_;
   Cache* cache_;
 
+  //whc add
+  std::string pathname_;
+  const std::string ssdname_;
+
   Status FindTable(uint64_t file_number, uint64_t file_size, Cache::Handle**);
+  //whc add
+  Status FindTableFromSSD(uint64_t file_number, uint64_t file_size, Cache::Handle**);
 };
 
 }  // namespace leveldb

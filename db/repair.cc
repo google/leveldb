@@ -44,7 +44,7 @@ namespace {
 
 class Repairer {
  public:
-  Repairer(const std::string& dbname, const Options& options)
+  Repairer(const std::string& dbname, const Options& options,const std::string& ssdname)
       : dbname_(dbname),
         env_(options.env),
         icmp_(options.comparator),
@@ -52,9 +52,11 @@ class Repairer {
         options_(SanitizeOptions(dbname, &icmp_, &ipolicy_, options)),
         owns_info_log_(options_.info_log != options.info_log),
         owns_cache_(options_.block_cache != options.block_cache),
-        next_file_number_(1) {
+        next_file_number_(1) ,
+		ssdname_(ssdname)
+ {
     // TableCache can be small since we expect each table to be opened once.
-    table_cache_ = new TableCache(dbname_, &options_, 10);
+    table_cache_ = new TableCache(dbname_, &options_, 10,ssdname);
   }
 
   ~Repairer() {
@@ -98,6 +100,8 @@ class Repairer {
   };
 
   std::string const dbname_;
+  //whc add
+  std::string const ssdname_;
   Env* const env_;
   InternalKeyComparator const icmp_;
   InternalFilterPolicy const ipolicy_;
@@ -453,8 +457,8 @@ class Repairer {
 };
 }  // namespace
 
-Status RepairDB(const std::string& dbname, const Options& options) {
-  Repairer repairer(dbname, options);
+Status RepairDB(const std::string& dbname, const Options& options,const std::string& ssdname) {
+  Repairer repairer(dbname, options,ssdname);
   return repairer.Run();
 }
 

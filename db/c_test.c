@@ -13,6 +13,8 @@
 
 const char* phase = "";
 static char dbname[200];
+//whc add
+static char ssdname[50];
 
 static void StartPhase(const char* name) {
   fprintf(stderr, "=== Test %s\n", name);
@@ -172,6 +174,11 @@ int main(int argc, char** argv) {
            "%s/leveldb_c_test-%d",
            GetTempDir(),
            ((int) geteuid()));
+//whc add
+  snprintf(ssdname, sizeof(ssdname),
+             "/tmp/vssd",
+             GetTempDir(),
+             ((int) geteuid()));
 
   StartPhase("create_objects");
   cmp = leveldb_comparator_create(NULL, CmpDestroy, CmpCompare, CmpName);
@@ -324,7 +331,7 @@ int main(int argc, char** argv) {
     leveldb_close(db);
     leveldb_options_set_create_if_missing(options, 0);
     leveldb_options_set_error_if_exists(options, 0);
-    leveldb_repair_db(options, dbname, &err);
+    leveldb_repair_db(options,ssdname, dbname, &err);
     CheckNoError(err);
     db = leveldb_open(options, dbname, &err);
     CheckNoError(err);

@@ -4,6 +4,7 @@
 
 #include "table/format.h"
 
+#include<iostream>
 #include "leveldb/env.h"
 #include "port/port.h"
 #include "table/block.h"
@@ -73,9 +74,16 @@ Status ReadBlock(RandomAccessFile* file,
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
+
+  // whc add
+                //std::cout<<"read block  is right.handle.siza:"<<handle.size()<<std::endl;
   char* buf = new char[n + kBlockTrailerSize];
   Slice contents;
   Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
+  // whc add
+              //std::cout<<"read block  is right,content.size:"<<contents.size()<<std::endl;
+              //std::cout<<"read block  is right,n::"<<n<<std::endl;
+              //std::cout<<"read block  is right,kBlockTrailer:"<<kBlockTrailerSize<<std::endl;
   if (!s.ok()) {
     delete[] buf;
     return s;
@@ -97,8 +105,11 @@ Status ReadBlock(RandomAccessFile* file,
     }
   }
 
+  // whc add
+            //std::cout<<"read block check crc  is right,content.size:"<<contents.size()<<std::endl;
+            //std::cout<<"read block check crc  is right,n:"<<n<<std::endl;
   switch (data[n]) {
-    case kNoCompression:
+    case kNoCompression:{
       if (data != buf) {
         // File implementation gave us pointer to some other data.
         // Use it directly under the assumption that it will be live
@@ -112,9 +123,11 @@ Status ReadBlock(RandomAccessFile* file,
         result->heap_allocated = true;
         result->cachable = true;
       }
-
+      // whc add
+                 // std::cout<<"read block switch  is knocompression"<<std::endl;
       // Ok
       break;
+    }
     case kSnappyCompression: {
       size_t ulength = 0;
       if (!port::Snappy_GetUncompressedLength(data, n, &ulength)) {
@@ -131,13 +144,17 @@ Status ReadBlock(RandomAccessFile* file,
       result->data = Slice(ubuf, ulength);
       result->heap_allocated = true;
       result->cachable = true;
+
+      // whc add
+                        //std::cout<<"read block switch  is ksnappycompression"<<std::endl;
       break;
     }
     default:
       delete[] buf;
       return Status::Corruption("bad block type");
   }
-
+  // whc add
+            //std::cout<<"read block switch  is right"<<std::endl;
   return Status::OK();
 }
 

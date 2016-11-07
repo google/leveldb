@@ -55,6 +55,9 @@ class ErrorEnv : public EnvWrapper {
     }
     return target()->NewAppendableFile(fname, result);
   }
+
+  //whc add
+  virtual int CopyFile(const std::string& SourceFile,const std::string& NewFile) {return 0;}
 };
 
 }  // namespace test

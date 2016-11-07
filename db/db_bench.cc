@@ -17,6 +17,8 @@
 #include "util/mutexlock.h"
 #include "util/random.h"
 #include "util/testutil.h"
+#include <iostream>
+#include "db/dbformat.h"
 
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
@@ -105,6 +107,9 @@ static bool FLAGS_reuse_logs = false;
 
 // Use the db with the following name.
 static const char* FLAGS_db = NULL;
+
+//whc add
+const char* FLAGS_ssd = NULL;
 
 namespace leveldb {
 
@@ -421,10 +426,36 @@ class Benchmark {
     delete filter_policy_;
   }
 
+  // whc add
+  Status DestroySSD_1(const std::string& ssdname, const Options& options) {
+    Env* env = options.env;
+    std::vector<std::string> filenames;
+    // Ignore error in case directory does not exist
+    //std::cout<<"ssdname is " + ssdname <<std::endl;
+    env->GetChildren(ssdname, &filenames);
+    //printf("filenames size is %d \n",filenames.size());
+    if (filenames.empty()) {
+      return Status::OK();
+    }
+
+   // FileLock* lock;
+    //const std::string lockname = LockFileName(dbname);
+   // Status result = env->LockFile(lockname, &lock);
+
+      uint64_t number;
+      for (size_t i = 0; i < filenames.size(); i++) {
+          Status del = env->DeleteFile(ssdname + "/" + filenames[i]);
+          //std::cout<<ssdname + "/" + filenames[i]<<std::endl;
+        }
+
+    return Status::OK();
+  }
+
   void Run() {
     PrintHeader();
     Open();
-
+     //whc add
+    //printf("1:FLAGS_ssd  = %s\n",FLAGS_ssd);
     const char* benchmarks = FLAGS_benchmarks;
     while (benchmarks != NULL) {
       const char* sep = strchr(benchmarks, ',');
@@ -462,10 +493,14 @@ class Benchmark {
       } else if (name == Slice("fillrandom")) {
         fresh_db = true;
         method = &Benchmark::WriteRandom;
-      } else if (name == Slice("overwrite")) {
+      }
+
+      else if (name == Slice("overwrite")) {
+    	  // whc change
         fresh_db = false;
-        method = &Benchmark::WriteRandom;
-      } else if (name == Slice("fillsync")) {
+        //method = &Benchmark::WriteRandom;
+      }
+      else if (name == Slice("fillsync")) {
         fresh_db = true;
         num_ /= 1000;
         write_options_.sync = true;
@@ -518,7 +553,8 @@ class Benchmark {
           fprintf(stderr, "unknown benchmark '%s'\n", name.ToString().c_str());
         }
       }
-
+      //whc add
+          //printf("2:FLAGS_ssd  = %s\n",FLAGS_ssd);
       if (fresh_db) {
         if (FLAGS_use_existing_db) {
           fprintf(stdout, "%-12s : skipped (--use_existing_db is true)\n",
@@ -527,7 +563,10 @@ class Benchmark {
         } else {
           delete db_;
           db_ = NULL;
-          DestroyDB(FLAGS_db, Options());
+          DestroyDB(FLAGS_db, Options() );
+          //whc add
+         // printf("3:FLAGS_ssd  = %s\n",FLAGS_ssd);
+          DestroySSD_1(FLAGS_ssd, Options() );
           Open();
         }
       }
@@ -536,6 +575,10 @@ class Benchmark {
         RunBenchmark(num_threads, name, method);
       }
     }
+    //whc add
+#ifdef SSD_LEVEL0_USE
+              DestroySSD_1(FLAGS_ssd, Options() );
+#endif
   }
 
  private:
@@ -945,7 +988,10 @@ int main(int argc, char** argv) {
   FLAGS_write_buffer_size = leveldb::Options().write_buffer_size;
   FLAGS_open_files = leveldb::Options().max_open_files;
   std::string default_db_path;
+  //whc add
+  std::string default_ssd_path;
 
+  std::cout<< "come in~"<<std::endl;
   for (int i = 1; i < argc; i++) {
     double d;
     int n;
@@ -994,6 +1040,15 @@ int main(int argc, char** argv) {
       FLAGS_db = default_db_path.c_str();
   }
 
+  if (FLAGS_ssd == NULL) {
+     // std::string default_ssd_path;
+      default_ssd_path += "/tmp/vssd";
+      //std::cout<< "default_ssd_path is " + default_ssd_path<<std::endl;
+       FLAGS_ssd = default_ssd_path.c_str();
+       //printf("in main FLAGS_ssd  = %s\n",FLAGS_ssd);
+   }
+
+  std::cout<< default_db_path<<std::endl;
   leveldb::Benchmark benchmark;
   benchmark.Run();
   return 0;

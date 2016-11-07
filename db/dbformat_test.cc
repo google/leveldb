@@ -2,12 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <db/ssd_cache.h>
 #include "db/dbformat.h"
 #include "util/logging.h"
 #include "util/testharness.h"
+#include "stdio.h"
+#include <iostream>
 
 namespace leveldb {
-
+//using namespace std;
 static std::string IKey(const std::string& user_key,
                         uint64_t seq,
                         ValueType vt) {
@@ -42,6 +45,13 @@ static void TestKey(const std::string& key,
   ASSERT_EQ(vt, decoded.type);
 
   ASSERT_TRUE(!ParseInternalKey(Slice("bar"), &decoded));
+}
+
+static void Whc(){
+	std::cout<<"WHC is coming!!"<<std::endl;
+	Options options;
+	class leveldb::SSD_cache cache_(options,10000);
+	//printf("whc is coming");
 }
 
 class FormatTest { };
@@ -103,6 +113,10 @@ TEST(FormatTest, InternalKeyShortestSuccessor) {
             ShortSuccessor(IKey("foo", 100, kTypeValue)));
   ASSERT_EQ(IKey("\xff\xff", 100, kTypeValue),
             ShortSuccessor(IKey("\xff\xff", 100, kTypeValue)));
+}
+
+TEST(FormatTest,whc){
+	//Whc();
 }
 
 }  // namespace leveldb

@@ -4,6 +4,7 @@
 
 #include "leveldb/table.h"
 
+#include <iostream>
 #include "leveldb/cache.h"
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
@@ -50,9 +51,14 @@ Status Table::Open(const Options& options,
                         &footer_input, footer_space);
   if (!s.ok()) return s;
 
+  // whc add
+           // std::cout<<"table open footer  is right"<<std::endl;
+
   Footer footer;
   s = footer.DecodeFrom(&footer_input);
   if (!s.ok()) return s;
+  // whc add
+              //std::cout<<"table open footer  is right,foot.index_handle,size:"<<footer.index_handle().size()<<std::endl;
 
   // Read the index block
   BlockContents contents;
@@ -63,11 +69,15 @@ Status Table::Open(const Options& options,
       opt.verify_checksums = true;
     }
     s = ReadBlock(file, opt, footer.index_handle(), &contents);
+    // whc add
+             // std::cout<<"table open readblock  is right"<<std::endl;
     if (s.ok()) {
       index_block = new Block(contents);
     }
   }
 
+  // whc add
+            //std::cout<<"table open index block  is right"<<std::endl;
   if (s.ok()) {
     // We've successfully read the footer and the index block: we're
     // ready to serve requests.
@@ -84,7 +94,8 @@ Status Table::Open(const Options& options,
   } else {
     delete index_block;
   }
-
+  // whc add
+            //std::cout<<"table open  is right"<<std::endl;
   return s;
 }
 

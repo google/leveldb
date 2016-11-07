@@ -324,6 +324,9 @@ Status Version::Get(const ReadOptions& options,
                     const LookupKey& k,
                     std::string* value,
                     GetStats* stats) {
+	//whc add
+	//std::cout<<"version get begin"<<std::endl;
+
   Slice ikey = k.internal_key();
   Slice user_key = k.user_key();
   const Comparator* ucmp = vset_->icmp_.user_comparator();
@@ -396,8 +399,32 @@ Status Version::Get(const ReadOptions& options,
       saver.ucmp = ucmp;
       saver.user_key = user_key;
       saver.value = value;
+
+      //whc change
+      if (level>0)
       s = vset_->table_cache_->Get(options, f->number, f->file_size,
                                    ikey, &saver, SaveValue);
+      else {
+#ifdef SSD_LEVEL0_USE
+    	  //std::cout<<"version get from ssd"<<std::endl;
+    	  /*
+    	  vset_->table_cache_->SwitchtoSSD();
+    	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
+    	                                    ikey, &saver, SaveValue);
+    	  vset_->table_cache_->SwitchtoDB();
+    	  */
+    	  s = vset_->table_cache_->GetFromSSD(options, f->number, f->file_size,
+    	      	                                    ikey, &saver, SaveValue);
+    	  //std::cout<<"version get from ssd end"<<std::endl;
+#else
+    	  s = vset_->table_cache_->Get(options, f->number, f->file_size,
+    	     	                                    ikey, &saver, SaveValue);
+    	  //whc add
+    	  	//std::cout<<"version get come in right"<<std::endl;
+#endif
+      }
+
+
       if (!s.ok()) {
         return s;
       }
@@ -415,7 +442,8 @@ Status Version::Get(const ReadOptions& options,
       }
     }
   }
-
+  //whc add
+  	//std::cout<<"version get end"<<std::endl;
   return Status::NotFound(Slice());  // Use an empty error message for speed
 }
 
@@ -1260,10 +1288,23 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
     if (!c->inputs_[which].empty()) {
       if (c->level() + which == 0) {
         const std::vector<FileMetaData*>& files = c->inputs_[which];
+
+        // whc change
+#ifdef SSD_LEVEL0_USE
+        table_cache_->SwitchtoSSD();
+#endif
+       // std::cout<<"in version set, pathname is:"<<std::endl;
+        //table_cache_->PrintfPathname();
+
         for (size_t i = 0; i < files.size(); i++) {
           list[num++] = table_cache_->NewIterator(
               options, files[i]->number, files[i]->file_size);
         }
+
+        // whc change
+#ifdef SSD_LEVEL0_USE
+                table_cache_->SwitchtoDB();
+#endif
       } else {
         // Create concatenating iterator for the files from this level
         list[num++] = NewTwoLevelIterator(
