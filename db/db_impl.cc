@@ -125,6 +125,8 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       dbname_(dbname),
       db_lock_(NULL),
       shutting_down_(NULL),
+      suspend_cv(&suspend_mutex),
+      suspend_count(0),
       bg_cv_(&mutex_),
       mem_(NULL),
       imm_(NULL),
@@ -1470,6 +1472,32 @@ void DBImpl::GetApproximateSizes(
     v->Unref();
   }
 }
+
+
+void DBImpl::SuspendCompactions() {
+  MutexLock l(& suspend_mutex);
+  env_->Schedule(&SuspendWork, this);
+  while( suspend_count < 1 ) {
+    suspend_cv.Wait();
+  }  
+}
+void DBImpl::SuspendWork(void* db) {
+  reinterpret_cast<DBImpl*>(db)->SuspendCallback();
+}
+void DBImpl::SuspendCallback() {
+    MutexLock l(&suspend_mutex);
+    suspend_count++;
+    suspend_cv.SignalAll();
+    while( suspend_count > 0 ) {
+        suspend_cv.Wait();
+    }
+}
+void DBImpl::ResumeCompactions() {
+    MutexLock l(&suspend_mutex);
+    suspend_count--;
+    suspend_cv.SignalAll();
+}
+
 
 // Default implementations of convenience methods that subclasses of DB
 // can call if they wish
