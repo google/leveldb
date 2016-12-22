@@ -37,7 +37,7 @@ rm -f $OUTPUT
 touch $OUTPUT
 
 if test -z "$CC"; then
-    CC=cc
+    CC=gcc
 fi
 
 if test -z "$CXX"; then
@@ -64,6 +64,11 @@ PLATFORM_SHARED_LDFLAGS="-shared -Wl,-soname -Wl,"
 PLATFORM_SHARED_CFLAGS="-fPIC"
 PLATFORM_SHARED_VERSIONED=true
 
+COMMON_FLAGS="-DFASTO"
+if [[ "$TARGET_OS" == *'MINGW'* ]]; then
+  TARGET_OS=Windows
+fi
+
 MEMCMP_FLAG=
 if [ "$CXX" = "g++" ]; then
     # Use libc's memcmp instead of GCC's memcmp.  This results in ~40%
@@ -74,64 +79,71 @@ fi
 case "$TARGET_OS" in
     CYGWIN_*)
         PLATFORM=OS_LINUX
-        COMMON_FLAGS="$MEMCMP_FLAG -lpthread -DOS_LINUX -DCYGWIN"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -lpthread -DOS_LINUX -DCYGWIN"
         PLATFORM_LDFLAGS="-lpthread"
         PORT_FILE=port/port_posix.cc
         ;;
     Darwin)
         PLATFORM=OS_MACOSX
-        COMMON_FLAGS="$MEMCMP_FLAG -DOS_MACOSX"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -DOS_MACOSX"
         PLATFORM_SHARED_EXT=dylib
         [ -z "$INSTALL_PATH" ] && INSTALL_PATH=`pwd`
         PLATFORM_SHARED_LDFLAGS="-dynamiclib -install_name $INSTALL_PATH/"
         PORT_FILE=port/port_posix.cc
         ;;
+    Windows)
+        PLATFORM=OS_WIN
+        COMMON_FLAGS="$COMMON_FLAGS -DOS_WIN -DOS_WINDOWS"
+        PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS -pthread"
+        PORT_FILE=port/port_win.cc
+        PORT_SPECIFIC_FILE=port/mman.cc
+        ;;
     Linux)
         PLATFORM=OS_LINUX
-        COMMON_FLAGS="$MEMCMP_FLAG -pthread -DOS_LINUX"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -pthread -DOS_LINUX"
         PLATFORM_LDFLAGS="-pthread"
         PORT_FILE=port/port_posix.cc
         ;;
     SunOS)
         PLATFORM=OS_SOLARIS
-        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_SOLARIS"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -D_REENTRANT -DOS_SOLARIS"
         PLATFORM_LIBS="-lpthread -lrt"
         PORT_FILE=port/port_posix.cc
         ;;
     FreeBSD)
         PLATFORM=OS_FREEBSD
-        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_FREEBSD"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -D_REENTRANT -DOS_FREEBSD"
         PLATFORM_LIBS="-lpthread"
         PORT_FILE=port/port_posix.cc
         ;;
     NetBSD)
         PLATFORM=OS_NETBSD
-        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_NETBSD"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -D_REENTRANT -DOS_NETBSD"
         PLATFORM_LIBS="-lpthread -lgcc_s"
         PORT_FILE=port/port_posix.cc
         ;;
     OpenBSD)
         PLATFORM=OS_OPENBSD
-        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_OPENBSD"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -D_REENTRANT -DOS_OPENBSD"
         PLATFORM_LDFLAGS="-pthread"
         PORT_FILE=port/port_posix.cc
         ;;
     DragonFly)
         PLATFORM=OS_DRAGONFLYBSD
-        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_DRAGONFLYBSD"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -D_REENTRANT -DOS_DRAGONFLYBSD"
         PLATFORM_LIBS="-lpthread"
         PORT_FILE=port/port_posix.cc
         ;;
     OS_ANDROID_CROSSCOMPILE)
         PLATFORM=OS_ANDROID
-        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_ANDROID -DLEVELDB_PLATFORM_POSIX"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -D_REENTRANT -DOS_ANDROID -DLEVELDB_PLATFORM_POSIX"
         PLATFORM_LDFLAGS=""  # All pthread features are in the Android C library
         PORT_FILE=port/port_posix.cc
         CROSS_COMPILE=true
         ;;
     HP-UX)
         PLATFORM=OS_HPUX
-        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_HPUX"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -D_REENTRANT -DOS_HPUX"
         PLATFORM_LDFLAGS="-pthread"
         PORT_FILE=port/port_posix.cc
         # man ld: +h internal_name
@@ -139,7 +151,7 @@ case "$TARGET_OS" in
         ;;
     IOS)
         PLATFORM=IOS
-        COMMON_FLAGS="$MEMCMP_FLAG -DOS_MACOSX"
+        COMMON_FLAGS="$COMMON_FLAGS $MEMCMP_FLAG -DOS_MACOSX"
         [ -z "$INSTALL_PATH" ] && INSTALL_PATH=`pwd`
         PORT_FILE=port/port_posix.cc
         PLATFORM_SHARED_EXT=
@@ -162,13 +174,18 @@ set -f # temporarily disable globbing so that our patterns aren't expanded
 PRUNE_TEST="-name *test*.cc -prune"
 PRUNE_BENCH="-name *_bench.cc -prune"
 PRUNE_TOOL="-name leveldbutil.cc -prune"
-PORTABLE_FILES=`find $DIRS $PRUNE_TEST -o $PRUNE_BENCH -o $PRUNE_TOOL -o -name '*.cc' -print | sort | sed "s,^$PREFIX/,," | tr "\n" " "`
+if [[ "$TARGET_OS" == 'Windows' ]]; then
+  PRUNE_PLATFORM="-name *posix* -prune"
+else
+  PRUNE_PLATFORM="-name *win* -prune"
+fi
+PORTABLE_FILES=`find $DIRS $PRUNE_TEST -o $PRUNE_BENCH -o $PRUNE_TOOL -o $PRUNE_PLATFORM -o -name '*.cc' -print | sort | sed "s,^$PREFIX/,," | tr "\n" " "`
 
 set +f # re-enable globbing
 
 # The sources consist of the portable files, plus the platform-specific port
 # file.
-echo "SOURCES=$PORTABLE_FILES $PORT_FILE" >> $OUTPUT
+echo "SOURCES=$PORTABLE_FILES $PORT_FILE $PORT_SPECIFIC_FILE" >> $OUTPUT
 echo "MEMENV_SOURCES=helpers/memenv/memenv.cc" >> $OUTPUT
 
 if [ "$CROSS_COMPILE" = "true" ]; then
@@ -184,10 +201,18 @@ else
       int main() {}
 EOF
     if [ "$?" = 0 ]; then
-        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX -DLEVELDB_ATOMIC_PRESENT"
+        if [[ "$TARGET_OS" == 'Windows' ]]; then
+          COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_WINDOWS -DLEVELDB_ATOMIC_PRESENT"
+        else
+          COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX -DLEVELDB_ATOMIC_PRESENT"
+        fi
         PLATFORM_CXXFLAGS="-std=c++0x"
     else
+      if [[ "$TARGET_OS" == 'Windows' ]]; then
+        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_WINDOWS"
+      else
         COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX"
+      fi
     fi
 
     # Test whether Snappy library is installed
