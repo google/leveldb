@@ -199,6 +199,7 @@ extern void leveldb_options_set_max_open_files(leveldb_options_t*, int);
 extern void leveldb_options_set_cache(leveldb_options_t*, leveldb_cache_t*);
 extern void leveldb_options_set_block_size(leveldb_options_t*, size_t);
 extern void leveldb_options_set_block_restart_interval(leveldb_options_t*, int);
+extern void leveldb_options_set_max_file_size(leveldb_options_t*, size_t);
 
 enum {
   leveldb_no_compression = 0,
