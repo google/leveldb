@@ -10,6 +10,27 @@
 #include <stdint.h>
 #include "util/coding.h"
 
+#if defined(_MSC_VER)
+#include <intrin.h>
+static inline bool IsSSE42Available() {
+  int cpu_info[4];
+  __cpuid(cpu_info, 1);
+  return (cpu_info[2] & (1 << 20)) != 0;
+}
+#elif defined(__GNUC__)
+#include <cpuid.h>
+#include <nmmintrin.h>
+static inline bool IsSSE42Available() {
+  unsigned int eax, ebx, ecx, edx;
+  __get_cpuid(1, &eax, &ebx, &ecx, &edx);
+  return (ecx & (1 << 20)) != 0;
+}
+#else
+static inline bool IsSSE42Available() {
+  return false;
+}
+#endif
+
 namespace leveldb {
 namespace crc32c {
 
@@ -283,7 +304,12 @@ static inline uint32_t LE_LOAD32(const uint8_t *p) {
   return DecodeFixed32(reinterpret_cast<const char*>(p));
 }
 
-uint32_t Extend(uint32_t crc, const char* buf, size_t size) {
+// Used to fetch a naturally-aligned 64-bit word in little endian byte-order
+static inline uint64_t LE_LOAD64(const uint8_t *p) {
+  return DecodeFixed64(reinterpret_cast<const char*>(p));
+}
+
+static uint32_t Extend_NoSSE(uint32_t crc, const char* buf, size_t size) {
   const uint8_t *p = reinterpret_cast<const uint8_t *>(buf);
   const uint8_t *e = p + size;
   uint32_t l = crc ^ 0xffffffffu;
@@ -326,6 +352,58 @@ uint32_t Extend(uint32_t crc, const char* buf, size_t size) {
 #undef STEP4
 #undef STEP1
   return l ^ 0xffffffffu;
+}
+
+// For further improvements see Intel publication at:
+// http://download.intel.com/design/intarch/papers/323405.pdf
+static uint32_t Extend_SSE42(uint32_t crc, const char* buf, size_t size) {
+  const uint8_t *p = reinterpret_cast<const uint8_t *>(buf);
+  const uint8_t *e = p + size;
+  uint32_t l = crc ^ 0xffffffffu;
+
+#define STEP1 do {                              \
+    l = _mm_crc32_u8(l, *p++);                  \
+} while (0)
+#define STEP4 do {                              \
+    l = _mm_crc32_u32(l, LE_LOAD32(p));         \
+    p += 4;                                     \
+} while (0)
+#define STEP8 do {                              \
+    l = _mm_crc32_u64(l, LE_LOAD64(p));         \
+    p += 8;                                     \
+} while (0)
+
+  if (size > 16) {
+    // Process unaligned bytes
+    for (unsigned int i = reinterpret_cast<uintptr_t>(p) % 8; i; --i) {
+      STEP1;
+    }
+    // Process 8 bytes at a time
+    while ((e-p) >= 8) {
+      STEP8;
+    }
+    // Process 4 bytes at a time
+    if ((e-p) >= 4) {
+      STEP4;
+    }
+  }
+  // Process the last few bytes
+  while (p != e) {
+    STEP1;
+  }
+#undef STEP4
+#undef STEP1
+  return l ^ 0xffffffffu;
+}
+
+uint32_t Extend(uint32_t crc, const char* buf, size_t size) {
+  static int flag = -1;
+  if (flag == -1) {
+      flag = IsSSE42Available() ? 1 : 0;
+  }
+  return flag
+    ? Extend_SSE42(crc, buf, size)
+    : Extend_NoSSE(crc, buf, size);
 }
 
 }  // namespace crc32c
