@@ -412,3 +412,9 @@ $(SHARED_OUTDIR)/%.o: %.cc
 
 $(SHARED_OUTDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(PLATFORM_SHARED_CFLAGS) -c $< -o $@
+
+$(STATIC_OUTDIR)/port/port_posix_sse.o: port/port_posix_sse.cc
+	$(CXX) $(CXXFLAGS) $(PLATFORM_SSEFLAGS) -c $< -o $@
+
+$(SHARED_OUTDIR)/port/port_posix_sse.o: port/port_posix_sse.cc
+	$(CXX) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(PLATFORM_SSEFLAGS) -c $< -o $@
