@@ -6,7 +6,6 @@
 
 #include "port/port.h"
 #include "util/testharness.h"
-#include "util/env_posix_test_helper.h"
 
 namespace leveldb {
 
@@ -14,33 +13,28 @@ static const int kDelayMicros = 100000;
 static const int kReadOnlyFileLimit = 4;
 static const int kMMapLimit = 4;
 
-class EnvPosixTest {
+class EnvTest {
  private:
   port::Mutex mu_;
   std::string events_;
 
  public:
   Env* env_;
-  EnvPosixTest() : env_(Env::Default()) { }
-
-  static void SetFileLimits(int read_only_file_limit, int mmap_limit) {
-    EnvPosixTestHelper::SetReadOnlyFDLimit(read_only_file_limit);
-    EnvPosixTestHelper::SetReadOnlyMMapLimit(mmap_limit);
-  }
+  EnvTest() : env_(Env::Default()) { }
 };
 
 static void SetBool(void* ptr) {
   reinterpret_cast<port::AtomicPointer*>(ptr)->NoBarrier_Store(ptr);
 }
 
-TEST(EnvPosixTest, RunImmediately) {
+TEST(EnvTest, RunImmediately) {
   port::AtomicPointer called (NULL);
   env_->Schedule(&SetBool, &called);
-  Env::Default()->SleepForMicroseconds(kDelayMicros);
+  env_->SleepForMicroseconds(kDelayMicros);
   ASSERT_TRUE(called.NoBarrier_Load() != NULL);
 }
 
-TEST(EnvPosixTest, RunMany) {
+TEST(EnvTest, RunMany) {
   port::AtomicPointer last_id (NULL);
 
   struct CB {
@@ -67,7 +61,7 @@ TEST(EnvPosixTest, RunMany) {
   env_->Schedule(&CB::Run, &cb3);
   env_->Schedule(&CB::Run, &cb4);
 
-  Env::Default()->SleepForMicroseconds(kDelayMicros);
+  env_->SleepForMicroseconds(kDelayMicros);
   void* cur = last_id.Acquire_Load();
   ASSERT_EQ(4, reinterpret_cast<uintptr_t>(cur));
 }
@@ -86,7 +80,7 @@ static void ThreadBody(void* arg) {
   s->mu.Unlock();
 }
 
-TEST(EnvPosixTest, StartThread) {
+TEST(EnvTest, StartThread) {
   State state;
   state.val = 0;
   state.num_running = 3;
@@ -100,47 +94,13 @@ TEST(EnvPosixTest, StartThread) {
     if (num == 0) {
       break;
     }
-    Env::Default()->SleepForMicroseconds(kDelayMicros);
+    env_->SleepForMicroseconds(kDelayMicros);
   }
   ASSERT_EQ(state.val, 3);
-}
-
-TEST(EnvPosixTest, TestOpenOnRead) {
-  // Write some test data to a single file that will be opened |n| times.
-  std::string test_dir;
-  ASSERT_OK(Env::Default()->GetTestDirectory(&test_dir));
-  std::string test_file = test_dir + "/open_on_read.txt";
-
-  FILE* f = fopen(test_file.c_str(), "w");
-  ASSERT_TRUE(f != NULL);
-  const char kFileData[] = "abcdefghijklmnopqrstuvwxyz";
-  fputs(kFileData, f);
-  fclose(f);
-
-  // Open test file some number above the sum of the two limits to force
-  // open-on-read behavior of POSIX Env leveldb::RandomAccessFile.
-  const int kNumFiles = kReadOnlyFileLimit + kMMapLimit + 5;
-  leveldb::RandomAccessFile* files[kNumFiles] = {0};
-  for (int i = 0; i < kNumFiles; i++) {
-    ASSERT_OK(Env::Default()->NewRandomAccessFile(test_file, &files[i]));
-  }
-  char scratch;
-  Slice read_result;
-  for (int i = 0; i < kNumFiles; i++) {
-    ASSERT_OK(files[i]->Read(i, 1, &read_result, &scratch));
-    ASSERT_EQ(kFileData[i], read_result[0]);
-  }
-  for (int i = 0; i < kNumFiles; i++) {
-    delete files[i];
-  }
-  ASSERT_OK(Env::Default()->DeleteFile(test_file));
 }
 
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
-  // All tests currently run with the same read-only file limits.
-  leveldb::EnvPosixTest::SetFileLimits(leveldb::kReadOnlyFileLimit,
-                                       leveldb::kMMapLimit);
   return leveldb::test::RunAllTests();
 }
