@@ -37,12 +37,16 @@ static inline uint32_t LE_LOAD32(const uint8_t *p) {
   return word;
 }
 
+#if defined(_M_X64) || defined(__x86_64__)  // LE_LOAD64 is only used on x64.
+
 // Used to fetch a naturally-aligned 64-bit word in little endian byte-order
 static inline uint64_t LE_LOAD64(const uint8_t *p) {
   uint64_t dword;
   memcpy(&dword, p, sizeof(dword));
   return dword;
 }
+
+#endif  // defined(_M_X64) || defined(__x86_64__)
 
 static inline bool HaveSSE42() {
 #if defined(_MSC_VER)
