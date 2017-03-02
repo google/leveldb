@@ -201,7 +201,7 @@ class BlockConstructor: public Constructor {
     data_ = builder.Finish().ToString();
     BlockContents contents;
     contents.data = data_;
-    contents.cachable = false;
+    contents.cacheable = false;
     contents.heap_allocated = false;
     block_ = new Block(contents);
     return Status::OK();
@@ -661,7 +661,7 @@ TEST(Harness, ZeroRestartPointsInBlock) {
   memset(data, 0, sizeof(data));
   BlockContents contents;
   contents.data = Slice(data, sizeof(data));
-  contents.cachable = false;
+  contents.cacheable = false;
   contents.heap_allocated = false;
   Block block(contents);
   Iterator* iter = block.NewIterator(BytewiseComparator());

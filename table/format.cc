@@ -67,7 +67,7 @@ Status ReadBlock(RandomAccessFile* file,
                  const BlockHandle& handle,
                  BlockContents* result) {
   result->data = Slice();
-  result->cachable = false;
+  result->cacheable = false;
   result->heap_allocated = false;
 
   // Read the block contents as well as the type/crc footer.
@@ -106,11 +106,11 @@ Status ReadBlock(RandomAccessFile* file,
         delete[] buf;
         result->data = Slice(data, n);
         result->heap_allocated = false;
-        result->cachable = false;  // Do not double-cache
+        result->cacheable = false;  // Do not double-cache
       } else {
         result->data = Slice(buf, n);
         result->heap_allocated = true;
-        result->cachable = true;
+        result->cacheable = true;
       }
 
       // Ok
@@ -130,7 +130,7 @@ Status ReadBlock(RandomAccessFile* file,
       delete[] buf;
       result->data = Slice(ubuf, ulength);
       result->heap_allocated = true;
-      result->cachable = true;
+      result->cacheable = true;
       break;
     }
     default:
