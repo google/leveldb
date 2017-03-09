@@ -35,8 +35,6 @@
 
 namespace leveldb {
 
-const int kNumNonTableCacheFiles = 10;
-
 // Information kept for every waiting writer
 struct DBImpl::Writer {
   Status status;
@@ -81,45 +79,12 @@ struct DBImpl::CompactionState {
   }
 };
 
-// Fix user-supplied options to be reasonable
-template <class T,class V>
-static void ClipToRange(T* ptr, V minvalue, V maxvalue) {
-  if (static_cast<V>(*ptr) > maxvalue) *ptr = maxvalue;
-  if (static_cast<V>(*ptr) < minvalue) *ptr = minvalue;
-}
-Options SanitizeOptions(const std::string& dbname,
-                        const InternalKeyComparator* icmp,
-                        const InternalFilterPolicy* ipolicy,
-                        const Options& src) {
-  Options result = src;
-  result.comparator = icmp;
-  result.filter_policy = (src.filter_policy != NULL) ? ipolicy : NULL;
-  ClipToRange(&result.max_open_files,    64 + kNumNonTableCacheFiles, 50000);
-  ClipToRange(&result.write_buffer_size, 64<<10,                      1<<30);
-  ClipToRange(&result.max_file_size,     1<<20,                       1<<30);
-  ClipToRange(&result.block_size,        1<<10,                       4<<20);
-  if (result.info_log == NULL) {
-    // Open a log file in the same directory as the db
-    src.env->CreateDir(dbname);  // In case it does not exist
-    src.env->RenameFile(InfoLogFileName(dbname), OldInfoLogFileName(dbname));
-    Status s = src.env->NewLogger(InfoLogFileName(dbname), &result.info_log);
-    if (!s.ok()) {
-      // No place suitable for logging
-      result.info_log = NULL;
-    }
-  }
-  if (result.block_cache == NULL) {
-    result.block_cache = NewLRUCache(8 << 20);
-  }
-  return result;
-}
-
 DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
     : env_(raw_options.env),
       internal_comparator_(raw_options.comparator),
       internal_filter_policy_(raw_options.filter_policy),
-      options_(SanitizeOptions(dbname, &internal_comparator_,
-                               &internal_filter_policy_, raw_options)),
+      options_(raw_options.Sanitize(dbname, &internal_comparator_,
+                                    &internal_filter_policy_)),
       owns_info_log_(options_.info_log != raw_options.info_log),
       owns_cache_(options_.block_cache != raw_options.block_cache),
       dbname_(dbname),
@@ -138,7 +103,7 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
   has_imm_.Release_Store(NULL);
 
   // Reserve ten files or so for other uses and give the rest to TableCache.
-  const int table_cache_size = options_.max_open_files - kNumNonTableCacheFiles;
+  const int table_cache_size = options_.GetTableCacheSize();
   table_cache_ = new TableCache(dbname_, &options_, table_cache_size);
 
   versions_ = new VersionSet(dbname_, &options_, table_cache_,
@@ -1504,8 +1469,8 @@ Status DBImpl::Open() {
   mutex_.Unlock();
   if (s.ok()) {
     assert(mem_ != NULL);
-	}
-	return s;
+  }
+  return s;
 }
 
 // Default implementations of convenience methods that subclasses of DB
@@ -1530,7 +1495,7 @@ Status DB::Open(const Options& options, const std::string& dbname,
 
   DBImpl* impl = new DBImpl(options, dbname);
   Status s = impl->Open();
-	if (s.ok()) {
+  if (s.ok()) {
     *dbptr = impl;
   } else {
     delete impl;

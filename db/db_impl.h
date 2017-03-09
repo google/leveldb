@@ -63,10 +63,10 @@ class DBImpl : public DB {
   // Samples are taken approximately once every config::kReadBytesPeriod
   // bytes.
   void RecordReadSample(Slice key);
-	
-	// Open db.
-	// Returns OK on open success, and a non-OK status on error.
-	Status Open();
+
+  // Open db.
+  // Returns OK on open success, and a non-OK status on error.
+  Status Open();
 
  private:
   struct CompactionState;
@@ -201,14 +201,7 @@ class DBImpl : public DB {
     return internal_comparator_.user_comparator();
   }
 };
-
-// Sanitize db options.  The caller should delete result.info_log if
-// it is not equal to src.info_log.
-extern Options SanitizeOptions(const std::string& db,
-                               const InternalKeyComparator* icmp,
-                               const InternalFilterPolicy* ipolicy,
-                               const Options& src);
-
+  
 }  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_DB_IMPL_H_
