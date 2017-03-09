@@ -1471,6 +1471,43 @@ void DBImpl::GetApproximateSizes(
   }
 }
 
+Status DBImpl::Open() {
+  mutex_.Lock();
+  VersionEdit edit;
+  // Recover handles create_if_missing, error_if_exists
+  bool save_manifest = false;
+  Status s = Recover(&edit, &save_manifest);
+  if (s.ok() && mem_ == NULL) {
+    // Create new log and a corresponding memtable.
+    uint64_t new_log_number = versions_->NewFileNumber();
+    WritableFile* lfile;
+    s = options_.env->NewWritableFile(LogFileName(dbname_, new_log_number),
+                                     &lfile);
+    if (s.ok()) {
+      edit.SetLogNumber(new_log_number);
+      logfile_ = lfile;
+      logfile_number_ = new_log_number;
+      log_ = new log::Writer(lfile);
+      mem_ = new MemTable(internal_comparator_);
+      mem_->Ref();
+    }
+  }
+  if (s.ok() && save_manifest) {
+    edit.SetPrevLogNumber(0);  // No older logs needed after recovery.
+    edit.SetLogNumber(logfile_number_);
+    s = versions_->LogAndApply(&edit, &mutex_);
+  }
+  if (s.ok()) {
+    DeleteObsoleteFiles();
+    MaybeScheduleCompaction();
+  }
+  mutex_.Unlock();
+  if (s.ok()) {
+    assert(mem_ != NULL);
+	}
+	return s;
+}
+
 // Default implementations of convenience methods that subclasses of DB
 // can call if they wish
 Status DB::Put(const WriteOptions& opt, const Slice& key, const Slice& value) {
@@ -1492,38 +1529,8 @@ Status DB::Open(const Options& options, const std::string& dbname,
   *dbptr = NULL;
 
   DBImpl* impl = new DBImpl(options, dbname);
-  impl->mutex_.Lock();
-  VersionEdit edit;
-  // Recover handles create_if_missing, error_if_exists
-  bool save_manifest = false;
-  Status s = impl->Recover(&edit, &save_manifest);
-  if (s.ok() && impl->mem_ == NULL) {
-    // Create new log and a corresponding memtable.
-    uint64_t new_log_number = impl->versions_->NewFileNumber();
-    WritableFile* lfile;
-    s = options.env->NewWritableFile(LogFileName(dbname, new_log_number),
-                                     &lfile);
-    if (s.ok()) {
-      edit.SetLogNumber(new_log_number);
-      impl->logfile_ = lfile;
-      impl->logfile_number_ = new_log_number;
-      impl->log_ = new log::Writer(lfile);
-      impl->mem_ = new MemTable(impl->internal_comparator_);
-      impl->mem_->Ref();
-    }
-  }
-  if (s.ok() && save_manifest) {
-    edit.SetPrevLogNumber(0);  // No older logs needed after recovery.
-    edit.SetLogNumber(impl->logfile_number_);
-    s = impl->versions_->LogAndApply(&edit, &impl->mutex_);
-  }
-  if (s.ok()) {
-    impl->DeleteObsoleteFiles();
-    impl->MaybeScheduleCompaction();
-  }
-  impl->mutex_.Unlock();
-  if (s.ok()) {
-    assert(impl->mem_ != NULL);
+  Status s = impl->Open();
+	if (s.ok()) {
     *dbptr = impl;
   } else {
     delete impl;

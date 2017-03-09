@@ -63,9 +63,12 @@ class DBImpl : public DB {
   // Samples are taken approximately once every config::kReadBytesPeriod
   // bytes.
   void RecordReadSample(Slice key);
+	
+	// Open db.
+	// Returns OK on open success, and a non-OK status on error.
+	Status Open();
 
  private:
-  friend class DB;
   struct CompactionState;
   struct Writer;
 
