@@ -306,7 +306,7 @@ class PosixFileLock : public FileLock {
 };
 
 // Set of locked files.  We keep a separate set instead of just
-// relying on fcntrl(F_SETLK) since fcntl(F_SETLK) does not provide
+// relying on fcntl(F_SETLK) since fcntl(F_SETLK) does not provide
 // any protection against multiple uses from the same process.
 class PosixLockTable {
  private:
