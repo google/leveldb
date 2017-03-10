@@ -7,9 +7,11 @@
 
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
+#include "db/db_impl.h"
 #include "util/random.h"
 
 namespace leveldb {
+
 namespace test {
 
 // Store in *dst a random string of length "len" and return a Slice that
@@ -25,6 +27,40 @@ extern std::string RandomKey(Random* rnd, int len);
 // the generated data.
 extern Slice CompressibleString(Random* rnd, double compressed_fraction,
                                 size_t len, std::string* dst);
+
+
+
+extern Status Open(const Options& options, const std::string& name,
+                   DB** dbptr);
+
+class DBImplTesting : public DBImpl {
+public:
+  DBImplTesting(const Options& options, const std::string& dbname)
+  : DBImpl(options, dbname) { }
+
+  // Compact any files in the named level that overlap [*begin,*end]
+  void DoCompactRange(int level, const Slice* begin, const Slice* end) {
+    DBImpl::DoCompactRange(level, begin, end);
+  }
+
+  // Force current memtable contents to be compacted.
+  Status DoCompactMemTable() {
+    return DBImpl::DoCompactMemTable();
+  }
+
+  // Return an internal iterator over the current state of the database.
+  // The keys of this iterator are internal keys (see format.h).
+  // The returned iterator should be deleted when no longer needed.
+  Iterator* DoNewInternalIterator() {
+    return DBImpl::DoNewInternalIterator();
+  }
+
+  // Return the maximum overlapping data (in bytes) at next level for any
+  // file at a level >= 1.
+  int64_t MaxNextLevelOverlappingBytes() {
+    return DBImpl::MaxNextLevelOverlappingBytes();
+  }
+};
 
 // A wrapper that allows injection of errors.
 class ErrorEnv : public EnvWrapper {

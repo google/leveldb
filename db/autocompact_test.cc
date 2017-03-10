@@ -24,7 +24,7 @@ class AutoCompactTest {
     DestroyDB(dbname_, options_);
     options_.create_if_missing = true;
     options_.compression = kNoCompression;
-    ASSERT_OK(DB::Open(options_, dbname_, &db_));
+    ASSERT_OK(test::Open(options_, dbname_, &db_));
   }
 
   ~AutoCompactTest() {
@@ -46,6 +46,10 @@ class AutoCompactTest {
     return size;
   }
 
+  test::DBImplTesting* dbfull() {
+    return reinterpret_cast<test::DBImplTesting*>(db_);
+  }
+
   void DoReads(int n);
 };
 
@@ -57,19 +61,19 @@ static const int kCount = kTotalSize / kValueSize;
 // compacted (verified by checking the size of the key space).
 void AutoCompactTest::DoReads(int n) {
   std::string value(kValueSize, 'x');
-  DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
+  test::DBImplTesting* dbi = dbfull();
 
   // Fill database
   for (int i = 0; i < kCount; i++) {
     ASSERT_OK(db_->Put(WriteOptions(), Key(i), value));
   }
-  ASSERT_OK(dbi->TEST_CompactMemTable());
+  ASSERT_OK(dbi->DoCompactMemTable());
 
   // Delete everything
   for (int i = 0; i < kCount; i++) {
     ASSERT_OK(db_->Delete(WriteOptions(), Key(i)));
   }
-  ASSERT_OK(dbi->TEST_CompactMemTable());
+  ASSERT_OK(dbi->DoCompactMemTable());
 
   // Get initial measurement of the space we will be reading.
   const int64_t initial_size = Size(Key(0), Key(n));

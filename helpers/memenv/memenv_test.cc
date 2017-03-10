@@ -8,6 +8,7 @@
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "util/testharness.h"
+#include "util/testutil.h"
 #include <string>
 #include <vector>
 
@@ -222,8 +223,8 @@ TEST(MemEnvTest, DBTest) {
   ASSERT_TRUE(!iterator->Valid());
   delete iterator;
 
-  DBImpl* dbi = reinterpret_cast<DBImpl*>(db);
-  ASSERT_OK(dbi->TEST_CompactMemTable());
+  test::DBImplTesting* dbi = reinterpret_cast<test::DBImplTesting*>(db);
+  ASSERT_OK(dbi->DoCompactMemTable());
 
   for (size_t i = 0; i < 3; ++i) {
     std::string res;

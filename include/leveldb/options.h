@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 
 #include <stddef.h>
+#include <string>
 
 namespace leveldb {
 
@@ -155,6 +156,14 @@ struct Options {
 
   // Create an Options object with default values for all fields.
   Options();
+
+  // Sanitize db options.  The caller should delete result.info_log if
+  // it is not equal to src.info_log.
+  Options Sanitize(const std::string& db,
+                   const Comparator* icmp,
+                   const FilterPolicy* ipolicy) const;
+
+  int GetTableCacheSize() const;
 };
 
 // Options that control read operations
