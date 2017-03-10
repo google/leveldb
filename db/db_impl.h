@@ -42,23 +42,6 @@ class DBImpl : public DB {
   virtual void GetApproximateSizes(const Range* range, int n, uint64_t* sizes);
   virtual void CompactRange(const Slice* begin, const Slice* end);
 
-  // Extra methods (for testing) that are not in the public DB interface
-
-  // Compact any files in the named level that overlap [*begin,*end]
-  void TEST_CompactRange(int level, const Slice* begin, const Slice* end);
-
-  // Force current memtable contents to be compacted.
-  Status TEST_CompactMemTable();
-
-  // Return an internal iterator over the current state of the database.
-  // The keys of this iterator are internal keys (see format.h).
-  // The returned iterator should be deleted when no longer needed.
-  Iterator* TEST_NewInternalIterator();
-
-  // Return the maximum overlapping data (in bytes) at next level for any
-  // file at a level >= 1.
-  int64_t TEST_MaxNextLevelOverlappingBytes();
-
   // Record a sample of bytes read at the specified internal key.
   // Samples are taken approximately once every config::kReadBytesPeriod
   // bytes.
@@ -67,6 +50,24 @@ class DBImpl : public DB {
   // Open db.
   // Returns OK on open success, and a non-OK status on error.
   Status Open();
+  
+ protected:
+  // Extra methods (for testing) that are not in the public DB interface
+
+  // Compact any files in the named level that overlap [*begin,*end]
+  void DoCompactRange(int level, const Slice* begin, const Slice* end);
+
+  // Force current memtable contents to be compacted.
+  Status DoCompactMemTable();
+
+  // Return an internal iterator over the current state of the database.
+  // The keys of this iterator are internal keys (see format.h).
+  // The returned iterator should be deleted when no longer needed.
+  Iterator* DoNewInternalIterator();
+
+  // Return the maximum overlapping data (in bytes) at next level for any
+  // file at a level >= 1.
+  int64_t MaxNextLevelOverlappingBytes();
 
  private:
   struct CompactionState;
@@ -201,7 +202,7 @@ class DBImpl : public DB {
     return internal_comparator_.user_comparator();
   }
 };
-  
+
 }  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_DB_DB_IMPL_H_

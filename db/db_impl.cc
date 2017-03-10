@@ -540,13 +540,13 @@ void DBImpl::CompactRange(const Slice* begin, const Slice* end) {
       }
     }
   }
-  TEST_CompactMemTable(); // TODO(sanjay): Skip if memtable does not overlap
+  DoCompactMemTable(); // TODO(sanjay): Skip if memtable does not overlap
   for (int level = 0; level < max_level_with_files; level++) {
-    TEST_CompactRange(level, begin, end);
+    DoCompactRange(level, begin, end);
   }
 }
 
-void DBImpl::TEST_CompactRange(int level, const Slice* begin,const Slice* end) {
+void DBImpl::DoCompactRange(int level, const Slice* begin,const Slice* end) {
   assert(level >= 0);
   assert(level + 1 < config::kNumLevels);
 
@@ -583,7 +583,7 @@ void DBImpl::TEST_CompactRange(int level, const Slice* begin,const Slice* end) {
   }
 }
 
-Status DBImpl::TEST_CompactMemTable() {
+Status DBImpl::DoCompactMemTable() {
   // NULL batch means just wait for earlier writes to be done
   Status s = Write(WriteOptions(), NULL);
   if (s.ok()) {
@@ -1060,13 +1060,13 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
   return internal_iter;
 }
 
-Iterator* DBImpl::TEST_NewInternalIterator() {
+Iterator* DBImpl::DoNewInternalIterator() {
   SequenceNumber ignored;
   uint32_t ignored_seed;
   return NewInternalIterator(ReadOptions(), &ignored, &ignored_seed);
 }
 
-int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
+int64_t DBImpl::MaxNextLevelOverlappingBytes() {
   MutexLock l(&mutex_);
   return versions_->MaxNextLevelOverlappingBytes();
 }

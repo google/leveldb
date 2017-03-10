@@ -3,10 +3,10 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "util/testutil.h"
-
 #include "util/random.h"
 
 namespace leveldb {
+
 namespace test {
 
 Slice RandomString(Random* rnd, int len, std::string* dst) {
@@ -45,6 +45,20 @@ extern Slice CompressibleString(Random* rnd, double compressed_fraction,
   }
   dst->resize(len);
   return Slice(*dst);
+}
+
+extern Status Open(const Options& options, const std::string& name,
+                   DB** dbptr) {
+  *dbptr = NULL;
+
+  DBImplTesting* impl = new DBImplTesting(options, name);
+  Status s = impl->Open();
+  if (s.ok()) {
+    *dbptr = impl;
+  } else {
+    delete impl;
+  }
+  return s;
 }
 
 }  // namespace test

@@ -28,7 +28,10 @@ class RecoveryTest {
     DestroyDB(dbname_, Options());
   }
 
-  DBImpl* dbfull() const { return reinterpret_cast<DBImpl*>(db_); }
+  test::DBImplTesting* dbfull() const { 
+    return reinterpret_cast<test::DBImplTesting*>(db_); 
+  }
+  
   Env* env() const { return env_; }
 
   bool CanAppend() {
@@ -133,7 +136,7 @@ class RecoveryTest {
   }
 
   void CompactMemTable() {
-    dbfull()->TEST_CompactMemTable();
+    dbfull()->DoCompactMemTable();
   }
 
   // Directly construct a log file that sets key to val.
