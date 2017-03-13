@@ -16,9 +16,6 @@ namespace leveldb {
 static const int kMajorVersion = 1;
 static const int kMinorVersion = 20;
 
-struct Options;
-struct ReadOptions;
-struct WriteOptions;
 class WriteBatch;
 
 // Abstract handle to particular state of a DB.
