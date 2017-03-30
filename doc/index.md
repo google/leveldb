@@ -345,7 +345,7 @@ it is used to cache frequently used uncompressed block contents.
 #include "leveldb/cache.h"
 
 leveldb::Options options;
-options.cache = leveldb::NewLRUCache(100 * 1048576);  // 100MB cache
+options.block_cache = leveldb::NewLRUCache(100 * 1048576);  // 100MB cache
 leveldb::DB* db;
 leveldb::DB::Open(options, name, &db);
 ... use the db ...
