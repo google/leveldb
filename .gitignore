@@ -7,3 +7,9 @@ build_config.mk
 *_test
 db_bench
 leveldbutil
+/Debug
+/leveldb.vcxproj.user
+/leveldb.vcxproj.filters
+/leveldb.vcxproj
+/leveldb.sln
+/.vs

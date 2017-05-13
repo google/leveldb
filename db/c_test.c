@@ -9,7 +9,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#ifdef LEVELDB_PLATFORM_WINDOWS
+   // unistd.h not available in WIN32
+#else
 #include <unistd.h>
+#endif
 
 const char* phase = "";
 static char dbname[200];
