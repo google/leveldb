@@ -514,6 +514,25 @@ Status Win32Env::NewWritableFile(const std::string& fname,
 
 }
 
+// Create an object that either appends to an existing file, or
+// writes to a new file (if the file does not exist to begin with).
+// On success, stores a pointer to the new file in *result and
+// returns OK.  On failure stores NULL in *result and returns
+// non-OK.
+//
+// The returned file will only be accessed by one thread at a time.
+//
+// May return an IsNotSupportedError error if this Env does
+// not allow appending to an existing file.  Users of Env (including
+// the leveldb implementation) must be prepared to deal with
+// an Env that does not support appending.
+Status  Win32Env::NewAppendableFile(const std::string& fname,
+	WritableFile** result)
+{
+	//@TODO
+	return Status::NotSupported( "Todo");
+}	
+
 
 
 // global Env creation, singleton
