@@ -79,7 +79,7 @@ public:
 	virtual Status NewAppendableFile(const std::string& fname,
 		WritableFile** result);
 
-	// Returns true iff the named file exists.
+	// Returns true if the named file exists.
 	virtual bool FileExists(const std::string& fname) OVERRIDE;
 
 	// Store in *result the names of the children of the specified directory.
@@ -533,6 +533,21 @@ Status  Win32Env::NewAppendableFile(const std::string& fname,
 	return Status::NotSupported( "Todo");
 }	
 
+
+// Returns true if the named file exists.
+bool Win32Env::FileExists(const std::string& fname) {
+	// GetFileAttributes is the fastest api to test if a file exist in win32
+	DWORD result = win32api::GetFileAttributes(fname.c_str());
+	if (   (result == INVALID_FILE_ATTRIBUTES) // error
+		|| ((result & FILE_ATTRIBUTE_DIRECTORY) != 0) // a directory is not a file
+       )
+	{
+		// file does not exist, or not a file
+		return false;
+	}
+	// exist
+	return true;
+}
 
 
 // global Env creation, singleton
