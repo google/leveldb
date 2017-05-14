@@ -586,6 +586,20 @@ Status Win32Env::GetChildren(const std::string& dir,
 	return Status::OK();
 }
 
+// Delete the named file.
+//virtual 
+Status Win32Env::DeleteFile(const std::string& fname) {
+	// DeleteFileA because we #undef the win32 define
+	BOOL ok = win32api::DeleteFileA(fname.c_str());
+	if (!ok) {
+		// return failure code
+		return Win32IOError(fname, ::GetLastError());
+	}
+	// succes
+	return Status::OK();
+}
+
+
 // global Env creation, singleton
 static Win32Env* default_env = nullptr;
 static void InitDefaultEnv() {
