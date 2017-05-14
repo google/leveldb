@@ -865,6 +865,14 @@ void Win32Env::Schedule(
 	schedulerThread_->AddEntry(item);
 }
 
+// Start a new thread, invoking "function(arg)" within the new thread.
+// When "function(arg)" returns, the thread will be destroyed.
+void Win32Env::StartThread(void (*function)(void* arg), void* arg)
+{
+	// Note : not using CreateThread because it  does not init libc
+	// create a new threa with _MainThreadLoopCallback as entry point
+	_beginthread(function, 0, arg);
+}
 
 
 // global Env creation, singleton
