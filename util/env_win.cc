@@ -587,7 +587,6 @@ Status Win32Env::GetChildren(const std::string& dir,
 }
 
 // Delete the named file.
-//virtual 
 Status Win32Env::DeleteFile(const std::string& fname) {
 	// DeleteFileA because we #undef the win32 define
 	BOOL ok = win32api::DeleteFileA(fname.c_str());
@@ -598,7 +597,18 @@ Status Win32Env::DeleteFile(const std::string& fname) {
 	// succes
 	return Status::OK();
 }
-
+// Create the specified directory.
+Status Win32Env::CreateDir(const std::string& dirname) {
+	// direct api call
+	// NULL : default security attributes
+	BOOL ok = win32api::CreateDirectory(dirname.c_str(), NULL);
+	if (!ok) {
+		// return failure code
+		return Win32IOError(dirname, ::GetLastError());
+	}
+	// succes
+	return Status::OK();
+}
 
 // global Env creation, singleton
 static Win32Env* default_env = nullptr;
