@@ -874,6 +874,24 @@ void Win32Env::StartThread(void (*function)(void* arg), void* arg)
 	_beginthread(function, 0, arg);
 }
 
+// *path is set to a temporary directory that can be used for testing. It may
+// or many not have just been created. The directory may or may not differ
+// between runs of the same process, but subsequent calls will return the
+// same directory.
+Status Win32Env::GetTestDirectory(std::string* path) {
+	// get system temp dir
+	TCHAR winTempDir[MAX_PATH];
+	win32api::GetTempPath(MAX_PATH, winTempDir);
+	// create temp dir for each processs
+	int pid = win32api::GetCurrentProcessId();
+	char buf[MAX_PATH];
+	snprintf(buf, sizeof(buf), "%s\\leveldbtest-%d", winTempDir, pid);
+	// set result
+	*path = buf;
+	// succes
+	return Status::OK();
+}
+
 
 // global Env creation, singleton
 static Win32Env* default_env = nullptr;
