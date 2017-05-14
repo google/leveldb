@@ -622,6 +622,28 @@ Status Win32Env::DeleteDir(const std::string& dirname) {
 	return Status::OK();
 }
 
+// Store the size of fname in *file_size.
+Status Win32Env::GetFileSize(const std::string& fname, uint64_t* file_size) {
+	// the direct win32 api GetFileSizeEx() needd a handle, ie to open the file (slow)
+	// FindFirstFile doest that quickly
+	WIN32_FIND_DATA findFileData;
+	ZeroMemory(&findFileData, sizeof(WIN32_FIND_DATA));
+	HANDLE  hFind = win32api::FindFirstFile(fname.c_str(), &findFileData);
+	if (hFind == INVALID_HANDLE_VALUE) {
+		// return failure code
+		return Win32IOError(fname, ::GetLastError());
+	}
+	
+	// put the file size in the fuction result
+	*file_size = (uint64_t)findFileData.nFileSizeLow + (uint64_t)findFileData.nFileSizeHigh*0x100000000;
+
+	// free win32 ressources allocated by FindFirstFile/FinNextFile
+	win32api::FindClose(hFind);
+
+	// succes
+	return Status::OK();
+
+}
 
 // global Env creation, singleton
 static Win32Env* default_env = nullptr;
