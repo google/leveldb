@@ -9,8 +9,9 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
-#include <deque>
+#include <queue>
 #include <Windows.h>
+#include <process.h>
 
 // because of this line in windows standard includes 
 // #define DeleteFile  DeleteFileA 
@@ -32,6 +33,9 @@ class Win32Env : public Env
 protected:
 	// for safe Schedule access.
 	port::Mutex mutexSchedule_;
+	// schrduler objet for the Schedule() method
+	class SchedulerThread *schedulerThread_ = nullptr;
+
 
 public:
 	// constructor
@@ -734,9 +738,10 @@ Status Win32Env::UnlockFile(FileLock* lock) {
 	return Status::OK();
 }
 
-// Entry per Schedule() call
+// 1 entry per Schedule() call
 struct BGItem { void* arg; void (*function)(void*); };
-typedef std::deque<BGItem> BGQueue;
+// FIFO with calls
+typedef std::queue<BGItem> BGQueue;
 
 
 // helper class for  Win32Env::Schedule() implementation
@@ -744,24 +749,96 @@ class SchedulerThread {
 protected:
 	// functions waiting tu run
 	BGQueue queue_;
-public:
-	SchedulerThread() {}
+	// mutex to add/remove from the fifo
+	port::Mutex mutexQueue_;
+	// win32 event to wake up thread on adding new func
+	HANDLE hEvent_;
 
+public:
+	SchedulerThread() {
+		// create win32 event objet
+		hEvent_ = win32api::CreateEvent(NULL,
+										FALSE, // FALSE : system automatically resets the event state to nonsignaled after a single waiting thread has been released.
+										FALSE, // Initial state 
+										NULL  // no name
+										);
+	}
+	~SchedulerThread(){
+		win32api::CloseHandle(hEvent_);
+		hEvent_ = NULL;
+	}
 	// Run the thead
 	void IniMainThreadLoop(void);
 
 	// Add a new function to be run
 	void AddEntry(BGItem bgItem) {
+		// Thread safe operation
+		MutexLock lock(&mutexQueue_);
 		// Add to priority queue
-		queue_.push_back(bgItem);
+		queue_.push(bgItem);
+		// wake up thread in _WaitForNewFunc()
+		win32api::ResetEvent(hEvent_);
+	}
+protected:
+	// Retrive a function to be run or return false (empty queue)
+	bool _bPopEntry(BGItem *bgItem) {
+		// Thread safe operation
+		MutexLock lock(&mutexQueue_);
+		if (queue_.empty())
+			return false;
+		// reteave item
+		*bgItem = queue_.front();
+		// remove item
+		queue_.pop();
+		return true;
 	}
 
-protected:
+
 	// main loop in thread
 	void _MainThreadLoop();
+	// static callsback in thead
+	static void _ThreadCallback(void *p)
+	{
+		// run the non statci _MainThreadLoop method
+		SchedulerThread *schedulerThread = (SchedulerThread *)p;
+		schedulerThread->_MainThreadLoop();
+	}
+	// run all function in queue
+	void _RunAllFuncInQueue();
+	// wait for new fuctions to be assed
+	void _WaitForNewFunc()	{
+		// wait for a call of ResetEvent(hEvent_)
+		win32api::WaitForSingleObject(hEvent_, INFINITE);
+	}
 };
-static SchedulerThread *schedulerThread=nullptr;
 
+// Run the thead
+void SchedulerThread::IniMainThreadLoop(void)
+{
+	// Note : not using CreateThread because it  does not init libc
+	// create a new threa with _MainThreadLoopCallback as entry point
+	_beginthread(_ThreadCallback, 0, (void *)this);
+}
+// main loop in thread
+void SchedulerThread::_MainThreadLoop()
+{
+	while (1) {
+		// run all function in queue
+		_RunAllFuncInQueue();
+		// wait for new fuctions to be added in the queue
+		_WaitForNewFunc();
+	}
+}
+// run all function in queue
+void SchedulerThread::_RunAllFuncInQueue() {
+	
+	//while therie is a function to run 
+	BGItem bgItem;
+	while (_bPopEntry(&bgItem)) {
+		//run it
+		bgItem.function(bgItem.arg);
+	}
+}
 
 // Arrange to run "(*function)(arg)" once in a background thread.
 //
@@ -777,15 +854,15 @@ void Win32Env::Schedule(
 	MutexLock lock(&mutexSchedule_);
 
 	// create and init Scheduler thread at first call
-	if (schedulerThread == nullptr) {
-		schedulerThread = new SchedulerThread();
-		// lauch the executer thread 
-		schedulerThread->IniMainThreadLoop();
+	if (schedulerThread_ == nullptr) {
+		schedulerThread_ = new SchedulerThread();
+		// launch  the executer thread 
+		schedulerThread_->IniMainThreadLoop();
 	}
 
 	// add callback and parameter
 	BGItem item = { arg, function };
-	schedulerThread->AddEntry(item);
+	schedulerThread_->AddEntry(item);
 }
 
 
