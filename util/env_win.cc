@@ -778,7 +778,7 @@ public:
 		// Add to priority queue
 		queue_.push(bgItem);
 		// wake up thread in _WaitForNewFunc()
-		win32api::ResetEvent(hEvent_);
+		win32api::SetEvent(hEvent_);
 	}
 protected:
 	// Retrive a function to be run or return false (empty queue)
@@ -808,7 +808,7 @@ protected:
 	void _RunAllFuncInQueue();
 	// wait for new fuctions to be assed
 	void _WaitForNewFunc()	{
-		// wait for a call of ResetEvent(hEvent_)
+		// wait for a call of SetEvent(hEvent_)
 		win32api::WaitForSingleObject(hEvent_, INFINITE);
 	}
 };
