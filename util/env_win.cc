@@ -9,6 +9,7 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
+#include <deque>
 #include <Windows.h>
 
 // because of this line in windows standard includes 
@@ -28,6 +29,10 @@ namespace leveldb {
 
 class Win32Env : public Env
 {
+protected:
+	// for safe Schedule access.
+	port::Mutex mutexSchedule_;
+
 public:
 	// constructor
 	Win32Env();
@@ -308,7 +313,7 @@ class Win32RandomAccessFile : public RandomAccessFile
 						    , public Win32FileBase {
 protected:
 	// for safe Read access.
-	mutable port::Mutex mu_;
+	mutable port::Mutex mutex_;
 public:
 	// construct from name and win32 handle
 	Win32RandomAccessFile(const std::string& filename, HANDLE h) :
@@ -327,13 +332,12 @@ public:
 		char* scratch) const OVERRIDE
 	{
 		// lock for thread safe file position
-		mu_.Lock();
+		MutexLock lock(&mutex_);
 
 		// goto to offset
 		Status status = _apiSetFilePointer(offset, FILE_BEGIN);
 		if (!status.ok())
 		{
-			mu_.Unlock();
 			return status; // failure
 		}
 
@@ -342,9 +346,6 @@ public:
 		DWORD numberOfBytesRead = 0;
 		BOOL retCode = win32api::ReadFile(hFile_, scratch, numberOfBytesToRead, &numberOfBytesRead, NULL);
 		
-		// unlock for thread safe file position
-		mu_.Unlock();
-
 		// on failure
 		if (retCode == FALSE) {
 			// return fail code from win32 error
@@ -732,6 +733,62 @@ Status Win32Env::UnlockFile(FileLock* lock) {
 	// success
 	return Status::OK();
 }
+
+// Entry per Schedule() call
+struct BGItem { void* arg; void (*function)(void*); };
+typedef std::deque<BGItem> BGQueue;
+
+
+// helper class for  Win32Env::Schedule() implementation
+class SchedulerThread {
+protected:
+	// functions waiting tu run
+	BGQueue queue_;
+public:
+	SchedulerThread() {}
+
+	// Run the thead
+	void IniMainThreadLoop(void);
+
+	// Add a new function to be run
+	void AddEntry(BGItem bgItem) {
+		// Add to priority queue
+		queue_.push_back(bgItem);
+	}
+
+protected:
+	// main loop in thread
+	void _MainThreadLoop();
+};
+static SchedulerThread *schedulerThread=nullptr;
+
+
+// Arrange to run "(*function)(arg)" once in a background thread.
+//
+// "function" may run in an unspecified thread.  Multiple functions
+// added to the same Env may run concurrently in different threads.
+// I.e., the caller may not assume that background work items are
+// serialized.
+//virtual 
+void Win32Env::Schedule(
+	void (*function)(void* arg),
+	void* arg) {
+	// one caller at a time
+	MutexLock lock(&mutexSchedule_);
+
+	// create and init Scheduler thread at first call
+	if (schedulerThread == nullptr) {
+		schedulerThread = new SchedulerThread();
+		// lauch the executer thread 
+		schedulerThread->IniMainThreadLoop();
+	}
+
+	// add callback and parameter
+	BGItem item = { arg, function };
+	schedulerThread->AddEntry(item);
+}
+
+
 
 // global Env creation, singleton
 static Win32Env* default_env = nullptr;
