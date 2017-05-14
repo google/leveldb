@@ -893,31 +893,10 @@ Status Win32Env::GetTestDirectory(std::string* path) {
 	return Status::OK();
 }
 
-class WinLogger : public Logger
-	, public Win32FileBase {
-public:
-	// construct from name and win32 handle
-	WinLogger(const std::string& filename, HANDLE h) :
-		Win32FileBase(filename, h) {}
-
-	// Write an entry to the log file with the specified format.
-	virtual void Logv(const char* format, va_list ap) OVERRIDE;
-
-};//class WinLogger
-
- // Write an entry to the log file with the specified format.
-//virtual 
-void WinLogger::Logv(const char* format, va_list ap)  {
-	
-	
-	//@@TODO
-}
-
 // Return the thread id for the current thread
 // callback for PosixLogger()
 uint64_t win32gettid() {
 	return GetCurrentThreadId();
-
 }
 
 // Create and return a log file for storing informational messages.
