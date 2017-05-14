@@ -5,6 +5,7 @@
 #include "port/port.h"
 #include "testharness.h"
 #include "util/mutexlock.h"
+#include "posix_logger.h" // PosixLogger
 
 #include <atomic>
 #include <thread>
@@ -892,6 +893,49 @@ Status Win32Env::GetTestDirectory(std::string* path) {
 	return Status::OK();
 }
 
+class WinLogger : public Logger
+	, public Win32FileBase {
+public:
+	// construct from name and win32 handle
+	WinLogger(const std::string& filename, HANDLE h) :
+		Win32FileBase(filename, h) {}
+
+	// Write an entry to the log file with the specified format.
+	virtual void Logv(const char* format, va_list ap) OVERRIDE;
+
+};//class WinLogger
+
+ // Write an entry to the log file with the specified format.
+//virtual 
+void WinLogger::Logv(const char* format, va_list ap)  {
+	
+	
+	//@@TODO
+}
+
+// Return the thread id for the current thread
+// callback for PosixLogger()
+uint64_t win32gettid() {
+	return GetCurrentThreadId();
+
+}
+
+// Create and return a log file for storing informational messages.
+Status Win32Env::NewLogger(const std::string& fname, Logger** result) {
+
+	// open the file <fname> with read/write accces
+	FILE* f = fopen(fname.c_str(), "w");
+	if (f == NULL) {
+		*result = NULL;
+		return LibcIOError(fname, errno);
+	}
+
+	// create a posix logger object
+	*result = new PosixLogger(f, win32gettid );
+
+	// succes
+	return Status::OK();
+}
 
 // global Env creation, singleton
 static Win32Env* default_env = nullptr;

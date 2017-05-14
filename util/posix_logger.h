@@ -10,7 +10,28 @@
 
 #include <algorithm>
 #include <stdio.h>
+
+#ifdef LEVELDB_PLATFORM_WINDOWS
+// <sys/time.h> not available in WIN32
+#include <winsock.h>
+void _win32getlocaltime(tm *ptm, int *pms)
+{
+	// win native api to get local time
+	SYSTEMTIME st;
+	::GetLocalTime(&st);
+	// convert
+	ptm->tm_sec  = (int)st.wSecond;
+	ptm->tm_min  = (int)st.wMinute;
+	ptm->tm_hour = (int)st.wHour;
+	ptm->tm_mday = (int)st.wDay;
+	ptm->tm_mon  = (int)st.wMonth - 1;
+	ptm->tm_year = (int)st.wYear - 1900;
+	ptm->tm_wday = (int)st.wDayOfWeek;
+	*pms	     = st.wMilliseconds;
+}
+#else//LEVELDB_PLATFORM_WINDOWS
 #include <sys/time.h>
+#endif
 #include <time.h>
 #include "leveldb/env.h"
 
@@ -44,11 +65,20 @@ class PosixLogger : public Logger {
       char* p = base;
       char* limit = base + bufsize;
 
+	  // get local time in struct <t> + millisec in m
+	  struct tm t;
+	  int ms = 0;
+#ifdef LEVELDB_PLATFORM_WINDOWS
+	  _win32getlocaltime(&t,&ms);
+#else
       struct timeval now_tv;
       gettimeofday(&now_tv, NULL);
       const time_t seconds = now_tv.tv_sec;
-      struct tm t;
-      localtime_r(&seconds, &t);
+	  localtime_r(&seconds, &t);
+	  ms = static_cast<int>(now_tv.tv_usec);
+#endif
+
+
       p += snprintf(p, limit - p,
                     "%04d/%02d/%02d-%02d:%02d:%02d.%06d %llx ",
                     t.tm_year + 1900,
@@ -57,7 +87,7 @@ class PosixLogger : public Logger {
                     t.tm_hour,
                     t.tm_min,
                     t.tm_sec,
-                    static_cast<int>(now_tv.tv_usec),
+                    ms,
                     static_cast<long long unsigned int>(thread_id));
 
       // Print the message
