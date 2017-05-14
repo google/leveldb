@@ -364,7 +364,7 @@ public:
  // must provide buffering since callers may append small fragments
  // at a time to the file.
 class Win32WritableFile : public WritableFile
-	, public Win32FileBase {
+						, public Win32FileBase {
 public:
 	// construct from name and win32 handle
 	Win32WritableFile(const std::string& filename, HANDLE h) :
@@ -642,7 +642,95 @@ Status Win32Env::GetFileSize(const std::string& fname, uint64_t* file_size) {
 
 	// succes
 	return Status::OK();
+}
+// Rename file src to target.
+Status Win32Env::RenameFile(const std::string& src,
+	const std::string& target) {
+	// direct api call
+	BOOL ok = win32api::MoveFile (src.c_str(), target.c_str() );
+	if (!ok) {
+		// return failure code
+		return Win32IOError(src, ::GetLastError());
+	}
+	// succes
+	return Status::OK();
+}
 
+class Win32FileLock : public FileLock
+				    , public Win32FileBase {
+public:
+	// construct from name and win32 handle
+	Win32FileLock(const std::string& filename, HANDLE h) :
+		Win32FileBase(filename, h) {}
+	// destructor 
+	virtual ~Win32FileLock() {
+		// unlock the file
+		// direct api call, ignore return code
+		win32api::UnlockFileEx(hFile_,
+			0, // reserved
+			UINT_MAX, UINT_MAX, // all the file
+			NULL);
+	}
+
+};
+
+
+// Lock the specified file.  Used to prevent concurrent access to
+// the same db by multiple processes.  On failure, stores NULL in
+// *lock and returns non-OK.
+//
+// On success, stores a pointer to the object that represents the
+// acquired lock in *lock and returns OK.  The caller should call
+// UnlockFile(*lock) to release the lock.  If the process exits,
+// the lock will be automatically released.
+//
+// If somebody else already holds the lock, finishes immediately
+// with a failure.  I.e., this call does not wait for existing locks
+// to go away.
+//
+// May create the named file if it does not already exist.
+Status Win32Env::LockFile(const std::string& fname, FileLock** lock) {
+	// open the file <fname> with read-only accces : GENERIC_READ
+	// OPEN_ALWAYS : create the file if it does not exist
+	HANDLE hFile = win32api::CreateFile(fname.c_str(),
+		GENERIC_READ,
+		FILE_SHARE_READ,
+		NULL,
+		OPEN_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+		NULL);
+	// on failure
+	if (hFile == INVALID_HANDLE_VALUE) {
+		// return fail code
+		return Win32IOError(fname, ::GetLastError());
+	}
+	//create lock 
+	// LOCKFILE_FAIL_IMMEDIATELY : fail if lock cannot be gained immediatly
+	BOOL ok = win32api::LockFileEx(  hFile,
+									LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY,
+									0, // reserved
+									UINT_MAX, UINT_MAX, // all the file
+									NULL );
+	if (!ok) {
+		// Free handle alllocted by CreateFile()
+		CloseHandle(hFile);
+		// return failure code
+		return Win32IOError(fname, ::GetLastError());
+	}
+	// lock aquired
+	// create the FileLock objet
+	*lock = new Win32FileLock(fname, hFile);
+	// success
+	return Status::OK();
+}
+
+// Release the lock acquired by a previous successful call to LockFile.
+// REQUIRES: lock was returned by a successful LockFile() call
+// REQUIRES: lock has not already been unlocked.
+Status Win32Env::UnlockFile(FileLock* lock) {
+	delete lock;
+	// success
+	return Status::OK();
 }
 
 // global Env creation, singleton
