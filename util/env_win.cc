@@ -468,7 +468,7 @@ Status Win32Env::NewRandomAccessFile(const std::string& fname,
 		NULL);
 	// on failure
 	if (h == INVALID_HANDLE_VALUE) {
-		// return fail code
+		// return failure code
 		return Win32IOError(fname, ::GetLastError());
 	}
 
@@ -549,6 +549,42 @@ bool Win32Env::FileExists(const std::string& fname) {
 	return true;
 }
 
+// Store in *result the names of the children of the specified directory.
+// The names are relative to "dir".
+// Original contents of *results are dropped.
+//virtual 
+Status Win32Env::GetChildren(const std::string& dir,
+	std::vector<std::string>* result) {
+	// raz out array
+	result->clear();
+	// init dir parameter
+	std::string dirFilter = dir;
+	dirFilter.append("\\*.*");
+	WIN32_FIND_DATA findFileData;
+	ZeroMemory(&findFileData, sizeof(WIN32_FIND_DATA));
+	// start enumeration on files in <dir>
+	HANDLE  hFind =win32api::FindFirstFile(dirFilter.c_str(), &findFileData);
+	if (hFind == INVALID_HANDLE_VALUE)	{ 
+		// return failure code
+		return Win32IOError(dir, ::GetLastError());
+	}
+	// for each file
+	BOOL fileFound = TRUE;
+	while (fileFound) {
+		// ignore . and ..
+		if (strcmp(findFileData.cFileName, ".") == 0)  continue;
+		if (strcmp(findFileData.cFileName, "..") == 0) continue;
+
+		// add filename to the result
+		result->push_back( findFileData.cFileName );
+		// next file
+		fileFound = win32api::FindNextFile(hFind, &findFileData);
+	}
+	// free win32 ressources allocated by FindFirstFile/FinNextFile
+	win32api::FindClose(hFind);
+	// succes
+	return Status::OK();
+}
 
 // global Env creation, singleton
 static Win32Env* default_env = nullptr;
