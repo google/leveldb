@@ -610,6 +610,19 @@ Status Win32Env::CreateDir(const std::string& dirname) {
 	return Status::OK();
 }
 
+// Delete the specified directory.
+Status Win32Env::DeleteDir(const std::string& dirname) {
+	// direct api call
+	BOOL ok = win32api::RemoveDirectory (dirname.c_str());
+	if (!ok) {
+		// return failure code
+		return Win32IOError(dirname, ::GetLastError());
+	}
+	// succes
+	return Status::OK();
+}
+
+
 // global Env creation, singleton
 static Win32Env* default_env = nullptr;
 static void InitDefaultEnv() {
