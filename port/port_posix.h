@@ -7,6 +7,7 @@
 #ifndef STORAGE_LEVELDB_PORT_PORT_POSIX_H_
 #define STORAGE_LEVELDB_PORT_PORT_POSIX_H_
 
+
 #undef PLATFORM_IS_LITTLE_ENDIAN
 #if defined(OS_MACOSX)
   #include <machine/endian.h>
@@ -35,12 +36,18 @@
   #include <endian.h>
   #define PLATFORM_IS_LITTLE_ENDIAN  (_BYTE_ORDER == _LITTLE_ENDIAN)
 #elif defined(OS_WINDOWS)
+	// specific windows defines
+	#include "port/port_win.h" 
+
 	#define PLATFORM_IS_LITTLE_ENDIAN true
+	#define INITONCE_DEFINED  // defined in port_win.h
 #else
   #include <endian.h>
 #endif
 
-#include <pthread.h>
+#if !defined(OS_WINDOWS)
+	#include <pthread.h>
+#endif//defined(OS_WINDOWS)
 #ifdef SNAPPY
 #include <snappy.h>
 #endif
@@ -112,9 +119,12 @@ class CondVar {
   Mutex* mu_;
 };
 
+#ifndef INITONCE_DEFINED
 typedef pthread_once_t OnceType;
 #define LEVELDB_ONCE_INIT PTHREAD_ONCE_INIT
 extern void InitOnce(OnceType* once, void (*initializer)());
+#endif//#ifndef INITONCE_DEFINED
+
 
 inline bool Snappy_Compress(const char* input, size_t length,
                             ::std::string* output) {

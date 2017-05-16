@@ -924,10 +924,20 @@ static void InitDefaultEnv() {
 	default_env = new Win32Env();
 }
 
-static std::once_flag once;
+static bool oneCall = false;
+static port::Mutex mutexOneCall;
 Env* Env::Default() {
 	// Executes InitDefaultEnv exactly once
-	std::call_once(once, InitDefaultEnv);
+	// = std::call_once(once, InitDefaultEnv); 
+	// not supported by mingw
+	{
+		MutexLock lock(&mutexOneCall);
+		if (!oneCall)
+		{
+			oneCall = true;
+			InitDefaultEnv();
+		}
+	}
 	// return the global env
 	return default_env;
 }
