@@ -165,6 +165,7 @@ case "$TARGET_OS" in
         PLATFORM_LDFLAGS="-pthread"
         PORT_FILE=port/port_win.cc
         PORT_SSE_FILE=port/port_posix_sse.cc
+		CC=gcc
 		echo "$TARGET_OS" >&2
 		;;
     *)
