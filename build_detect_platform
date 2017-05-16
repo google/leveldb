@@ -159,8 +159,17 @@ case "$TARGET_OS" in
         PLATFORM_SHARED_CFLAGS=
         PLATFORM_SHARED_VERSIONED=
         ;;
+	MINGW*)
+	    PLATFORM=OS_WIN
+        COMMON_FLAGS="$MEMCMP_FLAG -DOS_WINDOWS -DLEVELDB_PLATFORM_WINDOWS"
+        PLATFORM_LDFLAGS="-pthread"
+        PORT_FILE=port/port_win.cc
+        PORT_SSE_FILE=port/port_posix_sse.cc
+		echo "$TARGET_OS" >&2
+		;;
     *)
         echo "Unknown platform!" >&2
+	
         exit 1
 esac
 

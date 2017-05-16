@@ -1,5 +1,6 @@
 
 // port of env for win32
+#ifdef LEVELDB_PLATFORM_WINDOWS
 
 #include "leveldb/env.h"
 #include "port/port.h"
@@ -162,7 +163,7 @@ public:
 	// useful for computing deltas of time.
 	virtual uint64_t NowMicros() OVERRIDE {
 		// *1000 : the win32 api is in millisec
-		return win32api::GetTickCount64() * 1000;
+		return win32api::GetTickCount() * 1000;
 	}
 
 	// Sleep/delay the thread for the prescribed number of micro-seconds.
@@ -935,3 +936,5 @@ Env* Env::Default() {
 
 
 }  // namespace leveldb
+
+#endif// LEVELDB_PLATFORM_WINDOWS

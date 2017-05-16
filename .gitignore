@@ -13,3 +13,4 @@ leveldbutil
 /leveldb.vcxproj
 /leveldb.sln
 /.vs
+/Test_env

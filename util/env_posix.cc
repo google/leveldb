@@ -1,6 +1,8 @@
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
+#ifndef LEVELDB_PLATFORM_WINDOWS  // env_win.cc is used for windows
+
 
 #include <dirent.h>
 #include <errno.h>
@@ -693,3 +695,4 @@ Env* Env::Default() {
 }
 
 }  // namespace leveldb
+#endif//ifndef LEVELDB_PLATFORM_WINDOWS
