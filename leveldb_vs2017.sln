@@ -11,6 +11,8 @@ Global
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		Test_checkall|x64 = Test_checkall|x64
+		Test_checkall|x86 = Test_checkall|x86
 		Test_env|x64 = Test_env|x64
 		Test_env|x86 = Test_env|x86
 	EndGlobalSection
@@ -23,6 +25,10 @@ Global
 		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Release|x64.Build.0 = Release|x64
 		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Release|x86.ActiveCfg = Release|Win32
 		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Release|x86.Build.0 = Release|Win32
+		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Test_checkall|x64.ActiveCfg = Test_checkall|x64
+		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Test_checkall|x64.Build.0 = Test_checkall|x64
+		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Test_checkall|x86.ActiveCfg = Test_checkall|Win32
+		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Test_checkall|x86.Build.0 = Test_checkall|Win32
 		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Test_env|x64.ActiveCfg = Test_env|x64
 		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Test_env|x64.Build.0 = Test_env|x64
 		{A88A1841-75AF-4EB8-AE7F-2638D54DE216}.Test_env|x86.ActiveCfg = Test_env|Win32
