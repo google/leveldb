@@ -60,7 +60,9 @@ TEST(EnvPosixTest, TestOpenOnRead) {
 
 int main(int argc, char** argv) {
   // All tests currently run with the same read-only file limits.
-  leveldb::EnvPosixTest::SetFileLimits(leveldb::kReadOnlyFileLimit,
+#ifndef LEVELDB_PLATFORM_WINDOWS 
+	leveldb::EnvPosixTest::SetFileLimits(leveldb::kReadOnlyFileLimit,
                                        leveldb::kMMapLimit);
+#endif//!#ifndef LEVELDB_PLATFORM_WINDOWS  
   return leveldb::test::RunAllTests();
 }
