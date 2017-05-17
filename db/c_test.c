@@ -1,3 +1,5 @@
+
+
 /* Copyright (c) 2011 The LevelDB Authors. All rights reserved.
    Use of this source code is governed by a BSD-style license that can be
    found in the LICENSE file. See the AUTHORS file for names of contributors. */
@@ -10,10 +12,28 @@
 #include <string.h>
 #include <sys/types.h>
 #ifdef LEVELDB_PLATFORM_WINDOWS
-   // unistd.h not available in WIN32
+   // unistd.h not available in WIN32   
 #else
 #include <unistd.h>
 #endif
+
+#ifdef LEVELDB_PLATFORM_WINDOWS
+#include <Windows.h>
+// geteuid() is not available in WIN32 , basic emulation ok for this file only
+int geteuid(void) {
+	// get user name
+	char userName[200];
+	DWORD useNamesize = sizeof(userName);
+	GetUserName(userName,&useNamesize);
+	// calc un basic crc
+	int res = 0;
+	char *p = userName;
+	while (*p)
+		res++;
+
+	return res;
+}
+#endif//LEVELDB_PLATFORM_WINDOWS
 
 const char* phase = "";
 static char dbname[200];
