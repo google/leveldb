@@ -195,16 +195,16 @@ static Status Win32IOError(const std::string& context, int getLastErrorCode) {
 	std::string errorMessage;
 	// api FormatMessage, allocate lpErrorText
 	LPTSTR  lpErrorText = NULL;
-	BOOL bOK = win32api::FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, 	0,
+	DWORD ret = win32api::FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, 	0,
 								getLastErrorCode,
 								0,
 								(LPTSTR)&lpErrorText,
 								MAX_ERRORTXT_LEN,
 								0);
-	// if no ssystem string  fond
-	if (!bOK)
+	// if FormatMessage failed = no system string for <getLastErrorCode>
+	if (ret=0)
 	{
-		// return a string like : "unknow system error 4455"
+		// return a string like this : "unknow system error 4455"
 		char strErrBuffer[MAX_ERRORTXT_LEN] = {};
 		snprintf(strErrBuffer, MAX_ERRORTXT_LEN, "unknow system error %d", getLastErrorCode );
 		errorMessage = strErrBuffer;
@@ -505,7 +505,7 @@ Status Win32Env::NewWritableFile(const std::string& fname,
 		GENERIC_READ | GENERIC_WRITE,
 		FILE_SHARE_READ,
 		NULL,
-		OPEN_EXISTING,
+		OPEN_ALWAYS,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
 		NULL);
 	// on failure
@@ -579,11 +579,13 @@ Status Win32Env::GetChildren(const std::string& dir,
 	BOOL fileFound = TRUE;
 	while (fileFound) {
 		// ignore . and ..
-		if (strcmp(findFileData.cFileName, ".") == 0)  continue;
-		if (strcmp(findFileData.cFileName, "..") == 0) continue;
+		bool ignoreFile = false;
+		if (strcmp(findFileData.cFileName, ".") == 0)  ignoreFile = true;
+		if (strcmp(findFileData.cFileName, "..") == 0) ignoreFile = true;
 
 		// add filename to the result
-		result->push_back( findFileData.cFileName );
+		if (!ignoreFile)
+			result->push_back( findFileData.cFileName );
 		// next file
 		fileFound = win32api::FindNextFile(hFind, &findFileData);
 	}
@@ -651,10 +653,11 @@ Status Win32Env::GetFileSize(const std::string& fname, uint64_t* file_size) {
 	return Status::OK();
 }
 // Rename file src to target.
-Status Win32Env::RenameFile(const std::string& src,
-	const std::string& target) {
+Status Win32Env::RenameFile(const std::string& src,	const std::string& target) {
 	// direct api call
-	BOOL ok = win32api::MoveFile (src.c_str(), target.c_str() );
+	// MOVEFILE_REPLACE_EXISTING , to match unix rename() :
+	//   If newpath already exists, it will be atomically replaced,
+	BOOL ok = win32api::MoveFileEx (src.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING);
 	if (!ok) {
 		// return failure code
 		return Win32IOError(src, ::GetLastError());
@@ -673,10 +676,10 @@ public:
 	virtual ~Win32FileLock() {
 		// unlock the file
 		// direct api call, ignore return code
-		win32api::UnlockFileEx(hFile_,
-			0, // reserved
-			UINT_MAX, UINT_MAX, // all the file
-			NULL);
+		win32api::UnlockFile(hFile_,
+			0, 0,
+			UINT_MAX, UINT_MAX // all the file
+			);
 	}
 
 };
@@ -713,11 +716,10 @@ Status Win32Env::LockFile(const std::string& fname, FileLock** lock) {
 	}
 	//create lock 
 	// LOCKFILE_FAIL_IMMEDIATELY : fail if lock cannot be gained immediatly
-	BOOL ok = win32api::LockFileEx(  hFile,
-									LOCKFILE_EXCLUSIVE_LOCK | LOCKFILE_FAIL_IMMEDIATELY,
-									0, // reserved
-									UINT_MAX, UINT_MAX, // all the file
-									NULL );
+	BOOL ok = win32api::LockFile(  hFile,
+									0, 0, // start
+									UINT_MAX, UINT_MAX   // all the file
+								);
 	if (!ok) {
 		// Free handle alllocted by CreateFile()
 		CloseHandle(hFile);
@@ -884,10 +886,19 @@ Status Win32Env::GetTestDirectory(std::string* path) {
 	// get system temp dir
 	TCHAR winTempDir[MAX_PATH];
 	win32api::GetTempPath(MAX_PATH, winTempDir);
-	// create temp dir for each processs
+	// create temp dir different for each processs
 	int pid = win32api::GetCurrentProcessId();
 	char buf[MAX_PATH];
-	snprintf(buf, sizeof(buf), "%s\\leveldbtest-%d", winTempDir, pid);
+	snprintf(buf, sizeof(buf), "%sleveldbtest-%d", winTempDir, pid);
+
+	// create the dir
+	BOOL ok =win32api::CreateDirectory(buf, NULL);
+	if (!ok) {
+		// return failure code
+		std::string tempPath = buf;
+		return Win32IOError(tempPath, ::GetLastError());
+	}
+
 	// set result
 	*path = buf;
 	// succes

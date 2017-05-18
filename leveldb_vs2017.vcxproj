@@ -188,7 +188,7 @@
     <ClCompile Include="db\autocompact_test.cc">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_checkall|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_env|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_env|Win32'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="db\builder.cc" />
     <ClCompile Include="db\c.cc" />
@@ -370,7 +370,7 @@
     <ClCompile Include="util\env_test.cc">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_checkall|Win32'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_env|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Test_env|Win32'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="util\env_win.cc" />
     <ClCompile Include="util\filter_policy.cc" />
