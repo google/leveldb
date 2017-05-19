@@ -897,7 +897,8 @@ Status Win32Env::GetTestDirectory(std::string* path) {
 
 	// create the dir
 	BOOL ok =win32api::CreateDirectory(buf, NULL);
-	if (!ok) {
+	// if failure and not  beceause dir already exists
+	if (!ok && (::GetLastError() != ERROR_ALREADY_EXISTS)) {
 		// return failure code
 		std::string tempPath = buf;
 		return Win32IOError(tempPath, ::GetLastError());
