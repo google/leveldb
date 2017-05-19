@@ -256,7 +256,7 @@ protected:
 		// NB : no sign pb here. quote from msnd :
 		//    If lpDistanceToMoveHigh is not NULL, lpDistanceToMoveHigh and lDistanceToMove form a single 64-bit signed value that specifies the distance to move.
 		DWORD retCode = win32api::SetFilePointer(hFile_, distanceToMove, &distanceToMoveHigh, moveMethod);
-		if (retCode == FALSE) {
+		if (retCode == INVALID_SET_FILE_POINTER) {
 			// return fail code from win32 error
 			return Win32IOError(filename_, win32api::GetLastError());
 		}
@@ -612,6 +612,10 @@ Status Win32Env::CreateDir(const std::string& dirname) {
 	// NULL : default security attributes
 	BOOL ok = win32api::CreateDirectory(dirname.c_str(), NULL);
 	if (!ok) {
+		// OK if already exist
+		if (::GetLastError() == ERROR_ALREADY_EXISTS)
+			return Status::OK();
+		
 		// return failure code
 		return Win32IOError(dirname, ::GetLastError());
 	}
