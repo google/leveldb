@@ -433,7 +433,7 @@ Status Win32Env::NewSequentialFile(const std::string& fname,
 	// open the file <fname> with read-only accces : GENERIC_READ
 	HANDLE h = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ,
-		FILE_SHARE_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
 		NULL,
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
@@ -468,10 +468,10 @@ Status Win32Env::NewRandomAccessFile(const std::string& fname,
 	// open the file <fname> with read-only accces : "r"
 	HANDLE h = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ,
-		FILE_SHARE_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
 		NULL,
 		OPEN_EXISTING,
-		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS,
 		NULL);
 	// on failure
 	if (h == INVALID_HANDLE_VALUE) {
@@ -503,9 +503,9 @@ Status Win32Env::NewWritableFile(const std::string& fname,
 	// open the file <fname> with read/write accces :GENERIC_READ + GENERIC_WRITE
 	HANDLE h = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
 		NULL,
-		OPEN_ALWAYS,
+		CREATE_ALWAYS, // create a new file, alaways
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
 		NULL);
 	// on failure
