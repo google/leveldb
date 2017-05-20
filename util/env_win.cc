@@ -1,5 +1,20 @@
+// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 // port of env for win32
+
+//TODO
+// cleanup en.h
+// review port_win.h/port_win.cc
+// add en_win_test.cc
+// sign licence
+// get lastets from master 
+// diff
+
+
+
+
 #ifdef LEVELDB_PLATFORM_WINDOWS
 
 #include "leveldb/env.h"
