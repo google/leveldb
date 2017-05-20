@@ -516,6 +516,8 @@ Status Win32Env::NewWritableFile(const std::string& fname,
 		// return fail code
 		return Win32IOError(fname, ::GetLastError());
 	}
+	// RAZ file : 0 bytes
+	win32:SetEndOfFile (h);
 
 	// write the out parameter with a new instantance  of a SequentialFile derivate for win32
 	*result = new Win32WritableFile(fname, h);
@@ -540,7 +542,28 @@ Status  Win32Env::NewAppendableFile(const std::string& fname,
 	WritableFile** result)
 {
 	//@TODO
-	return Status::NotSupported( "Todo");
+	//return Status::NotSupported( "Todo");
+
+
+	// open the file <fname> with read/write accces :GENERIC_READ + GENERIC_WRITE
+	HANDLE h = win32api::CreateFile(fname.c_str(),
+		GENERIC_READ | GENERIC_WRITE,
+		DEFAULT_WIN32_SHARE_FLAGS,
+		NULL,
+		OPEN_ALWAYS, // create a new file if it does not exit, else open it
+		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+		NULL);
+	// on failure
+	if (h == INVALID_HANDLE_VALUE) {
+		// return fail code
+		return Win32IOError(fname, ::GetLastError());
+	}
+
+	// write the out parameter with a new instantance  of a SequentialFile derivate for win32
+	*result = new Win32WritableFile(fname, h);
+	// success
+	return Status::OK();
+
 }	
 
 
