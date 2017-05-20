@@ -253,7 +253,7 @@ protected:
 		LONG   distanceToMove = LODWORD(offset); // 32 low bits
 		LONG   distanceToMoveHigh = HIDWORD(offset); // 32 high bits
 		// move the current file pointeur forward 
-		// NB : no sign pb here. quote from msnd :
+		// NB : no sign pb here. quote from msdn :
 		//    If lpDistanceToMoveHigh is not NULL, lpDistanceToMoveHigh and lDistanceToMove form a single 64-bit signed value that specifies the distance to move.
 		DWORD retCode = win32api::SetFilePointer(hFile_, distanceToMove, &distanceToMoveHigh, moveMethod);
 		if (retCode == INVALID_SET_FILE_POINTER) {
