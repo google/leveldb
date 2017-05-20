@@ -153,3 +153,5 @@ leveldbutil
 /Test_checkall/autocompact_test.obj
 /Test_checkall/arena_test.obj
 /Test_checkall/arena.obj
+/out-static/autocompact_test.exe
+/out-shared/db_bench.exe
