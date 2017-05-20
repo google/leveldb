@@ -636,22 +636,29 @@ Status Win32Env::DeleteDir(const std::string& dirname) {
 }
 
 // Store the size of fname in *file_size.
-Status Win32Env::GetFileSize(const std::string& fname, uint64_t* file_size) {
-	// the direct win32 api GetFileSizeEx() needd a handle, ie to open the file (slow)
-	// FindFirstFile doest that quickly
-	WIN32_FIND_DATA findFileData;
-	ZeroMemory(&findFileData, sizeof(WIN32_FIND_DATA));
-	HANDLE  hFind = win32api::FindFirstFile(fname.c_str(), &findFileData);
-	if (hFind == INVALID_HANDLE_VALUE) {
-		// return failure code
+Status Win32Env::GetFileSize(const std::string& fname, uint64_t* file_size_out) {
+	// CreateFile() is slower than GetFileSizeEx() to get file size, but is more accurate if the file is still opened somewhere
+	// open the file <fname> with read-only accces : GENERIC_READ
+	HANDLE h = win32api::CreateFile(fname.c_str(),
+		GENERIC_READ,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		NULL,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+		NULL);
+	// on failure
+	if (h == INVALID_HANDLE_VALUE) {
+		// return fail code
 		return Win32IOError(fname, ::GetLastError());
 	}
-	
-	// put the file size in the fuction result
-	*file_size = (uint64_t)findFileData.nFileSizeLow + (uint64_t)findFileData.nFileSizeHigh*0x100000000;
+	// get file size
+	LARGE_INTEGER fileSize = {};
+	win32api::GetFileSizeEx(h, &fileSize);
+	// close file 
+	CloseHandle(h);
 
-	// free win32 ressources allocated by FindFirstFile/FinNextFile
-	win32api::FindClose(hFind);
+	// put the file size in the fuction result
+	*file_size_out = fileSize.QuadPart;
 
 	// succes
 	return Status::OK();
