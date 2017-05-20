@@ -28,7 +28,7 @@ int geteuid(void) {
 	// calc un basic crc
 	int res = 0;
 	char *p = userName;
-	while (*p)
+	while (*p++)
 		res++;
 
 	return res;
