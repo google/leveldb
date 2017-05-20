@@ -44,10 +44,18 @@ static void StartPhase(const char* name) {
 }
 
 static const char* GetTempDir(void) {
+#ifdef LEVELDB_PLATFORM_WINDOWS
+	// get system temp dir
+	static TCHAR winTempDir[MAX_PATH];
+	GetTempPath(MAX_PATH, winTempDir);
+	const char* ret = winTempDir;
+#else
     const char* ret = getenv("TEST_TMPDIR");
     if (ret == NULL || ret[0] == '\0')
         ret = "/tmp";
-    return ret;
+#endif
+	return ret;
+
 }
 
 #define CheckNoError(err)                                               \
