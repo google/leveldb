@@ -223,6 +223,22 @@ static Status Win32IOError(const std::string& context, int getLastErrorCode) {
 	return Status::IOError(context, errorMessage);
 }
 
+// wrapper to win32 api SetFilePointer()
+DWORD win32SetFilePointer64( HANDLE hFile, uint64_t offset, DWORD  moveMethod ) 
+{
+	// init api parameters
+#define LODWORD(l)          (DWORD)( l        & 0xffffffff)
+#define HIDWORD(l)          (DWORD)((l >> 32) & 0xffffffff)
+	LONG   distanceToMove = LODWORD(offset); // 32 low bits
+	LONG   distanceToMoveHigh = HIDWORD(offset); // 32 high bits
+												 // move the current file pointeur forward 
+												 // NB : no sign pb here. quote from msdn :
+												 //    If lpDistanceToMoveHigh is not NULL, lpDistanceToMoveHigh and lDistanceToMove form a single 64-bit signed value that specifies the distance to move.
+	DWORD retCode = win32api::SetFilePointer(hFile, distanceToMove, &distanceToMoveHigh, moveMethod);
+	return retCode;
+}
+
+
 // base classe from win32 api based file 
 class Win32FileBase {
 protected:
@@ -250,15 +266,8 @@ protected:
 	// call the api SetFilePointer with 64 bits offset dans interpretation of the return value.
 	Status _apiSetFilePointer(uint64_t offset, DWORD  moveMethod = FILE_CURRENT) const
 	{
-		// init api parameters
-		#define LODWORD(l)          (DWORD)( l        & 0xffffffff)
-		#define HIDWORD(l)          (DWORD)((l >> 32) & 0xffffffff)
-		LONG   distanceToMove = LODWORD(offset); // 32 low bits
-		LONG   distanceToMoveHigh = HIDWORD(offset); // 32 high bits
-		// move the current file pointeur forward 
-		// NB : no sign pb here. quote from msdn :
-		//    If lpDistanceToMoveHigh is not NULL, lpDistanceToMoveHigh and lDistanceToMove form a single 64-bit signed value that specifies the distance to move.
-		DWORD retCode = win32api::SetFilePointer(hFile_, distanceToMove, &distanceToMoveHigh, moveMethod);
+		// move the current file pointeur f
+		DWORD retCode = win32SetFilePointer64(hFile_, offset, moveMethod);
 		if (retCode == INVALID_SET_FILE_POINTER) {
 			// return fail code from win32 error
 			return Win32IOError(filename_, win32api::GetLastError());
@@ -517,7 +526,7 @@ Status Win32Env::NewWritableFile(const std::string& fname,
 		return Win32IOError(fname, ::GetLastError());
 	}
 	// RAZ file : 0 bytes
-	win32:SetEndOfFile (h);
+	win32api::SetEndOfFile (h);
 
 	// write the out parameter with a new instantance  of a SequentialFile derivate for win32
 	*result = new Win32WritableFile(fname, h);
@@ -541,10 +550,6 @@ Status Win32Env::NewWritableFile(const std::string& fname,
 Status  Win32Env::NewAppendableFile(const std::string& fname,
 	WritableFile** result)
 {
-	//@TODO
-	//return Status::NotSupported( "Todo");
-
-
 	// open the file <fname> with read/write accces :GENERIC_READ + GENERIC_WRITE
 	HANDLE h = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ | GENERIC_WRITE,
@@ -556,6 +561,13 @@ Status  Win32Env::NewAppendableFile(const std::string& fname,
 	// on failure
 	if (h == INVALID_HANDLE_VALUE) {
 		// return fail code
+		return Win32IOError(fname, ::GetLastError());
+	}
+	// set current pos a the end of file
+	DWORD retCode = win32SetFilePointer64(h, 0 , FILE_END);
+	if (retCode == INVALID_SET_FILE_POINTER) {
+		CloseHandle(h);
+		// return failure code
 		return Win32IOError(fname, ::GetLastError());
 	}
 
