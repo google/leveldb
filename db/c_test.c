@@ -48,6 +48,11 @@ static const char* GetTempDir(void) {
 	// get system temp dir
 	static TCHAR winTempDir[MAX_PATH];
 	GetTempPath(MAX_PATH, winTempDir);
+	// remove trailing \ :
+	int Len = strlen(winTempDir);
+	if (winTempDir[Len - 1] = '\\') winTempDir[Len - 1] = 0;
+
+
 	const char* ret = winTempDir;
 #else
     const char* ret = getenv("TEST_TMPDIR");
