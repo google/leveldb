@@ -27,6 +27,9 @@
 // to make win32 api calls more obvious
 // ex : win32api::CreateFile( ... )
 #define win32api  
+// default win32 sharing flags for CreateFile()
+// FILE_SHARE_DELETE : for MoveFileEx
+static const DWORD DEFAULT_WIN32_SHARE_FLAGS = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
 
 namespace leveldb {
 
@@ -433,7 +436,7 @@ Status Win32Env::NewSequentialFile(const std::string& fname,
 	// open the file <fname> with read-only accces : GENERIC_READ
 	HANDLE h = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ,
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		DEFAULT_WIN32_SHARE_FLAGS,
 		NULL,
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
@@ -468,7 +471,7 @@ Status Win32Env::NewRandomAccessFile(const std::string& fname,
 	// open the file <fname> with read-only accces : "r"
 	HANDLE h = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ,
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		DEFAULT_WIN32_SHARE_FLAGS,
 		NULL,
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS,
@@ -503,7 +506,7 @@ Status Win32Env::NewWritableFile(const std::string& fname,
 	// open the file <fname> with read/write accces :GENERIC_READ + GENERIC_WRITE
 	HANDLE h = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ | GENERIC_WRITE,
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		DEFAULT_WIN32_SHARE_FLAGS,
 		NULL,
 		CREATE_ALWAYS, // create a new file, alaways
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
@@ -641,7 +644,7 @@ Status Win32Env::GetFileSize(const std::string& fname, uint64_t* file_size_out) 
 	// open the file <fname> with read-only accces : GENERIC_READ
 	HANDLE h = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ,
-		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		DEFAULT_WIN32_SHARE_FLAGS,
 		NULL,
 		OPEN_EXISTING,
 		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
@@ -665,10 +668,11 @@ Status Win32Env::GetFileSize(const std::string& fname, uint64_t* file_size_out) 
 }
 // Rename file src to target.
 Status Win32Env::RenameFile(const std::string& src,	const std::string& target) {
+
 	// direct api call
 	// MOVEFILE_REPLACE_EXISTING , to match unix rename() :
 	//   If newpath already exists, it will be atomically replaced,
-	BOOL ok = win32api::MoveFileEx (src.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING);
+	BOOL ok = win32api::MoveFileEx (src.c_str(), target.c_str(), MOVEFILE_REPLACE_EXISTING| MOVEFILE_WRITE_THROUGH);
 	if (!ok) {
 		// return failure code
 		return Win32IOError(src, ::GetLastError());
@@ -715,10 +719,10 @@ Status Win32Env::LockFile(const std::string& fname, FileLock** lock) {
 	// OPEN_ALWAYS : create the file if it does not exist
 	HANDLE hFile = win32api::CreateFile(fname.c_str(),
 		GENERIC_READ,
-		FILE_SHARE_READ,
+		DEFAULT_WIN32_SHARE_FLAGS,
 		NULL,
 		OPEN_ALWAYS,
-		FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
+		FILE_ATTRIBUTE_NORMAL,
 		NULL);
 	// on failure
 	if (hFile == INVALID_HANDLE_VALUE) {
