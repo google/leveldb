@@ -5,10 +5,7 @@
 // port of env for win32
 
 //TODO
-
-// review port_win.h/port_win.cc
 // add en_win_test.cc
-// sign licence
 // get lastets from master 
 // diff
 
