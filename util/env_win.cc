@@ -2,15 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-// port of env for win32
-
-//TODO
-// add en_win_test.cc
-// get lastets from master 
-// diff
-
-
-
+// port of env for windows
+// use native win32 api , no other dependencies
 
 #ifdef LEVELDB_PLATFORM_WINDOWS
 
