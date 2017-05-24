@@ -42,6 +42,12 @@ class WriteBatch {
   // Clear all updates buffered in this batch.
   void Clear();
 
+  // The size of the database changes caused by this batch.
+  //
+  // This number is tied to implementation details, and may change across
+  // releases. It is intended for LevelDB usage metrics.
+  size_t ApproximateSize();
+
   // Support for iterating over the contents of a batch.
   class Handler {
    public:
