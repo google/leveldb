@@ -53,6 +53,11 @@ if test -z "$TARGET_OS"; then
     TARGET_OS=`uname -s`
 fi
 
+# Detect ARCH
+if test -z "$TARGET_ARCH"; then
+    TARGET_ARCH=`$CXX -dumpmachine | cut -d- -f1`
+fi
+
 COMMON_FLAGS=
 CROSS_COMPILE=
 PLATFORM_CCFLAGS=
@@ -64,6 +69,7 @@ PLATFORM_SHARED_LDFLAGS="-shared -Wl,-soname -Wl,"
 PLATFORM_SHARED_CFLAGS="-fPIC"
 PLATFORM_SHARED_VERSIONED=true
 PLATFORM_SSEFLAGS=
+PORT_CRC_FILE_ARMV8=
 
 MEMCMP_FLAG=
 if [ "$CXX" = "g++" ]; then
@@ -164,6 +170,11 @@ case "$TARGET_OS" in
         exit 1
 esac
 
+if [ $TARGET_ARCH = "aarch64" -a $PLATFORM = "OS_LINUX" ];then
+    PORT_SSE_FILE=
+    PORT_CRC_FILE_ARMV8=port/port_posix_linux_arm64.cc
+fi
+
 # We want to make a list of all cc files within util, db, table, and helpers
 # except for the test and benchmark files. By default, find will output a list
 # of all files matching either rule, so we need to append -print to make the
@@ -180,7 +191,7 @@ set +f # re-enable globbing
 
 # The sources consist of the portable files, plus the platform-specific port
 # file.
-echo "SOURCES=$PORTABLE_FILES $PORT_FILE $PORT_SSE_FILE" >> $OUTPUT
+echo "SOURCES=$PORTABLE_FILES $PORT_FILE $PORT_SSE_FILE $PORT_CRC_FILE_ARMV8" >> $OUTPUT
 echo "MEMENV_SOURCES=helpers/memenv/memenv.cc" >> $OUTPUT
 
 if [ "$CROSS_COMPILE" = "true" ]; then
@@ -232,11 +243,28 @@ EOF
     fi
 
     rm -f $CXXOUTPUT 2>/dev/null
+
+    # Test if gcc armv8-a+crc+crypto is supported
+    $CXX $CXXFLAGS -x c++ - -o $CXXOUTPUT -march=armv8-a+crc+crypto 2>/dev/null  <<EOF
+      #include <arm_acle.h>
+      #include <arm_neon.h>
+      int main() {__crc32cd(0, 0); vmull_p64(0, 0);}
+EOF
+    if [ "$?" = 0 ]; then
+        PLATFORM_ARMV8_CRC32FLAGS="-march=armv8-a+crc+crypto"
+    fi
+
+    rm -f $CXXOUTPUT 2>/dev/null
 fi
 
 # Use the SSE 4.2 CRC32C intrinsics iff runtime checks indicate compiler supports them.
 if [ -n "$PLATFORM_SSEFLAGS" ]; then
     PLATFORM_SSEFLAGS="$PLATFORM_SSEFLAGS -DLEVELDB_PLATFORM_POSIX_SSE"
+fi
+
+# Use the ARMv8 CRC32C intrinsics if runtime checks indicate compiler supports them.
+if [ -n "$PLATFORM_ARMV8_CRC32FLAGS" ]; then
+    PLATFORM_ARMV8_CRC32FLAGS="$PLATFORM_ARMV8_CRC32FLAGS -DLEVELDB_PLATFORM_POSIX_ARMV8_CRC_CRYPTO"
 fi
 
 PLATFORM_CCFLAGS="$PLATFORM_CCFLAGS $COMMON_FLAGS"
@@ -254,3 +282,4 @@ echo "PLATFORM_SHARED_CFLAGS=$PLATFORM_SHARED_CFLAGS" >> $OUTPUT
 echo "PLATFORM_SHARED_EXT=$PLATFORM_SHARED_EXT" >> $OUTPUT
 echo "PLATFORM_SHARED_LDFLAGS=$PLATFORM_SHARED_LDFLAGS" >> $OUTPUT
 echo "PLATFORM_SHARED_VERSIONED=$PLATFORM_SHARED_VERSIONED" >> $OUTPUT
+echo "PLATFORM_ARMV8_CRC32FLAGS=$PLATFORM_ARMV8_CRC32FLAGS" >> $OUTPUT

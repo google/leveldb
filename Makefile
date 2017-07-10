@@ -422,3 +422,9 @@ $(STATIC_OUTDIR)/port/port_posix_sse.o: port/port_posix_sse.cc
 
 $(SHARED_OUTDIR)/port/port_posix_sse.o: port/port_posix_sse.cc
 	$(CXX) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(PLATFORM_SSEFLAGS) -c $< -o $@
+
+$(STATIC_OUTDIR)/port/port_posix_linux_arm64.o: port/port_posix_linux_arm64.cc
+	$(CXX) $(CXXFLAGS) $(PLATFORM_ARMV8_CRC32FLAGS) -c $< -o $@
+
+$(SHARED_OUTDIR)/port/port_posix_linux_arm64.o: port/port_posix_linux_arm64.cc
+	$(CXX) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(PLATFORM_ARMV8_CRC32FLAGS) -c $< -o $@
