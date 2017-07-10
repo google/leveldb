@@ -99,6 +99,24 @@ TEST(EnvTest, StartThread) {
   ASSERT_EQ(state.val, 3);
 }
 
+TEST(EnvTest, TestOpenNonExistentFile) {
+  // Write some test data to a single file that will be opened |n| times.
+  std::string test_dir;
+  ASSERT_OK(env_->GetTestDirectory(&test_dir));
+
+  std::string non_existent_file = test_dir + "/non_existent_file";
+  ASSERT_TRUE(!env_->FileExists(non_existent_file));
+
+  RandomAccessFile* random_access_file;
+  Status status = env_->NewRandomAccessFile(
+      non_existent_file, &random_access_file);
+  ASSERT_TRUE(status.IsNotFound());
+
+  SequentialFile* sequential_file;
+  status = env_->NewSequentialFile(non_existent_file, &sequential_file);
+  ASSERT_TRUE(status.IsNotFound());
+}
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) {

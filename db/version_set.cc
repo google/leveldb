@@ -925,6 +925,10 @@ Status VersionSet::Recover(bool *save_manifest) {
   SequentialFile* file;
   s = env_->NewSequentialFile(dscname, &file);
   if (!s.ok()) {
+    if (s.IsNotFound()) {
+      return Status::Corruption(
+            "CURRENT points to a non-existent file", s.ToString());
+    }
     return s;
   }
 

@@ -43,7 +43,8 @@ class Env {
   // Create a brand new sequentially-readable file with the specified name.
   // On success, stores a pointer to the new file in *result and returns OK.
   // On failure stores NULL in *result and returns non-OK.  If the file does
-  // not exist, returns a non-OK status.
+  // not exist, returns a non-OK status.  Implementations should return a
+  // NotFound status when the file does not exist.
   //
   // The returned file will only be accessed by one thread at a time.
   virtual Status NewSequentialFile(const std::string& fname,
@@ -53,7 +54,8 @@ class Env {
   // specified name.  On success, stores a pointer to the new file in
   // *result and returns OK.  On failure stores NULL in *result and
   // returns non-OK.  If the file does not exist, returns a non-OK
-  // status.
+  // status.  Implementations should return a NotFound status when the file does
+  // not exist.
   //
   // The returned file may be concurrently accessed by multiple threads.
   virtual Status NewRandomAccessFile(const std::string& fname,
