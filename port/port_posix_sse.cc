@@ -93,7 +93,7 @@ uint32_t AcceleratedCRC32C(uint32_t crc, const char* buf, size_t size) {
 
   if (size > 16) {
     // Process unaligned bytes
-    for (unsigned int i = reinterpret_cast<uintptr_t>(p) % 8; i; --i) {
+    for (unsigned int i = reinterpret_cast<uintptr_t>(p) % 8; i && (i<8); i++) {
       STEP1;
     }
 
