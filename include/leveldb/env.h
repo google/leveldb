@@ -86,7 +86,7 @@ class Env {
   virtual Status NewAppendableFile(const std::string& fname,
                                    WritableFile** result);
 
-  // Returns true iff the named file exists.
+  // Returns true if the named file exists.
   virtual bool FileExists(const std::string& fname) = 0;
 
   // Store in *result the names of the children of the specified directory.
