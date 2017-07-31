@@ -173,7 +173,7 @@ class LRUCache {
 
  private:
   void LRU_Remove(LRUHandle* e);
-  void LRU_Append(LRUHandle*list, LRUHandle* e);
+  void LRU_Append(LRUHandle* list, LRUHandle* e);
   void Ref(LRUHandle* e);
   void Unref(LRUHandle* e);
   bool FinishErase(LRUHandle* e);
