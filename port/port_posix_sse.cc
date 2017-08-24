@@ -92,8 +92,12 @@ uint32_t AcceleratedCRC32C(uint32_t crc, const char* buf, size_t size) {
 } while (0)
 
   if (size > 16) {
-    // Process unaligned bytes
-    for (unsigned int i = reinterpret_cast<uintptr_t>(p) % 8; i; --i) {
+    // Point x at first 8-byte aligned byte in string. This must be inside the
+    // string, due to the size check above.
+    const uintptr_t pval = reinterpret_cast<uintptr_t>(p);
+    const uint8_t* x = reinterpret_cast<const uint8_t*>(((pval + 7) >> 3) << 3);
+    // Process bytes until p is 8-byte aligned.
+    while (p != x) {
       STEP1;
     }
 
