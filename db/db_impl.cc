@@ -579,6 +579,29 @@ void DBImpl::CompactRange(const Slice* begin, const Slice* end) {
   for (int level = 0; level < max_level_with_files; level++) {
     TEST_CompactRange(level, begin, end);
   }
+  
+  int old_max_level_with_file = max_level_with_files;
+  while (old_max_level_with_file < config::kNumLevels-1) {
+    {
+       MutexLock l(&mutex_);
+       Version *base = versions_->current();
+       for (int level = old_max_level_with_file + 1; level < config::kNumLevels; ++ level) {
+         if (base->OverlapInLevel(level, begin, end)) {
+           max_level_with_files = level;
+         }
+       }
+    }
+    
+    if (max_level_with_files != old_max_level_with_file) {
+      for (int level = old_max_level_with_file; level < max_level_with_files; ++ level) {
+        TEST_CompactRange(level, begin, end);
+      }
+    
+      old_max_level_with_file = max_level_with_files;
+    } else {
+      break;
+    }
+  }
 }
 
 void DBImpl::TEST_CompactRange(int level, const Slice* begin,const Slice* end) {
