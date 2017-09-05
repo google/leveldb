@@ -224,13 +224,12 @@ EOF
     rm -f $CXXOUTPUT 2>/dev/null
 
     # Test if gcc SSE 4.2 is supported
-    $CXX $CXXFLAGS -x c++ - -o $CXXOUTPUT -msse4.2 2>/dev/null  <<EOF
+    $CXX $CXXFLAGS -Werror -x c++ - -o $CXXOUTPUT -msse4.2 -dD -E 2>/dev/null | fgrep __SSE4_2__ $CXXOUTPUT 2>/dev/null  <<EOF
       int main() {}
 EOF
     if [ "$?" = 0 ]; then
         PLATFORM_SSEFLAGS="-msse4.2"
     fi
-
     rm -f $CXXOUTPUT 2>/dev/null
 fi
 
