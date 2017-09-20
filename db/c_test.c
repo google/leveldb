@@ -9,21 +9,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <unistd.h>
 
 const char* phase = "";
-static char dbname[200];
+static char dbname[L_tmpnam];
 
 static void StartPhase(const char* name) {
   fprintf(stderr, "=== Test %s\n", name);
   phase = name;
-}
-
-static const char* GetTempDir(void) {
-    const char* ret = getenv("TEST_TMPDIR");
-    if (ret == NULL || ret[0] == '\0')
-        ret = "/tmp";
-    return ret;
 }
 
 #define CheckNoError(err)                                               \
@@ -168,10 +160,7 @@ int main(int argc, char** argv) {
   CheckCondition(leveldb_major_version() >= 1);
   CheckCondition(leveldb_minor_version() >= 1);
 
-  snprintf(dbname, sizeof(dbname),
-           "%s/leveldb_c_test-%d",
-           GetTempDir(),
-           ((int) geteuid()));
+  tmpnam(dbname);
 
   StartPhase("create_objects");
   cmp = leveldb_comparator_create(NULL, CmpDestroy, CmpCompare, CmpName);
