@@ -41,6 +41,31 @@ include_directories(
   "${PROJECT_SOURCE_DIR}"
 )
 
+<<<<<<< HEAD
+=======
+# SSE4.2 code is built separately, so we don't accidentally compile unsupported
+# instructions into code that gets run without SSE4.2 support.
+add_library(leveldb_port_sse42 OBJECT "")
+target_sources(leveldb_port_sse42
+  PRIVATE
+    "${PROJECT_BINARY_DIR}/include/port/port_config.h"
+    "${PROJECT_SOURCE_DIR}/port/port_posix_sse.cc"
+    "${PROJECT_SOURCE_DIR}/port/port_posix.h"
+    "${PROJECT_SOURCE_DIR}/port/port.h"
+)
+target_compile_definitions(leveldb_port_sse42
+  PRIVATE
+    LEVELDB_PLATFORM_POSIX
+)
+if(LEVELDB_PLATFORM_POSIX_SSE)
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(leveldb_port_sse42 PRIVATE "/arch:AVX")
+  else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(leveldb_port_sse42 PRIVATE "-msse4.2")
+  endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+endif(LEVELDB_PLATFORM_POSIX_SSE)
+
+>>>>>>> 02d98fe... Add CMake build support.
 # POSIX code is specified separately so we can leave it out in the future.
 add_library(leveldb_port_posix OBJECT "")
 target_sources(leveldb_port_posix
@@ -60,6 +85,10 @@ add_library(leveldb ""
   # TODO(pwnall): Move the TARGET_OBJECTS generator expressions to the PRIVATE
   # section of target_sources when cmake_minimum_required becomes 3.9 or above.
   $<TARGET_OBJECTS:leveldb_port_posix>
+<<<<<<< HEAD
+=======
+  $<TARGET_OBJECTS:leveldb_port_sse42>
+>>>>>>> 02d98fe... Add CMake build support.
 )
 target_sources(leveldb
   PRIVATE
@@ -165,9 +194,12 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(leveldb Threads::Threads)
 
+<<<<<<< HEAD
 if (HAVE_CRC32C)
   target_link_libraries(leveldb crc32c)
 endif (HAVE_CRC32C)
+=======
+>>>>>>> 02d98fe... Add CMake build support.
 if (HAVE_SNAPPY)
   target_link_libraries(leveldb snappy)
 endif (HAVE_SNAPPY)
@@ -217,12 +249,15 @@ if(LEVELDB_BUILD_TESTS)
   target_link_libraries(autocompact_test leveldb_test_base)
   add_test(NAME autocompact_test COMMAND autocompact_test)
 
+<<<<<<< HEAD
   add_executable(c_test
     "${PROJECT_SOURCE_DIR}/db/c_test.c"
   )
   target_link_libraries(c_test leveldb_test_base)
   add_test(NAME c_test COMMAND c_test)
 
+=======
+>>>>>>> 02d98fe... Add CMake build support.
   add_executable(corruption_test
     "${PROJECT_SOURCE_DIR}/db/corruption_test.cc"
   )
@@ -404,7 +439,10 @@ if(LEVELDB_BUILD_BENCHMARKS)
   # with Homebrew on Mac.
   set(OLD_CMAKE_REQURED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
   list(APPEND CMAKE_REQUIRED_LIBRARIES kyotocabinet)
+<<<<<<< HEAD
   include(CheckCXXSourceCompiles)
+=======
+>>>>>>> 02d98fe... Add CMake build support.
   check_cxx_source_compiles("
 #include <kcpolydb.h>
 
