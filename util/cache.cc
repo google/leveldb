@@ -288,7 +288,10 @@ Cache::Handle* LRUCache::Insert(
     LRU_Append(&in_use_, e);
     usage_ += charge;
     FinishErase(table_.Insert(e));
-  } // else don't cache.  (Tests use capacity_==0 to turn off caching.)
+  } else {
+    // don't cache.  (It is valid to set capacity_==0 to turn off caching.)
+    e->next = NULL;
+  }
 
   while (usage_ > capacity_ && lru_.next != &lru_) {
     LRUHandle* old = lru_.next;

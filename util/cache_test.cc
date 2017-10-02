@@ -219,6 +219,14 @@ TEST(CacheTest, Prune) {
   ASSERT_EQ(-1, Lookup(2));
 }
 
+TEST(CacheTest, ZeroSizeCache) {
+  delete cache_;
+  cache_ = NewLRUCache(0);
+
+  Insert(1, 100);
+  ASSERT_EQ(-1, Lookup(1));
+}
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
