@@ -25,6 +25,13 @@ static std::string RandomString(Random* rnd, int len) {
   return r;
 }
 
+static std::string RandomKey(Random* rnd) {
+  int len = (rnd->OneIn(3)
+             ? 1                // Short sometimes to encourage collisions
+             : (rnd->OneIn(100) ? rnd->Skewed(10) : rnd->Uniform(10)));
+  return test::RandomKey(rnd, len);
+}
+
 namespace {
 class AtomicCounter {
  private:
@@ -1394,6 +1401,15 @@ TEST(DBTest, L0_CompactionBug_Issue44_b) {
   ASSERT_EQ("(->)(c->cv)", Contents());
 }
 
+TEST(DBTest, Fflush_Issue474) {
+  static const int kNum = 100000;
+  Random rnd(test::RandomSeed());
+  for (int i = 0; i < kNum; i++) {
+    fflush(NULL);
+    ASSERT_OK(Put(RandomKey(&rnd), RandomString(&rnd, 100)));
+  }
+}
+
 TEST(DBTest, ComparatorCheck) {
   class NewComparator : public Comparator {
    public:
@@ -1958,13 +1974,6 @@ class ModelDB: public DB {
   const Options options_;
   KVMap map_;
 };
-
-static std::string RandomKey(Random* rnd) {
-  int len = (rnd->OneIn(3)
-             ? 1                // Short sometimes to encourage collisions
-             : (rnd->OneIn(100) ? rnd->Skewed(10) : rnd->Uniform(10)));
-  return test::RandomKey(rnd, len);
-}
 
 static bool CompareIterators(int step,
                              DB* model,

@@ -34,6 +34,8 @@ namespace {
 static int open_read_only_file_limit = -1;
 static int mmap_limit = -1;
 
+static const size_t kBufSize = 65536;
+
 static Status PosixError(const std::string& context, int err_number) {
   if (err_number == ENOENT) {
     return Status::NotFound(context, strerror(err_number));
@@ -96,30 +98,32 @@ class Limiter {
 class PosixSequentialFile: public SequentialFile {
  private:
   std::string filename_;
-  FILE* file_;
+  int fd_;
 
  public:
-  PosixSequentialFile(const std::string& fname, FILE* f)
-      : filename_(fname), file_(f) { }
-  virtual ~PosixSequentialFile() { fclose(file_); }
+  PosixSequentialFile(const std::string& fname, int fd)
+      : filename_(fname), fd_(fd) {}
+  virtual ~PosixSequentialFile() { close(fd_); }
 
   virtual Status Read(size_t n, Slice* result, char* scratch) {
     Status s;
-    size_t r = fread_unlocked(scratch, 1, n, file_);
-    *result = Slice(scratch, r);
-    if (r < n) {
-      if (feof(file_)) {
-        // We leave status as ok if we hit the end of the file
-      } else {
-        // A partial read with an error: return a non-ok status
+    while (true) {
+      ssize_t r = read(fd_, scratch, n);
+      if (r < 0) {
+        if (errno == EINTR) {
+          continue;  // Retry
+        }
         s = PosixError(filename_, errno);
+        break;
       }
+      *result = Slice(scratch, r);
+      break;
     }
     return s;
   }
 
   virtual Status Skip(uint64_t n) {
-    if (fseek(file_, n, SEEK_CUR)) {
+    if (lseek(fd_, n, SEEK_CUR) == static_cast<off_t>(-1)) {
       return PosixError(filename_, errno);
     }
     return Status::OK();
@@ -213,42 +217,64 @@ class PosixMmapReadableFile: public RandomAccessFile {
 
 class PosixWritableFile : public WritableFile {
  private:
+  // buf_[0, pos_-1] contains data to be written to fd_.
   std::string filename_;
-  FILE* file_;
+  int fd_;
+  char buf_[kBufSize];
+  size_t pos_;
 
  public:
-  PosixWritableFile(const std::string& fname, FILE* f)
-      : filename_(fname), file_(f) { }
+  PosixWritableFile(const std::string& fname, int fd)
+      : filename_(fname), fd_(fd), pos_(0) { }
 
   ~PosixWritableFile() {
-    if (file_ != NULL) {
+    if (fd_ >= 0) {
       // Ignoring any potential errors
-      fclose(file_);
+      FlushBuffered();
     }
   }
 
   virtual Status Append(const Slice& data) {
-    size_t r = fwrite_unlocked(data.data(), 1, data.size(), file_);
-    if (r != data.size()) {
-      return PosixError(filename_, errno);
+    size_t n = data.size();
+    const char* p = data.data();
+
+    // Fit as much as possible into buffer.
+    size_t copy = std::min(n, kBufSize - pos_);
+    memcpy(buf_ + pos_, p, copy);
+    p += copy;
+    n -= copy;
+    pos_ += copy;
+    if (n == 0) {
+      return Status::OK();
     }
-    return Status::OK();
+
+    // Can't fit in buffer, so need to do at least one write.
+    Status s = FlushBuffered();
+    if (!s.ok()) {
+      return s;
+    }
+
+    // Small writes go to buffer, large writes are written directly.
+    if (n < kBufSize) {
+      memcpy(buf_, p, n);
+      pos_ = n;
+      return Status::OK();
+    }
+    return WriteRaw(p, n);
   }
 
   virtual Status Close() {
-    Status result;
-    if (fclose(file_) != 0) {
+    Status result = FlushBuffered();
+    const int r = close(fd_);
+    if (r < 0 && result.ok()) {
       result = PosixError(filename_, errno);
     }
-    file_ = NULL;
+    fd_ = -1;
     return result;
   }
 
   virtual Status Flush() {
-    if (fflush_unlocked(file_) != 0) {
-      return PosixError(filename_, errno);
-    }
-    return Status::OK();
+    return FlushBuffered();
   }
 
   Status SyncDirIfManifest() {
@@ -284,11 +310,35 @@ class PosixWritableFile : public WritableFile {
     if (!s.ok()) {
       return s;
     }
-    if (fflush_unlocked(file_) != 0 ||
-        fdatasync(fileno(file_)) != 0) {
-      s = Status::IOError(filename_, strerror(errno));
+    s = FlushBuffered();
+    if (s.ok()) {
+      if (fdatasync(fd_) != 0) {
+        s = PosixError(filename_, errno);
+      }
     }
     return s;
+  }
+
+ private:
+  Status FlushBuffered() {
+    Status s = WriteRaw(buf_, pos_);
+    pos_ = 0;
+    return s;
+  }
+
+  Status WriteRaw(const char* p, size_t n) {
+    while (n > 0) {
+      ssize_t r = write(fd_, p, n);
+      if (r < 0) {
+        if (errno == EINTR) {
+          continue;  // Retry
+        }
+        return PosixError(filename_, errno);
+      }
+      p += r;
+      n -= r;
+    }
+    return Status::OK();
   }
 };
 
@@ -338,12 +388,12 @@ class PosixEnv : public Env {
 
   virtual Status NewSequentialFile(const std::string& fname,
                                    SequentialFile** result) {
-    FILE* f = fopen(fname.c_str(), "r");
-    if (f == NULL) {
+    int fd = open(fname.c_str(), O_RDONLY);
+    if (fd < 0) {
       *result = NULL;
       return PosixError(fname, errno);
     } else {
-      *result = new PosixSequentialFile(fname, f);
+      *result = new PosixSequentialFile(fname, fd);
       return Status::OK();
     }
   }
@@ -379,12 +429,12 @@ class PosixEnv : public Env {
   virtual Status NewWritableFile(const std::string& fname,
                                  WritableFile** result) {
     Status s;
-    FILE* f = fopen(fname.c_str(), "w");
-    if (f == NULL) {
+    int fd = open(fname.c_str(), O_RDWR | O_CREAT, 0644);
+    if (fd < 0) {
       *result = NULL;
       s = PosixError(fname, errno);
     } else {
-      *result = new PosixWritableFile(fname, f);
+      *result = new PosixWritableFile(fname, fd);
     }
     return s;
   }
@@ -392,12 +442,12 @@ class PosixEnv : public Env {
   virtual Status NewAppendableFile(const std::string& fname,
                                    WritableFile** result) {
     Status s;
-    FILE* f = fopen(fname.c_str(), "a");
-    if (f == NULL) {
+    int fd = open(fname.c_str(), O_APPEND | O_RDWR | O_CREAT, 0644);
+    if (fd < 0) {
       *result = NULL;
       s = PosixError(fname, errno);
     } else {
-      *result = new PosixWritableFile(fname, f);
+      *result = new PosixWritableFile(fname, fd);
     }
     return s;
   }

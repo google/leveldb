@@ -6,6 +6,7 @@
 
 #include "port/port.h"
 #include "util/testharness.h"
+#include "util/testutil.h"
 
 namespace leveldb {
 
@@ -25,6 +26,55 @@ class EnvTest {
 
 static void SetBool(void* ptr) {
   reinterpret_cast<port::AtomicPointer*>(ptr)->NoBarrier_Store(ptr);
+}
+
+
+TEST(EnvTest, ReadWrite) {
+  Random rnd(test::RandomSeed());
+
+  // Get file to use for testing.
+  std::string test_dir;
+  ASSERT_OK(env_->GetTestDirectory(&test_dir));
+  std::string test_file_name = test_dir + "/open_on_read.txt";
+  WritableFile* wfile_tmp;
+  ASSERT_OK(env_->NewWritableFile(test_file_name, &wfile_tmp));
+  std::unique_ptr<WritableFile> wfile(wfile_tmp);
+
+  // Fill a file with data generated via a sequence of randomly sized writes.
+  static const size_t kDataSize = 10 * 1048576;
+  std::string data;
+  while (data.size() < kDataSize) {
+    int len = rnd.Skewed(18);  // Up to 2^18 - 1, but typically much smaller
+    std::string r;
+    test::RandomString(&rnd, len, &r);
+    ASSERT_OK(wfile->Append(r));
+    data += r;
+    if (rnd.OneIn(10)) {
+      ASSERT_OK(wfile->Flush());
+    }
+  }
+  ASSERT_OK(wfile->Sync());
+  ASSERT_OK(wfile->Close());
+  wfile.reset();
+
+  // Read all data using a sequence of randomly sized reads.
+  SequentialFile* rfile_tmp;
+  ASSERT_OK(env_->NewSequentialFile(test_file_name, &rfile_tmp));
+  std::unique_ptr<SequentialFile> rfile(rfile_tmp);
+  std::string read_result;
+  std::string scratch;
+  while (read_result.size() < data.size()) {
+    int len = std::min<int>(rnd.Skewed(18), data.size() - read_result.size());
+    scratch.resize(std::max(len, 1));  // at least 1 so &scratch[0] is legal
+    Slice read;
+    ASSERT_OK(rfile->Read(len, &read, &scratch[0]));
+    if (len > 0) {
+      ASSERT_GT(read.size(), 0);
+    }
+    ASSERT_LE(read.size(), len);
+    read_result.append(read.data(), read.size());
+  }
+  ASSERT_EQ(read_result, data);
 }
 
 TEST(EnvTest, RunImmediately) {
