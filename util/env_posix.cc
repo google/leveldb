@@ -429,7 +429,7 @@ class PosixEnv : public Env {
   virtual Status NewWritableFile(const std::string& fname,
                                  WritableFile** result) {
     Status s;
-    int fd = open(fname.c_str(), O_RDWR | O_CREAT, 0644);
+    int fd = open(fname.c_str(), O_TRUNC | O_WRONLY | O_CREAT, 0644);
     if (fd < 0) {
       *result = NULL;
       s = PosixError(fname, errno);
@@ -442,7 +442,7 @@ class PosixEnv : public Env {
   virtual Status NewAppendableFile(const std::string& fname,
                                    WritableFile** result) {
     Status s;
-    int fd = open(fname.c_str(), O_APPEND | O_RDWR | O_CREAT, 0644);
+    int fd = open(fname.c_str(), O_APPEND | O_WRONLY | O_CREAT, 0644);
     if (fd < 0) {
       *result = NULL;
       s = PosixError(fname, errno);
