@@ -230,7 +230,7 @@ class PosixWritableFile : public WritableFile {
   ~PosixWritableFile() {
     if (fd_ >= 0) {
       // Ignoring any potential errors
-      FlushBuffered();
+      Close();
     }
   }
 
