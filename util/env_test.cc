@@ -36,9 +36,8 @@ TEST(EnvTest, ReadWrite) {
   std::string test_dir;
   ASSERT_OK(env_->GetTestDirectory(&test_dir));
   std::string test_file_name = test_dir + "/open_on_read.txt";
-  WritableFile* wfile_tmp;
-  ASSERT_OK(env_->NewWritableFile(test_file_name, &wfile_tmp));
-  std::unique_ptr<WritableFile> wfile(wfile_tmp);
+  WritableFile* writable_file;
+  ASSERT_OK(env_->NewWritableFile(test_file_name, &writable_file));
 
   // Fill a file with data generated via a sequence of randomly sized writes.
   static const size_t kDataSize = 10 * 1048576;
@@ -47,27 +46,26 @@ TEST(EnvTest, ReadWrite) {
     int len = rnd.Skewed(18);  // Up to 2^18 - 1, but typically much smaller
     std::string r;
     test::RandomString(&rnd, len, &r);
-    ASSERT_OK(wfile->Append(r));
+    ASSERT_OK(writable_file->Append(r));
     data += r;
     if (rnd.OneIn(10)) {
-      ASSERT_OK(wfile->Flush());
+      ASSERT_OK(writable_file->Flush());
     }
   }
-  ASSERT_OK(wfile->Sync());
-  ASSERT_OK(wfile->Close());
-  wfile.reset();
+  ASSERT_OK(writable_file->Sync());
+  ASSERT_OK(writable_file->Close());
+  delete writable_file;
 
   // Read all data using a sequence of randomly sized reads.
-  SequentialFile* rfile_tmp;
-  ASSERT_OK(env_->NewSequentialFile(test_file_name, &rfile_tmp));
-  std::unique_ptr<SequentialFile> rfile(rfile_tmp);
+  SequentialFile* sequential_file;
+  ASSERT_OK(env_->NewSequentialFile(test_file_name, &sequential_file));
   std::string read_result;
   std::string scratch;
   while (read_result.size() < data.size()) {
     int len = std::min<int>(rnd.Skewed(18), data.size() - read_result.size());
     scratch.resize(std::max(len, 1));  // at least 1 so &scratch[0] is legal
     Slice read;
-    ASSERT_OK(rfile->Read(len, &read, &scratch[0]));
+    ASSERT_OK(sequential_file->Read(len, &read, &scratch[0]));
     if (len > 0) {
       ASSERT_GT(read.size(), 0);
     }
@@ -75,6 +73,7 @@ TEST(EnvTest, ReadWrite) {
     read_result.append(read.data(), read.size());
   }
   ASSERT_EQ(read_result, data);
+  delete sequential_file;
 }
 
 TEST(EnvTest, RunImmediately) {
@@ -165,6 +164,54 @@ TEST(EnvTest, TestOpenNonExistentFile) {
   SequentialFile* sequential_file;
   status = env_->NewSequentialFile(non_existent_file, &sequential_file);
   ASSERT_TRUE(status.IsNotFound());
+}
+
+TEST(EnvTest, ReopenWritableFile) {
+  std::string test_dir;
+  ASSERT_OK(env_->GetTestDirectory(&test_dir));
+  std::string test_file_name = test_dir + "/reopen_writable_file.txt";
+  env_->DeleteFile(test_file_name);
+
+  WritableFile* writable_file;
+  ASSERT_OK(env_->NewWritableFile(test_file_name, &writable_file));
+  std::string data("hello world!");
+  ASSERT_OK(writable_file->Append(data));
+  ASSERT_OK(writable_file->Close());
+  delete writable_file;
+
+  ASSERT_OK(env_->NewWritableFile(test_file_name, &writable_file));
+  data = "42";
+  ASSERT_OK(writable_file->Append(data));
+  ASSERT_OK(writable_file->Close());
+  delete writable_file;
+
+  ASSERT_OK(ReadFileToString(env_, test_file_name, &data));
+  ASSERT_EQ(std::string("42"), data);
+  env_->DeleteFile(test_file_name);
+}
+
+TEST(EnvTest, ReopenAppendableFile) {
+  std::string test_dir;
+  ASSERT_OK(env_->GetTestDirectory(&test_dir));
+  std::string test_file_name = test_dir + "/reopen_appendable_file.txt";
+  env_->DeleteFile(test_file_name);
+
+  WritableFile* appendable_file;
+  ASSERT_OK(env_->NewAppendableFile(test_file_name, &appendable_file));
+  std::string data("hello world!");
+  ASSERT_OK(appendable_file->Append(data));
+  ASSERT_OK(appendable_file->Close());
+  delete appendable_file;
+
+  ASSERT_OK(env_->NewAppendableFile(test_file_name, &appendable_file));
+  data = "42";
+  ASSERT_OK(appendable_file->Append(data));
+  ASSERT_OK(appendable_file->Close());
+  delete appendable_file;
+
+  ASSERT_OK(ReadFileToString(env_, test_file_name, &data));
+  ASSERT_EQ(std::string("hello world!42"), data);
+  env_->DeleteFile(test_file_name);
 }
 
 }  // namespace leveldb
