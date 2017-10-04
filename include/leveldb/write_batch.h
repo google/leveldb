@@ -22,13 +22,14 @@
 #define STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
 
 #include <string>
+#include "leveldb/export.h"
 #include "leveldb/status.h"
 
 namespace leveldb {
 
 class Slice;
 
-class WriteBatch {
+class LEVELDB_EXPORT WriteBatch {
  public:
   WriteBatch();
   ~WriteBatch();

@@ -14,6 +14,7 @@
 #define STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_
 
 #include <stdint.h>
+#include "leveldb/export.h"
 #include "leveldb/options.h"
 #include "leveldb/status.h"
 
@@ -23,7 +24,7 @@ class BlockBuilder;
 class BlockHandle;
 class WritableFile;
 
-class TableBuilder {
+class LEVELDB_EXPORT TableBuilder {
  public:
   // Create a builder that will store the contents of the table it is
   // building in *file.  Does not close the file.  It is up to the

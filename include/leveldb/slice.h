@@ -19,10 +19,11 @@
 #include <stddef.h>
 #include <string.h>
 #include <string>
+#include "leveldb/export.h"
 
 namespace leveldb {
 
-class Slice {
+class LEVELDB_EXPORT Slice {
  public:
   // Create an empty slice.
   Slice() : data_(""), size_(0) { }
