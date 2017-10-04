@@ -4,6 +4,8 @@
 
 #include "leveldb/env.h"
 
+#include <algorithm>
+
 #include "port/port.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
