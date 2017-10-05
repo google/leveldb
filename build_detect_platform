@@ -21,8 +21,8 @@
 # The PLATFORM_CCFLAGS and PLATFORM_CXXFLAGS might include the following:
 #
 #       -DLEVELDB_ATOMIC_PRESENT     if <atomic> is present
-#       -DLEVELDB_PLATFORM_POSIX     for Posix-based platforms
-#       -DSNAPPY                     if the Snappy library is present
+#       -DLEVELDB_PLATFORM_POSIX=1   for Posix-based platforms
+#       -DHAVE_SNAPPY=1              if the Snappy library is present
 #
 
 OUTPUT=$1
@@ -133,7 +133,7 @@ case "$TARGET_OS" in
         ;;
     OS_ANDROID_CROSSCOMPILE)
         PLATFORM=OS_ANDROID
-        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_ANDROID -DLEVELDB_PLATFORM_POSIX"
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_ANDROID -DLEVELDB_PLATFORM_POSIX=1"
         PLATFORM_LDFLAGS=""  # All pthread features are in the Android C library
         PORT_FILE=port/port_posix.cc
         PORT_SSE_FILE=port/port_posix_sse.cc
@@ -196,10 +196,10 @@ else
       int main() {}
 EOF
     if [ "$?" = 0 ]; then
-        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX -DLEVELDB_ATOMIC_PRESENT"
+        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX=1 -DLEVELDB_ATOMIC_PRESENT"
         PLATFORM_CXXFLAGS="-std=c++0x"
     else
-        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX"
+        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX=1"
     fi
 
     # Test whether Snappy library is installed
@@ -209,7 +209,7 @@ EOF
       int main() {}
 EOF
     if [ "$?" = 0 ]; then
-        COMMON_FLAGS="$COMMON_FLAGS -DSNAPPY"
+        COMMON_FLAGS="$COMMON_FLAGS -DHAVE_SNAPPY=1"
         PLATFORM_LIBS="$PLATFORM_LIBS -lsnappy"
     fi
 
