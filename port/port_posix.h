@@ -39,6 +39,9 @@
 #endif
 
 #include <pthread.h>
+#if defined(HAVE_CRC32C)
+#include <crc32c/crc32c.h>
+#endif  // defined(HAVE_CRC32C)
 #ifdef HAVE_SNAPPY
 #include <snappy.h>
 #endif  // defined(HAVE_SNAPPY)
@@ -139,9 +142,15 @@ inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
   return false;
 }
 
-uint32_t AcceleratedCRC32C(uint32_t crc, const char* buf, size_t size);
+inline uint32_t AcceleratedCRC32C(uint32_t crc, const char* buf, size_t size) {
+#if defined(HAVE_CRC32C)
+  return ::crc32c::Extend(crc, reinterpret_cast<const uint8_t*>(buf), size);
+#else
+  return 0;
+#endif  // defined(HAVE_CRC32C)
+}
 
-} // namespace port
-} // namespace leveldb
+}  // namespace port
+}  // namespace leveldb
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_POSIX_H_

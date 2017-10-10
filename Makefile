@@ -98,7 +98,7 @@ SHARED_MEMENVOBJECTS := $(addprefix $(SHARED_OUTDIR)/, $(MEMENV_SOURCES:.cc=.o))
 
 TESTUTIL := $(STATIC_OUTDIR)/util/testutil.o
 TESTHARNESS := $(STATIC_OUTDIR)/util/testharness.o $(TESTUTIL)
-TEST_STATIC_OBJS := $(STATIC_OUTDIR)/port/port_posix.o $(STATIC_OUTDIR)/port/port_posix_sse.o $(STATIC_OUTDIR)/util/crc32c.o $(STATIC_OUTDIR)/util/histogram.o
+TEST_STATIC_OBJS := $(STATIC_OUTDIR)/port/port_posix.o $(STATIC_OUTDIR)/util/crc32c.o $(STATIC_OUTDIR)/util/histogram.o
 
 STATIC_TESTOBJS := $(addprefix $(STATIC_OUTDIR)/, $(addsuffix .o, $(TESTS)))
 STATIC_UTILOBJS := $(addprefix $(STATIC_OUTDIR)/, $(addsuffix .o, $(UTILS)))
@@ -426,9 +426,3 @@ $(SHARED_OUTDIR)/%.o: %.cc
 
 $(SHARED_OUTDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $(SHARED_BUILD_CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) -c $< -o $@
-
-$(STATIC_OUTDIR)/port/port_posix_sse.o: port/port_posix_sse.cc
-	$(CXX) $(CXXFLAGS) $(SHARED_BUILD_CXXFLAGS) $(PLATFORM_SSEFLAGS) -c $< -o $@
-
-$(SHARED_OUTDIR)/port/port_posix_sse.o: port/port_posix_sse.cc
-	$(CXX) $(CXXFLAGS) $(SHARED_BUILD_CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(PLATFORM_SSEFLAGS) -c $< -o $@
