@@ -151,6 +151,9 @@ class LEVELDB_EXPORT DB {
 
 // Destroy the contents of the specified database.
 // Be very careful using this method.
+//
+// Note: For backwards compatibility, if DestroyDB is unable to list the
+// database files, Status::OK() will still be returned masking this failure.
 LEVELDB_EXPORT Status DestroyDB(const std::string& name,
                                 const Options& options);
 

@@ -61,6 +61,36 @@ void DelayMilliseconds(int millis) {
 }
 }
 
+// Test Env to override default Env behavior for testing.
+class TestEnv : public EnvWrapper {
+ public:
+  explicit TestEnv(Env* base) : EnvWrapper(base), ignore_dot_files_(false) {}
+
+  void SetIgnoreDotFiles(bool ignored) { ignore_dot_files_ = ignored; }
+
+  Status GetChildren(const std::string& dir,
+                     std::vector<std::string>* result) override {
+    Status s = target()->GetChildren(dir, result);
+    if (!s.ok() || !ignore_dot_files_) {
+      return s;
+    }
+
+    std::vector<std::string>::iterator it = result->begin();
+    while (it != result->end()) {
+      if ((*it == ".") || (*it == "..")) {
+        it = result->erase(it);
+      } else {
+        ++it;
+      }
+    }
+
+    return s;
+  }
+
+ private:
+  bool ignore_dot_files_;
+};
+
 // Special Env used to delay background operations
 class SpecialEnv : public EnvWrapper {
  public:
@@ -1559,6 +1589,58 @@ TEST(DBTest, DBOpen_Options) {
 
   delete db;
   db = NULL;
+}
+
+TEST(DBTest, DestroyEmptyDir) {
+  std::string dbname = test::TmpDir() + "/db_empty_dir";
+  TestEnv env(Env::Default());
+  env.DeleteDir(dbname);
+  ASSERT_TRUE(!env.FileExists(dbname));
+
+  Options opts;
+  opts.env = &env;
+
+  ASSERT_OK(env.CreateDir(dbname));
+  ASSERT_TRUE(env.FileExists(dbname));
+  std::vector<std::string> children;
+  ASSERT_OK(env.GetChildren(dbname, &children));
+  // The POSIX env does not filter out '.' and '..' special files.
+  ASSERT_EQ(2, children.size());
+  ASSERT_OK(DestroyDB(dbname, opts));
+  ASSERT_TRUE(!env.FileExists(dbname));
+
+  // Should also be destroyed if Env is filtering out dot files.
+  env.SetIgnoreDotFiles(true);
+  ASSERT_OK(env.CreateDir(dbname));
+  ASSERT_TRUE(env.FileExists(dbname));
+  ASSERT_OK(env.GetChildren(dbname, &children));
+  ASSERT_EQ(0, children.size());
+  ASSERT_OK(DestroyDB(dbname, opts));
+  ASSERT_TRUE(!env.FileExists(dbname));
+}
+
+TEST(DBTest, DestroyOpenDB) {
+  std::string dbname = test::TmpDir() + "/open_db_dir";
+  env_->DeleteDir(dbname);
+  ASSERT_TRUE(!env_->FileExists(dbname));
+
+  Options opts;
+  opts.create_if_missing = true;
+  DB* db = NULL;
+  ASSERT_OK(DB::Open(opts, dbname, &db));
+  ASSERT_TRUE(db != NULL);
+
+  // Must fail to destroy an open db.
+  ASSERT_TRUE(env_->FileExists(dbname));
+  ASSERT_TRUE(!DestroyDB(dbname, Options()).ok());
+  ASSERT_TRUE(env_->FileExists(dbname));
+
+  delete db;
+  db = NULL;
+
+  // Should succeed destroying a closed db.
+  ASSERT_OK(DestroyDB(dbname, Options()));
+  ASSERT_TRUE(!env_->FileExists(dbname));
 }
 
 TEST(DBTest, Locking) {
