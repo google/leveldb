@@ -184,6 +184,8 @@ LEVELDB_EXPORT void leveldb_options_set_cache(leveldb_options_t*,
 LEVELDB_EXPORT void leveldb_options_set_block_size(leveldb_options_t*, size_t);
 LEVELDB_EXPORT void leveldb_options_set_block_restart_interval(
     leveldb_options_t*, int);
+LEVELDB_EXPORT void leveldb_options_set_max_file_size(leveldb_options_t*,
+                                                      size_t);
 
 enum {
   leveldb_no_compression = 0,

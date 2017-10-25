@@ -446,6 +446,10 @@ void leveldb_options_set_block_restart_interval(leveldb_options_t* opt, int n) {
   opt->rep.block_restart_interval = n;
 }
 
+void leveldb_options_set_max_file_size(leveldb_options_t* opt, size_t s) {
+  opt->rep.max_file_size = s;
+}
+
 void leveldb_options_set_compression(leveldb_options_t* opt, int t) {
   opt->rep.compression = static_cast<CompressionType>(t);
 }
