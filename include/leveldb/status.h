@@ -71,7 +71,7 @@ class LEVELDB_EXPORT Status {
   // Returns the string "OK" for success.
   std::string ToString() const;
 
- private:
+ private://这块恶心的代码
   // OK status has a NULL state_.  Otherwise, state_ is a new[] array
   // of the following form:
   //    state_[0..3] == length of message
