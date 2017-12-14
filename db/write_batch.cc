@@ -39,6 +39,10 @@ void WriteBatch::Clear() {
   rep_.resize(kHeader);
 }
 
+size_t WriteBatch::ApproximateSize() {
+  return rep_.size();
+}
+
 Status WriteBatch::Iterate(Handler* handler) const {
   Slice input(rep_);
   if (input.size() < kHeader) {

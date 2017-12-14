@@ -44,6 +44,7 @@ TESTS = \
 	util/cache_test \
 	util/coding_test \
 	util/crc32c_test \
+	util/env_posix_test \
 	util/env_test \
 	util/hash_test
 
@@ -80,7 +81,7 @@ else
 STATIC_OUTDIR=out-static
 SHARED_OUTDIR=out-shared
 STATIC_PROGRAMS := $(addprefix $(STATIC_OUTDIR)/, $(PROGNAMES))
-SHARED_PROGRAMS := $(addprefix $(SHARED_OUTDIR)/, db_bench)
+SHARED_PROGRAMS := $(addprefix $(SHARED_OUTDIR)/, db_bench c_test)
 endif
 
 STATIC_LIBOBJECTS := $(addprefix $(STATIC_OUTDIR)/, $(SOURCES:.cc=.o))
@@ -97,6 +98,7 @@ SHARED_MEMENVOBJECTS := $(addprefix $(SHARED_OUTDIR)/, $(MEMENV_SOURCES:.cc=.o))
 
 TESTUTIL := $(STATIC_OUTDIR)/util/testutil.o
 TESTHARNESS := $(STATIC_OUTDIR)/util/testharness.o $(TESTUTIL)
+TEST_STATIC_OBJS := $(STATIC_OUTDIR)/port/port_posix.o $(STATIC_OUTDIR)/util/crc32c.o $(STATIC_OUTDIR)/util/histogram.o
 
 STATIC_TESTOBJS := $(addprefix $(STATIC_OUTDIR)/, $(addsuffix .o, $(TESTS)))
 STATIC_UTILOBJS := $(addprefix $(STATIC_OUTDIR)/, $(addsuffix .o, $(UTILS)))
@@ -111,6 +113,8 @@ ifneq ($(PLATFORM_SHARED_EXT),)
 
 # Many leveldb test apps use non-exported API's. Only build a subset for testing.
 SHARED_ALLOBJS := $(SHARED_LIBOBJECTS) $(SHARED_MEMENVOBJECTS) $(TESTHARNESS)
+SHARED_CXXFLAGS += -DLEVELDB_SHARED_LIBRARY
+SHARED_BUILD_CXXFLAGS += $(SHARED_CXXFLAGS) -DLEVELDB_COMPILE_LIBRARY
 
 ifneq ($(PLATFORM_SHARED_VERSIONED),true)
 SHARED_LIB1 = libleveldb.$(PLATFORM_SHARED_EXT)
@@ -121,7 +125,7 @@ SHARED_MEMENVLIB = $(SHARED_OUTDIR)/libmemenv.a
 else
 # Update db.h if you change these.
 SHARED_VERSION_MAJOR = 1
-SHARED_VERSION_MINOR = 19
+SHARED_VERSION_MINOR = 20
 SHARED_LIB1 = libleveldb.$(PLATFORM_SHARED_EXT)
 SHARED_LIB2 = $(SHARED_LIB1).$(SHARED_VERSION_MAJOR)
 SHARED_LIB3 = $(SHARED_LIB1).$(SHARED_VERSION_MAJOR).$(SHARED_VERSION_MINOR)
@@ -337,6 +341,9 @@ $(STATIC_OUTDIR)/db_test:db/db_test.cc $(STATIC_LIBOBJECTS) $(TESTHARNESS)
 $(STATIC_OUTDIR)/dbformat_test:db/dbformat_test.cc $(STATIC_LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) $(LDFLAGS) $(CXXFLAGS) db/dbformat_test.cc $(STATIC_LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
+$(STATIC_OUTDIR)/env_posix_test:util/env_posix_test.cc $(STATIC_LIBOBJECTS) $(TESTHARNESS)
+	$(CXX) $(LDFLAGS) $(CXXFLAGS) util/env_posix_test.cc $(STATIC_LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
+
 $(STATIC_OUTDIR)/env_test:util/env_test.cc $(STATIC_LIBOBJECTS) $(TESTHARNESS)
 	$(CXX) $(LDFLAGS) $(CXXFLAGS) util/env_test.cc $(STATIC_LIBOBJECTS) $(TESTHARNESS) -o $@ $(LIBS)
 
@@ -382,12 +389,19 @@ $(STATIC_OUTDIR)/write_batch_test:db/write_batch_test.cc $(STATIC_LIBOBJECTS) $(
 $(STATIC_OUTDIR)/memenv_test:$(STATIC_OUTDIR)/helpers/memenv/memenv_test.o $(STATIC_OUTDIR)/libmemenv.a $(STATIC_OUTDIR)/libleveldb.a $(TESTHARNESS)
 	$(XCRUN) $(CXX) $(LDFLAGS) $(STATIC_OUTDIR)/helpers/memenv/memenv_test.o $(STATIC_OUTDIR)/libmemenv.a $(STATIC_OUTDIR)/libleveldb.a $(TESTHARNESS) -o $@ $(LIBS)
 
-$(SHARED_OUTDIR)/db_bench:$(SHARED_OUTDIR)/db/db_bench.o $(SHARED_LIBS) $(TESTUTIL)
-	$(XCRUN) $(CXX) $(LDFLAGS) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(SHARED_OUTDIR)/db/db_bench.o $(TESTUTIL) $(SHARED_OUTDIR)/$(SHARED_LIB3) -o $@ $(LIBS)
+$(SHARED_OUTDIR)/db_bench:$(SHARED_OUTDIR)/db/db_bench.o $(SHARED_LIBS) $(TESTUTIL) $(TEST_STATIC_OBJS)
+	$(XCRUN) $(CXX) $(LDFLAGS) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(SHARED_CXXFLAGS) $(SHARED_OUTDIR)/db/db_bench.o $(TESTUTIL) $(TEST_STATIC_OBJS) $(SHARED_OUTDIR)/$(SHARED_LIB3) -o $@ $(LIBS)
 
-.PHONY: run-shared
-run-shared: $(SHARED_OUTDIR)/db_bench
+$(SHARED_OUTDIR)/c_test:$(SHARED_OUTDIR)/db/c_test.o $(SHARED_LIBS) $(TESTUTIL) $(TEST_STATIC_OBJS)
+	$(XCRUN) $(CXX) $(LDFLAGS) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) $(SHARED_CXXFLAGS) $(SHARED_OUTDIR)/db/c_test.o $(TESTUTIL) $(TEST_STATIC_OBJS) $(SHARED_OUTDIR)/$(SHARED_LIB3) -o $@ $(LIBS)
+
+.PHONY: run-shared-db_bench
+run-shared-db_bench: $(SHARED_OUTDIR)/db_bench
 	LD_LIBRARY_PATH=$(SHARED_OUTDIR) $(SHARED_OUTDIR)/db_bench
+
+.PHONY: run-shared-c_test
+run-shared-c_test: $(SHARED_OUTDIR)/c_test
+	LD_LIBRARY_PATH=$(SHARED_OUTDIR) $(SHARED_OUTDIR)/c_test
 
 $(SIMULATOR_OUTDIR)/%.o: %.cc
 	xcrun -sdk iphonesimulator $(CXX) $(CXXFLAGS) $(SIMULATOR_CFLAGS) -c $< -o $@
@@ -408,7 +422,7 @@ $(STATIC_OUTDIR)/%.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(SHARED_OUTDIR)/%.o: %.cc
-	$(CXX) $(CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(SHARED_BUILD_CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) -c $< -o $@
 
 $(SHARED_OUTDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $(PLATFORM_SHARED_CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(SHARED_BUILD_CXXFLAGS) $(PLATFORM_SHARED_CFLAGS) -c $< -o $@

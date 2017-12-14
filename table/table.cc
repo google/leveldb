@@ -55,22 +55,19 @@ Status Table::Open(const Options& options,
   if (!s.ok()) return s;
 
   // Read the index block
-  BlockContents contents;
-  Block* index_block = NULL;
+  BlockContents index_block_contents;
   if (s.ok()) {
     ReadOptions opt;
     if (options.paranoid_checks) {
       opt.verify_checksums = true;
     }
-    s = ReadBlock(file, opt, footer.index_handle(), &contents);
-    if (s.ok()) {
-      index_block = new Block(contents);
-    }
+    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
   }
 
   if (s.ok()) {
     // We've successfully read the footer and the index block: we're
     // ready to serve requests.
+    Block* index_block = new Block(index_block_contents);
     Rep* rep = new Table::Rep;
     rep->options = options;
     rep->file = file;
@@ -81,8 +78,6 @@ Status Table::Open(const Options& options,
     rep->filter = NULL;
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
-  } else {
-    delete index_block;
   }
 
   return s;

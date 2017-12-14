@@ -189,6 +189,7 @@ int main(int argc, char** argv) {
   leveldb_options_set_max_open_files(options, 10);
   leveldb_options_set_block_size(options, 1024);
   leveldb_options_set_block_restart_interval(options, 8);
+  leveldb_options_set_max_file_size(options, 3 << 20);
   leveldb_options_set_compression(options, leveldb_no_compression);
 
   roptions = leveldb_readoptions_create();

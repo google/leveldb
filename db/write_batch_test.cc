@@ -113,6 +113,23 @@ TEST(WriteBatchTest, Append) {
             PrintContents(&b1));
 }
 
+TEST(WriteBatchTest, ApproximateSize) {
+  WriteBatch batch;
+  size_t empty_size = batch.ApproximateSize();
+
+  batch.Put(Slice("foo"), Slice("bar"));
+  size_t one_key_size = batch.ApproximateSize();
+  ASSERT_LT(empty_size, one_key_size);
+
+  batch.Put(Slice("baz"), Slice("boo"));
+  size_t two_keys_size = batch.ApproximateSize();
+  ASSERT_LT(one_key_size, two_keys_size);
+
+  batch.Delete(Slice("box"));
+  size_t post_delete_size = batch.ApproximateSize();
+  ASSERT_LT(two_keys_size, post_delete_size);
+}
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) {

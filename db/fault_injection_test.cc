@@ -34,7 +34,7 @@ class FaultInjectionTestEnv;
 namespace {
 
 // Assume a filename, and not a directory name like "/foo/bar/"
-static std::string GetDirName(const std::string filename) {
+static std::string GetDirName(const std::string& filename) {
   size_t found = filename.find_last_of("/\\");
   if (found == std::string::npos) {
     return "";

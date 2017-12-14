@@ -53,13 +53,11 @@ struct LRUHandle {
   char key_data[1];   // Beginning of key
 
   Slice key() const {
-    // For cheaper lookups, we allow a temporary Handle object
-    // to store a pointer to a key in "value".
-    if (next == this) {
-      return *(reinterpret_cast<Slice*>(value));
-    } else {
-      return Slice(key_data, key_length);
-    }
+    // next_ is only equal to this if the LRU handle is the list head of an
+    // empty list. List heads never have meaningful keys.
+    assert(next != this);
+
+    return Slice(key_data, key_length);
   }
 };
 
@@ -288,8 +286,10 @@ Cache::Handle* LRUCache::Insert(
     LRU_Append(&in_use_, e);
     usage_ += charge;
     FinishErase(table_.Insert(e));
-  } // else don't cache.  (Tests use capacity_==0 to turn off caching.)
-
+  } else {  // don't cache. (capacity_==0 is supported and turns off caching.)
+    // next is read by key() in an assert, so it must be initialized
+    e->next = NULL;
+  }
   while (usage_ > capacity_ && lru_.next != &lru_) {
     LRUHandle* old = lru_.next;
     assert(old->refs == 1);

@@ -25,6 +25,13 @@ static std::string RandomString(Random* rnd, int len) {
   return r;
 }
 
+static std::string RandomKey(Random* rnd) {
+  int len = (rnd->OneIn(3)
+             ? 1                // Short sometimes to encourage collisions
+             : (rnd->OneIn(100) ? rnd->Skewed(10) : rnd->Uniform(10)));
+  return test::RandomKey(rnd, len);
+}
+
 namespace {
 class AtomicCounter {
  private:
@@ -53,6 +60,36 @@ void DelayMilliseconds(int millis) {
   Env::Default()->SleepForMicroseconds(millis * 1000);
 }
 }
+
+// Test Env to override default Env behavior for testing.
+class TestEnv : public EnvWrapper {
+ public:
+  explicit TestEnv(Env* base) : EnvWrapper(base), ignore_dot_files_(false) {}
+
+  void SetIgnoreDotFiles(bool ignored) { ignore_dot_files_ = ignored; }
+
+  Status GetChildren(const std::string& dir,
+                     std::vector<std::string>* result) override {
+    Status s = target()->GetChildren(dir, result);
+    if (!s.ok() || !ignore_dot_files_) {
+      return s;
+    }
+
+    std::vector<std::string>::iterator it = result->begin();
+    while (it != result->end()) {
+      if ((*it == ".") || (*it == "..")) {
+        it = result->erase(it);
+      } else {
+        ++it;
+      }
+    }
+
+    return s;
+  }
+
+ private:
+  bool ignore_dot_files_;
+};
 
 // Special Env used to delay background operations
 class SpecialEnv : public EnvWrapper {
@@ -1394,6 +1431,15 @@ TEST(DBTest, L0_CompactionBug_Issue44_b) {
   ASSERT_EQ("(->)(c->cv)", Contents());
 }
 
+TEST(DBTest, Fflush_Issue474) {
+  static const int kNum = 100000;
+  Random rnd(test::RandomSeed());
+  for (int i = 0; i < kNum; i++) {
+    fflush(NULL);
+    ASSERT_OK(Put(RandomKey(&rnd), RandomString(&rnd, 100)));
+  }
+}
+
 TEST(DBTest, ComparatorCheck) {
   class NewComparator : public Comparator {
    public:
@@ -1543,6 +1589,58 @@ TEST(DBTest, DBOpen_Options) {
 
   delete db;
   db = NULL;
+}
+
+TEST(DBTest, DestroyEmptyDir) {
+  std::string dbname = test::TmpDir() + "/db_empty_dir";
+  TestEnv env(Env::Default());
+  env.DeleteDir(dbname);
+  ASSERT_TRUE(!env.FileExists(dbname));
+
+  Options opts;
+  opts.env = &env;
+
+  ASSERT_OK(env.CreateDir(dbname));
+  ASSERT_TRUE(env.FileExists(dbname));
+  std::vector<std::string> children;
+  ASSERT_OK(env.GetChildren(dbname, &children));
+  // The POSIX env does not filter out '.' and '..' special files.
+  ASSERT_EQ(2, children.size());
+  ASSERT_OK(DestroyDB(dbname, opts));
+  ASSERT_TRUE(!env.FileExists(dbname));
+
+  // Should also be destroyed if Env is filtering out dot files.
+  env.SetIgnoreDotFiles(true);
+  ASSERT_OK(env.CreateDir(dbname));
+  ASSERT_TRUE(env.FileExists(dbname));
+  ASSERT_OK(env.GetChildren(dbname, &children));
+  ASSERT_EQ(0, children.size());
+  ASSERT_OK(DestroyDB(dbname, opts));
+  ASSERT_TRUE(!env.FileExists(dbname));
+}
+
+TEST(DBTest, DestroyOpenDB) {
+  std::string dbname = test::TmpDir() + "/open_db_dir";
+  env_->DeleteDir(dbname);
+  ASSERT_TRUE(!env_->FileExists(dbname));
+
+  Options opts;
+  opts.create_if_missing = true;
+  DB* db = NULL;
+  ASSERT_OK(DB::Open(opts, dbname, &db));
+  ASSERT_TRUE(db != NULL);
+
+  // Must fail to destroy an open db.
+  ASSERT_TRUE(env_->FileExists(dbname));
+  ASSERT_TRUE(!DestroyDB(dbname, Options()).ok());
+  ASSERT_TRUE(env_->FileExists(dbname));
+
+  delete db;
+  db = NULL;
+
+  // Should succeed destroying a closed db.
+  ASSERT_OK(DestroyDB(dbname, Options()));
+  ASSERT_TRUE(!env_->FileExists(dbname));
 }
 
 TEST(DBTest, Locking) {
@@ -1958,13 +2056,6 @@ class ModelDB: public DB {
   const Options options_;
   KVMap map_;
 };
-
-static std::string RandomKey(Random* rnd) {
-  int len = (rnd->OneIn(3)
-             ? 1                // Short sometimes to encourage collisions
-             : (rnd->OneIn(100) ? rnd->Skewed(10) : rnd->Uniform(10)));
-  return test::RandomKey(rnd, len);
-}
 
 static bool CompareIterators(int step,
                              DB* model,
