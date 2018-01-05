@@ -24,7 +24,7 @@ class TableCache;
 // multiple threads without external synchronization.
 class LEVELDB_EXPORT Table {
  public:
-  // Attempt to open the table that is stored in bytes [0..file_size)
+  // Attempt to open the table that is stored in bytes [0..file_size]
   // of "file", and read the metadata entries necessary to allow
   // retrieving data from the table.
   //
