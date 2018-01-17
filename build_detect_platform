@@ -186,7 +186,7 @@ set +f # re-enable globbing
 
 # The sources consist of the portable files, plus the platform-specific port
 # file.
-echo "SOURCES=$PORTABLE_FILES $PORT_FILE $PORT_SPECIFIC_FILE" >> $OUTPUT
+echo "SOURCES=$PORTABLE_FILES $PORT_FILE $PORT_SPECIFIC_FILE $PORT_SSE_FILE" >> $OUTPUT
 echo "MEMENV_SOURCES=helpers/memenv/memenv.cc" >> $OUTPUT
 
 if [ "$CROSS_COMPILE" = "true" ]; then
