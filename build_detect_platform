@@ -65,6 +65,10 @@ PLATFORM_SHARED_LDFLAGS="-shared -Wl,-soname -Wl,"
 PLATFORM_SHARED_CFLAGS="-fPIC -fvisibility=hidden"
 PLATFORM_SHARED_VERSIONED=true
 
+if [[ "$TARGET_OS" == *'MINGW'* ]]; then
+  TARGET_OS=Windows
+fi
+
 MEMCMP_FLAG=
 if [ "$CXX" = "g++" ]; then
     # Use libc's memcmp instead of GCC's memcmp.  This results in ~40%
@@ -86,6 +90,14 @@ case "$TARGET_OS" in
         [ -z "$INSTALL_PATH" ] && INSTALL_PATH=`pwd`
         PLATFORM_SHARED_LDFLAGS="-dynamiclib -install_name $INSTALL_PATH/"
         PORT_FILE=port/port_posix.cc
+        ;;
+    Windows)
+        PLATFORM=OS_WIN
+        COMMON_FLAGS="$COMMON_FLAGS -DOS_WIN -DOS_WINDOWS"
+        PLATFORM_LDFLAGS="$PLATFORM_LDFLAGS -pthread"
+        PORT_FILE=port/port_win.cc
+        PORT_SSE_FILE=port/port_posix_sse.cc
+        PORT_SPECIFIC_FILE=port/mman.cc
         ;;
     Linux)
         PLATFORM=OS_LINUX
@@ -163,13 +175,18 @@ set -f # temporarily disable globbing so that our patterns aren't expanded
 PRUNE_TEST="-name *test*.cc -prune"
 PRUNE_BENCH="-name *_bench.cc -prune"
 PRUNE_TOOL="-name leveldbutil.cc -prune"
-PORTABLE_FILES=`find $DIRS $PRUNE_TEST -o $PRUNE_BENCH -o $PRUNE_TOOL -o -name '*.cc' -print | sort | sed "s,^$PREFIX/,," | tr "\n" " "`
+if [[ "$TARGET_OS" == 'Windows' ]]; then
+  PRUNE_PLATFORM="-name *posix* -prune"
+else
+  PRUNE_PLATFORM="-name *win* -prune"
+fi
+PORTABLE_FILES=`find $DIRS $PRUNE_TEST -o $PRUNE_BENCH -o $PRUNE_TOOL -o $PRUNE_PLATFORM -o -name '*.cc' -print | sort | sed "s,^$PREFIX/,," | tr "\n" " "`
 
 set +f # re-enable globbing
 
 # The sources consist of the portable files, plus the platform-specific port
 # file.
-echo "SOURCES=$PORTABLE_FILES $PORT_FILE" >> $OUTPUT
+echo "SOURCES=$PORTABLE_FILES $PORT_FILE $PORT_SPECIFIC_FILE" >> $OUTPUT
 echo "MEMENV_SOURCES=helpers/memenv/memenv.cc" >> $OUTPUT
 
 if [ "$CROSS_COMPILE" = "true" ]; then
@@ -185,10 +202,18 @@ else
       int main() {}
 EOF
     if [ "$?" = 0 ]; then
-        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX=1 -DLEVELDB_ATOMIC_PRESENT"
+        if [[ "$TARGET_OS" == 'Windows' ]]; then
+          COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_WINDOWS -DLEVELDB_ATOMIC_PRESENT"
+        else
+          COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX -DLEVELDB_ATOMIC_PRESENT"
+        fi
         PLATFORM_CXXFLAGS="-std=c++0x"
     else
-        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX=1"
+      if [[ "$TARGET_OS" == 'Windows' ]]; then
+        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_WINDOWS"
+      else
+        COMMON_FLAGS="$COMMON_FLAGS -DLEVELDB_PLATFORM_POSIX"
+      fi
     fi
 
     # Test whether CRC32C library is installed
