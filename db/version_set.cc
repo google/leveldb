@@ -920,6 +920,10 @@ Status VersionSet::Recover(bool *save_manifest) {
     return Status::Corruption("CURRENT file does not end with newline");
   }
   current.resize(current.size() - 1);
+  // Fix "\r\n" newlines on Windows
+  if (!current.empty() && current.back() == '\r') {
+    current.resize(current.size() - 1);
+  }
 
   std::string dscname = dbname_ + "/" + current;
   SequentialFile* file;

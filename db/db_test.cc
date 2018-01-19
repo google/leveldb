@@ -670,7 +670,7 @@ TEST(DBTest, GetPicksCorrectFile) {
     ASSERT_EQ("vx", Get("x"));
   } while (ChangeOptions());
 }
-
+\
 TEST(DBTest, GetEncountersEmptyLevel) {
   do {
     // Arrange for the following to happen:
@@ -1605,7 +1605,9 @@ TEST(DBTest, DestroyEmptyDir) {
   std::vector<std::string> children;
   ASSERT_OK(env.GetChildren(dbname, &children));
   // The POSIX env does not filter out '.' and '..' special files.
+#ifndef OS_WIN
   ASSERT_EQ(2, children.size());
+#endif  // !defined(OS_WIN)
   ASSERT_OK(DestroyDB(dbname, opts));
   ASSERT_TRUE(!env.FileExists(dbname));
 

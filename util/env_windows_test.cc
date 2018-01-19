@@ -1,12 +1,13 @@
-// Copyright (c) 2011 The LevelDB Authors. All rights reserved.
+// Copyright (c) 2017 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "leveldb/env.h"
+#include "leveldb/env.h"
 
 #include "port/port.h"
 #include "util/testharness.h"
-#include "util/env_posix_test_helper.h"
+#include "util/env_windows_test_helper.h"
 
 namespace leveldb {
 
@@ -14,18 +15,18 @@ static const int kDelayMicros = 100000;
 static const int kReadOnlyFileLimit = 4;
 static const int kMMapLimit = 4;
 
-class EnvPosixTest {
+class EnvWindowsTest {
  public:
   Env* env_;
-  EnvPosixTest() : env_(Env::Default()) { }
+  EnvWindowsTest() : env_(Env::Default()) { }
 
   static void SetFileLimits(int read_only_file_limit, int mmap_limit) {
-    EnvPosixTestHelper::SetReadOnlyFDLimit(read_only_file_limit);
-    EnvPosixTestHelper::SetReadOnlyMMapLimit(mmap_limit);
+    EnvWindowsTestHelper::SetReadOnlyFDLimit(read_only_file_limit);
+    EnvWindowsTestHelper::SetReadOnlyMMapLimit(mmap_limit);
   }
 };
 
-TEST(EnvPosixTest, TestOpenOnRead) {
+TEST(EnvWindowsTest, TestOpenOnRead) {
   // Write some test data to a single file that will be opened |n| times.
   std::string test_dir;
   ASSERT_OK(env_->GetTestDirectory(&test_dir));
@@ -60,7 +61,7 @@ TEST(EnvPosixTest, TestOpenOnRead) {
 
 int main(int argc, char** argv) {
   // All tests currently run with the same read-only file limits.
-  leveldb::EnvPosixTest::SetFileLimits(leveldb::kReadOnlyFileLimit,
+  leveldb::EnvWindowsTest::SetFileLimits(leveldb::kReadOnlyFileLimit,
                                        leveldb::kMMapLimit);
   return leveldb::test::RunAllTests();
 }

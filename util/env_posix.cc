@@ -24,7 +24,7 @@
 #include "port/port.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-#include "util/posix_logger.h"
+#include "util/file_logger.h"
 #include "util/env_posix_test_helper.h"
 
 namespace leveldb {
@@ -580,7 +580,7 @@ class PosixEnv : public Env {
       *result = NULL;
       return PosixError(fname, errno);
     } else {
-      *result = new PosixLogger(f, &PosixEnv::gettid);
+      *result = new FileLogger(f, &PosixEnv::gettid);
       return Status::OK();
     }
   }
@@ -730,6 +730,30 @@ void PosixEnv::StartThread(void (*function)(void* arg), void* arg) {
 static pthread_once_t once = PTHREAD_ONCE_INIT;
 static Env* default_env;
 static void InitDefaultEnv() { default_env = new PosixEnv; }
+
+char* FileLogger::AppendDateTo(char* first, char* last)
+{
+  const uint64_t thread_id = (*gettid_)();
+
+  struct timeval now_tv;
+  gettimeofday(&now_tv, NULL);
+  const time_t seconds = now_tv.tv_sec;
+  struct tm t;
+  localtime_r(&seconds, &t);
+
+  first += snprintf(first, last - first,
+                "%04d/%02d/%02d-%02d:%02d:%02d.%06d %llx ",
+                t.tm_year + 1900,
+                t.tm_mon + 1,
+                t.tm_mday,
+                t.tm_hour,
+                t.tm_min,
+                t.tm_sec,
+                static_cast<int>(now_tv.tv_usec),
+                static_cast<long long unsigned int>(thread_id));
+
+  return first;
+}
 
 void EnvPosixTestHelper::SetReadOnlyFDLimit(int limit) {
   assert(default_env == NULL);

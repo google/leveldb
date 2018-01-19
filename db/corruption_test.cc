@@ -16,6 +16,7 @@
 #include "db/filename.h"
 #include "db/log_format.h"
 #include "db/version_set.h"
+#include "util/env_windows_test_helper.h"
 #include "util/logging.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
@@ -197,6 +198,10 @@ class CorruptionTest {
     Random r(k);
     return test::RandomString(&r, kValueSize, storage);
   }
+
+  static void SetFileLimits() {
+    EnvWindowsTestHelper::SetReadOnlyMMapLimit(0);
+  }
 };
 
 TEST(CorruptionTest, Recovery) {
@@ -370,5 +375,10 @@ TEST(CorruptionTest, UnrelatedKeys) {
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
+#ifdef _WIN32
+  // Disable memory-mapped files for Windows, since they cannot be overwritten,
+  // preventing file corruption for unittests.
+  leveldb::CorruptionTest::SetFileLimits();
+#endif
   return leveldb::test::RunAllTests();
 }

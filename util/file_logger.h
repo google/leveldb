@@ -10,24 +10,22 @@
 
 #include <algorithm>
 #include <stdio.h>
-#include <sys/time.h>
 #include <time.h>
 #include "leveldb/env.h"
 
 namespace leveldb {
 
-class PosixLogger : public Logger {
+
+class FileLogger : public Logger {
  private:
   FILE* file_;
   uint64_t (*gettid_)();  // Return the thread id for the current thread
  public:
-  PosixLogger(FILE* f, uint64_t (*gettid)()) : file_(f), gettid_(gettid) { }
-  virtual ~PosixLogger() {
+  FileLogger(FILE* f, uint64_t (*gettid)()) : file_(f), gettid_(gettid) { }
+  virtual ~FileLogger() {
     fclose(file_);
   }
   virtual void Logv(const char* format, va_list ap) {
-    const uint64_t thread_id = (*gettid_)();
-
     // We try twice: the first time with a fixed-size stack allocated buffer,
     // and the second time with a much larger dynamically allocated buffer.
     char buffer[500];
@@ -43,22 +41,7 @@ class PosixLogger : public Logger {
       }
       char* p = base;
       char* limit = base + bufsize;
-
-      struct timeval now_tv;
-      gettimeofday(&now_tv, NULL);
-      const time_t seconds = now_tv.tv_sec;
-      struct tm t;
-      localtime_r(&seconds, &t);
-      p += snprintf(p, limit - p,
-                    "%04d/%02d/%02d-%02d:%02d:%02d.%06d %llx ",
-                    t.tm_year + 1900,
-                    t.tm_mon + 1,
-                    t.tm_mday,
-                    t.tm_hour,
-                    t.tm_min,
-                    t.tm_sec,
-                    static_cast<int>(now_tv.tv_usec),
-                    static_cast<long long unsigned int>(thread_id));
+      p = AppendDateTo(p, limit);
 
       // Print the message
       if (p < limit) {
@@ -91,6 +74,10 @@ class PosixLogger : public Logger {
       break;
     }
   }
+
+  // Add formatted date using snprintf to the character range.
+  // Platform-specific.
+  char* AppendDateTo(char* first, char* last);
 };
 
 }  // namespace leveldb
