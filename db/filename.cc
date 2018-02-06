@@ -69,6 +69,9 @@ std::string OldInfoLogFileName(const std::string& dbname) {
   return dbname + "/LOG.old";
 }
 
+std::string SnapshotFileName(const std::string& dbname) {
+  return dbname + "/SNAPSHOTS";
+}
 
 // Owned filenames have the form:
 //    dbname/CURRENT
@@ -90,6 +93,9 @@ bool ParseFileName(const std::string& fname,
   } else if (rest == "LOG" || rest == "LOG.old") {
     *number = 0;
     *type = kInfoLogFile;
+  } else if (rest == "SNAPSHOTS") {
+	  *number = 0;
+	  *type = kSnapshotsFile;
   } else if (rest.starts_with("MANIFEST-")) {
     rest.remove_prefix(strlen("MANIFEST-"));
     uint64_t num;

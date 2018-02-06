@@ -38,6 +38,9 @@ class DBImpl : public DB {
   virtual Iterator* NewIterator(const ReadOptions&);
   virtual const Snapshot* GetSnapshot();
   virtual void ReleaseSnapshot(const Snapshot* snapshot);
+  virtual Status PersistSnapshot(const Options& options, const Snapshot* s, std::string* snapshotID);
+  virtual Status UnpersistSnapshot(const Options& options, const Snapshot* s);
+  virtual const Snapshot* GetPersistedSnapshot (std::string snapshotID) ;
   virtual bool GetProperty(const Slice& property, std::string* value);
   virtual void GetApproximateSizes(const Range* range, int n, uint64_t* sizes);
   virtual void CompactRange(const Slice* begin, const Slice* end);
@@ -150,6 +153,8 @@ class DBImpl : public DB {
   WriteBatch* tmp_batch_;
 
   SnapshotList snapshots_;
+  SnapshotList persistent_snapshots_;
+
 
   // Set of table files to protect from deletion because they are
   // part of ongoing compactions.

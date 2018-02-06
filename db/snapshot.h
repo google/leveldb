@@ -50,12 +50,77 @@ class SnapshotList {
     return s;
   }
 
+// inserts a new snapshot according to its sequence number into the ordered list
+  const SnapshotImpl* Insert(SequenceNumber seq) {
+	  if (empty()) {
+		  return New (seq);
+	  }
+
+	  // iterate over last until an existing snapshot with larger sequence number is
+	   SnapshotImpl *s = list_.next_;
+		while (true) {
+			if (s->number_ > seq) {
+				// insert before
+				SnapshotImpl* newSnapShot = new SnapshotImpl;
+
+				newSnapShot->number_ = seq;
+				newSnapShot->list_ = this;
+				s->prev_->next_ = newSnapShot;
+				newSnapShot->prev_ = s->prev_;
+				newSnapShot->next_ = s;
+				s->prev_ = newSnapShot;
+				return newSnapShot;
+			}
+			if (s->next_ == (SnapshotImpl*) s->list_) {
+				break;
+			}
+			s = s->next_;
+		}
+	 return New (seq);
+  }
+
   void Delete(const SnapshotImpl* s) {
     assert(s->list_ == this);
     s->prev_->next_ = s->next_;
     s->next_->prev_ = s->prev_;
     delete s;
   }
+
+  // return existing snapshot with sequence number
+  SnapshotImpl* Get(SequenceNumber seq) {
+	  if (empty()) {
+		  return NULL;
+	  }
+	  SnapshotImpl *s = list_.next_;
+	  while (true) {
+		  if (s->number_ == seq) {
+			  return s;
+		  }
+		  if (s->next_ == (SnapshotImpl*) s->list_) {
+			  break;
+		  }
+		  s = s->next_;
+	  }
+	  return NULL;
+  }
+
+	std::string GetSequenceStringWithDelimiter(std::string delimiter) {
+		std::string result = "";
+
+		if (empty()) {
+			return result;
+		}
+		
+		SnapshotImpl *s = list_.next_;
+		while (true) {
+			result += NumberToString (s->number_) + delimiter;
+			if (s->next_ == (SnapshotImpl*) s->list_) {
+				break;
+			}
+			s = s->next_;
+		}
+		return result;
+	}
 
  private:
   // Dummy head of doubly-linked list of snapshots

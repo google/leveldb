@@ -143,6 +143,18 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
 
   versions_ = new VersionSet(dbname_, &options_, table_cache_,
                              &internal_comparator_);
+  // Read back persisted snapshots from file before compaction kicks in
+  std::string persistenSnapshotData;
+  Status status = ReadFileToString(env_, SnapshotFileName(dbname_), &persistenSnapshotData);
+  if (status.ok()) {
+	  size_t pos = 0;
+	  std::string sequenceStr;
+	  while ((pos = persistenSnapshotData.find("\n")) != std::string::npos) {
+		  sequenceStr = persistenSnapshotData.substr(0, pos);
+		  persistent_snapshots_.New(std::atoll(sequenceStr.c_str()));
+		  persistenSnapshotData.erase(0, pos + 1);
+	  }
+  }
 }
 
 DBImpl::~DBImpl() {
@@ -254,6 +266,7 @@ void DBImpl::DeleteObsoleteFiles() {
         case kCurrentFile:
         case kDBLockFile:
         case kInfoLogFile:
+		case kSnapshotsFile:
           keep = true;
           break;
       }
@@ -897,11 +910,15 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   assert(versions_->NumLevelFiles(compact->compaction->level()) > 0);
   assert(compact->builder == NULL);
   assert(compact->outfile == NULL);
-  if (snapshots_.empty()) {
-    compact->smallest_snapshot = versions_->LastSequence();
-  } else {
-    compact->smallest_snapshot = snapshots_.oldest()->number_;
+
+  SequenceNumber oldestSequence = versions_->LastSequence();
+  if (!snapshots_.empty() &&  (snapshots_.oldest()->number_ < oldestSequence) ){
+	  oldestSequence = snapshots_.oldest()->number_;
   }
+  if (!persistent_snapshots_.empty() &&  (persistent_snapshots_.oldest()->number_ < oldestSequence) ){
+	  oldestSequence = persistent_snapshots_.oldest()->number_;
+  }
+  compact->smallest_snapshot = snapshots_.oldest()->number_;
 
   // Release mutex while we're actually doing the compaction work
   mutex_.Unlock();
@@ -1180,6 +1197,49 @@ const Snapshot* DBImpl::GetSnapshot() {
 void DBImpl::ReleaseSnapshot(const Snapshot* s) {
   MutexLock l(&mutex_);
   snapshots_.Delete(reinterpret_cast<const SnapshotImpl*>(s));
+}
+
+Status DBImpl::PersistSnapshot(const Options& options, const Snapshot* s, std::string* snapshotID){
+	MutexLock l(&mutex_);
+	Status status;
+
+	persistent_snapshots_.Insert(reinterpret_cast<const SnapshotImpl*>(s)->number_);
+	options.env->DeleteFile(SnapshotFileName(dbname_));
+	if (!status.ok()) {
+		return status;
+	}
+
+	status = WriteStringToFile(options.env, persistent_snapshots_.GetSequenceStringWithDelimiter("\n"), SnapshotFileName(dbname_));
+	if (!status.ok()) {
+		return status;
+	}
+	snapshotID->assign(NumberToString(reinterpret_cast<const SnapshotImpl*>(s)->number_));
+
+	return status;
+}
+
+	Status DBImpl::UnpersistSnapshot(const Options& options, const Snapshot* s) {
+		MutexLock l(&mutex_);
+		Status status;
+
+		persistent_snapshots_.Delete(reinterpret_cast<const SnapshotImpl*>(s));
+
+		options.env->DeleteFile(SnapshotFileName(dbname_));
+		if (!status.ok()) {
+			return status;
+		}
+
+		status = WriteStringToFile(options.env, persistent_snapshots_.GetSequenceStringWithDelimiter("\n"), SnapshotFileName(dbname_));
+		if (!status.ok()) {
+			return status;
+		}
+
+		return Status::OK();
+	}
+
+const Snapshot* DBImpl::GetPersistedSnapshot (std::string snapshotID){
+	SequenceNumber seq = atoll(snapshotID.c_str());
+	return persistent_snapshots_.Get(seq);
 }
 
 // Convenience methods
