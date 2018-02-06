@@ -2046,6 +2046,17 @@ class ModelDB: public DB {
   virtual void CompactRange(const Slice* start, const Slice* end) {
   }
 
+  virtual Status PersistSnapshot(const Options& options, const Snapshot* s, std::string* snapshotID) {
+	  return Status::OK();
+  }
+
+  virtual Status UnpersistSnapshot(const Options& options, const Snapshot* s) {
+	  return Status::OK();
+  }
+
+  virtual const Snapshot* GetPersistedSnapshot (std::string snapshotID) {
+  }
+
  private:
   class ModelIter: public Iterator {
    public:
