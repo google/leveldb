@@ -918,7 +918,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   if (!persistent_snapshots_.empty() &&  (persistent_snapshots_.oldest()->number_ < oldestSequence) ){
 	  oldestSequence = persistent_snapshots_.oldest()->number_;
   }
-  compact->smallest_snapshot = snapshots_.oldest()->number_;
+  compact->smallest_snapshot = oldestSequence;
 
   // Release mutex while we're actually doing the compaction work
   mutex_.Unlock();
