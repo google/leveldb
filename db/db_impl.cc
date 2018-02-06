@@ -151,7 +151,7 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
 	  std::string sequenceStr;
 	  while ((pos = persistenSnapshotData.find("\n")) != std::string::npos) {
 		  sequenceStr = persistenSnapshotData.substr(0, pos);
-		  persistent_snapshots_.New(std::atoll(sequenceStr.c_str()));
+		  persistent_snapshots_.New(atoll(sequenceStr.c_str()));
 		  persistenSnapshotData.erase(0, pos + 1);
 	  }
   }

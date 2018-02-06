@@ -629,6 +629,30 @@ TEST(DBTest, GetSnapshot) {
   } while (ChangeOptions());
 }
 
+TEST(DBTest, PersistSnapshot) {
+	do {
+		// Try with both a short key and a long key
+		for (int i = 0; i < 2; i++) {
+			std::string key = (i == 0) ? std::string("foo") : std::string(200, 'x');
+			ASSERT_OK(Put(key, "v1"));
+			const Snapshot* s1 = db_->GetSnapshot();
+			std::string snapshot_id;
+			dbfull()->PersistSnapshot(Options(), s1, &snapshot_id);
+			dbfull()->ReleaseSnapshot(s1);
+			dbfull()->TEST_CompactMemTable();
+			Reopen();
+			const Snapshot* s2 = dbfull()->GetPersistedSnapshot(snapshot_id);
+			ASSERT_OK(Put(key, "v2"));
+			ASSERT_EQ("v2", Get(key));
+			ASSERT_EQ("v1", Get(key, s2));
+			dbfull()->TEST_CompactMemTable();
+			ASSERT_EQ("v2", Get(key));
+			ASSERT_EQ("v1", Get(key, s2));
+			db_->ReleaseSnapshot(s2);
+		}
+	} while (ChangeOptions());
+}
+
 TEST(DBTest, GetLevel0Ordering) {
   do {
     // Check that we process level-0 files in correct order.  The code
