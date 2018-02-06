@@ -102,6 +102,22 @@ class LEVELDB_EXPORT DB {
   // use "snapshot" after this call.
   virtual void ReleaseSnapshot(const Snapshot* snapshot) = 0;
 
+  // Marks an existing snapshot, that was previoulsy obtained via GetSnapshot(),
+  // as persistent. Use the returned snapshotID as param to GetPersisentSnapshot()
+  // to obtained the snapshot again after the database has been closed and
+  // re-openend. You still need to call ReleaseSnapskhot() after this call.
+  virtual Status PersistSnapshot(const Options& options, const Snapshot* s, std::string* snapshotID) = 0;
+
+  // Marks an previously pesistent snapshot as transient again, freeing up the
+  // storage occupied by it. You still need to call ReleaseSnapshot() after this call.
+  virtual Status UnpersistSnapshot(const Options& options, const Snapshot* s) = 0;
+
+  // Return a handle to a snapshot previously persisted with PersistSnapshot()
+  // using the saved snapshotID. You need to dispose of the returned value
+  // via ReleaseSnapshot(). The snapshot will remain persistant until you call
+  // UnpersistSnapshot(), though.
+  virtual const Snapshot* GetPersistedSnapshot (std::string snapshotID) = 0;
+
   // DB implementations can export properties about their state
   // via this method.  If "property" is a valid property understood by this
   // DB implementation, fills "*value" with its current value and returns
