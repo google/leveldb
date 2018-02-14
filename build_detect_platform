@@ -202,7 +202,6 @@ EOF
         PLATFORM_LIBS="$PLATFORM_LIBS -lcrc32c"
     fi
 
-
     # Test whether Snappy library is installed
     # https://github.com/google/snappy
     $CXX $CXXFLAGS -x c++ - -o $CXXOUTPUT 2>/dev/null  <<EOF
@@ -222,7 +221,23 @@ EOF
         PLATFORM_LIBS="$PLATFORM_LIBS -ltcmalloc"
     fi
 
-    rm -f $CXXOUTPUT 2>/dev/null
+    # Test whether -Wthread-safety is available. See
+    # https://clang.llvm.org/docs/ThreadSafetyAnalysis.html
+    # -Werror is necessary because unknown attributes only generate warnings.
+    $CXX $CXXFLAGS -Wthread-safety -Werror -x c++ - -o $CXXOUTPUT 2>/dev/null  <<EOF
+      struct __attribute__((lockable)) Lock {
+        void Acquire() __attribute__((exclusive_lock_function()));
+        void Release() __attribute__((unlock_function()));
+      };
+      struct ThreadSafeType {
+        Lock lock_;
+        int data_ __attribute__((guarded_by(lock_)));
+      };
+      int main() { return 0; }
+EOF
+    if [ "$?" = 0 ]; then
+        COMMON_FLAGS="$COMMON_FLAGS -Wthread-safety"
+    fi
 
     rm -f $CXXOUTPUT 2>/dev/null
 fi

@@ -48,6 +48,7 @@
 #include <stdint.h>
 #include <string>
 #include "port/atomic_pointer.h"
+#include "port/thread_annotations.h"
 
 #ifndef PLATFORM_IS_LITTLE_ENDIAN
 #define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
@@ -73,14 +74,14 @@ static const bool kLittleEndian = PLATFORM_IS_LITTLE_ENDIAN;
 
 class CondVar;
 
-class Mutex {
+class LOCKABLE Mutex {
  public:
   Mutex();
   ~Mutex();
 
-  void Lock();
-  void Unlock();
-  void AssertHeld() { }
+  void Lock() EXCLUSIVE_LOCK_FUNCTION();
+  void Unlock() UNLOCK_FUNCTION();
+  void AssertHeld() ASSERT_EXCLUSIVE_LOCK() { }
 
  private:
   friend class CondVar;

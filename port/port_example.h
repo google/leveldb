@@ -10,6 +10,8 @@
 #ifndef STORAGE_LEVELDB_PORT_PORT_EXAMPLE_H_
 #define STORAGE_LEVELDB_PORT_PORT_EXAMPLE_H_
 
+#include "port/thread_annotations.h"
+
 namespace leveldb {
 namespace port {
 
@@ -23,23 +25,23 @@ static const bool kLittleEndian = true /* or some other expression */;
 // ------------------ Threading -------------------
 
 // A Mutex represents an exclusive lock.
-class Mutex {
+class LOCKABLE Mutex {
  public:
   Mutex();
   ~Mutex();
 
   // Lock the mutex.  Waits until other lockers have exited.
   // Will deadlock if the mutex is already locked by this thread.
-  void Lock();
+  void Lock() EXCLUSIVE_LOCK_FUNCTION();
 
   // Unlock the mutex.
   // REQUIRES: This mutex was locked by this thread.
-  void Unlock();
+  void Unlock() UNLOCK_FUNCTION();
 
   // Optionally crash if this thread does not hold this mutex.
   // The implementation must be fast, especially if NDEBUG is
   // defined.  The implementation is allowed to skip all checks.
-  void AssertHeld();
+  void AssertHeld() ASSERT_EXCLUSIVE_LOCK();
 };
 
 class CondVar {
