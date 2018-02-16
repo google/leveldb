@@ -117,6 +117,12 @@ case "$TARGET_OS" in
         PLATFORM_LDFLAGS="-pthread"
         PORT_FILE=port/port_posix.cc
         ;;
+    QNXNTO)
+        PLATFORM=OS_QNXNTO
+        COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -D__QNXNTO__ -D_QNX_SOURCE -DOS_QNXNTO -DLEVELDB_ATOMIC_PRESENT -DLEVELDB_PLATFORM_POSIX=1 -std=c++11"
+        PORT_FILE=port/port_posix.cc
+        CROSS_COMPILE=true
+        ;;
     DragonFly)
         PLATFORM=OS_DRAGONFLYBSD
         COMMON_FLAGS="$MEMCMP_FLAG -D_REENTRANT -DOS_DRAGONFLYBSD"

@@ -26,6 +26,9 @@
   #include <sys/types.h>
   #include <sys/endian.h>
   #define PLATFORM_IS_LITTLE_ENDIAN (_BYTE_ORDER == _LITTLE_ENDIAN)
+#elif defined(OS_QNXNTO)
+  #include <sys/types.h>
+  #define PLATFORM_IS_LITTLE_ENDIAN true
 #elif defined(OS_HPUX)
   #define PLATFORM_IS_LITTLE_ENDIAN false
 #elif defined(OS_ANDROID)
@@ -54,7 +57,7 @@
 #define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #endif
 
-#if defined(__APPLE__) || defined(OS_FREEBSD) ||\
+#if defined(__APPLE__) || defined(OS_FREEBSD) || defined(OS_QNXNTO) ||\
     defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD)
 // Use fsync() on platforms without fdatasync()
 #define fdatasync fsync
