@@ -25,9 +25,6 @@
 #ifdef OS_WIN
 #include <windows.h>
 #endif
-#ifdef __APPLE__
-#include <libkern/OSAtomic.h>
-#endif
 
 #if defined(_M_X64) || defined(__x86_64__)
 #define ARCH_CPU_X86_FAMILY 1
@@ -51,13 +48,6 @@ namespace port {
 #if defined(OS_WIN) && defined(COMPILER_MSVC) && defined(ARCH_CPU_X86_FAMILY)
 // windows.h already provides a MemoryBarrier(void) macro
 // http://msdn.microsoft.com/en-us/library/ms684208(v=vs.85).aspx
-#define LEVELDB_HAVE_MEMORY_BARRIER
-
-// Mac OS
-#elif defined(__APPLE__)
-inline void MemoryBarrier() {
-  OSMemoryBarrier();
-}
 #define LEVELDB_HAVE_MEMORY_BARRIER
 
 // Gcc on x86
