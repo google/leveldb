@@ -77,6 +77,7 @@ DEVICESDK=$(shell xcrun -sdk iphoneos --show-sdk-path)
 DEVICE_CFLAGS = -isysroot "$(DEVICESDK)" -arch armv6 -arch armv7 -arch armv7s -arch arm64
 SIMULATOR_CFLAGS = -isysroot "$(SIMULATORSDK)" -arch i686 -arch x86_64
 STATIC_OUTDIR=out-ios-universal
+SHARED_OUTDIR=out-shared
 else
 STATIC_OUTDIR=out-static
 SHARED_OUTDIR=out-shared
