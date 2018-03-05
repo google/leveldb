@@ -114,6 +114,18 @@ TEST(FileNameTest, Construction) {
   ASSERT_TRUE(ParseFileName(fname.c_str() + 4, &number, &type));
   ASSERT_EQ(999, number);
   ASSERT_EQ(kTempFile, type);
+
+  fname = InfoLogFileName("foo");
+  ASSERT_EQ("foo/", std::string(fname.data(), 4));
+  ASSERT_TRUE(ParseFileName(fname.c_str() + 4, &number, &type));
+  ASSERT_EQ(0, number);
+  ASSERT_EQ(kInfoLogFile, type);
+
+  fname = OldInfoLogFileName("foo");
+  ASSERT_EQ("foo/", std::string(fname.data(), 4));
+  ASSERT_TRUE(ParseFileName(fname.c_str() + 4, &number, &type));
+  ASSERT_EQ(0, number);
+  ASSERT_EQ(kInfoLogFile, type);
 }
 
 }  // namespace leveldb
