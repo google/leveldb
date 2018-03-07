@@ -143,6 +143,12 @@ class LEVELDB_EXPORT DB {
   //    db->CompactRange(NULL, NULL);
   virtual void CompactRange(const Slice* begin, const Slice* end) = 0;
 
+  // Suspends the background compaction thread.  This methods
+  // returns once suspended.
+  virtual void SuspendCompactions() = 0;
+  // Resumes a suspended background compation thread.
+  virtual void ResumeCompactions() = 0;
+
  private:
   // No copying allowed
   DB(const DB&);
