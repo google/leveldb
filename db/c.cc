@@ -5,7 +5,6 @@
 #include "leveldb/c.h"
 
 #include <stdlib.h>
-#include <unistd.h>
 #include "leveldb/cache.h"
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
@@ -582,6 +581,18 @@ leveldb_env_t* leveldb_create_default_env() {
 void leveldb_env_destroy(leveldb_env_t* env) {
   if (!env->is_default) delete env->rep;
   delete env;
+}
+
+char* leveldb_env_get_test_directory(leveldb_env_t* env) {
+  std::string result;
+  if (!env->rep->GetTestDirectory(&result).ok()) {
+    return NULL;
+  }
+
+  char* buffer = static_cast<char*>(malloc(result.size() + 1));
+  memcpy(buffer, result.data(), result.size());
+  buffer[result.size()] = '\0';
+  return buffer;
 }
 
 void leveldb_free(void* ptr) {

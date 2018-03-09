@@ -8,22 +8,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 const char* phase = "";
-static char dbname[200];
 
 static void StartPhase(const char* name) {
   fprintf(stderr, "=== Test %s\n", name);
   phase = name;
-}
-
-static const char* GetTempDir(void) {
-    const char* ret = getenv("TEST_TMPDIR");
-    if (ret == NULL || ret[0] == '\0')
-        ret = "/tmp";
-    return ret;
 }
 
 #define CheckNoError(err)                                               \
@@ -162,21 +152,19 @@ int main(int argc, char** argv) {
   leveldb_options_t* options;
   leveldb_readoptions_t* roptions;
   leveldb_writeoptions_t* woptions;
+  char* dbname;
   char* err = NULL;
   int run = -1;
 
   CheckCondition(leveldb_major_version() >= 1);
   CheckCondition(leveldb_minor_version() >= 1);
 
-  snprintf(dbname, sizeof(dbname),
-           "%s/leveldb_c_test-%d",
-           GetTempDir(),
-           ((int) geteuid()));
-
   StartPhase("create_objects");
   cmp = leveldb_comparator_create(NULL, CmpDestroy, CmpCompare, CmpName);
   env = leveldb_create_default_env();
   cache = leveldb_cache_create_lru(100000);
+  dbname = leveldb_env_get_test_directory(env);
+  CheckCondition(dbname != NULL);
 
   options = leveldb_options_create();
   leveldb_options_set_comparator(options, cmp);
@@ -382,6 +370,7 @@ int main(int argc, char** argv) {
   leveldb_options_destroy(options);
   leveldb_readoptions_destroy(roptions);
   leveldb_writeoptions_destroy(woptions);
+  leveldb_free(dbname);
   leveldb_cache_destroy(cache);
   leveldb_comparator_destroy(cmp);
   leveldb_env_destroy(env);

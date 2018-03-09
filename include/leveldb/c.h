@@ -245,6 +245,9 @@ LEVELDB_EXPORT void leveldb_cache_destroy(leveldb_cache_t* cache);
 LEVELDB_EXPORT leveldb_env_t* leveldb_create_default_env();
 LEVELDB_EXPORT void leveldb_env_destroy(leveldb_env_t*);
 
+/* If not NULL, the returned buffer must be released using leveldb_free(). */
+LEVELDB_EXPORT char* leveldb_env_get_test_directory(leveldb_env_t*);
+
 /* Utility */
 
 /* Calls free(ptr).
