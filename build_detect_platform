@@ -200,6 +200,8 @@ EOF
     if [ "$?" = 0 ]; then
         COMMON_FLAGS="$COMMON_FLAGS -DHAVE_CRC32C=1"
         PLATFORM_LIBS="$PLATFORM_LIBS -lcrc32c"
+    else
+        COMMON_FLAGS="$COMMON_FLAGS -DHAVE_CRC32C=0"
     fi
 
     # Test whether Snappy library is installed
@@ -211,6 +213,8 @@ EOF
     if [ "$?" = 0 ]; then
         COMMON_FLAGS="$COMMON_FLAGS -DHAVE_SNAPPY=1"
         PLATFORM_LIBS="$PLATFORM_LIBS -lsnappy"
+    else
+        COMMON_FLAGS="$COMMON_FLAGS -DHAVE_SNAPPY=0"
     fi
 
     # Test whether tcmalloc is available
