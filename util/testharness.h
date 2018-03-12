@@ -27,15 +27,15 @@ namespace test {
 //
 // Returns 0 if all tests pass.
 // Dies or returns a non-zero value if some test fails.
-extern int RunAllTests();
+int RunAllTests();
 
 // Return the directory to use for temporary storage.
-extern std::string TmpDir();
+std::string TmpDir();
 
 // Return a randomization seed for this run.  Typically returns the
 // same number on repeated invocations of this binary, but automated
 // runs may be able to vary the seed.
-extern int RandomSeed();
+int RandomSeed();
 
 // An instance of Tester is allocated to hold temporary state during
 // the execution of an assertion.
@@ -129,8 +129,7 @@ void TCONCAT(_Test_,name)::_Run()
 
 // Register the specified test.  Typically not used directly, but
 // invoked via the macro expansion of TEST.
-extern bool RegisterTest(const char* base, const char* name, void (*func)());
-
+bool RegisterTest(const char* base, const char* name, void (*func)());
 
 }  // namespace test
 }  // namespace leveldb

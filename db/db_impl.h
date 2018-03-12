@@ -201,10 +201,10 @@ class DBImpl : public DB {
 
 // Sanitize db options.  The caller should delete result.info_log if
 // it is not equal to src.info_log.
-extern Options SanitizeOptions(const std::string& db,
-                               const InternalKeyComparator* icmp,
-                               const InternalFilterPolicy* ipolicy,
-                               const Options& src);
+Options SanitizeOptions(const std::string& db,
+                        const InternalKeyComparator* icmp,
+                        const InternalFilterPolicy* ipolicy,
+                        const Options& src);
 
 }  // namespace leveldb
 
