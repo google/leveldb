@@ -541,6 +541,7 @@ void DBImpl::CompactMemTable() {
   base->Ref();
   Status s = WriteLevel0Table(imm_, &edit, base);
   base->Unref();
+  base = NULL;
 
   if (s.ok() && shutting_down_.Acquire_Load()) {
     s = Status::IOError("Deleting DB during memtable compaction");
