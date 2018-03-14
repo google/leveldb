@@ -740,7 +740,9 @@ void DBImpl::BackgroundCompaction() {
     }
     CleanupCompaction(compact);
     c->ReleaseInputs();
+    mutex_.Unlock();
     DeleteObsoleteFiles();
+    mutex_.lock();
   }
   delete c;
 
