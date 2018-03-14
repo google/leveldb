@@ -742,7 +742,7 @@ void DBImpl::BackgroundCompaction() {
     c->ReleaseInputs();
     mutex_.Unlock();
     DeleteObsoleteFiles();
-    mutex_.lock();
+    mutex_.Lock();
   }
   delete c;
 
