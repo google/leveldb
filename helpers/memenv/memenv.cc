@@ -4,14 +4,17 @@
 
 #include "helpers/memenv/memenv.h"
 
+#include <string.h>
+
+#include <map>
+#include <string>
+#include <vector>
+
 #include "leveldb/env.h"
 #include "leveldb/status.h"
 #include "port/port.h"
+#include "port/thread_annotations.h"
 #include "util/mutexlock.h"
-#include <map>
-#include <string.h>
-#include <string>
-#include <vector>
 
 namespace leveldb {
 
@@ -135,7 +138,7 @@ class FileState {
   void operator=(const FileState&);
 
   port::Mutex refs_mutex_;
-  int refs_;  // Protected by refs_mutex_;
+  int refs_ GUARDED_BY(refs_mutex_);
 
   // The following fields are not protected by any mutex. They are only mutable
   // while the file is being written, and concurrent access is not allowed
@@ -312,7 +315,8 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
-  void DeleteFileInternal(const std::string& fname) {
+  void DeleteFileInternal(const std::string& fname)
+      EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
     if (file_map_.find(fname) == file_map_.end()) {
       return;
     }
@@ -386,7 +390,7 @@ class InMemoryEnv : public EnvWrapper {
   // Map from filenames to FileState objects, representing a simple file system.
   typedef std::map<std::string, FileState*> FileSystem;
   port::Mutex mutex_;
-  FileSystem file_map_;  // Protected by mutex_.
+  FileSystem file_map_ GUARDED_BY(mutex_);
 };
 
 }  // namespace

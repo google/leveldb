@@ -30,9 +30,9 @@ static void UnrefEntry(void* arg1, void* arg2) {
 }
 
 TableCache::TableCache(const std::string& dbname,
-                       const Options* options,
+                       const Options& options,
                        int entries)
-    : env_(options->env),
+    : env_(options.env),
       dbname_(dbname),
       options_(options),
       cache_(NewLRUCache(entries)) {
@@ -61,7 +61,7 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
       }
     }
     if (s.ok()) {
-      s = Table::Open(*options_, file, file_size, &table);
+      s = Table::Open(options_, file, file_size, &table);
     }
 
     if (!s.ok()) {

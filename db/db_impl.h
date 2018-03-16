@@ -84,7 +84,7 @@ class DBImpl : public DB {
   void MaybeIgnoreError(Status* s) const;
 
   // Delete any unneeded files and stale in-memory entries.
-  void DeleteObsoleteFiles();
+  void DeleteObsoleteFiles() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Compact the in-memory write buffer to disk.  Switches to a new
   // log-file/memtable and writes a new descriptor iff successful.
@@ -100,14 +100,15 @@ class DBImpl : public DB {
 
   Status MakeRoomForWrite(bool force /* compact even if there is room? */)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
-  WriteBatch* BuildBatchGroup(Writer** last_writer);
+  WriteBatch* BuildBatchGroup(Writer** last_writer)
+      EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   void RecordBackgroundError(const Status& s);
 
   void MaybeScheduleCompaction() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   static void BGWork(void* db);
   void BackgroundCall();
-  void  BackgroundCompaction() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
+  void BackgroundCompaction() EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   void CleanupCompaction(CompactionState* compact)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
   Status DoCompactionWork(CompactionState* compact)
@@ -123,12 +124,12 @@ class DBImpl : public DB {
   const InternalKeyComparator internal_comparator_;
   const InternalFilterPolicy internal_filter_policy_;
   const Options options_;  // options_.comparator == &internal_comparator_
-  bool owns_info_log_;
-  bool owns_cache_;
+  const bool owns_info_log_;
+  const bool owns_cache_;
   const std::string dbname_;
 
   // table_cache_ provides its own synchronization
-  TableCache* table_cache_;
+  TableCache* const table_cache_;
 
   // Lock over the persistent DB state.  Non-NULL iff successfully acquired.
   FileLock* db_lock_;
@@ -136,27 +137,27 @@ class DBImpl : public DB {
   // State below is protected by mutex_
   port::Mutex mutex_;
   port::AtomicPointer shutting_down_;
-  port::CondVar bg_cv_;          // Signalled when background work finishes
+  port::CondVar background_work_finished_signal_ GUARDED_BY(mutex_);
   MemTable* mem_;
-  MemTable* imm_;                // Memtable being compacted
-  port::AtomicPointer has_imm_;  // So bg thread can detect non-NULL imm_
+  MemTable* imm_ GUARDED_BY(mutex_);  // Memtable being compacted
+  port::AtomicPointer has_imm_;       // So bg thread can detect non-NULL imm_
   WritableFile* logfile_;
-  uint64_t logfile_number_;
+  uint64_t logfile_number_ GUARDED_BY(mutex_);
   log::Writer* log_;
-  uint32_t seed_;                // For sampling.
+  uint32_t seed_ GUARDED_BY(mutex_);  // For sampling.
 
   // Queue of writers.
-  std::deque<Writer*> writers_;
-  WriteBatch* tmp_batch_;
+  std::deque<Writer*> writers_ GUARDED_BY(mutex_);
+  WriteBatch* tmp_batch_ GUARDED_BY(mutex_);
 
-  SnapshotList snapshots_;
+  SnapshotList snapshots_ GUARDED_BY(mutex_);
 
   // Set of table files to protect from deletion because they are
   // part of ongoing compactions.
-  std::set<uint64_t> pending_outputs_;
+  std::set<uint64_t> pending_outputs_ GUARDED_BY(mutex_);
 
   // Has a background compaction been scheduled or is running?
-  bool bg_compaction_scheduled_;
+  bool background_compaction_scheduled_ GUARDED_BY(mutex_);
 
   // Information for a manual compaction
   struct ManualCompaction {
@@ -166,12 +167,12 @@ class DBImpl : public DB {
     const InternalKey* end;     // NULL means end of key range
     InternalKey tmp_storage;    // Used to keep track of compaction progress
   };
-  ManualCompaction* manual_compaction_;
+  ManualCompaction* manual_compaction_ GUARDED_BY(mutex_);
 
-  VersionSet* versions_;
+  VersionSet* const versions_;
 
   // Have we encountered a background error in paranoid mode?
-  Status bg_error_;
+  Status bg_error_ GUARDED_BY(mutex_);
 
   // Per level compaction stats.  stats_[level] stores the stats for
   // compactions that produced data for the specified "level".
@@ -188,7 +189,7 @@ class DBImpl : public DB {
       this->bytes_written += c.bytes_written;
     }
   };
-  CompactionStats stats_[config::kNumLevels];
+  CompactionStats stats_[config::kNumLevels] GUARDED_BY(mutex_);
 
   // No copying allowed
   DBImpl(const DBImpl&);

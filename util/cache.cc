@@ -8,6 +8,7 @@
 
 #include "leveldb/cache.h"
 #include "port/port.h"
+#include "port/thread_annotations.h"
 #include "util/hash.h"
 #include "util/mutexlock.h"
 
@@ -174,25 +175,25 @@ class LRUCache {
   void LRU_Append(LRUHandle*list, LRUHandle* e);
   void Ref(LRUHandle* e);
   void Unref(LRUHandle* e);
-  bool FinishErase(LRUHandle* e);
+  bool FinishErase(LRUHandle* e) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
   // Initialized before use.
   size_t capacity_;
 
   // mutex_ protects the following state.
   mutable port::Mutex mutex_;
-  size_t usage_;
+  size_t usage_ GUARDED_BY(mutex_);
 
   // Dummy head of LRU list.
   // lru.prev is newest entry, lru.next is oldest entry.
   // Entries have refs==1 and in_cache==true.
-  LRUHandle lru_;
+  LRUHandle lru_ GUARDED_BY(mutex_);
 
   // Dummy head of in-use list.
   // Entries are in use by clients, and have refs >= 2 and in_cache==true.
-  LRUHandle in_use_;
+  LRUHandle in_use_ GUARDED_BY(mutex_);
 
-  HandleTable table_;
+  HandleTable table_ GUARDED_BY(mutex_);
 };
 
 LRUCache::LRUCache()
@@ -227,11 +228,12 @@ void LRUCache::Ref(LRUHandle* e) {
 void LRUCache::Unref(LRUHandle* e) {
   assert(e->refs > 0);
   e->refs--;
-  if (e->refs == 0) { // Deallocate.
+  if (e->refs == 0) {  // Deallocate.
     assert(!e->in_cache);
     (*e->deleter)(e->key(), e->value);
     free(e);
-  } else if (e->in_cache && e->refs == 1) {  // No longer in use; move to lru_ list.
+  } else if (e->in_cache && e->refs == 1) {
+    // No longer in use; move to lru_ list.
     LRU_Remove(e);
     LRU_Append(&lru_, e);
   }
