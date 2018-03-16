@@ -7,10 +7,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <sstream>
-#include "leveldb/env.h"
-#include "leveldb/slice.h"
-#include "util/random.h"
+
+#include "leveldb/status.h"
 
 namespace leveldb {
 namespace test {
@@ -74,10 +74,10 @@ class Tester {
     return *this;
   }
 
-#define BINARY_OP(name,op)                              \
+#define BINARY_OP(name, op)                             \
   template <class X, class Y>                           \
   Tester& name(const X& x, const Y& y) {                \
-    if (! (x op y)) {                                   \
+    if (!(x op y)) {                                    \
       ss_ << " failed: " << x << (" " #op " ") << y;    \
       ok_ = false;                                      \
     }                                                   \
@@ -111,21 +111,21 @@ class Tester {
 #define ASSERT_LE(a,b) ::leveldb::test::Tester(__FILE__, __LINE__).IsLe((a),(b))
 #define ASSERT_LT(a,b) ::leveldb::test::Tester(__FILE__, __LINE__).IsLt((a),(b))
 
-#define TCONCAT(a,b) TCONCAT1(a,b)
-#define TCONCAT1(a,b) a##b
+#define TCONCAT(a, b) TCONCAT1(a, b)
+#define TCONCAT1(a, b) a##b
 
-#define TEST(base,name)                                                 \
-class TCONCAT(_Test_,name) : public base {                              \
- public:                                                                \
-  void _Run();                                                          \
-  static void _RunIt() {                                                \
-    TCONCAT(_Test_,name) t;                                             \
-    t._Run();                                                           \
-  }                                                                     \
-};                                                                      \
-bool TCONCAT(_Test_ignored_,name) =                                     \
-  ::leveldb::test::RegisterTest(#base, #name, &TCONCAT(_Test_,name)::_RunIt); \
-void TCONCAT(_Test_,name)::_Run()
+#define TEST(base, name)                                                       \
+class TCONCAT(_Test_, name) : public base {                                    \
+ public:                                                                       \
+  void _Run();                                                                 \
+  static void _RunIt() {                                                       \
+    TCONCAT(_Test_, name) t;                                                   \
+    t._Run();                                                                  \
+  }                                                                            \
+};                                                                             \
+bool TCONCAT(_Test_ignored_, name) =                                           \
+  ::leveldb::test::RegisterTest(#base, #name, &TCONCAT(_Test_, name)::_RunIt); \
+void TCONCAT(_Test_, name)::_Run()
 
 // Register the specified test.  Typically not used directly, but
 // invoked via the macro expansion of TEST.

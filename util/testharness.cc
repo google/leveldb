@@ -4,10 +4,14 @@
 
 #include "util/testharness.h"
 
-#include <string>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include <string>
+#include <vector>
+
+#include "leveldb/env.h"
 
 namespace leveldb {
 namespace test {
