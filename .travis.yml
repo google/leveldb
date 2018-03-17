@@ -13,6 +13,10 @@ os:
   - linux
   - osx
 
+env:
+  - BUILD_TYPE=Debug
+  - BUILD_TYPE=RelWithDebInfo
+
 addons:
   apt:
     # List of whitelisted in travis packages for ubuntu-trusty can be found here:
@@ -23,6 +27,7 @@ addons:
     - ubuntu-toolchain-r-test
     - llvm-toolchain-trusty-5.0
     packages:
+    - cmake
     - gcc-7
     - g++-7
     - clang-5.0
@@ -49,6 +54,16 @@ install:
 - echo ${CC}
 - echo ${CXX}
 - ${CXX} --version
+- cmake --version
+
+before_script:
+- mkdir -p build && cd build
+- cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+- cmake --build .
+- cd ..
 
 script:
-- make -j 4 check
+- cd build ; ctest --verbose ; cd ..
+- "if [ -f build/db_bench ] ; then build/db_bench ; fi"
+- "if [ -f build/db_bench_sqlite3 ] ; then build/db_bench_sqlite3 ; fi"
+- "if [ -f build/db_bench_tree_db ] ; then build/db_bench_tree_db ; fi"

@@ -7,36 +7,22 @@
 #ifndef STORAGE_LEVELDB_PORT_PORT_POSIX_H_
 #define STORAGE_LEVELDB_PORT_PORT_POSIX_H_
 
-#undef PLATFORM_IS_LITTLE_ENDIAN
-#if defined(__APPLE__)
-  #include <machine/endian.h>
-  #if defined(__DARWIN_LITTLE_ENDIAN) && defined(__DARWIN_BYTE_ORDER)
-    #define PLATFORM_IS_LITTLE_ENDIAN \
-        (__DARWIN_BYTE_ORDER == __DARWIN_LITTLE_ENDIAN)
-  #endif
-#elif defined(OS_SOLARIS)
-  #include <sys/isa_defs.h>
-  #ifdef _LITTLE_ENDIAN
-    #define PLATFORM_IS_LITTLE_ENDIAN true
-  #else
-    #define PLATFORM_IS_LITTLE_ENDIAN false
-  #endif
-#elif defined(OS_FREEBSD) || defined(OS_OPENBSD) ||\
-      defined(OS_NETBSD) || defined(OS_DRAGONFLYBSD)
-  #include <sys/types.h>
-  #include <sys/endian.h>
-  #define PLATFORM_IS_LITTLE_ENDIAN (_BYTE_ORDER == _LITTLE_ENDIAN)
-#elif defined(OS_HPUX)
-  #define PLATFORM_IS_LITTLE_ENDIAN false
-#elif defined(OS_ANDROID)
-  // Due to a bug in the NDK x86 <sys/endian.h> definition,
-  // _BYTE_ORDER must be used instead of __BYTE_ORDER on Android.
-  // See http://code.google.com/p/android/issues/detail?id=39824
-  #include <endian.h>
-  #define PLATFORM_IS_LITTLE_ENDIAN  (_BYTE_ORDER == _LITTLE_ENDIAN)
-#else
-  #include <endian.h>
-#endif
+// port/port_config.h availability is automatically detected via __has_include
+// in newer compilers. If LEVELDB_HAS_PORT_CONFIG_H is defined, it overrides the
+// configuration detection.
+#if defined(LEVELDB_HAS_PORT_CONFIG_H)
+
+#if LEVELDB_HAS_PORT_CONFIG_H
+#include "port/port_config.h"
+#endif  // LEVELDB_HAS_PORT_CONFIG_H
+
+#elif defined(__has_include)
+
+#if __has_include("port/port_config.h")
+#include "port/port_config.h"
+#endif  // __has_include("port/port_config.h")
+
+#endif  // defined(LEVELDB_HAS_PORT_CONFIG_H)
 
 #include <pthread.h>
 #if HAVE_CRC32C
@@ -54,23 +40,14 @@
 #define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #endif
 
-#if defined(__APPLE__) || defined(OS_FREEBSD) ||\
-    defined(OS_OPENBSD) || defined(OS_DRAGONFLYBSD)
-// Use fsync() on platforms without fdatasync()
+#if !HAVE_FDATASYNC
 #define fdatasync fsync
-#endif
-
-#if defined(OS_ANDROID) && __ANDROID_API__ < 9
-// fdatasync() was only introduced in API level 9 on Android. Use fsync()
-// when targetting older platforms.
-#define fdatasync fsync
-#endif
+#endif  // !HAVE_FDATASYNC
 
 namespace leveldb {
 namespace port {
 
-static const bool kLittleEndian = PLATFORM_IS_LITTLE_ENDIAN;
-#undef PLATFORM_IS_LITTLE_ENDIAN
+static const bool kLittleEndian = !LEVELDB_IS_BIG_ENDIAN;
 
 class CondVar;
 
