@@ -6,6 +6,7 @@
 
 #include <string.h>
 
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -65,7 +66,7 @@ class FileState {
       return Status::OK();
     }
 
-    assert(offset / kBlockSize <= SIZE_MAX);
+    assert(offset / kBlockSize <= std::numeric_limits<size_t>::max());
     size_t block = static_cast<size_t>(offset / kBlockSize);
     size_t block_offset = offset % kBlockSize;
 
