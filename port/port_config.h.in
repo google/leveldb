@@ -26,11 +26,4 @@
 #cmakedefine01 LEVELDB_IS_BIG_ENDIAN
 #endif  // !defined(LEVELDB_IS_BIG_ENDIAN)
 
-// Define to 1 if you have the <atomic> header.
-// NOTE: <atomic> was standardized in C++11, which will be required to build
-// LevelDB soon.
-#if !defined(LEVELDB_ATOMIC_PRESENT)
-#cmakedefine01 LEVELDB_ATOMIC_PRESENT
-#endif  // !defined(LEVELDB_ATOMIC_PRESENT)
-
 #endif  // STORAGE_LEVELDB_PORT_PORT_CONFIG_H_

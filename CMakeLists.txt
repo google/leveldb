@@ -25,9 +25,6 @@ test_big_endian(LEVELDB_IS_BIG_ENDIAN)
 include(CheckIncludeFile)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
-include(CheckIncludeFileCXX)
-check_include_file_cxx("atomic" LEVELDB_ATOMIC_PRESENT)
-
 include(CheckLibraryExists)
 check_library_exists(crc32c crc32c_value "" HAVE_CRC32C)
 check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
