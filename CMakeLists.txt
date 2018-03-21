@@ -3,11 +3,16 @@
 # found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 cmake_minimum_required(VERSION 3.9)
-project(Leveldb VERSION 0.1.0 LANGUAGES C CXX)
+project(Leveldb VERSION 1.21.0 LANGUAGES C CXX)
 
-# This project can take advantage of C++11.
+# This project can use C11, but will gracefully decay down to C89.
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED OFF)
+set(CMAKE_C_EXTENSIONS OFF)
+
+# This project requires C++11.
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" ON)

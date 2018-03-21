@@ -31,6 +31,9 @@ class LEVELDB_EXPORT TableBuilder {
   // caller to close the file after calling Finish().
   TableBuilder(const Options& options, WritableFile* file);
 
+  TableBuilder(const TableBuilder&) = delete;
+  void operator=(const TableBuilder&) = delete;
+
   // REQUIRES: Either Finish() or Abandon() has been called.
   ~TableBuilder();
 
@@ -82,10 +85,6 @@ class LEVELDB_EXPORT TableBuilder {
 
   struct Rep;
   Rep* rep_;
-
-  // No copying allowed
-  TableBuilder(const TableBuilder&);
-  void operator=(const TableBuilder&);
 };
 
 }  // namespace leveldb

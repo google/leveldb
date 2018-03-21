@@ -53,7 +53,11 @@ class LEVELDB_EXPORT DB {
                      const std::string& name,
                      DB** dbptr);
 
-  DB() { }
+  DB() = default;
+
+  DB(const DB&) = delete;
+  DB& operator=(const DB&) = delete;
+
   virtual ~DB();
 
   // Set the database entry for "key" to "value".  Returns OK on success,
@@ -142,11 +146,6 @@ class LEVELDB_EXPORT DB {
   // Therefore the following call will compact the entire database:
   //    db->CompactRange(NULL, NULL);
   virtual void CompactRange(const Slice* begin, const Slice* end) = 0;
-
- private:
-  // No copying allowed
-  DB(const DB&);
-  void operator=(const DB&);
 };
 
 // Destroy the contents of the specified database.

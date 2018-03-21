@@ -41,6 +41,9 @@ class LEVELDB_EXPORT Table {
                      uint64_t file_size,
                      Table** table);
 
+  Table(const Table&) = delete;
+  void operator=(const Table&) = delete;
+
   ~Table();
 
   // Returns a new iterator over the table contents.
@@ -75,10 +78,6 @@ class LEVELDB_EXPORT Table {
 
   void ReadMeta(const Footer& footer);
   void ReadFilter(const Slice& filter_handle_value);
-
-  // No copying allowed
-  Table(const Table&);
-  void operator=(const Table&);
 };
 
 }  // namespace leveldb

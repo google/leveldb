@@ -32,7 +32,10 @@ LEVELDB_EXPORT Cache* NewLRUCache(size_t capacity);
 
 class LEVELDB_EXPORT Cache {
  public:
-  Cache() { }
+  Cache() = default;
+
+  Cache(const Cache&) = delete;
+  Cache& operator=(const Cache&) = delete;
 
   // Destroys all existing entries by calling the "deleter"
   // function that was passed to the constructor.
@@ -100,10 +103,6 @@ class LEVELDB_EXPORT Cache {
 
   struct Rep;
   Rep* rep_;
-
-  // No copying allowed
-  Cache(const Cache&);
-  void operator=(const Cache&);
 };
 
 }  // namespace leveldb

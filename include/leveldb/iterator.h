@@ -24,6 +24,10 @@ namespace leveldb {
 class LEVELDB_EXPORT Iterator {
  public:
   Iterator();
+
+  Iterator(const Iterator&) = delete;
+  Iterator& operator=(const Iterator&) = delete;
+
   virtual ~Iterator();
 
   // An iterator is either positioned at a key/value pair, or
@@ -84,10 +88,6 @@ class LEVELDB_EXPORT Iterator {
     Cleanup* next;
   };
   Cleanup cleanup_;
-
-  // No copying allowed
-  Iterator(const Iterator&);
-  void operator=(const Iterator&);
 };
 
 // Return an empty iterator (yields nothing).

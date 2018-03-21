@@ -32,6 +32,11 @@ class Slice;
 class LEVELDB_EXPORT WriteBatch {
  public:
   WriteBatch();
+
+  // Intentionally copyable.
+  WriteBatch(const WriteBatch&) = default;
+  WriteBatch& operator =(const WriteBatch&) = default;
+
   ~WriteBatch();
 
   // Store the mapping "key->value" in the database.
@@ -62,8 +67,6 @@ class LEVELDB_EXPORT WriteBatch {
   friend class WriteBatchInternal;
 
   std::string rep_;  // See comment in write_batch.cc for the format of rep_
-
-  // Intentionally copyable
 };
 
 }  // namespace leveldb
