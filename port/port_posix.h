@@ -36,6 +36,13 @@
 #include "port/atomic_pointer.h"
 #include "port/thread_annotations.h"
 
+#if defined(OS_MACOSX)
+  #include <machine/endian.h>
+  #if defined(__DARWIN_LITTLE_ENDIAN) && defined(__DARWIN_BYTE_ORDER)
+    #define PLATFORM_IS_LITTLE_ENDIAN \
+        (__DARWIN_BYTE_ORDER == __DARWIN_LITTLE_ENDIAN)
+  #endif
+#endif
 #ifndef PLATFORM_IS_LITTLE_ENDIAN
 #define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
 #endif
@@ -47,7 +54,11 @@
 namespace leveldb {
 namespace port {
 
+#ifdef LEVELDB_IS_BIG_ENDIAN
 static const bool kLittleEndian = !LEVELDB_IS_BIG_ENDIAN;
+#else
+static const bool kLittleEndian = PLATFORM_IS_LITTLE_ENDIAN;
+#endif
 
 class CondVar;
 
