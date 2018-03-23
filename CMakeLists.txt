@@ -3,7 +3,7 @@
 # found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 cmake_minimum_required(VERSION 3.9)
-project(Leveldb VERSION 1.21.0 LANGUAGES C CXX)
+project(leveldb VERSION 1.21.0 LANGUAGES C CXX)
 
 # This project can use C11, but will gracefully decay down to C89.
 set(CMAKE_C_STANDARD 11)
@@ -372,7 +372,7 @@ endif(LEVELDB_BUILD_BENCHMARKS)
 if(LEVELDB_INSTALL)
   include(GNUInstallDirs)
   install(TARGETS leveldb
-    EXPORT LeveldbTargets
+    EXPORT leveldbTargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -399,18 +399,18 @@ if(LEVELDB_INSTALL)
 
   include(CMakePackageConfigHelpers)
   write_basic_package_version_file(
-      "${PROJECT_BINARY_DIR}/LeveldbConfigVersion.cmake"
+      "${PROJECT_BINARY_DIR}/leveldbConfigVersion.cmake"
       COMPATIBILITY SameMajorVersion
   )
   install(
-    EXPORT LeveldbTargets
-    NAMESPACE Leveldb::
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Leveldb"
+    EXPORT leveldbTargets
+    NAMESPACE leveldb::
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/leveldb"
   )
   install(
     FILES
-      "${PROJECT_SOURCE_DIR}/cmake/LeveldbConfig.cmake"
-      "${PROJECT_BINARY_DIR}/LeveldbConfigVersion.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Leveldb"
+      "${PROJECT_SOURCE_DIR}/cmake/leveldbConfig.cmake"
+      "${PROJECT_BINARY_DIR}/leveldbConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/leveldb"
   )
 endif(LEVELDB_INSTALL)
