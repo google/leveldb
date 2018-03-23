@@ -11,6 +11,8 @@
 #include "leveldb/cache.h"
 #include "leveldb/env.h"
 #include "leveldb/table.h"
+#include "port/port.h"
+#include "port/thread_annotations.h"
 #include "util/hash.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
@@ -36,21 +38,21 @@ namespace {
 class AtomicCounter {
  private:
   port::Mutex mu_;
-  int count_;
+  int count_ GUARDED_BY(mu_);
  public:
   AtomicCounter() : count_(0) { }
   void Increment() {
     IncrementBy(1);
   }
-  void IncrementBy(int count) {
+  void IncrementBy(int count) LOCKS_EXCLUDED(mu_) {
     MutexLock l(&mu_);
     count_ += count;
   }
-  int Read() {
+  int Read() LOCKS_EXCLUDED(mu_) {
     MutexLock l(&mu_);
     return count_;
   }
-  void Reset() {
+  void Reset() LOCKS_EXCLUDED(mu_) {
     MutexLock l(&mu_);
     count_ = 0;
   }

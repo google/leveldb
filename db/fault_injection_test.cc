@@ -6,10 +6,10 @@
 // the last "sync". It then checks for data loss errors by purposely dropping
 // file data (or entire files) not protected by a "sync".
 
-#include "leveldb/db.h"
-
 #include <map>
 #include <set>
+
+#include "leveldb/db.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/log_format.h"
@@ -18,6 +18,8 @@
 #include "leveldb/env.h"
 #include "leveldb/table.h"
 #include "leveldb/write_batch.h"
+#include "port/port.h"
+#include "port/thread_annotations.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
 #include "util/testharness.h"
@@ -126,7 +128,8 @@ class TestWritableFile : public WritableFile {
 
 class FaultInjectionTestEnv : public EnvWrapper {
  public:
-  FaultInjectionTestEnv() : EnvWrapper(Env::Default()), filesystem_active_(true) {}
+  FaultInjectionTestEnv()
+      : EnvWrapper(Env::Default()), filesystem_active_(true) {}
   virtual ~FaultInjectionTestEnv() { }
   virtual Status NewWritableFile(const std::string& fname,
                                  WritableFile** result);
@@ -146,14 +149,20 @@ class FaultInjectionTestEnv : public EnvWrapper {
   // system reset. Setting to inactive will freeze our saved filesystem state so
   // that it will stop being recorded. It can then be reset back to the state at
   // the time of the reset.
-  bool IsFilesystemActive() const { return filesystem_active_; }
-  void SetFilesystemActive(bool active) { filesystem_active_ = active; }
+  bool IsFilesystemActive() LOCKS_EXCLUDED(mutex_) {
+    MutexLock l(&mutex_);
+    return filesystem_active_;
+  }
+  void SetFilesystemActive(bool active) LOCKS_EXCLUDED(mutex_) {
+    MutexLock l(&mutex_);
+    filesystem_active_ = active;
+  }
 
  private:
   port::Mutex mutex_;
-  std::map<std::string, FileState> db_file_state_;
-  std::set<std::string> new_files_since_last_dir_sync_;
-  bool filesystem_active_;  // Record flushes, syncs, writes
+  std::map<std::string, FileState> db_file_state_ GUARDED_BY(mutex_);
+  std::set<std::string> new_files_since_last_dir_sync_ GUARDED_BY(mutex_);
+  bool filesystem_active_ GUARDED_BY(mutex_);  // Record flushes, syncs, writes
 };
 
 TestWritableFile::TestWritableFile(const FileState& state,
@@ -328,7 +337,6 @@ void FaultInjectionTestEnv::ResetState() {
   // Since we are not destroying the database, the existing files
   // should keep their recorded synced/flushed state. Therefore
   // we do not reset db_file_state_ and new_files_since_last_dir_sync_.
-  MutexLock l(&mutex_);
   SetFilesystemActive(true);
 }
 

@@ -7,6 +7,8 @@
 #include <algorithm>
 
 #include "port/port.h"
+#include "port/thread_annotations.h"
+#include "util/mutexlock.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
 
@@ -17,10 +19,6 @@ static const int kReadOnlyFileLimit = 4;
 static const int kMMapLimit = 4;
 
 class EnvTest {
- private:
-  port::Mutex mu_;
-  std::string events_;
-
  public:
   Env* env_;
   EnvTest() : env_(Env::Default()) { }
@@ -119,8 +117,10 @@ TEST(EnvTest, RunMany) {
 
 struct State {
   port::Mutex mu;
-  int val;
-  int num_running;
+  int val GUARDED_BY(mu);
+  int num_running GUARDED_BY(mu);
+
+  State(int val, int num_running) : val(val), num_running(num_running) { }
 };
 
 static void ThreadBody(void* arg) {
@@ -132,9 +132,7 @@ static void ThreadBody(void* arg) {
 }
 
 TEST(EnvTest, StartThread) {
-  State state;
-  state.val = 0;
-  state.num_running = 3;
+  State state(0, 3);
   for (int i = 0; i < 3; i++) {
     env_->StartThread(&ThreadBody, &state);
   }
@@ -147,6 +145,8 @@ TEST(EnvTest, StartThread) {
     }
     env_->SleepForMicroseconds(kDelayMicros);
   }
+
+  MutexLock l(&state.mu);
   ASSERT_EQ(state.val, 3);
 }
 

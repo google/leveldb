@@ -5,6 +5,8 @@
 #include "db/skiplist.h"
 #include <set>
 #include "leveldb/env.h"
+#include "port/port.h"
+#include "port/thread_annotations.h"
 #include "util/arena.h"
 #include "util/hash.h"
 #include "util/random.h"
@@ -312,7 +314,7 @@ class TestState {
         state_(STARTING),
         state_cv_(&mu_) {}
 
-  void Wait(ReaderState s) {
+  void Wait(ReaderState s) LOCKS_EXCLUDED(mu_) {
     mu_.Lock();
     while (state_ != s) {
       state_cv_.Wait();
@@ -320,7 +322,7 @@ class TestState {
     mu_.Unlock();
   }
 
-  void Change(ReaderState s) {
+  void Change(ReaderState s) LOCKS_EXCLUDED(mu_) {
     mu_.Lock();
     state_ = s;
     state_cv_.Signal();
@@ -329,8 +331,8 @@ class TestState {
 
  private:
   port::Mutex mu_;
-  ReaderState state_;
-  port::CondVar state_cv_;
+  ReaderState state_ GUARDED_BY(mu_);
+  port::CondVar state_cv_ GUARDED_BY(mu_);
 };
 
 static void ConcurrentReader(void* arg) {

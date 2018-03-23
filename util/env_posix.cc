@@ -22,6 +22,7 @@
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
 #include "port/port.h"
+#include "port/thread_annotations.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
 #include "util/posix_logger.h"
@@ -57,7 +58,7 @@ class Limiter {
 
   // If another resource is available, acquire it and return true.
   // Else return false.
-  bool Acquire() {
+  bool Acquire() LOCKS_EXCLUDED(mu_) {
     if (GetAllowed() <= 0) {
       return false;
     }
@@ -73,7 +74,7 @@ class Limiter {
 
   // Release a resource acquired by a previous call to Acquire() that returned
   // true.
-  void Release() {
+  void Release() LOCKS_EXCLUDED(mu_) {
     MutexLock l(&mu_);
     SetAllowed(GetAllowed() + 1);
   }
@@ -86,8 +87,7 @@ class Limiter {
     return reinterpret_cast<intptr_t>(allowed_.Acquire_Load());
   }
 
-  // REQUIRES: mu_ must be held
-  void SetAllowed(intptr_t v) {
+  void SetAllowed(intptr_t v) EXCLUSIVE_LOCKS_REQUIRED(mu_) {
     allowed_.Release_Store(reinterpret_cast<void*>(v));
   }
 
@@ -365,13 +365,13 @@ class PosixFileLock : public FileLock {
 class PosixLockTable {
  private:
   port::Mutex mu_;
-  std::set<std::string> locked_files_;
+  std::set<std::string> locked_files_ GUARDED_BY(mu_);
  public:
-  bool Insert(const std::string& fname) {
+  bool Insert(const std::string& fname) LOCKS_EXCLUDED(mu_) {
     MutexLock l(&mu_);
     return locked_files_.insert(fname).second;
   }
-  void Remove(const std::string& fname) {
+  void Remove(const std::string& fname) LOCKS_EXCLUDED(mu_) {
     MutexLock l(&mu_);
     locked_files_.erase(fname);
   }

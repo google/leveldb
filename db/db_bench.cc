@@ -282,8 +282,8 @@ class Stats {
 // State shared by all concurrent executions of the same benchmark.
 struct SharedState {
   port::Mutex mu;
-  port::CondVar cv;
-  int total;
+  port::CondVar cv GUARDED_BY(mu);
+  int total GUARDED_BY(mu);
 
   // Each thread goes through the following states:
   //    (1) initializing
@@ -291,11 +291,12 @@ struct SharedState {
   //    (3) running
   //    (4) done
 
-  int num_initialized;
-  int num_done;
-  bool start;
+  int num_initialized GUARDED_BY(mu);
+  int num_done GUARDED_BY(mu);
+  bool start GUARDED_BY(mu);
 
-  SharedState() : cv(&mu) { }
+  SharedState(int total)
+      : cv(&mu), total(total), num_initialized(0), num_done(0), start(false) { }
 };
 
 // Per-thread state for concurrent executions of the same benchmark.
@@ -584,11 +585,7 @@ class Benchmark {
 
   void RunBenchmark(int n, Slice name,
                     void (Benchmark::*method)(ThreadState*)) {
-    SharedState shared;
-    shared.total = n;
-    shared.num_initialized = 0;
-    shared.num_done = 0;
-    shared.start = false;
+    SharedState shared(n);
 
     ThreadArg* arg = new ThreadArg[n];
     for (int i = 0; i < n; i++) {

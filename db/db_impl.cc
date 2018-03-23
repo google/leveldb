@@ -1053,11 +1053,15 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 }
 
 namespace {
+
 struct IterState {
-  port::Mutex* mu;
-  Version* version;
-  MemTable* mem;
-  MemTable* imm;
+  port::Mutex* const mu;
+  Version* const version GUARDED_BY(mu);
+  MemTable* const mem GUARDED_BY(mu);
+  MemTable* const imm GUARDED_BY(mu);
+
+  IterState(port::Mutex* mutex, MemTable* mem, MemTable* imm, Version* version)
+      : mu(mutex), version(version), mem(mem), imm(imm) { }
 };
 
 static void CleanupIteratorState(void* arg1, void* arg2) {
@@ -1069,12 +1073,12 @@ static void CleanupIteratorState(void* arg1, void* arg2) {
   state->mu->Unlock();
   delete state;
 }
-}  // namespace
+
+}  // anonymous namespace
 
 Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
                                       SequenceNumber* latest_snapshot,
                                       uint32_t* seed) {
-  IterState* cleanup = new IterState;
   mutex_.Lock();
   *latest_snapshot = versions_->LastSequence();
 
@@ -1091,10 +1095,7 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
       NewMergingIterator(&internal_comparator_, &list[0], list.size());
   versions_->current()->Ref();
 
-  cleanup->mu = &mutex_;
-  cleanup->mem = mem_;
-  cleanup->imm = imm_;
-  cleanup->version = versions_->current();
+  IterState* cleanup = new IterState(&mutex_, mem_, imm_, versions_->current());
   internal_iter->RegisterCleanup(CleanupIteratorState, cleanup, NULL);
 
   *seed = ++seed_;
