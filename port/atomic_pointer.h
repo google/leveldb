@@ -38,6 +38,8 @@
 #define ARCH_CPU_PPC_FAMILY 1
 #elif defined(__mips__)
 #define ARCH_CPU_MIPS_FAMILY 1
+#elif defined(__s390__) || defined(__s390x__)
+#define ARCH_CPU_S390_FAMILY 1
 #endif
 
 namespace leveldb {
@@ -116,6 +118,12 @@ inline void MemoryBarrier() {
 }
 #define LEVELDB_HAVE_MEMORY_BARRIER
 
+#elif defined(ARCH_CPU_S390_FAMILY) && defined(__linux__)
+inline void MemoryBarrier() {
+  __asm__ __volatile__("" : : : "memory");
+}
+#define LEVELDB_HAVE_MEMORY_BARRIER
+
 #endif
 
 // AtomicPointer built using platform-specific MemoryBarrier().
@@ -168,6 +176,7 @@ class AtomicPointer {
 #undef ARCH_CPU_ARM_FAMILY
 #undef ARCH_CPU_ARM64_FAMILY
 #undef ARCH_CPU_PPC_FAMILY
+#undef ARCH_CPU_S390_FAMILY
 
 }  // namespace port
 }  // namespace leveldb
