@@ -53,6 +53,14 @@ int main() { return 0; }
 "  HAVE_CLANG_THREAD_SAFETY)
 set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
 
+# Test whether C++17 __has_include is available.
+check_cxx_source_compiles("
+#if defined(__has_include) &&  __has_include(<string>)
+#include <string>
+#endif
+int main() { std::string str; return 0; }
+" HAVE_CXX17_HAS_INCLUDE)
+
 set(LEVELDB_PUBLIC_INCLUDE_DIR "include/leveldb")
 set(LEVELDB_PORT_CONFIG_DIR "include/port")
 
@@ -85,6 +93,12 @@ target_sources(leveldb_port_posix
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/port/port_posix.h>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/port/port.h>
 )
+if (NOT HAVE_CXX17_HAS_INCLUDE)
+  target_compile_definitions(leveldb_port_posix
+    PRIVATE
+      LEVELDB_HAS_PORT_CONFIG_H=1
+  )
+endif(NOT HAVE_CXX17_HAS_INCLUDE)
 if(BUILD_SHARED_LIBS)
   set_property(TARGET leveldb_port_posix PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif(BUILD_SHARED_LIBS)
@@ -199,6 +213,13 @@ target_compile_definitions(leveldb
     # Used by port/port.h.
     LEVELDB_PLATFORM_POSIX=1
 )
+if (NOT HAVE_CXX17_HAS_INCLUDE)
+  target_compile_definitions(leveldb
+    PRIVATE
+      LEVELDB_HAS_PORT_CONFIG_H=1
+  )
+endif(NOT HAVE_CXX17_HAS_INCLUDE)
+
 if(BUILD_SHARED_LIBS)
   target_compile_definitions(leveldb
     PUBLIC
@@ -263,6 +284,12 @@ if(LEVELDB_BUILD_TESTS)
       PRIVATE
         LEVELDB_PLATFORM_POSIX=1
     )
+    if (NOT HAVE_CXX17_HAS_INCLUDE)
+      target_compile_definitions("${test_target_name}"
+        PRIVATE
+          LEVELDB_HAS_PORT_CONFIG_H=1
+      )
+    endif(NOT HAVE_CXX17_HAS_INCLUDE)
 
     add_test(NAME "${test_target_name}" COMMAND "${test_target_name}")
   endfunction(leveldb_test)
@@ -336,6 +363,12 @@ if(LEVELDB_BUILD_BENCHMARKS)
       PRIVATE
         LEVELDB_PLATFORM_POSIX=1
     )
+    if (NOT HAVE_CXX17_HAS_INCLUDE)
+      target_compile_definitions("${bench_target_name}"
+        PRIVATE
+          LEVELDB_HAS_PORT_CONFIG_H=1
+      )
+    endif(NOT HAVE_CXX17_HAS_INCLUDE)
   endfunction(leveldb_benchmark)
 
   if(NOT BUILD_SHARED_LIBS)
