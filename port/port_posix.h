@@ -36,10 +36,6 @@
 #include "port/atomic_pointer.h"
 #include "port/thread_annotations.h"
 
-#ifndef PLATFORM_IS_LITTLE_ENDIAN
-#define PLATFORM_IS_LITTLE_ENDIAN (__BYTE_ORDER == __LITTLE_ENDIAN)
-#endif
-
 #if !HAVE_FDATASYNC
 #define fdatasync fsync
 #endif  // !HAVE_FDATASYNC
