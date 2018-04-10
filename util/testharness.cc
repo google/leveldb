@@ -26,7 +26,7 @@ std::vector<Test>* tests;
 }
 
 bool RegisterTest(const char* base, const char* name, void (*func)()) {
-  if (tests == NULL) {
+  if (tests == nullptr) {
     tests = new std::vector<Test>;
   }
   Test t;
@@ -41,14 +41,14 @@ int RunAllTests() {
   const char* matcher = getenv("LEVELDB_TESTS");
 
   int num = 0;
-  if (tests != NULL) {
+  if (tests != nullptr) {
     for (size_t i = 0; i < tests->size(); i++) {
       const Test& t = (*tests)[i];
-      if (matcher != NULL) {
+      if (matcher != nullptr) {
         std::string name = t.base;
         name.push_back('.');
         name.append(t.name);
-        if (strstr(name.c_str(), matcher) == NULL) {
+        if (strstr(name.c_str(), matcher) == nullptr) {
           continue;
         }
       }
@@ -70,7 +70,7 @@ std::string TmpDir() {
 
 int RandomSeed() {
   const char* env = getenv("TEST_RANDOM_SEED");
-  int result = (env != NULL ? atoi(env) : 301);
+  int result = (env != nullptr ? atoi(env) : 301);
   if (result <= 0) {
     result = 301;
   }

@@ -227,7 +227,7 @@ class Repairer {
     status = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     delete iter;
     mem->Unref();
-    mem = NULL;
+    mem = nullptr;
     if (status.ok()) {
       if (meta.file_size > 0) {
         table_numbers_.push_back(meta.number);
@@ -350,13 +350,13 @@ class Repairer {
       }
     }
     delete builder;
-    builder = NULL;
+    builder = nullptr;
 
     if (s.ok()) {
       s = file->Close();
     }
     delete file;
-    file = NULL;
+    file = nullptr;
 
     if (counter > 0 && s.ok()) {
       std::string orig = TableFileName(dbname_, t.meta.number);
@@ -410,7 +410,7 @@ class Repairer {
       status = file->Close();
     }
     delete file;
-    file = NULL;
+    file = nullptr;
 
     if (!status.ok()) {
       env_->DeleteFile(tmp);
@@ -438,14 +438,14 @@ class Repairer {
     //    dir/lost/foo
     const char* slash = strrchr(fname.c_str(), '/');
     std::string new_dir;
-    if (slash != NULL) {
+    if (slash != nullptr) {
       new_dir.assign(fname.data(), slash - fname.data());
     }
     new_dir.append("/lost");
     env_->CreateDir(new_dir);  // Ignore error
     std::string new_file = new_dir;
     new_file.append("/");
-    new_file.append((slash == NULL) ? fname.c_str() : slash + 1);
+    new_file.append((slash == nullptr) ? fname.c_str() : slash + 1);
     Status s = env_->RenameFile(fname, new_file);
     Log(options_.info_log, "Archiving %s: %s\n",
         fname.c_str(), s.ToString().c_str());

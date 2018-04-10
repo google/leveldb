@@ -109,7 +109,7 @@ static bool GetLevel(Slice* input, int* level) {
 Status VersionEdit::DecodeFrom(const Slice& src) {
   Clear();
   Slice input = src;
-  const char* msg = NULL;
+  const char* msg = nullptr;
   uint32_t tag;
 
   // Temporary storage for parsing
@@ -119,7 +119,7 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
   Slice str;
   InternalKey key;
 
-  while (msg == NULL && GetVarint32(&input, &tag)) {
+  while (msg == nullptr && GetVarint32(&input, &tag)) {
     switch (tag) {
       case kComparator:
         if (GetLengthPrefixedSlice(&input, &str)) {
@@ -198,12 +198,12 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
     }
   }
 
-  if (msg == NULL && !input.empty()) {
+  if (msg == nullptr && !input.empty()) {
     msg = "invalid tag";
   }
 
   Status result;
-  if (msg != NULL) {
+  if (msg != nullptr) {
     result = Status::Corruption("VersionEdit", msg);
   }
   return result;

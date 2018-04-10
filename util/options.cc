@@ -15,16 +15,16 @@ Options::Options()
       error_if_exists(false),
       paranoid_checks(false),
       env(Env::Default()),
-      info_log(NULL),
+      info_log(nullptr),
       write_buffer_size(4<<20),
       max_open_files(1000),
-      block_cache(NULL),
+      block_cache(nullptr),
       block_size(4096),
       block_restart_interval(16),
       max_file_size(2<<20),
       compression(kSnappyCompression),
       reuse_logs(false),
-      filter_policy(NULL) {
+      filter_policy(nullptr) {
 }
 
 }  // namespace leveldb

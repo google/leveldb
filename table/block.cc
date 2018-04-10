@@ -48,13 +48,13 @@ Block::~Block() {
 // and the length of the value in "*shared", "*non_shared", and
 // "*value_length", respectively.  Will not dereference past "limit".
 //
-// If any errors are detected, returns NULL.  Otherwise, returns a
+// If any errors are detected, returns nullptr.  Otherwise, returns a
 // pointer to the key delta (just past the three decoded values).
 static inline const char* DecodeEntry(const char* p, const char* limit,
                                       uint32_t* shared,
                                       uint32_t* non_shared,
                                       uint32_t* value_length) {
-  if (limit - p < 3) return NULL;
+  if (limit - p < 3) return nullptr;
   *shared = reinterpret_cast<const unsigned char*>(p)[0];
   *non_shared = reinterpret_cast<const unsigned char*>(p)[1];
   *value_length = reinterpret_cast<const unsigned char*>(p)[2];
@@ -62,13 +62,13 @@ static inline const char* DecodeEntry(const char* p, const char* limit,
     // Fast path: all three values are encoded in one byte each
     p += 3;
   } else {
-    if ((p = GetVarint32Ptr(p, limit, shared)) == NULL) return NULL;
-    if ((p = GetVarint32Ptr(p, limit, non_shared)) == NULL) return NULL;
-    if ((p = GetVarint32Ptr(p, limit, value_length)) == NULL) return NULL;
+    if ((p = GetVarint32Ptr(p, limit, shared)) == nullptr) return nullptr;
+    if ((p = GetVarint32Ptr(p, limit, non_shared)) == nullptr) return nullptr;
+    if ((p = GetVarint32Ptr(p, limit, value_length)) == nullptr) return nullptr;
   }
 
   if (static_cast<uint32_t>(limit - p) < (*non_shared + *value_length)) {
-    return NULL;
+    return nullptr;
   }
   return p;
 }
@@ -174,7 +174,7 @@ class Block::Iter : public Iterator {
       const char* key_ptr = DecodeEntry(data_ + region_offset,
                                         data_ + restarts_,
                                         &shared, &non_shared, &value_length);
-      if (key_ptr == NULL || (shared != 0)) {
+      if (key_ptr == nullptr || (shared != 0)) {
         CorruptionError();
         return;
       }
@@ -237,7 +237,7 @@ class Block::Iter : public Iterator {
     // Decode next entry
     uint32_t shared, non_shared, value_length;
     p = DecodeEntry(p, limit, &shared, &non_shared, &value_length);
-    if (p == NULL || key_.size() < shared) {
+    if (p == nullptr || key_.size() < shared) {
       CorruptionError();
       return false;
     } else {

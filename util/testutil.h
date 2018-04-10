@@ -40,7 +40,7 @@ class ErrorEnv : public EnvWrapper {
                                  WritableFile** result) {
     if (writable_file_error_) {
       ++num_writable_file_errors_;
-      *result = NULL;
+      *result = nullptr;
       return Status::IOError(fname, "fake error");
     }
     return target()->NewWritableFile(fname, result);
@@ -50,7 +50,7 @@ class ErrorEnv : public EnvWrapper {
                                    WritableFile** result) {
     if (writable_file_error_) {
       ++num_writable_file_errors_;
-      *result = NULL;
+      *result = nullptr;
       return Status::IOError(fname, "fake error");
     }
     return target()->NewAppendableFile(fname, result);

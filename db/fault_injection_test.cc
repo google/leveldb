@@ -172,7 +172,7 @@ TestWritableFile::TestWritableFile(const FileState& state,
       target_(f),
       writable_file_opened_(true),
       env_(env) {
-  assert(f != NULL);
+  assert(f != nullptr);
 }
 
 TestWritableFile::~TestWritableFile() {
@@ -378,7 +378,7 @@ class FaultInjectionTest {
   FaultInjectionTest()
       : env_(new FaultInjectionTestEnv),
         tiny_cache_(NewLRUCache(100)),
-        db_(NULL) {
+        db_(nullptr) {
     dbname_ = test::TmpDir() + "/fault_test";
     DestroyDB(dbname_, Options());  // Destroy any db from earlier run
     options_.reuse_logs = true;
@@ -457,14 +457,14 @@ class FaultInjectionTest {
 
   Status OpenDB() {
     delete db_;
-    db_ = NULL;
+    db_ = nullptr;
     env_->ResetState();
     return DB::Open(options_, dbname_, &db_);
   }
 
   void CloseDB() {
     delete db_;
-    db_ = NULL;
+    db_ = nullptr;
   }
 
   void DeleteAllData() {
@@ -493,7 +493,7 @@ class FaultInjectionTest {
   void PartialCompactTestPreFault(int num_pre_sync, int num_post_sync) {
     DeleteAllData();
     Build(0, num_pre_sync);
-    db_->CompactRange(NULL, NULL);
+    db_->CompactRange(nullptr, nullptr);
     Build(num_pre_sync, num_post_sync);
   }
 

@@ -34,7 +34,7 @@ Status::Status(Code code, const Slice& msg, const Slice& msg2) {
 }
 
 std::string Status::ToString() const {
-  if (state_ == NULL) {
+  if (state_ == nullptr) {
     return "OK";
   } else {
     char tmp[30];

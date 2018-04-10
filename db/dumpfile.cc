@@ -145,8 +145,8 @@ Status DumpDescriptor(Env* env, const std::string& fname, WritableFile* dst) {
 
 Status DumpTable(Env* env, const std::string& fname, WritableFile* dst) {
   uint64_t file_size;
-  RandomAccessFile* file = NULL;
-  Table* table = NULL;
+  RandomAccessFile* file = nullptr;
+  Table* table = nullptr;
   Status s = env->GetFileSize(fname, &file_size);
   if (s.ok()) {
     s = env->NewRandomAccessFile(fname, &file);

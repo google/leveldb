@@ -18,7 +18,7 @@ static void PthreadCall(const char* label, int result) {
   }
 }
 
-Mutex::Mutex() { PthreadCall("init mutex", pthread_mutex_init(&mu_, NULL)); }
+Mutex::Mutex() { PthreadCall("init mutex", pthread_mutex_init(&mu_, nullptr)); }
 
 Mutex::~Mutex() { PthreadCall("destroy mutex", pthread_mutex_destroy(&mu_)); }
 
@@ -28,7 +28,7 @@ void Mutex::Unlock() { PthreadCall("unlock", pthread_mutex_unlock(&mu_)); }
 
 CondVar::CondVar(Mutex* mu)
     : mu_(mu) {
-    PthreadCall("init cv", pthread_cond_init(&cv_, NULL));
+    PthreadCall("init cv", pthread_cond_init(&cv_, nullptr));
 }
 
 CondVar::~CondVar() { PthreadCall("destroy cv", pthread_cond_destroy(&cv_)); }

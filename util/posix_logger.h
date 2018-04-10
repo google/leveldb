@@ -45,7 +45,7 @@ class PosixLogger : public Logger {
       char* limit = base + bufsize;
 
       struct timeval now_tv;
-      gettimeofday(&now_tv, NULL);
+      gettimeofday(&now_tv, nullptr);
       const time_t seconds = now_tv.tv_sec;
       struct tm t;
       localtime_r(&seconds, &t);

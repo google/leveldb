@@ -56,7 +56,7 @@ class LEVELDB_EXPORT Cache {
   virtual Handle* Insert(const Slice& key, void* value, size_t charge,
                          void (*deleter)(const Slice& key, void* value)) = 0;
 
-  // If the cache has no mapping for "key", returns NULL.
+  // If the cache has no mapping for "key", returns nullptr.
   //
   // Else return a handle that corresponds to the mapping.  The caller
   // must call this->Release(handle) when the returned mapping is no

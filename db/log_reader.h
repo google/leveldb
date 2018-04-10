@@ -32,7 +32,7 @@ class Reader {
   // Create a reader that will return log records from "*file".
   // "*file" must remain live while this Reader is in use.
   //
-  // If "reporter" is non-NULL, it is notified whenever some data is
+  // If "reporter" is non-null, it is notified whenever some data is
   // dropped due to a detected corruption.  "*reporter" must remain
   // live while this Reader is in use.
   //

@@ -45,8 +45,8 @@ int FindFile(const InternalKeyComparator& icmp,
 
 // Returns true iff some file in "files" overlaps the user key range
 // [*smallest,*largest].
-// smallest==NULL represents a key smaller than all keys in the DB.
-// largest==NULL represents a key largest than all keys in the DB.
+// smallest==nullptr represents a key smaller than all keys in the DB.
+// largest==nullptr represents a key largest than all keys in the DB.
 // REQUIRES: If disjoint_sorted_files, files[] contains disjoint ranges
 //           in sorted order.
 bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
@@ -90,14 +90,14 @@ class Version {
 
   void GetOverlappingInputs(
       int level,
-      const InternalKey* begin,         // NULL means before all keys
-      const InternalKey* end,           // NULL means after all keys
+      const InternalKey* begin,         // nullptr means before all keys
+      const InternalKey* end,           // nullptr means after all keys
       std::vector<FileMetaData*>* inputs);
 
   // Returns true iff some file in the specified level overlaps
   // some part of [*smallest_user_key,*largest_user_key].
-  // smallest_user_key==NULL represents a key smaller than all keys in the DB.
-  // largest_user_key==NULL represents a key largest than all keys in the DB.
+  // smallest_user_key==nullptr represents a key smaller than all the DB's keys.
+  // largest_user_key==nullptr represents a key largest than all the DB's keys.
   bool OverlapInLevel(int level,
                       const Slice* smallest_user_key,
                       const Slice* largest_user_key);
@@ -148,7 +148,7 @@ class Version {
 
   explicit Version(VersionSet* vset)
       : vset_(vset), next_(this), prev_(this), refs_(0),
-        file_to_compact_(NULL),
+        file_to_compact_(nullptr),
         file_to_compact_level_(-1),
         compaction_score_(-1),
         compaction_level_(-1) {
@@ -224,13 +224,13 @@ class VersionSet {
   uint64_t PrevLogNumber() const { return prev_log_number_; }
 
   // Pick level and inputs for a new compaction.
-  // Returns NULL if there is no compaction to be done.
+  // Returns nullptr if there is no compaction to be done.
   // Otherwise returns a pointer to a heap-allocated object that
   // describes the compaction.  Caller should delete the result.
   Compaction* PickCompaction();
 
   // Return a compaction object for compacting the range [begin,end] in
-  // the specified level.  Returns NULL if there is nothing in that
+  // the specified level.  Returns nullptr if there is nothing in that
   // level that overlaps the specified range.  Caller should delete
   // the result.
   Compaction* CompactRange(
@@ -249,7 +249,7 @@ class VersionSet {
   // Returns true iff some level needs a compaction.
   bool NeedsCompaction() const {
     Version* v = current_;
-    return (v->compaction_score_ >= 1) || (v->file_to_compact_ != NULL);
+    return (v->compaction_score_ >= 1) || (v->file_to_compact_ != nullptr);
   }
 
   // Add all files listed in any live version to *live.

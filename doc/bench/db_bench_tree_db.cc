@@ -69,7 +69,7 @@ static bool FLAGS_use_existing_db = false;
 static bool FLAGS_compression = true;
 
 // Use the db with the following name.
-static const char* FLAGS_db = NULL;
+static const char* FLAGS_db = nullptr;
 
 inline
 static void DBSynchronize(kyotocabinet::TreeDB* db_)
@@ -183,18 +183,18 @@ class Benchmark {
             kyotocabinet::VERSION, kyotocabinet::LIBVER, kyotocabinet::LIBREV);
 
 #if defined(__linux)
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     fprintf(stderr, "Date:           %s", ctime(&now));  // ctime() adds newline
 
     FILE* cpuinfo = fopen("/proc/cpuinfo", "r");
-    if (cpuinfo != NULL) {
+    if (cpuinfo != nullptr) {
       char line[1000];
       int num_cpus = 0;
       std::string cpu_type;
       std::string cache_size;
-      while (fgets(line, sizeof(line), cpuinfo) != NULL) {
+      while (fgets(line, sizeof(line), cpuinfo) != nullptr) {
         const char* sep = strchr(line, ':');
-        if (sep == NULL) {
+        if (sep == nullptr) {
           continue;
         }
         Slice key = TrimSpace(Slice(line, sep - 1 - line));
@@ -289,7 +289,7 @@ class Benchmark {
   };
 
   Benchmark()
-  : db_(NULL),
+  : db_(nullptr),
     num_(FLAGS_num),
     reads_(FLAGS_reads < 0 ? FLAGS_num : FLAGS_reads),
     bytes_(0),
@@ -321,12 +321,12 @@ class Benchmark {
     Open(false);
 
     const char* benchmarks = FLAGS_benchmarks;
-    while (benchmarks != NULL) {
+    while (benchmarks != nullptr) {
       const char* sep = strchr(benchmarks, ',');
       Slice name;
-      if (sep == NULL) {
+      if (sep == nullptr) {
         name = benchmarks;
-        benchmarks = NULL;
+        benchmarks = nullptr;
       } else {
         name = Slice(benchmarks, sep - benchmarks);
         benchmarks = sep + 1;
@@ -387,7 +387,7 @@ class Benchmark {
 
  private:
     void Open(bool sync) {
-    assert(db_ == NULL);
+    assert(db_ == nullptr);
 
     // Initialize db_
     db_ = new kyotocabinet::TreeDB();
@@ -430,7 +430,7 @@ class Benchmark {
         return;
       }
       delete db_;
-      db_ = NULL;
+      db_ = nullptr;
       Open(sync);
       Start();  // Do not count time taken to destroy/open
     }
@@ -516,7 +516,7 @@ int main(int argc, char** argv) {
   }
 
   // Choose a location for the test database if none given with --db=<path>
-  if (FLAGS_db == NULL) {
+  if (FLAGS_db == nullptr) {
       leveldb::Env::Default()->GetTestDirectory(&default_db_path);
       default_db_path += "/dbbench";
       FLAGS_db = default_db_path.c_str();

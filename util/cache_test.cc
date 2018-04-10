@@ -47,8 +47,8 @@ class CacheTest {
 
   int Lookup(int key) {
     Cache::Handle* handle = cache_->Lookup(EncodeKey(key));
-    const int r = (handle == NULL) ? -1 : DecodeValue(cache_->Value(handle));
-    if (handle != NULL) {
+    const int r = (handle == nullptr) ? -1 : DecodeValue(cache_->Value(handle));
+    if (handle != nullptr) {
       cache_->Release(handle);
     }
     return r;

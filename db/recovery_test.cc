@@ -17,7 +17,7 @@ namespace leveldb {
 
 class RecoveryTest {
  public:
-  RecoveryTest() : env_(Env::Default()), db_(NULL) {
+  RecoveryTest() : env_(Env::Default()), db_(nullptr) {
     dbname_ = test::TmpDir() + "/recovery_test";
     DestroyDB(dbname_, Options());
     Open();
@@ -44,25 +44,25 @@ class RecoveryTest {
 
   void Close() {
     delete db_;
-    db_ = NULL;
+    db_ = nullptr;
   }
 
-  Status OpenWithStatus(Options* options = NULL) {
+  Status OpenWithStatus(Options* options = nullptr) {
     Close();
     Options opts;
-    if (options != NULL) {
+    if (options != nullptr) {
       opts = *options;
     } else {
       opts.reuse_logs = true;  // TODO(sanjay): test both ways
       opts.create_if_missing = true;
     }
-    if (opts.env == NULL) {
+    if (opts.env == nullptr) {
       opts.env = env_;
     }
     return DB::Open(opts, dbname_, &db_);
   }
 
-  void Open(Options* options = NULL) {
+  void Open(Options* options = nullptr) {
     ASSERT_OK(OpenWithStatus(options));
     ASSERT_EQ(1, NumLogs());
   }
@@ -71,7 +71,7 @@ class RecoveryTest {
     return db_->Put(WriteOptions(), k, v);
   }
 
-  std::string Get(const std::string& k, const Snapshot* snapshot = NULL) {
+  std::string Get(const std::string& k, const Snapshot* snapshot = nullptr) {
     std::string result;
     Status s = db_->Get(ReadOptions(), k, &result);
     if (s.IsNotFound()) {

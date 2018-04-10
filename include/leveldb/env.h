@@ -47,7 +47,7 @@ class LEVELDB_EXPORT Env {
 
   // Create a brand new sequentially-readable file with the specified name.
   // On success, stores a pointer to the new file in *result and returns OK.
-  // On failure stores NULL in *result and returns non-OK.  If the file does
+  // On failure stores nullptr in *result and returns non-OK.  If the file does
   // not exist, returns a non-OK status.  Implementations should return a
   // NotFound status when the file does not exist.
   //
@@ -57,7 +57,7 @@ class LEVELDB_EXPORT Env {
 
   // Create a brand new random access read-only file with the
   // specified name.  On success, stores a pointer to the new file in
-  // *result and returns OK.  On failure stores NULL in *result and
+  // *result and returns OK.  On failure stores nullptr in *result and
   // returns non-OK.  If the file does not exist, returns a non-OK
   // status.  Implementations should return a NotFound status when the file does
   // not exist.
@@ -69,7 +69,7 @@ class LEVELDB_EXPORT Env {
   // Create an object that writes to a new file with the specified
   // name.  Deletes any existing file with the same name and creates a
   // new file.  On success, stores a pointer to the new file in
-  // *result and returns OK.  On failure stores NULL in *result and
+  // *result and returns OK.  On failure stores nullptr in *result and
   // returns non-OK.
   //
   // The returned file will only be accessed by one thread at a time.
@@ -79,7 +79,7 @@ class LEVELDB_EXPORT Env {
   // Create an object that either appends to an existing file, or
   // writes to a new file (if the file does not exist to begin with).
   // On success, stores a pointer to the new file in *result and
-  // returns OK.  On failure stores NULL in *result and returns
+  // returns OK.  On failure stores nullptr in *result and returns
   // non-OK.
   //
   // The returned file will only be accessed by one thread at a time.
@@ -117,7 +117,7 @@ class LEVELDB_EXPORT Env {
                             const std::string& target) = 0;
 
   // Lock the specified file.  Used to prevent concurrent access to
-  // the same db by multiple processes.  On failure, stores NULL in
+  // the same db by multiple processes.  On failure, stores nullptr in
   // *lock and returns non-OK.
   //
   // On success, stores a pointer to the object that represents the
@@ -264,7 +264,7 @@ class LEVELDB_EXPORT FileLock {
   virtual ~FileLock();
 };
 
-// Log the specified data to *info_log if info_log is non-NULL.
+// Log the specified data to *info_log if info_log is non-null.
 void Log(Logger* info_log, const char* format, ...)
 #   if defined(__GNUC__) || defined(__clang__)
     __attribute__((__format__ (__printf__, 2, 3)))

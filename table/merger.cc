@@ -17,7 +17,7 @@ class MergingIterator : public Iterator {
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
         n_(n),
-        current_(NULL),
+        current_(nullptr),
         direction_(kForward) {
     for (int i = 0; i < n; i++) {
       children_[i].Set(children[i]);
@@ -29,7 +29,7 @@ class MergingIterator : public Iterator {
   }
 
   virtual bool Valid() const {
-    return (current_ != NULL);
+    return (current_ != nullptr);
   }
 
   virtual void SeekToFirst() {
@@ -153,11 +153,11 @@ class MergingIterator : public Iterator {
 };
 
 void MergingIterator::FindSmallest() {
-  IteratorWrapper* smallest = NULL;
+  IteratorWrapper* smallest = nullptr;
   for (int i = 0; i < n_; i++) {
     IteratorWrapper* child = &children_[i];
     if (child->Valid()) {
-      if (smallest == NULL) {
+      if (smallest == nullptr) {
         smallest = child;
       } else if (comparator_->Compare(child->key(), smallest->key()) < 0) {
         smallest = child;
@@ -168,11 +168,11 @@ void MergingIterator::FindSmallest() {
 }
 
 void MergingIterator::FindLargest() {
-  IteratorWrapper* largest = NULL;
+  IteratorWrapper* largest = nullptr;
   for (int i = n_-1; i >= 0; i--) {
     IteratorWrapper* child = &children_[i];
     if (child->Valid()) {
-      if (largest == NULL) {
+      if (largest == nullptr) {
         largest = child;
       } else if (comparator_->Compare(child->key(), largest->key()) > 0) {
         largest = child;

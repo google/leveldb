@@ -40,20 +40,20 @@ class FindFileTest {
 
   bool Overlaps(const char* smallest, const char* largest) {
     InternalKeyComparator cmp(BytewiseComparator());
-    Slice s(smallest != NULL ? smallest : "");
-    Slice l(largest != NULL ? largest : "");
+    Slice s(smallest != nullptr ? smallest : "");
+    Slice l(largest != nullptr ? largest : "");
     return SomeFileOverlapsRange(cmp, disjoint_sorted_files_, files_,
-                                 (smallest != NULL ? &s : NULL),
-                                 (largest != NULL ? &l : NULL));
+                                 (smallest != nullptr ? &s : nullptr),
+                                 (largest != nullptr ? &l : nullptr));
   }
 };
 
 TEST(FindFileTest, Empty) {
   ASSERT_EQ(0, Find("foo"));
   ASSERT_TRUE(! Overlaps("a", "z"));
-  ASSERT_TRUE(! Overlaps(NULL, "z"));
-  ASSERT_TRUE(! Overlaps("a", NULL));
-  ASSERT_TRUE(! Overlaps(NULL, NULL));
+  ASSERT_TRUE(! Overlaps(nullptr, "z"));
+  ASSERT_TRUE(! Overlaps("a", nullptr));
+  ASSERT_TRUE(! Overlaps(nullptr, nullptr));
 }
 
 TEST(FindFileTest, Single) {
@@ -78,12 +78,12 @@ TEST(FindFileTest, Single) {
   ASSERT_TRUE(Overlaps("q", "q"));
   ASSERT_TRUE(Overlaps("q", "q1"));
 
-  ASSERT_TRUE(! Overlaps(NULL, "j"));
-  ASSERT_TRUE(! Overlaps("r", NULL));
-  ASSERT_TRUE(Overlaps(NULL, "p"));
-  ASSERT_TRUE(Overlaps(NULL, "p1"));
-  ASSERT_TRUE(Overlaps("q", NULL));
-  ASSERT_TRUE(Overlaps(NULL, NULL));
+  ASSERT_TRUE(! Overlaps(nullptr, "j"));
+  ASSERT_TRUE(! Overlaps("r", nullptr));
+  ASSERT_TRUE(Overlaps(nullptr, "p"));
+  ASSERT_TRUE(Overlaps(nullptr, "p1"));
+  ASSERT_TRUE(Overlaps("q", nullptr));
+  ASSERT_TRUE(Overlaps(nullptr, nullptr));
 }
 
 
@@ -130,19 +130,19 @@ TEST(FindFileTest, MultipleNullBoundaries) {
   Add("200", "250");
   Add("300", "350");
   Add("400", "450");
-  ASSERT_TRUE(! Overlaps(NULL, "149"));
-  ASSERT_TRUE(! Overlaps("451", NULL));
-  ASSERT_TRUE(Overlaps(NULL, NULL));
-  ASSERT_TRUE(Overlaps(NULL, "150"));
-  ASSERT_TRUE(Overlaps(NULL, "199"));
-  ASSERT_TRUE(Overlaps(NULL, "200"));
-  ASSERT_TRUE(Overlaps(NULL, "201"));
-  ASSERT_TRUE(Overlaps(NULL, "400"));
-  ASSERT_TRUE(Overlaps(NULL, "800"));
-  ASSERT_TRUE(Overlaps("100", NULL));
-  ASSERT_TRUE(Overlaps("200", NULL));
-  ASSERT_TRUE(Overlaps("449", NULL));
-  ASSERT_TRUE(Overlaps("450", NULL));
+  ASSERT_TRUE(! Overlaps(nullptr, "149"));
+  ASSERT_TRUE(! Overlaps("451", nullptr));
+  ASSERT_TRUE(Overlaps(nullptr, nullptr));
+  ASSERT_TRUE(Overlaps(nullptr, "150"));
+  ASSERT_TRUE(Overlaps(nullptr, "199"));
+  ASSERT_TRUE(Overlaps(nullptr, "200"));
+  ASSERT_TRUE(Overlaps(nullptr, "201"));
+  ASSERT_TRUE(Overlaps(nullptr, "400"));
+  ASSERT_TRUE(Overlaps(nullptr, "800"));
+  ASSERT_TRUE(Overlaps("100", nullptr));
+  ASSERT_TRUE(Overlaps("200", nullptr));
+  ASSERT_TRUE(Overlaps("449", nullptr));
+  ASSERT_TRUE(Overlaps("450", nullptr));
 }
 
 TEST(FindFileTest, OverlapSequenceChecks) {

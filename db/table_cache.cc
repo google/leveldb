@@ -49,10 +49,10 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
   EncodeFixed64(buf, file_number);
   Slice key(buf, sizeof(buf));
   *handle = cache_->Lookup(key);
-  if (*handle == NULL) {
+  if (*handle == nullptr) {
     std::string fname = TableFileName(dbname_, file_number);
-    RandomAccessFile* file = NULL;
-    Table* table = NULL;
+    RandomAccessFile* file = nullptr;
+    Table* table = nullptr;
     s = env_->NewRandomAccessFile(fname, &file);
     if (!s.ok()) {
       std::string old_fname = SSTTableFileName(dbname_, file_number);
@@ -65,7 +65,7 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
     }
 
     if (!s.ok()) {
-      assert(table == NULL);
+      assert(table == nullptr);
       delete file;
       // We do not cache error results so that if the error is transient,
       // or somebody repairs the file, we recover automatically.
@@ -83,11 +83,11 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
                                   uint64_t file_number,
                                   uint64_t file_size,
                                   Table** tableptr) {
-  if (tableptr != NULL) {
-    *tableptr = NULL;
+  if (tableptr != nullptr) {
+    *tableptr = nullptr;
   }
 
-  Cache::Handle* handle = NULL;
+  Cache::Handle* handle = nullptr;
   Status s = FindTable(file_number, file_size, &handle);
   if (!s.ok()) {
     return NewErrorIterator(s);
@@ -96,7 +96,7 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
   Table* table = reinterpret_cast<TableAndFile*>(cache_->Value(handle))->table;
   Iterator* result = table->NewIterator(options);
   result->RegisterCleanup(&UnrefEntry, cache_, handle);
-  if (tableptr != NULL) {
+  if (tableptr != nullptr) {
     *tableptr = table;
   }
   return result;
@@ -108,7 +108,7 @@ Status TableCache::Get(const ReadOptions& options,
                        const Slice& k,
                        void* arg,
                        void (*saver)(void*, const Slice&, const Slice&)) {
-  Cache::Handle* handle = NULL;
+  Cache::Handle* handle = nullptr;
   Status s = FindTable(file_number, file_size, &handle);
   if (s.ok()) {
     Table* t = reinterpret_cast<TableAndFile*>(cache_->Value(handle))->table;

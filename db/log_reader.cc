@@ -185,7 +185,7 @@ void Reader::ReportCorruption(uint64_t bytes, const char* reason) {
 }
 
 void Reader::ReportDrop(uint64_t bytes, const Status& reason) {
-  if (reporter_ != NULL &&
+  if (reporter_ != nullptr &&
       end_of_buffer_offset_ - buffer_.size() - bytes >= initial_offset_) {
     reporter_->Corruption(static_cast<size_t>(bytes), reason);
   }

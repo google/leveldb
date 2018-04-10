@@ -22,7 +22,7 @@ namespace leveldb {
 class LEVELDB_EXPORT Status {
  public:
   // Create a success status.
-  Status() : state_(NULL) { }
+  Status() : state_(nullptr) { }
   ~Status() { delete[] state_; }
 
   // Copy the specified status.
@@ -50,7 +50,7 @@ class LEVELDB_EXPORT Status {
   }
 
   // Returns true iff the status indicates success.
-  bool ok() const { return (state_ == NULL); }
+  bool ok() const { return (state_ == nullptr); }
 
   // Returns true iff the status indicates a NotFound error.
   bool IsNotFound() const { return code() == kNotFound; }
@@ -72,7 +72,7 @@ class LEVELDB_EXPORT Status {
   std::string ToString() const;
 
  private:
-  // OK status has a NULL state_.  Otherwise, state_ is a new[] array
+  // OK status has a null state_.  Otherwise, state_ is a new[] array
   // of the following form:
   //    state_[0..3] == length of message
   //    state_[4]    == code
@@ -89,7 +89,7 @@ class LEVELDB_EXPORT Status {
   };
 
   Code code() const {
-    return (state_ == NULL) ? kOk : static_cast<Code>(state_[4]);
+    return (state_ == nullptr) ? kOk : static_cast<Code>(state_[4]);
   }
 
   Status(Code code, const Slice& msg, const Slice& msg2);
@@ -97,14 +97,14 @@ class LEVELDB_EXPORT Status {
 };
 
 inline Status::Status(const Status& s) {
-  state_ = (s.state_ == NULL) ? NULL : CopyState(s.state_);
+  state_ = (s.state_ == nullptr) ? nullptr : CopyState(s.state_);
 }
 inline void Status::operator=(const Status& s) {
   // The following condition catches both aliasing (when this == &s),
   // and the common case where both s and *this are ok.
   if (state_ != s.state_) {
     delete[] state_;
-    state_ = (s.state_ == NULL) ? NULL : CopyState(s.state_);
+    state_ = (s.state_ == nullptr) ? nullptr : CopyState(s.state_);
   }
 }
 

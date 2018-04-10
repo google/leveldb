@@ -32,7 +32,7 @@ TEST(EnvPosixTest, TestOpenOnRead) {
   std::string test_file = test_dir + "/open_on_read.txt";
 
   FILE* f = fopen(test_file.c_str(), "w");
-  ASSERT_TRUE(f != NULL);
+  ASSERT_TRUE(f != nullptr);
   const char kFileData[] = "abcdefghijklmnopqrstuvwxyz";
   fputs(kFileData, f);
   fclose(f);

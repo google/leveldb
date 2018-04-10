@@ -125,14 +125,14 @@ const char* GetVarint32PtrFallback(const char* p,
       return reinterpret_cast<const char*>(p);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 bool GetVarint32(Slice* input, uint32_t* value) {
   const char* p = input->data();
   const char* limit = p + input->size();
   const char* q = GetVarint32Ptr(p, limit, value);
-  if (q == NULL) {
+  if (q == nullptr) {
     return false;
   } else {
     *input = Slice(q, limit - q);
@@ -154,14 +154,14 @@ const char* GetVarint64Ptr(const char* p, const char* limit, uint64_t* value) {
       return reinterpret_cast<const char*>(p);
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 bool GetVarint64(Slice* input, uint64_t* value) {
   const char* p = input->data();
   const char* limit = p + input->size();
   const char* q = GetVarint64Ptr(p, limit, value);
-  if (q == NULL) {
+  if (q == nullptr) {
     return false;
   } else {
     *input = Slice(q, limit - q);
@@ -173,8 +173,8 @@ const char* GetLengthPrefixedSlice(const char* p, const char* limit,
                                    Slice* result) {
   uint32_t len;
   p = GetVarint32Ptr(p, limit, &len);
-  if (p == NULL) return NULL;
-  if (p + len > limit) return NULL;
+  if (p == nullptr) return nullptr;
+  if (p + len > limit) return nullptr;
   *result = Slice(p, len);
   return p + len;
 }
