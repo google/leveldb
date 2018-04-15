@@ -1230,18 +1230,14 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* my_batch) {
     {
       mutex_.Unlock();
       status = log_->AddRecord(WriteBatchInternal::Contents(updates));
-      bool sync_error = false;
       if (status.ok() && options.sync) {
         status = logfile_->Sync();
-        if (!status.ok()) {
-          sync_error = true;
-        }
       }
       if (status.ok()) {
         status = WriteBatchInternal::InsertInto(updates, mem_);
       }
       mutex_.Lock();
-      if (sync_error) {
+      if (status.ok()) {
         // The state of the log file is indeterminate: the log record we
         // just added may or may not show up when the DB is re-opened.
         // So we force the DB into a mode where all future writes fail.
