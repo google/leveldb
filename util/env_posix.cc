@@ -28,6 +28,12 @@
 #include "util/posix_logger.h"
 #include "util/env_posix_test_helper.h"
 
+// HAVE_FDATASYNC is defined in the auto-generated port_config.h, which is
+// included by port_stdcxx.h.
+#if !HAVE_FDATASYNC
+#define fdatasync fsync
+#endif  // !HAVE_FDATASYNC
+
 namespace leveldb {
 
 namespace {
