@@ -277,6 +277,7 @@ if(LEVELDB_BUILD_TESTS)
   leveldb_test("${PROJECT_SOURCE_DIR}/issues/issue200_test.cc")
 
   leveldb_test("${PROJECT_SOURCE_DIR}/util/env_test.cc")
+  leveldb_test("${PROJECT_SOURCE_DIR}/util/status_test.cc")
 
   if(NOT BUILD_SHARED_LIBS)
     leveldb_test("${PROJECT_SOURCE_DIR}/db/autocompact_test.cc")
