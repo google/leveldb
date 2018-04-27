@@ -64,7 +64,7 @@ Other files used for miscellaneous purposes may also be present (LOCK, *.dbtmp).
 
 ## Level 0
 
-When the log file grows above a certain size (1MB by default):
+When the log file grows above a certain size (4MB by default):
 Create a brand new memtable and log file and direct future updates here
 In the background:
 Write the contents of the previous memtable to an sstable
