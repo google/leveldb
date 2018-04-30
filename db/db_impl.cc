@@ -906,7 +906,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   if (snapshots_.empty()) {
     compact->smallest_snapshot = versions_->LastSequence();
   } else {
-    compact->smallest_snapshot = snapshots_.oldest()->number_;
+    compact->smallest_snapshot = snapshots_.oldest()->sequence_number();
   }
 
   // Release mutex while we're actually doing the compaction work
@@ -1121,7 +1121,8 @@ Status DBImpl::Get(const ReadOptions& options,
   MutexLock l(&mutex_);
   SequenceNumber snapshot;
   if (options.snapshot != nullptr) {
-    snapshot = reinterpret_cast<const SnapshotImpl*>(options.snapshot)->number_;
+    snapshot =
+        static_cast<const SnapshotImpl*>(options.snapshot)->sequence_number();
   } else {
     snapshot = versions_->LastSequence();
   }
@@ -1168,7 +1169,7 @@ Iterator* DBImpl::NewIterator(const ReadOptions& options) {
   return NewDBIterator(
       this, user_comparator(), iter,
       (options.snapshot != nullptr
-       ? reinterpret_cast<const SnapshotImpl*>(options.snapshot)->number_
+       ? static_cast<const SnapshotImpl*>(options.snapshot)->sequence_number()
        : latest_snapshot),
       seed);
 }
@@ -1185,9 +1186,9 @@ const Snapshot* DBImpl::GetSnapshot() {
   return snapshots_.New(versions_->LastSequence());
 }
 
-void DBImpl::ReleaseSnapshot(const Snapshot* s) {
+void DBImpl::ReleaseSnapshot(const Snapshot* snapshot) {
   MutexLock l(&mutex_);
-  snapshots_.Delete(reinterpret_cast<const SnapshotImpl*>(s));
+  snapshots_.Delete(static_cast<const SnapshotImpl*>(snapshot));
 }
 
 // Convenience methods
