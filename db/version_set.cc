@@ -89,7 +89,7 @@ int FindFile(const InternalKeyComparator& icmp,
   uint32_t left = 0;
   uint32_t right = files.size();
   while (left < right) {
-    uint32_t mid = (left + right) / 2;
+    uint32_t mid = ((uint64_t)left + (uint64_t)right) >> 1;
     const FileMetaData* f = files[mid];
     if (icmp.InternalKeyComparator::Compare(f->largest.Encode(), key) < 0) {
       // Key at "mid.largest" is < "target".  Therefore all

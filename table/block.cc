@@ -168,7 +168,7 @@ class Block::Iter : public Iterator {
     uint32_t left = 0;
     uint32_t right = num_restarts_ - 1;
     while (left < right) {
-      uint32_t mid = (left + right + 1) / 2;
+      uint32_t mid = ((uint64_t)left + (uint64_t)right + (uint64_t)1) >> 1;
       uint32_t region_offset = GetRestartPoint(mid);
       uint32_t shared, non_shared, value_length;
       const char* key_ptr = DecodeEntry(data_ + region_offset,
