@@ -2,7 +2,7 @@
   Use of this source code is governed by a BSD-style license that can be
   found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-  C bindings for leveldb.  May be useful as a stable ABI that can be
+  C bindings for leveldb.  May be useful as a stable API that can be
   used by programs that keep leveldb in a shared library, or for
   a JNI api.
 
