@@ -60,33 +60,33 @@ DWORD WINAPI WorkItemWrapperProc(LPVOID pContent);
 class Win32SequentialFile : public SequentialFile {
  public:
   friend class Win32Env;
-  virtual ~Win32SequentialFile();
-  virtual Status Read(size_t n, Slice* result, char* scratch);
-  virtual Status Skip(uint64_t n);
+  ~Win32SequentialFile();
+  Status Read(size_t n, Slice* result, char* scratch) override;
+  Status Skip(uint64_t n) override;
   BOOL isEnable();
 
  private:
   BOOL _Init();
   void _CleanUp();
   Win32SequentialFile(const std::string& fname);
-  std::string _filename;
-  ::HANDLE _hFile;
+  std::string filename_;
+  ::HANDLE hFile_;
 };
 
 class Win32RandomAccessFile : public RandomAccessFile {
  public:
   friend class Win32Env;
-  virtual ~Win32RandomAccessFile();
-  virtual Status Read(uint64_t offset, size_t n, Slice* result,
-                      char* scratch) const;
+  ~Win32RandomAccessFile();
+  Status Read(uint64_t offset, size_t n, Slice* result,
+                      char* scratch) const override;
   BOOL isEnable();
 
  private:
   BOOL _Init(LPCWSTR path);
   void _CleanUp();
   Win32RandomAccessFile(const std::string& fname);
-  HANDLE _hFile;
-  const std::string _filename;
+  HANDLE hFile_;
+  const std::string filename_;
 };
 
 class Win32WritableFile : public WritableFile {
@@ -94,36 +94,37 @@ class Win32WritableFile : public WritableFile {
   Win32WritableFile(const std::string& fname, bool append);
   ~Win32WritableFile();
 
-  virtual Status Append(const Slice& data);
-  virtual Status Close();
-  virtual Status Flush();
-  virtual Status Sync();
+  Status Append(const Slice& data) override;
+  Status Close() override;
+  Status Flush() override;
+  Status Sync() override;
   BOOL isEnable();
 
  private:
   std::string filename_;
-  ::HANDLE _hFile;
+  ::HANDLE hFile_;
 };
 
 class Win32FileLock : public FileLock {
  public:
   friend class Win32Env;
-  virtual ~Win32FileLock();
+
+  ~Win32FileLock();
   BOOL isEnable();
 
  private:
   BOOL _Init(LPCWSTR path);
   void _CleanUp();
   Win32FileLock(const std::string& fname);
-  HANDLE _hFile;
-  std::string _filename;
+  HANDLE hFile_;
+  std::string filename_;
 };
 
 class Win32Logger : public Logger {
  public:
   friend class Win32Env;
-  virtual ~Win32Logger();
-  virtual void Logv(const char* format, va_list ap);
+  ~Win32Logger();
+  void Logv(const char* format, va_list ap) override;
 
  private:
   explicit Win32Logger(WritableFile* pFile);
@@ -133,47 +134,31 @@ class Win32Logger : public Logger {
 class Win32Env : public Env {
  public:
   Win32Env();
-  virtual ~Win32Env();
-  virtual Status NewSequentialFile(const std::string& fname,
-                                   SequentialFile** result);
-
-  virtual Status NewRandomAccessFile(const std::string& fname,
-                                     RandomAccessFile** result);
-  virtual Status NewWritableFile(const std::string& fname,
-                                 WritableFile** result);
-  virtual Status NewAppendableFile(const std::string& fname,
-                                   WritableFile** result);
-
-  virtual bool FileExists(const std::string& fname);
-
-  virtual Status GetChildren(const std::string& dir,
-                             std::vector<std::string>* result);
-
-  virtual Status DeleteFile(const std::string& fname);
-
-  virtual Status CreateDir(const std::string& dirname);
-
-  virtual Status DeleteDir(const std::string& dirname);
-
-  virtual Status GetFileSize(const std::string& fname, uint64_t* file_size);
-
-  virtual Status RenameFile(const std::string& src, const std::string& target);
-
-  virtual Status LockFile(const std::string& fname, FileLock** lock);
-
-  virtual Status UnlockFile(FileLock* lock);
-
-  virtual void Schedule(void (*function)(void* arg), void* arg);
-
-  virtual void StartThread(void (*function)(void* arg), void* arg);
-
-  virtual Status GetTestDirectory(std::string* path);
-
-  virtual Status NewLogger(const std::string& fname, Logger** result);
-
-  virtual uint64_t NowMicros();
-
-  virtual void SleepForMicroseconds(int micros);
+  ~Win32Env();
+  Status NewSequentialFile(const std::string& fname,
+                                   SequentialFile** result) override;
+  Status NewRandomAccessFile(const std::string& fname,
+                                     RandomAccessFile** result) override;
+  Status NewWritableFile(const std::string& fname,
+                                 WritableFile** result) override;
+  Status NewAppendableFile(const std::string& fname,
+                                   WritableFile** result) override;
+  bool FileExists(const std::string& fname) override;
+  Status GetChildren(const std::string& dir,
+                             std::vector<std::string>* result) override;
+  Status DeleteFile(const std::string& fname) override;
+  Status CreateDir(const std::string& dirname) override;
+  Status DeleteDir(const std::string& dirname) override;
+  Status GetFileSize(const std::string& fname, uint64_t* file_size) override;
+  Status RenameFile(const std::string& src, const std::string& target) override;
+  Status LockFile(const std::string& fname, FileLock** lock) override;
+  Status UnlockFile(FileLock* lock) override;
+  void Schedule(void (*function)(void* arg), void* arg) override;
+  void StartThread(void (*function)(void* arg), void* arg) override;
+  Status GetTestDirectory(std::string* path) override;
+  Status NewLogger(const std::string& fname, Logger** result) override;
+  uint64_t NowMicros() override;
+  void SleepForMicroseconds(int micros) override;
 };
 
 void ToWidePath(const std::string& value, std::wstring& target) {
@@ -274,7 +259,7 @@ size_t GetPageSize() {
 const size_t g_PageSize = GetPageSize();
 
 Win32SequentialFile::Win32SequentialFile(const std::string& fname)
-    : _filename(fname), _hFile(NULL) {
+    : filename_(fname), hFile_(NULL) {
   _Init();
 }
 
@@ -283,10 +268,10 @@ Win32SequentialFile::~Win32SequentialFile() { _CleanUp(); }
 Status Win32SequentialFile::Read(size_t n, Slice* result, char* scratch) {
   Status sRet;
   DWORD hasRead = 0;
-  if (_hFile && ReadFile(_hFile, scratch, n, &hasRead, NULL)) {
+  if (hFile_ && ReadFile(hFile_, scratch, n, &hasRead, NULL)) {
     *result = Slice(scratch, hasRead);
   } else {
-    sRet = Win32Error(_filename);
+    sRet = Win32Error(filename_);
   }
   return sRet;
 }
@@ -295,33 +280,33 @@ Status Win32SequentialFile::Skip(uint64_t n) {
   Status sRet;
   LARGE_INTEGER Move, NowPointer;
   Move.QuadPart = n;
-  if (!SetFilePointerEx(_hFile, Move, &NowPointer, FILE_CURRENT)) {
-    sRet = Win32Error(_filename);
+  if (!SetFilePointerEx(hFile_, Move, &NowPointer, FILE_CURRENT)) {
+    sRet = Win32Error(filename_);
   }
   return sRet;
 }
 
-BOOL Win32SequentialFile::isEnable() { return _hFile ? TRUE : FALSE; }
+BOOL Win32SequentialFile::isEnable() { return hFile_ ? TRUE : FALSE; }
 
 BOOL Win32SequentialFile::_Init() {
   std::wstring path;
-  ToWidePath(_filename, path);
-  _hFile = CreateFileW(path.c_str(), GENERIC_READ,
+  ToWidePath(filename_, path);
+  hFile_ = CreateFileW(path.c_str(), GENERIC_READ,
                        FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
                        FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-  if (_hFile == INVALID_HANDLE_VALUE) _hFile = NULL;
-  return _hFile ? TRUE : FALSE;
+  if (hFile_ == INVALID_HANDLE_VALUE) hFile_ = NULL;
+  return hFile_ ? TRUE : FALSE;
 }
 
 void Win32SequentialFile::_CleanUp() {
-  if (_hFile) {
-    CloseHandle(_hFile);
-    _hFile = NULL;
+  if (hFile_) {
+    CloseHandle(hFile_);
+    hFile_ = NULL;
   }
 }
 
 Win32RandomAccessFile::Win32RandomAccessFile(const std::string& fname)
-    : _filename(fname), _hFile(NULL) {
+    : filename_(fname), hFile_(NULL) {
   std::wstring path;
   ToWidePath(fname, path);
   _Init(path.c_str());
@@ -337,8 +322,8 @@ Status Win32RandomAccessFile::Read(uint64_t offset, size_t n, Slice* result,
   ol.Offset = (DWORD)offset;
   ol.OffsetHigh = (DWORD)(offset >> 32);
   DWORD hasRead = 0;
-  if (!ReadFile(_hFile, scratch, n, &hasRead, &ol))
-    sRet = Win32Error(_filename);
+  if (!ReadFile(hFile_, scratch, n, &hasRead, &ol))
+    sRet = Win32Error(filename_);
   else
     *result = Slice(scratch, hasRead);
   return sRet;
@@ -346,23 +331,23 @@ Status Win32RandomAccessFile::Read(uint64_t offset, size_t n, Slice* result,
 
 BOOL Win32RandomAccessFile::_Init(LPCWSTR path) {
   BOOL bRet = FALSE;
-  if (!_hFile)
-    _hFile = ::CreateFileW(
+  if (!hFile_)
+    hFile_ = ::CreateFileW(
         path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS, NULL);
-  if (!_hFile || _hFile == INVALID_HANDLE_VALUE)
-    _hFile = NULL;
+  if (!hFile_ || hFile_ == INVALID_HANDLE_VALUE)
+    hFile_ = NULL;
   else
     bRet = TRUE;
   return bRet;
 }
 
-BOOL Win32RandomAccessFile::isEnable() { return _hFile ? TRUE : FALSE; }
+BOOL Win32RandomAccessFile::isEnable() { return hFile_ ? TRUE : FALSE; }
 
 void Win32RandomAccessFile::_CleanUp() {
-  if (_hFile) {
-    ::CloseHandle(_hFile);
-    _hFile = NULL;
+  if (hFile_) {
+    ::CloseHandle(hFile_);
+    hFile_ = NULL;
   }
 }
 
@@ -377,7 +362,7 @@ Win32WritableFile::Win32WritableFile(const std::string& fname, bool append)
   // NewWritableFile: create a new file, delete if it exists - this is
   //     CREATE_ALWAYS behavior. This file is used for writing only so
   //     use GENERIC_WRITE.
-  _hFile = CreateFileW(path.c_str(), append ? FILE_APPEND_DATA : GENERIC_WRITE,
+  hFile_ = CreateFileW(path.c_str(), append ? FILE_APPEND_DATA : GENERIC_WRITE,
                        FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE,
                        NULL, append ? OPEN_ALWAYS : CREATE_ALWAYS,
                        FILE_ATTRIBUTE_NORMAL, NULL);
@@ -386,14 +371,14 @@ Win32WritableFile::Win32WritableFile(const std::string& fname, bool append)
 }
 
 Win32WritableFile::~Win32WritableFile() {
-  if (_hFile != INVALID_HANDLE_VALUE) {
+  if (hFile_ != INVALID_HANDLE_VALUE) {
     Close();
   }
 }
 
 Status Win32WritableFile::Append(const Slice& data) {
   DWORD r = 0;
-  if (!WriteFile(_hFile, data.data(), data.size(), &r, NULL) ||
+  if (!WriteFile(hFile_, data.data(), data.size(), &r, NULL) ||
       r != data.size()) {
     return Win32Error("Win32WritableFile.Append::WriteFile: " + filename_);
   }
@@ -401,10 +386,10 @@ Status Win32WritableFile::Append(const Slice& data) {
 }
 
 Status Win32WritableFile::Close() {
-  if (!CloseHandle(_hFile)) {
+  if (!CloseHandle(hFile_)) {
     return Win32Error("Win32WritableFile.Close::CloseHandle: " + filename_);
   }
-  _hFile = INVALID_HANDLE_VALUE;
+  hFile_ = INVALID_HANDLE_VALUE;
   return Status::OK();
 }
 
@@ -414,16 +399,16 @@ Status Win32WritableFile::Flush() {
 }
 
 Status Win32WritableFile::Sync() {
-  if (!FlushFileBuffers(_hFile)) {
+  if (!FlushFileBuffers(hFile_)) {
     return Win32Error("Win32WritableFile.Sync::FlushFileBuffers " + filename_);
   }
   return Status::OK();
 }
 
-BOOL Win32WritableFile::isEnable() { return _hFile != INVALID_HANDLE_VALUE; }
+BOOL Win32WritableFile::isEnable() { return hFile_ != INVALID_HANDLE_VALUE; }
 
 Win32FileLock::Win32FileLock(const std::string& fname)
-    : _hFile(NULL), _filename(fname) {
+    : hFile_(NULL), filename_(fname) {
   std::wstring path;
   ToWidePath(fname, path);
   _Init(path.c_str());
@@ -433,22 +418,22 @@ Win32FileLock::~Win32FileLock() { _CleanUp(); }
 
 BOOL Win32FileLock::_Init(LPCWSTR path) {
   BOOL bRet = FALSE;
-  if (!_hFile)
-    _hFile = ::CreateFileW(path, GENERIC_READ | GENERIC_WRITE, 0, NULL,
+  if (!hFile_)
+    hFile_ = ::CreateFileW(path, GENERIC_READ | GENERIC_WRITE, 0, NULL,
                            CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-  if (!_hFile || _hFile == INVALID_HANDLE_VALUE) {
-    _hFile = NULL;
+  if (!hFile_ || hFile_ == INVALID_HANDLE_VALUE) {
+    hFile_ = NULL;
   } else
     bRet = TRUE;
   return bRet;
 }
 
 void Win32FileLock::_CleanUp() {
-  ::CloseHandle(_hFile);
-  _hFile = NULL;
+  ::CloseHandle(hFile_);
+  hFile_ = NULL;
 }
 
-BOOL Win32FileLock::isEnable() { return _hFile ? TRUE : FALSE; }
+BOOL Win32FileLock::isEnable() { return hFile_ ? TRUE : FALSE; }
 
 Win32Logger::Win32Logger(WritableFile* pFile) : _pFileProxy(pFile) {
   assert(_pFileProxy);

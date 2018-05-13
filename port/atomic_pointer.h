@@ -33,8 +33,13 @@ namespace leveldb {
   typedef intptr_t ssize_t;
 }
 #endif
+
+#ifdef DeleteFile
 #undef DeleteFile
+#endif
+#ifdef small
 #undef small
+#endif
 #endif
 
 #if defined(_M_X64) || defined(__x86_64__)
