@@ -173,11 +173,19 @@ target_sources(leveldb
 )
 
 # POSIX code is specified separately so we can leave it out in the future.
+
+if (NOT WIN32)
 target_sources(leveldb
   PRIVATE
     "${PROJECT_SOURCE_DIR}/util/env_posix.cc"
     "${PROJECT_SOURCE_DIR}/util/posix_logger.h"
 )
+else ()
+target_sources(leveldb
+  PRIVATE
+    "${PROJECT_SOURCE_DIR}/util/env_win.cc"
+)
+endif ()
 
 # MemEnv is not part of the interface and could be pulled to a separate library.
 target_sources(leveldb
@@ -195,9 +203,16 @@ target_compile_definitions(leveldb
   PRIVATE
     # Used by include/export.h when building shared libraries.
     LEVELDB_COMPILE_LIBRARY
-    # Used by port/port.h.
-    LEVELDB_PLATFORM_POSIX=1
 )
+
+if (NOT WIN32)
+  set(PLATFORM_DEFINITIONS LEVELDB_PLATFORM_POSIX=1)
+else (NOT WIN32)
+  set(PLATFORM_DEFINITIONS LEVELDB_PLATFORM_WINDOWS=1 OS_WIN=1 _CRT_SECURE_NO_WARNINGS=1)
+endif (NOT WIN32)
+
+target_compile_definitions(leveldb PRIVATE ${PLATFORM_DEFINITIONS})
+
 if (NOT HAVE_CXX17_HAS_INCLUDE)
   target_compile_definitions(leveldb
     PRIVATE
@@ -228,6 +243,9 @@ endif(HAVE_SNAPPY)
 if(HAVE_TCMALLOC)
   target_link_libraries(leveldb tcmalloc)
 endif(HAVE_TCMALLOC)
+if(WIN32)
+  target_link_libraries(leveldb shlwapi dbghelp)
+endif()
 
 # Needed by port_stdcxx.h
 find_package(Threads REQUIRED)
@@ -256,10 +274,7 @@ if(LEVELDB_BUILD_TESTS)
         "${test_file}"
     )
     target_link_libraries("${test_target_name}" leveldb)
-    target_compile_definitions("${test_target_name}"
-      PRIVATE
-        LEVELDB_PLATFORM_POSIX=1
-    )
+    target_compile_definitions("${test_target_name}" PRIVATE ${PLATFORM_DEFINITIONS})
     if (NOT HAVE_CXX17_HAS_INCLUDE)
       target_compile_definitions("${test_target_name}"
         PRIVATE
@@ -307,7 +322,9 @@ if(LEVELDB_BUILD_TESTS)
 
     # TODO(costan): This test also uses
     #               "${PROJECT_SOURCE_DIR}/util/env_posix_test_helper.h"
+  if (NOT WIN32)
     leveldb_test("${PROJECT_SOURCE_DIR}/util/env_posix_test.cc")
+  endif (NOT WIN32)
   endif(NOT BUILD_SHARED_LIBS)
 endif(LEVELDB_BUILD_TESTS)
 
@@ -329,10 +346,7 @@ if(LEVELDB_BUILD_BENCHMARKS)
         "${bench_file}"
     )
     target_link_libraries("${bench_target_name}" leveldb)
-    target_compile_definitions("${bench_target_name}"
-      PRIVATE
-        LEVELDB_PLATFORM_POSIX=1
-    )
+    target_compile_definitions("${bench_target_name}" PRIVATE  ${PLATFORM_DEFINITIONS})
     if (NOT HAVE_CXX17_HAS_INCLUDE)
       target_compile_definitions("${bench_target_name}"
         PRIVATE

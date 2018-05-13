@@ -23,7 +23,18 @@
 #include <atomic>
 
 #ifdef OS_WIN
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
+
+#ifdef _MSC_VER
+namespace leveldb {
+  typedef intptr_t ssize_t;
+}
+#endif
+#undef DeleteFile
+#undef small
 #endif
 
 #if defined(_M_X64) || defined(__x86_64__)
