@@ -80,8 +80,7 @@ if(BUILD_SHARED_LIBS)
 endif(BUILD_SHARED_LIBS)
 
 if (MSVC)
-  add_compile_options (/wd4244 /wd4996 /wd4018 /MP)
-#  add_compile_options ("/MP")
+  add_compile_options (/wd4244 /wd4996 /wd4018 /MP /EHsc)
 endif()
 
 
