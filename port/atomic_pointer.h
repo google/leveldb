@@ -39,7 +39,7 @@
 #define ARCH_CPU_ARM64_FAMILY 1
 #elif defined(__ppc__) || defined(__powerpc__) || defined(__powerpc64__)
 #define ARCH_CPU_PPC_FAMILY 1
-#elif defined(__mips__)
+#elif defined(__mips__) || defined(__mips64__)
 #define ARCH_CPU_MIPS_FAMILY 1
 #endif
 
