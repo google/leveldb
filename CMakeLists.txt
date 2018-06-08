@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.5)
 project(leveldb VERSION 1.21.0 LANGUAGES C CXX)
 
 # This project can use C11, but will gracefully decay down to C89.
