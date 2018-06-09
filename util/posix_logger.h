@@ -10,9 +10,16 @@
 
 #include <algorithm>
 #include <stdio.h>
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif // _MSC_VER
 #include <time.h>
 #include "leveldb/env.h"
+
+#ifdef _MSC_VER
+extern int gettimeofday(struct timeval * tv, struct timezone * tz);
+extern int localtime_r(const time_t * t, struct tm * m);
+#endif // _MSC_VER
 
 namespace leveldb {
 

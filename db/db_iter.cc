@@ -14,6 +14,10 @@
 #include "util/mutexlock.h"
 #include "util/random.h"
 
+#if defined(_MSC_VER) && !defined(ssize_t)
+typedef int64_t ssize_t;
+#endif // _MSC_VER
+
 namespace leveldb {
 
 #if 0
