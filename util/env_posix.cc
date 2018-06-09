@@ -451,7 +451,7 @@ class PosixEnv : public Env {
       s = GetFileSize(fname, &size);
       if (s.ok()) {
         HANDLE fm = CreateFileMapping(fd, NULL, PAGE_READONLY, static_cast<DWORD>(static_cast<uint64_t>(size) >> 32), static_cast<DWORD>(size & 0xFFFFFFFF), NULL);
-        if (INVALID_HANDLE_VALUE == fm) {
+        if (NULL == fm) {
           s = PosixError(fname, GetLastError());
         } else {
           void* base = MapViewOfFile(fm, FILE_MAP_READ, 0, 0, size);
