@@ -88,6 +88,12 @@ class Version {
   void Ref();
   void Unref();
 
+  void GetIncludedInputs(
+      int level,
+      const InternalKey* begin,         // nullptr means before all keys
+      const InternalKey* end,           // nullptr means after all keys
+      std::vector<FileMetaData*>* inputs);
+
   void GetOverlappingInputs(
       int level,
       const InternalKey* begin,         // nullptr means before all keys
