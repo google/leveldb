@@ -321,8 +321,7 @@ class Benchmark {
     bytes_(0),
     rand_(301) {
     std::vector<std::string> files;
-    std::string test_dir;
-    Env::Default()->GetTestDirectory(&test_dir);
+    std::string test_dir(FLAGS_db);
     Env::Default()->GetChildren(test_dir, &files);
     if (!FLAGS_use_existing_db) {
       for (int i = 0; i < files.size(); i++) {
@@ -424,8 +423,7 @@ class Benchmark {
     db_num_++;
 
     // Open database
-    std::string tmp_dir;
-    Env::Default()->GetTestDirectory(&tmp_dir);
+    std::string tmp_dir(FLAGS_db);
     snprintf(file_name, sizeof(file_name),
              "%s/dbbench_sqlite3-%d.db",
              tmp_dir.c_str(),
@@ -713,6 +711,13 @@ int main(int argc, char** argv) {
       leveldb::Env::Default()->GetTestDirectory(&default_db_path);
       default_db_path += "/dbbench";
       FLAGS_db = default_db_path.c_str();
+  }
+
+  // lets make sure the directory exists
+  leveldb::Env * env = leveldb::Env::Default();
+  if (!env->FileExists(FLAGS_db) && !env->CreateDir(FLAGS_db).ok()) {
+    fprintf(stderr, "Cannot access test directory '%s'\n", FLAGS_db);
+    exit(1);
   }
 
   leveldb::Benchmark benchmark;
