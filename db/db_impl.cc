@@ -196,6 +196,9 @@ Status DBImpl::NewDB() {
     new_db.EncodeTo(&record);
     s = log.AddRecord(record);
     if (s.ok()) {
+      s = file->Sync(); 
+    }
+    if (s.ok()) {
       s = file->Close();
     }
   }
