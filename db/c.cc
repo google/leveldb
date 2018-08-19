@@ -359,7 +359,7 @@ void leveldb_writebatch_delete(
 }
 
 void leveldb_writebatch_iterate(
-    leveldb_writebatch_t* b,
+    const leveldb_writebatch_t* b,
     void* state,
     void (*put)(void*, const char* k, size_t klen, const char* v, size_t vlen),
     void (*deleted)(void*, const char* k, size_t klen)) {
@@ -380,6 +380,11 @@ void leveldb_writebatch_iterate(
   handler.put_ = put;
   handler.deleted_ = deleted;
   b->rep.Iterate(&handler);
+}
+
+void leveldb_writebatch_append(leveldb_writebatch_t *destination,
+                               const leveldb_writebatch_t *source) {
+  destination->rep.Append(source->rep);
 }
 
 leveldb_options_t* leveldb_options_create() {

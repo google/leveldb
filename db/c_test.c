@@ -228,12 +228,18 @@ int main(int argc, char** argv) {
     leveldb_writebatch_clear(wb);
     leveldb_writebatch_put(wb, "bar", 3, "b", 1);
     leveldb_writebatch_put(wb, "box", 3, "c", 1);
-    leveldb_writebatch_delete(wb, "bar", 3);
+
+    leveldb_writebatch_t* wb2 = leveldb_writebatch_create();
+    leveldb_writebatch_delete(wb2, "bar", 3);
+    leveldb_writebatch_append(wb, wb2);
+    leveldb_writebatch_destroy(wb2);
+
     leveldb_write(db, woptions, wb, &err);
     CheckNoError(err);
     CheckGet(db, roptions, "foo", "hello");
     CheckGet(db, roptions, "bar", NULL);
     CheckGet(db, roptions, "box", "c");
+
     int pos = 0;
     leveldb_writebatch_iterate(wb, &pos, CheckPut, CheckDel);
     CheckCondition(pos == 3);
