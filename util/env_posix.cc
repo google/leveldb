@@ -20,13 +20,13 @@
 #include <limits>
 #include <set>
 #include "leveldb/env.h"
+#include "leveldb/options.h"
 #include "leveldb/slice.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
 #include "util/posix_logger.h"
-#include "util/env_posix_test_helper.h"
 
 // HAVE_FDATASYNC is defined in the auto-generated port_config.h, which is
 // included by port_stdcxx.h.
@@ -37,9 +37,6 @@
 namespace leveldb {
 
 namespace {
-
-static int open_read_only_file_limit = -1;
-static int mmap_limit = -1;
 
 static const size_t kBufSize = 65536;
 
@@ -383,13 +380,17 @@ class PosixLockTable {
   }
 };
 
+static Env* default_env;
+
 class PosixEnv : public Env {
  public:
-  PosixEnv();
+  PosixEnv(const EnvOptions&);
   virtual ~PosixEnv() {
-    char msg[] = "Destroying Env::Default()\n";
-    fwrite(msg, 1, sizeof(msg), stderr);
-    abort();
+    if (default_env == this) {
+      char msg[] = "Destroying Env::Default()\n";
+      fwrite(msg, 1, sizeof(msg), stderr);
+      abort();
+    }
   }
 
   virtual Status NewSequentialFile(const std::string& fname,
@@ -631,38 +632,10 @@ class PosixEnv : public Env {
   Limiter fd_limit_;
 };
 
-// Return the maximum number of concurrent mmaps.
-static int MaxMmaps() {
-  if (mmap_limit >= 0) {
-    return mmap_limit;
-  }
-  // Up to 1000 mmaps for 64-bit binaries; none for smaller pointer sizes.
-  mmap_limit = sizeof(void*) >= 8 ? 1000 : 0;
-  return mmap_limit;
-}
-
-// Return the maximum number of read-only files to keep open.
-static intptr_t MaxOpenFiles() {
-  if (open_read_only_file_limit >= 0) {
-    return open_read_only_file_limit;
-  }
-  struct rlimit rlim;
-  if (getrlimit(RLIMIT_NOFILE, &rlim)) {
-    // getrlimit failed, fallback to hard-coded default.
-    open_read_only_file_limit = 50;
-  } else if (rlim.rlim_cur == RLIM_INFINITY) {
-    open_read_only_file_limit = std::numeric_limits<int>::max();
-  } else {
-    // Allow use of 20% of available file descriptors for read-only files.
-    open_read_only_file_limit = rlim.rlim_cur / 5;
-  }
-  return open_read_only_file_limit;
-}
-
-PosixEnv::PosixEnv()
+PosixEnv::PosixEnv(const EnvOptions& options)
     : started_bgthread_(false),
-      mmap_limit_(MaxMmaps()),
-      fd_limit_(MaxOpenFiles()) {
+      mmap_limit_(options.max_mmaps),
+      fd_limit_(options.max_fds) {
   PthreadCall("mutex_init", pthread_mutex_init(&mu_, nullptr));
   PthreadCall("cvar_init", pthread_cond_init(&bgsignal_, nullptr));
 }
@@ -734,22 +707,36 @@ void PosixEnv::StartThread(void (*function)(void* arg), void* arg) {
 }  // namespace
 
 static pthread_once_t once = PTHREAD_ONCE_INIT;
-static Env* default_env;
-static void InitDefaultEnv() { default_env = new PosixEnv; }
-
-void EnvPosixTestHelper::SetReadOnlyFDLimit(int limit) {
-  assert(default_env == nullptr);
-  open_read_only_file_limit = limit;
-}
-
-void EnvPosixTestHelper::SetReadOnlyMMapLimit(int limit) {
-  assert(default_env == nullptr);
-  mmap_limit = limit;
+static void InitDefaultEnv() {
+  EnvOptions default_options;
+  default_env = Env::NewCustom(default_options);
 }
 
 Env* Env::Default() {
   pthread_once(&once, InitDefaultEnv);
   return default_env;
+}
+
+Env* Env::NewCustom(EnvOptions& options) {
+  if (options.max_mmaps == -1) {
+    // Up to 1000 mmaps for 64-bit binaries; none for smaller pointer sizes.
+    options.max_mmaps = sizeof(void*) >= 8 ? 1000 : 0;
+  }
+
+  if (options.max_fds == -1) {
+    struct rlimit rlim;
+    if (getrlimit(RLIMIT_NOFILE, &rlim)) {
+      // getrlimit failed, fallback to hard-coded default.
+      options.max_fds = 50;
+    } else if (rlim.rlim_cur == RLIM_INFINITY) {
+      options.max_fds = std::numeric_limits<int>::max();
+    } else {
+      // Allow use of 20% of available file descriptors for read-only files.
+      options.max_fds = rlim.rlim_cur / 5;
+    }
+  }
+
+  return new PosixEnv(options);
 }
 
 }  // namespace leveldb

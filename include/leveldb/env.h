@@ -22,6 +22,7 @@
 
 namespace leveldb {
 
+class EnvOptions;
 class FileLock;
 class Logger;
 class RandomAccessFile;
@@ -44,6 +45,14 @@ class LEVELDB_EXPORT Env {
   //
   // The result of Default() belongs to leveldb and must never be deleted.
   static Env* Default();
+
+  // Return a unique environment suitable for the current operating
+  // system.  EnvOptions can be customised to change behaviour. After
+  // calling, EnvOptions may be modified for actual options used.
+  //
+  // The result of NewCustom() belongs to the caller and should be deleted
+  // when no longer needed.
+  static Env* NewCustom(EnvOptions&);
 
   // Create a brand new sequentially-readable file with the specified name.
   // On success, stores a pointer to the new file in *result and returns OK.
