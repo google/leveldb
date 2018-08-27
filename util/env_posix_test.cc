@@ -3,10 +3,10 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "leveldb/env.h"
+#include "leveldb/options.h"
 
 #include "port/port.h"
 #include "util/testharness.h"
-#include "util/env_posix_test_helper.h"
 
 namespace leveldb {
 
@@ -17,13 +17,17 @@ static const int kMMapLimit = 4;
 class EnvPosixTest {
  public:
   Env* env_;
-  EnvPosixTest() : env_(Env::Default()) { }
+  static EnvOptions env_options;
+  EnvPosixTest() : env_(Env::NewCustom(env_options)) { }
+  ~EnvPosixTest() { delete env_; }
 
   static void SetFileLimits(int read_only_file_limit, int mmap_limit) {
-    EnvPosixTestHelper::SetReadOnlyFDLimit(read_only_file_limit);
-    EnvPosixTestHelper::SetReadOnlyMMapLimit(mmap_limit);
+    env_options.max_fds = read_only_file_limit;
+    env_options.max_mmaps = mmap_limit;
   }
 };
+
+EnvOptions EnvPosixTest::env_options;
 
 TEST(EnvPosixTest, TestOpenOnRead) {
   // Write some test data to a single file that will be opened |n| times.

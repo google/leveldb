@@ -305,8 +305,6 @@ if(LEVELDB_BUILD_TESTS)
     leveldb_test("${PROJECT_SOURCE_DIR}/util/hash_test.cc")
     leveldb_test("${PROJECT_SOURCE_DIR}/util/logging_test.cc")
 
-    # TODO(costan): This test also uses
-    #               "${PROJECT_SOURCE_DIR}/util/env_posix_test_helper.h"
     leveldb_test("${PROJECT_SOURCE_DIR}/util/env_posix_test.cc")
   endif(NOT BUILD_SHARED_LIBS)
 endif(LEVELDB_BUILD_TESTS)
