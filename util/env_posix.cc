@@ -20,6 +20,7 @@
 #include <limits>
 #include <set>
 #include "leveldb/env.h"
+#include "leveldb/options.h"
 #include "leveldb/slice.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
@@ -383,13 +384,17 @@ class PosixLockTable {
   }
 };
 
+static Env* default_env;
+
 class PosixEnv : public Env {
  public:
-  PosixEnv();
+  PosixEnv(const EnvOptions&);
   virtual ~PosixEnv() {
-    char msg[] = "Destroying Env::Default()\n";
-    fwrite(msg, 1, sizeof(msg), stderr);
-    abort();
+    if (default_env == this) {
+      char msg[] = "Destroying Env::Default()\n";
+      fwrite(msg, 1, sizeof(msg), stderr);
+      abort();
+    }
   }
 
   virtual Status NewSequentialFile(const std::string& fname,
@@ -659,10 +664,10 @@ static intptr_t MaxOpenFiles() {
   return open_read_only_file_limit;
 }
 
-PosixEnv::PosixEnv()
+PosixEnv::PosixEnv(const EnvOptions& options)
     : started_bgthread_(false),
-      mmap_limit_(MaxMmaps()),
-      fd_limit_(MaxOpenFiles()) {
+      mmap_limit_(options.max_mmaps),
+      fd_limit_(options.max_fds) {
   PthreadCall("mutex_init", pthread_mutex_init(&mu_, nullptr));
   PthreadCall("cvar_init", pthread_cond_init(&bgsignal_, nullptr));
 }
@@ -734,8 +739,10 @@ void PosixEnv::StartThread(void (*function)(void* arg), void* arg) {
 }  // namespace
 
 static pthread_once_t once = PTHREAD_ONCE_INIT;
-static Env* default_env;
-static void InitDefaultEnv() { default_env = new PosixEnv; }
+static void InitDefaultEnv() {
+  EnvOptions default_options;
+  default_env = Env::NewCustom(default_options);
+}
 
 void EnvPosixTestHelper::SetReadOnlyFDLimit(int limit) {
   assert(default_env == nullptr);
@@ -750,6 +757,16 @@ void EnvPosixTestHelper::SetReadOnlyMMapLimit(int limit) {
 Env* Env::Default() {
   pthread_once(&once, InitDefaultEnv);
   return default_env;
+}
+
+Env* Env::NewCustom(EnvOptions& options) {
+  if (options.max_mmaps == -1) {
+    options.max_mmaps = MaxMmaps();
+  }
+  if (options.max_fds == -1) {
+    options.max_fds = MaxOpenFiles();
+  }
+  return new PosixEnv(options);
 }
 
 }  // namespace leveldb

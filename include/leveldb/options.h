@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 
 #include <stddef.h>
+#include <stdint.h>
 #include "leveldb/export.h"
 
 namespace leveldb {
@@ -26,6 +27,33 @@ enum CompressionType {
   // part of the persistent format on disk.
   kNoCompression     = 0x0,
   kSnappyCompression = 0x1
+};
+
+// Options to control the behavior of an environment (passed to
+// Env::NewCustom)
+struct EnvOptions {
+  // Number of memory-mapped files that can be used by the DB.  You
+  // may need to increase this if your database has a large working
+  // set (budget one open file per 2MB of working set).
+  //
+  // Only used on POSIX systems.
+  //
+  // Default: -1 (1000 on 64-bit platforms, or 0 otherwise)
+  int max_mmaps;
+
+  // Number of files that can be used by the DB with a fd associated.
+  // You may need to increase this if your database has a large working
+  // set (budget one open file per 2MB of working set).
+  //
+  // Only honored on POSIX systems.
+  //
+  // Default: -1 (20% of ulimit-allowed, or 50 if getrlimit fails)
+  intptr_t max_fds;
+
+  EnvOptions()
+      : max_mmaps(-1),
+        max_fds(-1) {
+  }
 };
 
 // Options to control the behavior of a database (passed to DB::Open)
