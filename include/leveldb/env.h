@@ -45,7 +45,7 @@ class LEVELDB_EXPORT Env {
   // The result of Default() belongs to leveldb and must never be deleted.
   static Env* Default();
 
-  // Create a brand new sequentially-readable file with the specified name.
+  // Create an object that sequentially reads the file with the specified name.
   // On success, stores a pointer to the new file in *result and returns OK.
   // On failure stores nullptr in *result and returns non-OK.  If the file does
   // not exist, returns a non-OK status.  Implementations should return a
@@ -55,7 +55,7 @@ class LEVELDB_EXPORT Env {
   virtual Status NewSequentialFile(const std::string& fname,
                                    SequentialFile** result) = 0;
 
-  // Create a brand new random access read-only file with the
+  // Create an object supporting random-access reads from the file with the
   // specified name.  On success, stores a pointer to the new file in
   // *result and returns OK.  On failure stores nullptr in *result and
   // returns non-OK.  If the file does not exist, returns a non-OK
