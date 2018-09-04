@@ -17,6 +17,13 @@ env:
   - BUILD_TYPE=Debug
   - BUILD_TYPE=RelWithDebInfo
 
+matrix:
+  exclude:
+    # GCC fails on recent Travis OSX images.
+    # https://github.com/travis-ci/travis-ci/issues/9640
+    - compiler: gcc
+      os: osx
+
 addons:
   apt:
     # List of whitelisted in travis packages for ubuntu-trusty can be found here:
