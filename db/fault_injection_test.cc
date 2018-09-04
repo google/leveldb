@@ -85,9 +85,9 @@ Status Truncate(const std::string& filename, uint64_t length) {
 
 struct FileState {
   std::string filename_;
-  ssize_t pos_;
-  ssize_t pos_at_last_sync_;
-  ssize_t pos_at_last_flush_;
+  int64_t pos_;
+  int64_t pos_at_last_sync_;
+  int64_t pos_at_last_flush_;
 
   FileState(const std::string& filename)
       : filename_(filename),
@@ -360,7 +360,7 @@ void FaultInjectionTestEnv::WritableFileClosed(const FileState& state) {
 }
 
 Status FileState::DropUnsyncedData() const {
-  ssize_t sync_pos = pos_at_last_sync_ == -1 ? 0 : pos_at_last_sync_;
+  int64_t sync_pos = pos_at_last_sync_ == -1 ? 0 : pos_at_last_sync_;
   return Truncate(filename_, sync_pos);
 }
 
