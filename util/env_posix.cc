@@ -16,9 +16,12 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+
+#include <atomic>
 #include <deque>
 #include <limits>
 #include <set>
+
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
 #include "port/port.h"
@@ -53,52 +56,41 @@ static Status PosixError(const std::string& context, int err_number) {
 
 // Helper class to limit resource usage to avoid exhaustion.
 // Currently used to limit read-only file descriptors and mmap file usage
-// so that we do not end up running out of file descriptors, virtual memory,
-// or running into kernel performance problems for very large databases.
+// so that we do not run out of file descriptors or virtual memory, or run into
+// kernel performance problems for very large databases.
 class Limiter {
  public:
-  // Limit maximum number of resources to |n|.
-  Limiter(intptr_t n) {
-    SetAllowed(n);
-  }
+  // Limit maximum number of resources to |max_acquires|.
+  Limiter(int max_acquires) : acquires_allowed_(max_acquires) {}
+
+  Limiter(const Limiter&) = delete;
+  Limiter operator=(const Limiter&) = delete;
 
   // If another resource is available, acquire it and return true.
   // Else return false.
-  bool Acquire() LOCKS_EXCLUDED(mu_) {
-    if (GetAllowed() <= 0) {
-      return false;
-    }
-    MutexLock l(&mu_);
-    intptr_t x = GetAllowed();
-    if (x <= 0) {
-      return false;
-    } else {
-      SetAllowed(x - 1);
+  bool Acquire() {
+    int old_acquires_allowed =
+        acquires_allowed_.fetch_sub(1, std::memory_order_relaxed);
+
+    if (old_acquires_allowed > 0)
       return true;
-    }
+
+    acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
+    return false;
   }
 
   // Release a resource acquired by a previous call to Acquire() that returned
   // true.
-  void Release() LOCKS_EXCLUDED(mu_) {
-    MutexLock l(&mu_);
-    SetAllowed(GetAllowed() + 1);
+  void Release() {
+    acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
   }
 
  private:
-  port::Mutex mu_;
-  port::AtomicPointer allowed_;
-
-  intptr_t GetAllowed() const {
-    return reinterpret_cast<intptr_t>(allowed_.Acquire_Load());
-  }
-
-  void SetAllowed(intptr_t v) EXCLUSIVE_LOCKS_REQUIRED(mu_) {
-    allowed_.Release_Store(reinterpret_cast<void*>(v));
-  }
-
-  Limiter(const Limiter&);
-  void operator=(const Limiter&);
+  // The number of available resources.
+  //
+  // This is a counter and is not tied to the invariants of any other class, so
+  // it can be operated on safely using std::memory_order_relaxed.
+  std::atomic<int> acquires_allowed_;
 };
 
 class PosixSequentialFile: public SequentialFile {
