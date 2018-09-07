@@ -100,7 +100,7 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr, size_t n) {
   Status s = dest_->Append(Slice(buf, kHeaderSize));
   if (s.ok()) {
     s = dest_->Append(Slice(ptr, n));
-    if (s.ok()) {
+    if (s.ok() && (t == kLastType || t == kFullType)) {
       s = dest_->Flush();
     }
   }
