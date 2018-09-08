@@ -38,7 +38,8 @@ bool Reader::SkipToInitialBlock() {
   uint64_t block_start_location = initial_offset_ - offset_in_block;
 
   // Don't search a block if we'd be in the trailer
-  if (offset_in_block > kBlockSize - 6) {
+  const int leftover = kBlockSize - offset_in_block;
+  if (leftover < kHeaderSize) {
     block_start_location += kBlockSize;
   }
 
