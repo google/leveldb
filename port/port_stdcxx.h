@@ -84,14 +84,6 @@ class CondVar {
   Mutex* const mu_;
 };
 
-using OnceType = std::once_flag;
-#define LEVELDB_ONCE_INIT {}
-
-// Thinly wraps std::call_once.
-inline void InitOnce(OnceType* once, void (*initializer)()) {
-  std::call_once(*once, *initializer);
-}
-
 inline bool Snappy_Compress(const char* input, size_t length,
                             ::std::string* output) {
 #if HAVE_SNAPPY

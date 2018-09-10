@@ -62,16 +62,6 @@ class CondVar {
   void SignallAll();
 };
 
-// Thread-safe initialization.
-// Used as follows:
-//      static port::OnceType init_control = LEVELDB_ONCE_INIT;
-//      static void Initializer() { ... do something ...; }
-//      ...
-//      port::InitOnce(&init_control, &Initializer);
-typedef intptr_t OnceType;
-#define LEVELDB_ONCE_INIT 0
-void InitOnce(port::OnceType*, void (*initializer)());
-
 // A type that holds a pointer that can be read or written atomically
 // (i.e., without word-tearing.)
 class AtomicPointer {

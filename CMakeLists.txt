@@ -149,6 +149,7 @@ target_sources(leveldb
     "${PROJECT_SOURCE_DIR}/util/logging.cc"
     "${PROJECT_SOURCE_DIR}/util/logging.h"
     "${PROJECT_SOURCE_DIR}/util/mutexlock.h"
+    "${PROJECT_SOURCE_DIR}/util/no_destructor.h"
     "${PROJECT_SOURCE_DIR}/util/options.cc"
     "${PROJECT_SOURCE_DIR}/util/random.h"
     "${PROJECT_SOURCE_DIR}/util/status.cc"
@@ -278,6 +279,7 @@ if(LEVELDB_BUILD_TESTS)
 
   leveldb_test("${PROJECT_SOURCE_DIR}/util/env_test.cc")
   leveldb_test("${PROJECT_SOURCE_DIR}/util/status_test.cc")
+  leveldb_test("${PROJECT_SOURCE_DIR}/util/no_destructor_test.cc")
 
   if(NOT BUILD_SHARED_LIBS)
     leveldb_test("${PROJECT_SOURCE_DIR}/db/autocompact_test.cc")
