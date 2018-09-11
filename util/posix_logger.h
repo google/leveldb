@@ -11,10 +11,11 @@
 #include <sys/time.h>
 
 #include <cassert>
-#include <cinttypes>
 #include <cstdarg>
 #include <cstdio>
 #include <ctime>
+#include <sstream>
+#include <thread>
 
 #include "leveldb/env.h"
 
@@ -22,7 +23,10 @@ namespace leveldb {
 
 class PosixLogger final : public Logger {
  public:
-  PosixLogger(FILE* fp, uint64_t (*gettid)()) : fp_(fp), gettid_(gettid) {
+  // Creates a logger that writes to the given file.
+  //
+  // The PosixLogger instance takes ownership of the file handle.
+  explicit PosixLogger(std::FILE* fp) : fp_(fp) {
     assert(fp != nullptr);
   }
 
@@ -38,7 +42,14 @@ class PosixLogger final : public Logger {
     struct std::tm now_components;
     ::localtime_r(&now_seconds, &now_components);
 
-    const uint64_t thread_id = (*gettid_)();
+    // Record the thread ID.
+    constexpr const int kMaxThreadIdSize = 32;
+    std::ostringstream thread_stream;
+    thread_stream << std::this_thread::get_id();
+    std::string thread_id = thread_stream.str();
+    if (thread_id.size() > kMaxThreadIdSize) {
+      thread_id.resize(kMaxThreadIdSize);
+    }
 
     // We first attempt to print into a stack-allocated buffer. If this attempt
     // fails, we make a second attempt with a dynamically allocated buffer.
@@ -57,7 +68,7 @@ class PosixLogger final : public Logger {
       // Print the header into the buffer.
       int buffer_offset = snprintf(
           buffer, buffer_size,
-          "%04d/%02d/%02d-%02d:%02d:%02d.%06d %" PRIx64 " ",
+          "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s",
           now_components.tm_year + 1900,
           now_components.tm_mon + 1,
           now_components.tm_mday,
@@ -65,12 +76,13 @@ class PosixLogger final : public Logger {
           now_components.tm_min,
           now_components.tm_sec,
           static_cast<int>(now_timeval.tv_usec),
-          thread_id);
+          thread_id.c_str());
 
-      // The header can be at most 48 characters (10 date + 15 time + 3 spacing
-      // + 20 thread ID), which should fit comfortably into the static buffer.
-      assert(buffer_offset <= 48);
-      static_assert(48 < kStackBufferSize,
+      // The header can be at most 28 characters (10 date + 15 time +
+      // 3 spacing) plus the thread ID, which should fit comfortably into the
+      // static buffer.
+      assert(buffer_offset <= 28 + kMaxThreadIdSize);
+      static_assert(28 + kMaxThreadIdSize < kStackBufferSize,
                     "stack-allocated buffer may not fit the message header");
       assert(buffer_offset < buffer_size);
 
@@ -120,7 +132,6 @@ class PosixLogger final : public Logger {
 
  private:
   std::FILE* const fp_;
-  uint64_t (* const gettid_)();  // Return the thread id for the current thread.
 };
 
 }  // namespace leveldb

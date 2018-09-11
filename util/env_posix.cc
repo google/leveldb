@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <pthread.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -19,9 +18,10 @@
 
 #include <atomic>
 #include <cstring>
-#include <deque>
 #include <limits>
+#include <queue>
 #include <set>
+#include <thread>
 
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
@@ -600,20 +600,13 @@ class PosixEnv : public Env {
     return Status::OK();
   }
 
-  static uint64_t gettid() {
-    pthread_t tid = pthread_self();
-    uint64_t thread_id = 0;
-    memcpy(&thread_id, &tid, std::min(sizeof(thread_id), sizeof(tid)));
-    return thread_id;
-  }
-
   virtual Status NewLogger(const std::string& fname, Logger** result) {
     FILE* f = fopen(fname.c_str(), "w");
     if (f == nullptr) {
       *result = nullptr;
       return PosixError(fname, errno);
     } else {
-      *result = new PosixLogger(f, &PosixEnv::gettid);
+      *result = new PosixLogger(f);
       return Status::OK();
     }
   }
@@ -629,29 +622,33 @@ class PosixEnv : public Env {
   }
 
  private:
-  void PthreadCall(const char* label, int result) {
-    if (result != 0) {
-      fprintf(stderr, "pthread %s: %s\n", label, strerror(result));
-      abort();
-    }
+  void BackgroundThreadMain();
+
+  static void BackgroundThreadEntryPoint(PosixEnv* env) {
+    env->BackgroundThreadMain();
   }
 
-  // BGThread() is the body of the background thread
-  void BGThread();
-  static void* BGThreadWrapper(void* arg) {
-    reinterpret_cast<PosixEnv*>(arg)->BGThread();
-    return nullptr;
-  }
+  // Stores the work item data in a Schedule() call.
+  //
+  // Instances are constructed on the thread calling Schedule() and used on the
+  // background thread.
+  //
+  // This structure is thread-safe beacuse it is immutable.
+  struct BackgroundWorkItem {
+    explicit BackgroundWorkItem(void (*function)(void* arg), void* arg)
+        : function(function), arg(arg) {}
 
-  pthread_mutex_t mu_;
-  pthread_cond_t bgsignal_;
-  pthread_t bgthread_;
-  bool started_bgthread_;
+    void (* const function)(void*);
+    void* const arg;
+  };
 
-  // Entry per Schedule() call
-  struct BGItem { void* arg; void (*function)(void*); };
-  typedef std::deque<BGItem> BGQueue;
-  BGQueue queue_;
+
+  port::Mutex background_work_mutex_;
+  port::CondVar background_work_cv_ GUARDED_BY(background_work_mutex_);
+  bool started_background_thread_ GUARDED_BY(background_work_mutex_);
+
+  std::queue<BackgroundWorkItem> background_work_queue_
+      GUARDED_BY(background_work_mutex_);
 
   PosixLockTable locks_;
   Limiter mmap_limit_;
@@ -687,78 +684,59 @@ static intptr_t MaxOpenFiles() {
 }
 
 PosixEnv::PosixEnv()
-    : started_bgthread_(false),
+    : background_work_cv_(&background_work_mutex_),
+      started_background_thread_(false),
       mmap_limit_(MaxMmaps()),
       fd_limit_(MaxOpenFiles()) {
-  PthreadCall("mutex_init", pthread_mutex_init(&mu_, nullptr));
-  PthreadCall("cvar_init", pthread_cond_init(&bgsignal_, nullptr));
 }
 
-void PosixEnv::Schedule(void (*function)(void*), void* arg) {
-  PthreadCall("lock", pthread_mutex_lock(&mu_));
+void PosixEnv::Schedule(
+    void (*background_work_function)(void* background_work_arg),
+    void* background_work_arg) {
+  MutexLock lock(&background_work_mutex_);
 
-  // Start background thread if necessary
-  if (!started_bgthread_) {
-    started_bgthread_ = true;
-    PthreadCall(
-        "create thread",
-        pthread_create(&bgthread_, nullptr,  &PosixEnv::BGThreadWrapper, this));
+  // Start the background thread, if we haven't done so already.
+  if (!started_background_thread_) {
+    started_background_thread_ = true;
+    std::thread background_thread(PosixEnv::BackgroundThreadEntryPoint, this);
+    background_thread.detach();
   }
 
-  // If the queue is currently empty, the background thread may currently be
-  // waiting.
-  if (queue_.empty()) {
-    PthreadCall("signal", pthread_cond_signal(&bgsignal_));
+  // If the queue is empty, the background thread may be waiting for work.
+  if (background_work_queue_.empty()) {
+    background_work_cv_.Signal();
   }
 
-  // Add to priority queue
-  queue_.push_back(BGItem());
-  queue_.back().function = function;
-  queue_.back().arg = arg;
-
-  PthreadCall("unlock", pthread_mutex_unlock(&mu_));
+  background_work_queue_.emplace(background_work_function, background_work_arg);
 }
 
-void PosixEnv::BGThread() {
+void PosixEnv::BackgroundThreadMain() {
   while (true) {
-    // Wait until there is an item that is ready to run
-    PthreadCall("lock", pthread_mutex_lock(&mu_));
-    while (queue_.empty()) {
-      PthreadCall("wait", pthread_cond_wait(&bgsignal_, &mu_));
+    background_work_mutex_.Lock();
+
+    // Wait until there is work to be done.
+    while (background_work_queue_.empty()) {
+      background_work_cv_.Wait();
     }
 
-    void (*function)(void*) = queue_.front().function;
-    void* arg = queue_.front().arg;
-    queue_.pop_front();
+    assert(!background_work_queue_.empty());
+    auto background_work_function =
+        background_work_queue_.front().function;
+    void* background_work_arg = background_work_queue_.front().arg;
+    background_work_queue_.pop();
 
-    PthreadCall("unlock", pthread_mutex_unlock(&mu_));
-    (*function)(arg);
+    background_work_mutex_.Unlock();
+    background_work_function(background_work_arg);
   }
-}
-
-namespace {
-struct StartThreadState {
-  void (*user_function)(void*);
-  void* arg;
-};
-}
-static void* StartThreadWrapper(void* arg) {
-  StartThreadState* state = reinterpret_cast<StartThreadState*>(arg);
-  state->user_function(state->arg);
-  delete state;
-  return nullptr;
-}
-
-void PosixEnv::StartThread(void (*function)(void* arg), void* arg) {
-  pthread_t t;
-  StartThreadState* state = new StartThreadState;
-  state->user_function = function;
-  state->arg = arg;
-  PthreadCall("start thread",
-              pthread_create(&t, nullptr,  &StartThreadWrapper, state));
 }
 
 }  // namespace
+
+void PosixEnv::StartThread(void (*thread_main)(void* thread_main_arg),
+                           void* thread_main_arg) {
+  std::thread new_thread(thread_main, thread_main_arg);
+  new_thread.detach();
+}
 
 static pthread_once_t once = PTHREAD_ONCE_INIT;
 static Env* default_env;
