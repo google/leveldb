@@ -38,6 +38,7 @@ include(CheckCXXSymbolExists)
 # (-std=c11), but do expose the function in standard C++ mode (-std=c++11).
 check_cxx_symbol_exists(fdatasync "unistd.h" HAVE_FDATASYNC)
 check_cxx_symbol_exists(F_FULLFSYNC "fcntl.h" HAVE_FULLFSYNC)
+check_cxx_symbol_exists(O_CLOEXEC "fcntl.h" HAVE_O_CLOEXEC)
 
 include(CheckCXXSourceCompiles)
 

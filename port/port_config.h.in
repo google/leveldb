@@ -15,6 +15,11 @@
 #cmakedefine01 HAVE_FULLFSYNC
 #endif  // !defined(HAVE_FULLFSYNC)
 
+// Define to 1 if you have a definition for O_CLOEXEC in <fcntl.h>.
+#if !defined(HAVE_O_CLOEXEC)
+#cmakedefine01 HAVE_O_CLOEXEC
+#endif  // !defined(HAVE_O_CLOEXEC)
+
 // Define to 1 if you have Google CRC32C.
 #if !defined(HAVE_CRC32C)
 #cmakedefine01 HAVE_CRC32C
