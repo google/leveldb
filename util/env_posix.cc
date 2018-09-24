@@ -17,18 +17,21 @@
 #include <unistd.h>
 
 #include <atomic>
+#include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <limits>
 #include <queue>
 #include <set>
+#include <string>
 #include <thread>
+#include <type_traits>
 
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
+#include "leveldb/status.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
-#include "util/logging.h"
-#include "util/mutexlock.h"
 #include "util/posix_logger.h"
 #include "util/env_posix_test_helper.h"
 
@@ -401,12 +404,15 @@ class PosixLockTable {
   std::set<std::string> locked_files_ GUARDED_BY(mu_);
  public:
   bool Insert(const std::string& fname) LOCKS_EXCLUDED(mu_) {
-    MutexLock l(&mu_);
-    return locked_files_.insert(fname).second;
+    mu_.Lock();
+    bool succeeded = locked_files_.insert(fname).second;
+    mu_.Unlock();
+    return succeeded;
   }
   void Remove(const std::string& fname) LOCKS_EXCLUDED(mu_) {
-    MutexLock l(&mu_);
+    mu_.Lock();
     locked_files_.erase(fname);
+    mu_.Unlock();
   }
 };
 
@@ -693,7 +699,7 @@ PosixEnv::PosixEnv()
 void PosixEnv::Schedule(
     void (*background_work_function)(void* background_work_arg),
     void* background_work_arg) {
-  MutexLock lock(&background_work_mutex_);
+  background_work_mutex_.Lock();
 
   // Start the background thread, if we haven't done so already.
   if (!started_background_thread_) {
@@ -708,6 +714,7 @@ void PosixEnv::Schedule(
   }
 
   background_work_queue_.emplace(background_work_function, background_work_arg);
+  background_work_mutex_.Unlock();
 }
 
 void PosixEnv::BackgroundThreadMain() {
@@ -730,6 +737,59 @@ void PosixEnv::BackgroundThreadMain() {
   }
 }
 
+// Wraps an Env instance whose destructor is never created.
+//
+// Intended usage:
+//   using PlatformSingletonEnv = SingletonEnv<PlatformEnv>;
+//   void ConfigurePosixEnv(int param) {
+//     PlatformSingletonEnv::AssertEnvNotInitialized();
+//     // set global configuration flags.
+//   }
+//   Env* Env::Default() {
+//     static PlatformSingletonEnv default_env;
+//     return default_env.env();
+//   }
+template<typename EnvType>
+class SingletonEnv {
+ public:
+  SingletonEnv() {
+#if !defined(NDEBUG)
+    env_initialized_.store(true, std::memory_order::memory_order_relaxed);
+#endif  // !defined(NDEBUG)
+    static_assert(sizeof(env_storage_) >= sizeof(EnvType),
+                  "env_storage_ will not fit the Env");
+    static_assert(alignof(decltype(env_storage_)) >= alignof(EnvType),
+                  "env_storage_ does not meet the Env's alignment needs");
+    new (&env_storage_) EnvType();
+  }
+  ~SingletonEnv() = default;
+
+  SingletonEnv(const SingletonEnv&) = delete;
+  SingletonEnv& operator=(const SingletonEnv&) = delete;
+
+  Env* env() { return reinterpret_cast<Env*>(&env_storage_); }
+
+  static void AssertEnvNotInitialized() {
+#if !defined(NDEBUG)
+    assert(!env_initialized_.load(std::memory_order::memory_order_relaxed));
+#endif  // !defined(NDEBUG)
+  }
+
+ private:
+  typename std::aligned_storage<sizeof(EnvType), alignof(EnvType)>::type
+      env_storage_;
+#if !defined(NDEBUG)
+  static std::atomic<bool> env_initialized_;
+#endif  // !defined(NDEBUG)
+};
+
+#if !defined(NDEBUG)
+template<typename EnvType>
+std::atomic<bool> SingletonEnv<EnvType>::env_initialized_;
+#endif  // !defined(NDEBUG)
+
+using PosixDefaultEnv = SingletonEnv<PosixEnv>;
+
 }  // namespace
 
 void PosixEnv::StartThread(void (*thread_main)(void* thread_main_arg),
@@ -738,23 +798,19 @@ void PosixEnv::StartThread(void (*thread_main)(void* thread_main_arg),
   new_thread.detach();
 }
 
-static pthread_once_t once = PTHREAD_ONCE_INIT;
-static Env* default_env;
-static void InitDefaultEnv() { default_env = new PosixEnv; }
-
 void EnvPosixTestHelper::SetReadOnlyFDLimit(int limit) {
-  assert(default_env == nullptr);
+  PosixDefaultEnv::AssertEnvNotInitialized();
   open_read_only_file_limit = limit;
 }
 
 void EnvPosixTestHelper::SetReadOnlyMMapLimit(int limit) {
-  assert(default_env == nullptr);
+  PosixDefaultEnv::AssertEnvNotInitialized();
   mmap_limit = limit;
 }
 
 Env* Env::Default() {
-  pthread_once(&once, InitDefaultEnv);
-  return default_env;
+  static PosixDefaultEnv env_container;
+  return env_container.env();
 }
 
 }  // namespace leveldb
