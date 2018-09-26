@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.6.3)
 project(leveldb VERSION 1.21.0 LANGUAGES C CXX)
 
 # This project can use C11, but will gracefully decay down to C89.
@@ -173,12 +173,20 @@ target_sources(leveldb
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/write_batch.h"
 )
 
-# POSIX code is specified separately so we can leave it out in the future.
-target_sources(leveldb
-  PRIVATE
-    "${PROJECT_SOURCE_DIR}/util/env_posix.cc"
-    "${PROJECT_SOURCE_DIR}/util/posix_logger.h"
-)
+if(WIN32)
+  target_sources(leveldb
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/util/env_win.cc"
+      "${PROJECT_SOURCE_DIR}/port/mman.c"
+  )
+else()
+  # POSIX code is specified separately so we can leave it out in the future.
+  target_sources(leveldb
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/util/env_posix.cc"
+      "${PROJECT_SOURCE_DIR}/util/posix_logger.h"
+  )
+endif()
 
 # MemEnv is not part of the interface and could be pulled to a separate library.
 target_sources(leveldb
