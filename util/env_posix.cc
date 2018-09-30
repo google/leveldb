@@ -234,20 +234,22 @@ class PosixWritableFile final : public WritableFile {
     size_t write_size = data.size();
     const char* write_data = data.data();
 
-    // Fit as much as possible into buffer.
-    size_t copy_size = std::min(write_size, kWritableFileBufferSize - pos_);
-    std::memcpy(buf_ + pos_, write_data, copy_size);
-    write_data += copy_size;
-    write_size -= copy_size;
-    pos_ += copy_size;
-    if (write_size == 0) {
-      return Status::OK();
-    }
+    if (pos_ != 0) {
+      // Fit as much as possible into buffer.
+      size_t copy_size = std::min(write_size, kWritableFileBufferSize - pos_);
+      std::memcpy(buf_ + pos_, write_data, copy_size);
+      write_data += copy_size;
+      write_size -= copy_size;
+      pos_ += copy_size;
+      if (write_size == 0) {
+        return Status::OK();
+      }
 
-    // Can't fit in buffer, so need to do at least one write.
-    Status status = FlushBuffer();
-    if (!status.ok()) {
-      return status;
+      // Can't fit in buffer, so need to do at least one write.
+      Status status = FlushBuffer();
+      if (!status.ok()) {
+        return status;
+      }
     }
 
     // Small writes go to buffer, large writes are written directly.
