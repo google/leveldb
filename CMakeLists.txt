@@ -19,6 +19,8 @@ option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" ON)
 option(LEVELDB_BUILD_BENCHMARKS "Build LevelDB's benchmarks" ON)
 option(LEVELDB_INSTALL "Install LevelDB's header and library" ON)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
 include(TestBigEndian)
 test_big_endian(LEVELDB_IS_BIG_ENDIAN)
 
@@ -27,7 +29,11 @@ check_include_file("unistd.h" HAVE_UNISTD_H)
 
 include(CheckLibraryExists)
 check_library_exists(crc32c crc32c_value "" HAVE_CRC32C)
-check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
+#check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
+find_package(Snappy)
+if(SNAPPY_FOUND)
+  set(HAVE_SNAPPY 1)
+endif(SNAPPY_FOUND)
 check_library_exists(tcmalloc malloc "" HAVE_TCMALLOC)
 
 include(CheckSymbolExists)
