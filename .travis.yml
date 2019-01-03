@@ -2,8 +2,7 @@
 # http://about.travis-ci.org/docs/user/build-configuration/
 # This file can be validated on: http://lint.travis-ci.org/
 
-sudo: false
-dist: trusty
+dist: xenial
 language: cpp
 
 compiler:
@@ -26,38 +25,39 @@ matrix:
 
 addons:
   apt:
-    # List of whitelisted in travis packages for ubuntu-trusty can be found here:
-    #   https://github.com/travis-ci/apt-package-whitelist/blob/master/ubuntu-trusty
-    # List of whitelisted in travis apt-sources:
-    #   https://github.com/travis-ci/apt-source-whitelist/blob/master/ubuntu.json
     sources:
+    - llvm-toolchain-xenial-7
     - ubuntu-toolchain-r-test
-    - llvm-toolchain-trusty-5.0
     packages:
+    - clang-7
     - cmake
-    - gcc-7
-    - g++-7
-    - clang-5.0
+    - gcc-8
+    - g++-8
     - libgoogle-perftools-dev
     - libkyotocabinet-dev
     - libsnappy-dev
     - libsqlite3-dev
+    - ninja-build
+  homebrew:
+    packages:
+    - crc32c
+    - gperftools
+    - kyotocabinet
+    - gcc@7
+    - ninja
+    - snappy
+    - sqlite3
 
-install:
-# Travis doesn't have a DSL for installing homebrew packages yet. Status tracked
-# in https://github.com/travis-ci/travis-ci/issues/5377
+before_install:
 # The Travis VM image for Mac already has a link at /usr/local/include/c++,
-# causing Homebrew's gcc@7 installation to error out. This was reported to
+# causing Homebrew's gcc installation to error out. This was reported to
 # Homebrew maintainers at https://github.com/Homebrew/brew/issues/1742 and
 # removing the link emerged as a workaround.
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then
-    brew update;
-    if [ -L /usr/local/include/c++ ]; then rm /usr/local/include/c++; fi;
-    brew install gcc@7;
-    brew install crc32c gperftools kyoto-cabinet snappy sqlite3;
-  fi
+- if [ "$TRAVIS_OS_NAME" == "osx" ]; then rm -f /usr/local/include/c++ ; fi
+
+install:
 # /usr/bin/gcc is stuck to old versions on both Linux and OSX.
-- if [ "$CXX" = "g++" ]; then export CXX="g++-7" CC="gcc-7"; fi
+- if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi
 - echo ${CC}
 - echo ${CXX}
 - ${CXX} --version
@@ -65,7 +65,7 @@ install:
 
 before_script:
 - mkdir -p build && cd build
-- cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+- cmake .. -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 - cmake --build .
 - cd ..
 
