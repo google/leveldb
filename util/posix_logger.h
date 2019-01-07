@@ -68,7 +68,7 @@ class PosixLogger final : public Logger {
       // Print the header into the buffer.
       int buffer_offset = snprintf(
           buffer, buffer_size,
-          "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s",
+          "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
           now_components.tm_year + 1900,
           now_components.tm_mon + 1,
           now_components.tm_mday,
@@ -79,7 +79,7 @@ class PosixLogger final : public Logger {
           thread_id.c_str());
 
       // The header can be at most 28 characters (10 date + 15 time +
-      // 3 spacing) plus the thread ID, which should fit comfortably into the
+      // 3 delimiters) plus the thread ID, which should fit comfortably into the
       // static buffer.
       assert(buffer_offset <= 28 + kMaxThreadIdSize);
       static_assert(28 + kMaxThreadIdSize < kStackBufferSize,
