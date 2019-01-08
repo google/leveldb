@@ -6,9 +6,9 @@
 #define STORAGE_LEVELDB_PORT_PORT_CONFIG_H_
 
 // Define to 1 if you have a definition for fdatasync() in <unistd.h>.
-#if !defined(HAVE_FUNC_FDATASYNC)
-#cmakedefine01 HAVE_FUNC_FDATASYNC
-#endif  // !defined(HAVE_FUNC_FDATASYNC)
+#if !defined(HAVE_FDATASYNC)
+#cmakedefine01 HAVE_FDATASYNC
+#endif  // !defined(HAVE_FDATASYNC)
 
 // Define to 1 if you have Google CRC32C.
 #if !defined(HAVE_CRC32C)
