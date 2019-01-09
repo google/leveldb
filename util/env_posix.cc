@@ -35,12 +35,6 @@
 #include "util/posix_logger.h"
 #include "util/env_posix_test_helper.h"
 
-// HAVE_FDATASYNC is defined in the auto-generated port_config.h, which is
-// included by port_stdcxx.h.
-#if !HAVE_FDATASYNC
-#define fdatasync fsync
-#endif  // !HAVE_FDATASYNC
-
 namespace leveldb {
 
 namespace {
@@ -314,10 +308,11 @@ class PosixWritableFile final : public WritableFile {
     }
 
     status = FlushBuffer();
-    if (status.ok() && ::fdatasync(fd_) != 0) {
-      status = PosixError(filename_, errno);
+    if (!status.ok()) {
+      return status;
     }
-    return status;
+
+    return SyncFd(fd_, filename_);
   }
 
  private:
@@ -352,12 +347,39 @@ class PosixWritableFile final : public WritableFile {
     if (fd < 0) {
       status = PosixError(dirname_, errno);
     } else {
-      if (::fsync(fd) < 0) {
-        status = PosixError(dirname_, errno);
-      }
+      status = SyncFd(fd, dirname_);
       ::close(fd);
     }
     return status;
+  }
+
+  // Ensures that all the caches associated with the given file descriptor's
+  // data are flushed all the way to durable media, and can withstand power
+  // failures.
+  //
+  // The path argument is only used to populate the description string in the
+  // returned Status if an error occurs.
+  static Status SyncFd(int fd, const std::string& fd_path) {
+#if HAVE_FULLFSYNC
+    // On macOS and iOS, fsync() doesn't guarantee durability past power
+    // failures. fcntl(F_FULLFSYNC) is required for that purpose. Some
+    // filesystems don't support fcntl(F_FULLFSYNC), and require a fallback to
+    // fsync().
+    if (::fcntl(fd, F_FULLFSYNC) == 0) {
+      return Status::OK();
+    }
+#endif  // HAVE_FULLFSYNC
+
+#if HAVE_FDATASYNC
+    bool sync_success = ::fdatasync(fd) == 0;
+#else
+    bool sync_success = ::fsync(fd) == 0;
+#endif  // HAVE_FDATASYNC
+
+    if (sync_success) {
+      return Status::OK();
+    }
+    return PosixError(fd_path, errno);
   }
 
   // Returns the directory name in a path pointing to a file.
