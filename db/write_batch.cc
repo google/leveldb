@@ -39,7 +39,7 @@ void WriteBatch::Clear() {
   rep_.resize(kHeader);
 }
 
-size_t WriteBatch::ApproximateSize() {
+size_t WriteBatch::ApproximateSize() const {
   return rep_.size();
 }
 
