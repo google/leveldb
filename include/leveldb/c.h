@@ -52,6 +52,7 @@ extern "C" {
 /* Exported types */
 
 typedef struct leveldb_t               leveldb_t;
+typedef struct leveldb_table_t         leveldb_table_t;
 typedef struct leveldb_cache_t         leveldb_cache_t;
 typedef struct leveldb_comparator_t    leveldb_comparator_t;
 typedef struct leveldb_env_t           leveldb_env_t;
@@ -73,7 +74,12 @@ typedef struct leveldb_writeoptions_t  leveldb_writeoptions_t;
 LEVELDB_EXPORT leveldb_t* leveldb_open(const leveldb_options_t* options,
                                        const char* name, char** errptr);
 
+LEVELDB_EXPORT leveldb_table_t* leveldb_table_open(const leveldb_options_t* options,
+                                                   const char* fname, char** errptr);
+
 LEVELDB_EXPORT void leveldb_close(leveldb_t* db);
+
+LEVELDB_EXPORT void leveldb_table_close(leveldb_table_t* table);
 
 LEVELDB_EXPORT void leveldb_put(leveldb_t* db,
                                 const leveldb_writeoptions_t* options,
@@ -98,6 +104,9 @@ LEVELDB_EXPORT char* leveldb_get(leveldb_t* db,
 
 LEVELDB_EXPORT leveldb_iterator_t* leveldb_create_iterator(
     leveldb_t* db, const leveldb_readoptions_t* options);
+
+LEVELDB_EXPORT leveldb_iterator_t* leveldb_table_create_iterator(
+    leveldb_table_t* table, const leveldb_readoptions_t* options);
 
 LEVELDB_EXPORT const leveldb_snapshot_t* leveldb_create_snapshot(leveldb_t* db);
 

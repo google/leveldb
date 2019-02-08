@@ -146,6 +146,7 @@ unsigned char FilterKeyMatch(
 
 int main(int argc, char** argv) {
   leveldb_t* db;
+  leveldb_table_t* table;
   leveldb_comparator_t* cmp;
   leveldb_cache_t* cache;
   leveldb_env_t* env;
@@ -268,6 +269,14 @@ int main(int argc, char** argv) {
     leveldb_iter_destroy(iter);
   }
 
+  StartPhase("open table");
+  {
+    char tablepath[128];
+    snprintf(tablepath, 128, "%s/000005.ldb", dbname);
+    table = leveldb_table_open(leveldb_options_create(), tablepath, &err);
+    CheckNoError(err);
+  }
+
   StartPhase("approximate_sizes");
   {
     int i;
@@ -373,6 +382,7 @@ int main(int argc, char** argv) {
 
   StartPhase("cleanup");
   leveldb_close(db);
+  leveldb_table_close(table);
   leveldb_options_destroy(options);
   leveldb_readoptions_destroy(roptions);
   leveldb_writeoptions_destroy(woptions);
