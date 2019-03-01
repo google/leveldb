@@ -97,6 +97,9 @@ class RecoveryTest {
   }
 
   size_t DeleteLogFiles() {
+    // Linux allows unlinking open files, but Windows does not.
+    // Closing the db allows for file deletion.
+    Close();
     std::vector<uint64_t> logs = GetFiles(kLogFile);
     for (size_t i = 0; i < logs.size(); i++) {
       ASSERT_OK(env_->DeleteFile(LogName(logs[i]))) << LogName(logs[i]);

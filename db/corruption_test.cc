@@ -20,6 +20,10 @@
 #include "util/testharness.h"
 #include "util/testutil.h"
 
+#if defined(LEVELDB_PLATFORM_WINDOWS)
+#include "util/env_windows_test_helper.h"
+#endif  // defined(LEVELDB_PLATFORM_WINDOWS)
+
 namespace leveldb {
 
 static const int kValueSize = 1000;
@@ -31,6 +35,17 @@ class CorruptionTest {
   Cache* tiny_cache_;
   Options options_;
   DB* db_;
+
+#if defined(LEVELDB_PLATFORM_WINDOWS)
+  static void SetFileLimits(int mmap_limit) {
+    EnvWindowsTestHelper::SetReadOnlyMMapLimit(mmap_limit);
+  }
+
+  // TODO(cmumford): Modify corruption_test to use MemEnv and remove.
+  static void RelaxFilePermissions() {
+    EnvWindowsTestHelper::RelaxFilePermissions();
+  }
+#endif  // defined(LEVELDB_PLATFORM_WINDOWS)
 
   CorruptionTest() {
     tiny_cache_ = NewLRUCache(100);
@@ -370,5 +385,16 @@ TEST(CorruptionTest, UnrelatedKeys) {
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
+#if defined(LEVELDB_PLATFORM_WINDOWS)
+  // When Windows maps the contents of a file into memory, even if read/write,
+  // subsequent attempts to open that file for write access will fail. Forcing
+  // all RandomAccessFile instances to use base file I/O (e.g. ReadFile)
+  // allows these tests to open files in order to corrupt their contents.
+  leveldb::CorruptionTest::SetFileLimits(0);
+
+  // Allow this test to write to (and corrupt) files which are normally
+  // open for exclusive read access.
+  leveldb::CorruptionTest::RelaxFilePermissions();
+#endif  // defined(LEVELDB_PLATFORM_WINDOWS)
   return leveldb::test::RunAllTests();
 }

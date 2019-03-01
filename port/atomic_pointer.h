@@ -22,10 +22,6 @@
 
 #include <atomic>
 
-#ifdef OS_WIN
-#include <windows.h>
-#endif
-
 #if defined(_M_X64) || defined(__x86_64__)
 #define ARCH_CPU_X86_FAMILY 1
 #elif defined(_M_IX86) || defined(__i386__) || defined(__i386)

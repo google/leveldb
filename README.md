@@ -30,12 +30,37 @@ Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
 
 This project supports [CMake](https://cmake.org/) out of the box.
 
+### Build for POSIX
+
 Quick start:
 
 ```bash
 mkdir -p build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
 ```
+
+### Building for Windows
+
+First generate the Visual Studio 2017 project/solution files:
+
+```bash
+mkdir -p build
+cd build
+cmake -G "Visual Studio 15" ..
+```
+The default default will build for x86. For 64-bit run:
+
+```bash
+cmake -G "Visual Studio 15 Win64" ..
+```
+
+To compile the Windows solution from the command-line:
+
+```bash
+devenv /build Debug leveldb.sln
+```
+
+or open leveldb.sln in Visual Studio and build from within.
 
 Please see the CMake documentation and `CMakeLists.txt` for more advanced usage.
 
@@ -48,10 +73,10 @@ will be considered.
 
 Contribution requirements:
 
-1. **POSIX only**. We _generally_ will only accept changes that are both
-   compiled, and tested on a POSIX platform - usually Linux. Very small
-   changes will sometimes be accepted, but consider that more of an
-   exception than the rule.
+1. **Tested platforms only**. We _generally_ will only accept changes for
+   platforms that are compiled and tested. This means POSIX (for Linux and
+   macOS) or Windows. Very small changes will sometimes be accepted, but
+   consider that more of an exception than the rule.
 
 2. **Stable API**. We strive very hard to maintain a stable API. Changes that
    require changes for projects using leveldb _might_ be rejected without

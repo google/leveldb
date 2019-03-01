@@ -143,8 +143,8 @@ bool SomeFileOverlapsRange(
   uint32_t index = 0;
   if (smallest_user_key != nullptr) {
     // Find the earliest possible internal key for smallest_user_key
-    InternalKey small(*smallest_user_key, kMaxSequenceNumber,kValueTypeForSeek);
-    index = FindFile(icmp, files, small.Encode());
+    InternalKey small_key(*smallest_user_key, kMaxSequenceNumber,kValueTypeForSeek);
+    index = FindFile(icmp, files, small_key.Encode());
   }
 
   if (index >= files.size()) {
@@ -700,7 +700,7 @@ class VersionSet::Builder {
       // same as the compaction of 40KB of data.  We are a little
       // conservative and allow approximately one seek for every 16KB
       // of data before triggering a compaction.
-      f->allowed_seeks = (f->file_size / 16384);
+      f->allowed_seeks = static_cast<int>((f->file_size / 16384U));
       if (f->allowed_seeks < 100) f->allowed_seeks = 100;
 
       levels_[level].deleted_files.erase(f->number);
