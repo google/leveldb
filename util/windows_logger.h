@@ -58,7 +58,7 @@ class WindowsLogger final : public Logger {
       // Print the header into the buffer.
       // TODO(costan): Sync this logger with another logger.
       int buffer_offset = snprintf(
-          buffer, buffer_size, "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
+          buffer, buffer_size, "%04d/%02d/%02d-%02d:%02d:%02d.%06d %llu ",
           now_components.wYear, now_components.wMonth, now_components.wDay,
           now_components.wHour, now_components.wMinute, now_components.wSecond,
           static_cast<int>(now_components.wMilliseconds * 1000),
@@ -106,7 +106,9 @@ class WindowsLogger final : public Logger {
       }
 
       assert(buffer_offset <= buffer_size);
-      ::WriteFile(handle_, buffer, buffer_offset, nullptr, nullptr);
+
+      DWORD written = 0;
+      ::WriteFile(handle_, buffer, buffer_offset, &written, nullptr);
 
       if (iteration != 0) {
         delete[] buffer;
