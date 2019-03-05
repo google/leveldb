@@ -20,9 +20,6 @@ configuration:
   - RelWithDebInfo
   - Debug
 
-build:
-  verbosity: minimal
-
 build_script:
   - git submodule update --init --recursive
   - mkdir build
@@ -35,4 +32,4 @@ build_script:
   - cd ..
 
 test_script:
-  - cd build ; ctest --verbose ; cd ..
+  - cd build && ctest --verbose --build-config "%CONFIGURATION%" && cd ..

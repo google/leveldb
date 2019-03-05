@@ -70,7 +70,7 @@ before_script:
 - cd ..
 
 script:
-- cd build ; ctest --verbose ; cd ..
+- cd build && ctest --verbose && cd ..
 - "if [ -f build/db_bench ] ; then build/db_bench ; fi"
 - "if [ -f build/db_bench_sqlite3 ] ; then build/db_bench_sqlite3 ; fi"
 - "if [ -f build/db_bench_tree_db ] ; then build/db_bench_tree_db ; fi"
