@@ -62,7 +62,7 @@ class WindowsLogger final : public Logger {
           now_components.wYear, now_components.wMonth, now_components.wDay,
           now_components.wHour, now_components.wMinute, now_components.wSecond,
           static_cast<int>(now_components.wMilliseconds * 1000),
-          std::stoull(thread_id));
+          thread_id.c_str());
 
       // The header can be at most 28 characters (10 date + 15 time +
       // 3 spacing) plus the thread ID, which should fit comfortably into the
