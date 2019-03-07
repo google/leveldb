@@ -7,10 +7,9 @@
 #ifndef STORAGE_LEVELDB_UTIL_WINDOWS_LOGGER_H_
 #define STORAGE_LEVELDB_UTIL_WINDOWS_LOGGER_H_
 
-#include <stdio.h>
-
 #include <cassert>
 #include <cstdarg>
+#include <cstdio>
 #include <ctime>
 #include <sstream>
 #include <thread>
@@ -21,11 +20,16 @@ namespace leveldb {
 
 class WindowsLogger final : public Logger {
  public:
-  WindowsLogger(HANDLE handle) : handle_(handle) {
-    assert(handle != INVALID_HANDLE_VALUE);
+  // Creates a logger that writes to the given file.
+  //
+  // The PosixLogger instance takes ownership of the file handle.
+  explicit WindowsLogger(std::FILE* fp) : fp_(fp) {
+    assert(fp != nullptr);
   }
 
-  ~WindowsLogger() override { ::CloseHandle(handle_); }
+  ~WindowsLogger() override {
+    std::fclose(fp_);
+  }
 
   void Logv(const char* format, va_list arguments) override {
     // Record the time as close to the Logv() call as possible.
@@ -56,16 +60,20 @@ class WindowsLogger final : public Logger {
           (iteration == 0) ? stack_buffer : new char[dynamic_buffer_size];
 
       // Print the header into the buffer.
-      // TODO(costan): Sync this logger with another logger.
       int buffer_offset = snprintf(
-          buffer, buffer_size, "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
-          now_components.wYear, now_components.wMonth, now_components.wDay,
-          now_components.wHour, now_components.wMinute, now_components.wSecond,
+          buffer, buffer_size,
+          "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
+          now_components.wYear,
+          now_components.wMonth,
+          now_components.wDay,
+          now_components.wHour,
+          now_components.wMinute,
+          now_components.wSecond,
           static_cast<int>(now_components.wMilliseconds * 1000),
-          std::stoull(thread_id));
+          thread_id.c_str());
 
       // The header can be at most 28 characters (10 date + 15 time +
-      // 3 spacing) plus the thread ID, which should fit comfortably into the
+      // 3 delimiters) plus the thread ID, which should fit comfortably into the
       // static buffer.
       assert(buffer_offset <= 28 + kMaxThreadIdSize);
       static_assert(28 + kMaxThreadIdSize < kStackBufferSize,
@@ -106,7 +114,8 @@ class WindowsLogger final : public Logger {
       }
 
       assert(buffer_offset <= buffer_size);
-      ::WriteFile(handle_, buffer, buffer_offset, nullptr, nullptr);
+      std::fwrite(buffer, 1, buffer_offset, fp_);
+      std::fflush(fp_);
 
       if (iteration != 0) {
         delete[] buffer;
@@ -116,7 +125,7 @@ class WindowsLogger final : public Logger {
   }
 
  private:
-  HANDLE handle_;
+  std::FILE* const fp_;
 };
 
 }  // namespace leveldb

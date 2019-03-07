@@ -621,15 +621,15 @@ class WindowsEnv : public Env {
     return Status::OK();
   }
 
-  Status NewLogger(const std::string& fname, Logger** result) override {
-    ScopedHandle handle =
-        ::CreateFileA(fname.c_str(), GENERIC_WRITE, FILE_SHARE_READ, nullptr,
-                      CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-    if (!handle.is_valid()) {
+  Status NewLogger(const std::string& filename, Logger** result) override {
+    std::FILE* fp = std::fopen(filename.c_str(), "w");
+    if (fp == nullptr) {
+      *result = nullptr;
       return WindowsError("NewLogger", ::GetLastError());
+    } else {
+      *result = new WindowsLogger(fp);
+      return Status::OK();
     }
-    *result = new WindowsLogger(handle.Release());
-    return Status::OK();
   }
 
   uint64_t NowMicros() override {

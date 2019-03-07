@@ -188,17 +188,17 @@ target_sources(leveldb
 )
 
 if (WIN32)
-target_sources(leveldb
-  PRIVATE
-    "${PROJECT_SOURCE_DIR}/util/env_windows.cc"
-    "${PROJECT_SOURCE_DIR}/util/windows_logger.h"
-)
+  target_sources(leveldb
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/util/env_windows.cc"
+      "${PROJECT_SOURCE_DIR}/util/windows_logger.h"
+  )
 else (WIN32)
-target_sources(leveldb
-  PRIVATE
-    "${PROJECT_SOURCE_DIR}/util/env_posix.cc"
-    "${PROJECT_SOURCE_DIR}/util/posix_logger.h"
-)
+  target_sources(leveldb
+    PRIVATE
+      "${PROJECT_SOURCE_DIR}/util/env_posix.cc"
+      "${PROJECT_SOURCE_DIR}/util/posix_logger.h"
+  )
 endif (WIN32)
 
 # MemEnv is not part of the interface and could be pulled to a separate library.
