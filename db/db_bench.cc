@@ -34,7 +34,6 @@
 //      seekrandom    -- N random seeks
 //      open          -- cost of opening a DB
 //      crc32c        -- repeated crc32c of 4K of data
-//      acquireload   -- load N*1000 times
 //   Meta operations:
 //      compact     -- Compact the entire DB
 //      stats       -- Print DB stats
@@ -57,7 +56,6 @@ static const char* FLAGS_benchmarks =
     "crc32c,"
     "snappycomp,"
     "snappyuncomp,"
-    "acquireload,"
     ;
 
 // Number of key/values to place in database
@@ -510,8 +508,6 @@ class Benchmark {
         method = &Benchmark::Compact;
       } else if (name == Slice("crc32c")) {
         method = &Benchmark::Crc32c;
-      } else if (name == Slice("acquireload")) {
-        method = &Benchmark::AcquireLoad;
       } else if (name == Slice("snappycomp")) {
         method = &Benchmark::SnappyCompress;
       } else if (name == Slice("snappyuncomp")) {
@@ -637,22 +633,6 @@ class Benchmark {
 
     thread->stats.AddBytes(bytes);
     thread->stats.AddMessage(label);
-  }
-
-  void AcquireLoad(ThreadState* thread) {
-    int dummy;
-    port::AtomicPointer ap(&dummy);
-    int count = 0;
-    void *ptr = nullptr;
-    thread->stats.AddMessage("(each op is 1000 loads)");
-    while (count < 100000) {
-      for (int i = 0; i < 1000; i++) {
-        ptr = ap.Acquire_Load();
-      }
-      count++;
-      thread->stats.FinishedSingleOp();
-    }
-    if (ptr == nullptr) exit(1); // Disable unused variable warning.
   }
 
   void SnappyCompress(ThreadState* thread) {

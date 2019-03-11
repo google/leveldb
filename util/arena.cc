@@ -3,7 +3,6 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "util/arena.h"
-#include <assert.h>
 
 namespace leveldb {
 
@@ -60,8 +59,8 @@ char* Arena::AllocateAligned(size_t bytes) {
 char* Arena::AllocateNewBlock(size_t block_bytes) {
   char* result = new char[block_bytes];
   blocks_.push_back(result);
-  memory_usage_.NoBarrier_Store(
-      reinterpret_cast<void*>(MemoryUsage() + block_bytes + sizeof(char*)));
+  memory_usage_.fetch_add(block_bytes + sizeof(char*),
+                          std::memory_order_relaxed);
   return result;
 }
 

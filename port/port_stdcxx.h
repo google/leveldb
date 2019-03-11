@@ -35,7 +35,6 @@
 #include <condition_variable>  // NOLINT
 #include <mutex>               // NOLINT
 #include <string>
-#include "port/atomic_pointer.h"
 #include "port/thread_annotations.h"
 
 namespace leveldb {

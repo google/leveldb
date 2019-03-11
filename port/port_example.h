@@ -62,35 +62,6 @@ class CondVar {
   void SignallAll();
 };
 
-// A type that holds a pointer that can be read or written atomically
-// (i.e., without word-tearing.)
-class AtomicPointer {
- private:
-  intptr_t rep_;
- public:
-  // Initialize to arbitrary value
-  AtomicPointer();
-
-  // Initialize to hold v
-  explicit AtomicPointer(void* v) : rep_(v) { }
-
-  // Read and return the stored pointer with the guarantee that no
-  // later memory access (read or write) by this thread can be
-  // reordered ahead of this read.
-  void* Acquire_Load() const;
-
-  // Set v as the stored pointer with the guarantee that no earlier
-  // memory access (read or write) by this thread can be reordered
-  // after this store.
-  void Release_Store(void* v);
-
-  // Read the stored pointer with no ordering guarantees.
-  void* NoBarrier_Load() const;
-
-  // Set va as the stored pointer with no ordering guarantees.
-  void NoBarrier_Store(void* v);
-};
-
 // ------------------ Compression -------------------
 
 // Store the snappy compression of "input[0,input_length-1]" in *output.

@@ -5,6 +5,7 @@
 #include "leveldb/env.h"
 
 #include <algorithm>
+#include <atomic>
 
 #include "port/port.h"
 #include "port/thread_annotations.h"
@@ -24,10 +25,15 @@ class EnvTest {
   EnvTest() : env_(Env::Default()) { }
 };
 
-static void SetBool(void* ptr) {
-  reinterpret_cast<port::AtomicPointer*>(ptr)->NoBarrier_Store(ptr);
+namespace {
+
+static void SetAtomicBool(void* atomic_bool_ptr) {
+  std::atomic<bool>* atomic_bool =
+      reinterpret_cast<std::atomic<bool>*>(atomic_bool_ptr);
+  atomic_bool->store(true, std::memory_order_relaxed);
 }
 
+}  // namespace
 
 TEST(EnvTest, ReadWrite) {
   Random rnd(test::RandomSeed());
@@ -77,42 +83,41 @@ TEST(EnvTest, ReadWrite) {
 }
 
 TEST(EnvTest, RunImmediately) {
-  port::AtomicPointer called(nullptr);
-  env_->Schedule(&SetBool, &called);
+  std::atomic<bool> called(false);
+  env_->Schedule(&SetAtomicBool, &called);
   env_->SleepForMicroseconds(kDelayMicros);
-  ASSERT_TRUE(called.NoBarrier_Load() != nullptr);
+  ASSERT_TRUE(called.load(std::memory_order_relaxed));
 }
 
 TEST(EnvTest, RunMany) {
-  port::AtomicPointer last_id(nullptr);
+  std::atomic<int> last_id(0);
 
-  struct CB {
-    port::AtomicPointer* last_id_ptr;   // Pointer to shared slot
-    uintptr_t id;             // Order# for the execution of this callback
+  struct Callback {
+    std::atomic<int>* const last_id_ptr_;  // Pointer to shared state.
+    const int id_;  // Order# for the execution of this callback.
 
-    CB(port::AtomicPointer* p, int i) : last_id_ptr(p), id(i) { }
+    Callback(std::atomic<int>* last_id_ptr, int id)
+        : last_id_ptr_(last_id_ptr), id_(id) { }
 
-    static void Run(void* v) {
-      CB* cb = reinterpret_cast<CB*>(v);
-      void* cur = cb->last_id_ptr->NoBarrier_Load();
-      ASSERT_EQ(cb->id-1, reinterpret_cast<uintptr_t>(cur));
-      cb->last_id_ptr->Release_Store(reinterpret_cast<void*>(cb->id));
+    static void Run(void* arg) {
+      Callback* callback = reinterpret_cast<Callback*>(arg);
+      int current_id = callback->last_id_ptr_->load(std::memory_order_relaxed);
+      ASSERT_EQ(callback->id_ - 1, current_id);
+      callback->last_id_ptr_->store(callback->id_, std::memory_order_relaxed);
     }
   };
 
-  // Schedule in different order than start time
-  CB cb1(&last_id, 1);
-  CB cb2(&last_id, 2);
-  CB cb3(&last_id, 3);
-  CB cb4(&last_id, 4);
-  env_->Schedule(&CB::Run, &cb1);
-  env_->Schedule(&CB::Run, &cb2);
-  env_->Schedule(&CB::Run, &cb3);
-  env_->Schedule(&CB::Run, &cb4);
+  Callback callback1(&last_id, 1);
+  Callback callback2(&last_id, 2);
+  Callback callback3(&last_id, 3);
+  Callback callback4(&last_id, 4);
+  env_->Schedule(&Callback::Run, &callback1);
+  env_->Schedule(&Callback::Run, &callback2);
+  env_->Schedule(&Callback::Run, &callback3);
+  env_->Schedule(&Callback::Run, &callback4);
 
   env_->SleepForMicroseconds(kDelayMicros);
-  void* cur = last_id.Acquire_Load();
-  ASSERT_EQ(4, reinterpret_cast<uintptr_t>(cur));
+  ASSERT_EQ(4, last_id.load(std::memory_order_relaxed));
 }
 
 struct State {
