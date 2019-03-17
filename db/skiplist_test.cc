@@ -131,7 +131,7 @@ TEST(SkipTest, InsertAndLookup) {
 // concurrent readers (with no synchronization other than when a
 // reader's iterator is created), the reader always observes all the
 // data that was present in the skip list when the iterator was
-// constructor.  Because insertions are happening concurrently, we may
+// constructed.  Because insertions are happening concurrently, we may
 // also observe new values that were inserted since the iterator was
 // constructed, but we should never miss any values that were present
 // at iterator construction time.
