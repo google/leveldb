@@ -5,6 +5,7 @@
 #ifndef STORAGE_LEVELDB_UTIL_TESTUTIL_H_
 #define STORAGE_LEVELDB_UTIL_TESTUTIL_H_
 
+#include "helpers/memenv/memenv.h"
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
 #include "util/random.h"
@@ -32,9 +33,12 @@ class ErrorEnv : public EnvWrapper {
   bool writable_file_error_;
   int num_writable_file_errors_;
 
-  ErrorEnv() : EnvWrapper(Env::Default()),
+  ErrorEnv() : EnvWrapper(NewMemEnv(Env::Default())),
                writable_file_error_(false),
                num_writable_file_errors_(0) { }
+  ~ErrorEnv() override {
+    delete target();
+  }
 
   virtual Status NewWritableFile(const std::string& fname,
                                  WritableFile** result) {

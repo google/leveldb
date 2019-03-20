@@ -43,9 +43,6 @@ constexpr int kDefaultMmapLimit = sizeof(void*) >= 8 ? 1000 : 0;
 // Modified by EnvWindowsTestHelper::SetReadOnlyMMapLimit().
 int g_mmap_limit = kDefaultMmapLimit;
 
-// Relax some file access permissions for testing.
-bool g_relax_permissions = false;
-
 std::string GetWindowsErrorMessage(DWORD error_code) {
   std::string message;
   char* error_text = nullptr;
@@ -366,10 +363,6 @@ class WindowsEnv : public Env {
     *result = nullptr;
     DWORD desired_access = GENERIC_READ;
     DWORD share_mode = FILE_SHARE_READ;
-    if (g_relax_permissions) {
-      desired_access |= GENERIC_WRITE;
-      share_mode |= FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
-    }
     ScopedHandle handle =
         ::CreateFileA(fname.c_str(), desired_access, share_mode, nullptr,
                       OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -385,10 +378,6 @@ class WindowsEnv : public Env {
     *result = nullptr;
     DWORD desired_access = GENERIC_READ;
     DWORD share_mode = FILE_SHARE_READ;
-    if (g_relax_permissions) {
-      // desired_access |= GENERIC_WRITE;
-      share_mode |= FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
-    }
     DWORD file_flags = FILE_ATTRIBUTE_READONLY;
 
     ScopedHandle handle =
@@ -433,10 +422,6 @@ class WindowsEnv : public Env {
                          WritableFile** result) override {
     DWORD desired_access = GENERIC_WRITE;
     DWORD share_mode = 0;
-    if (g_relax_permissions) {
-      desired_access |= GENERIC_READ;
-      share_mode |= FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
-    }
 
     ScopedHandle handle =
         ::CreateFileA(fname.c_str(), desired_access, share_mode, nullptr,
@@ -719,11 +704,6 @@ static void InitDefaultEnv() { default_env = new WindowsEnv(); }
 void EnvWindowsTestHelper::SetReadOnlyMMapLimit(int limit) {
   assert(default_env == nullptr);
   g_mmap_limit = limit;
-}
-
-void EnvWindowsTestHelper::RelaxFilePermissions() {
-  assert(default_env == nullptr);
-  g_relax_permissions = true;
 }
 
 Env* Env::Default() {

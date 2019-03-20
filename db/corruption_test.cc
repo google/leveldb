@@ -4,12 +4,8 @@
 
 #include "leveldb/db.h"
 
-#include <errno.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include "leveldb/cache.h"
-#include "leveldb/env.h"
 #include "leveldb/table.h"
 #include "leveldb/write_batch.h"
 #include "db/db_impl.h"
@@ -19,10 +15,6 @@
 #include "util/logging.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
-
-#if defined(LEVELDB_PLATFORM_WINDOWS)
-#include "util/env_windows_test_helper.h"
-#endif  // defined(LEVELDB_PLATFORM_WINDOWS)
 
 namespace leveldb {
 
@@ -36,22 +28,11 @@ class CorruptionTest {
   Options options_;
   DB* db_;
 
-#if defined(LEVELDB_PLATFORM_WINDOWS)
-  static void SetFileLimits(int mmap_limit) {
-    EnvWindowsTestHelper::SetReadOnlyMMapLimit(mmap_limit);
-  }
-
-  // TODO(cmumford): Modify corruption_test to use MemEnv and remove.
-  static void RelaxFilePermissions() {
-    EnvWindowsTestHelper::RelaxFilePermissions();
-  }
-#endif  // defined(LEVELDB_PLATFORM_WINDOWS)
-
   CorruptionTest() {
     tiny_cache_ = NewLRUCache(100);
     options_.env = &env_;
     options_.block_cache = tiny_cache_;
-    dbname_ = test::TmpDir() + "/corruption_test";
+    dbname_ = "/memenv/corruption_test";
     DestroyDB(dbname_, options_);
 
     db_ = nullptr;
@@ -62,7 +43,6 @@ class CorruptionTest {
 
   ~CorruptionTest() {
      delete db_;
-     DestroyDB(dbname_, Options());
      delete tiny_cache_;
   }
 
@@ -141,7 +121,7 @@ class CorruptionTest {
   void Corrupt(FileType filetype, int offset, int bytes_to_corrupt) {
     // Pick file to corrupt
     std::vector<std::string> filenames;
-    ASSERT_OK(env_.GetChildren(dbname_, &filenames));
+    ASSERT_OK(env_.target()->GetChildren(dbname_, &filenames));
     uint64_t number;
     FileType type;
     std::string fname;
@@ -156,35 +136,32 @@ class CorruptionTest {
     }
     ASSERT_TRUE(!fname.empty()) << filetype;
 
-    struct stat sbuf;
-    if (stat(fname.c_str(), &sbuf) != 0) {
-      const char* msg = strerror(errno);
-      ASSERT_TRUE(false) << fname << ": " << msg;
-    }
+    uint64_t file_size;
+    ASSERT_OK(env_.target()->GetFileSize(fname, &file_size));
 
     if (offset < 0) {
       // Relative to end of file; make it absolute
-      if (-offset > sbuf.st_size) {
+      if (-offset > file_size) {
         offset = 0;
       } else {
-        offset = sbuf.st_size + offset;
+        offset = file_size + offset;
       }
     }
-    if (offset > sbuf.st_size) {
-      offset = sbuf.st_size;
+    if (offset > file_size) {
+      offset = file_size;
     }
-    if (offset + bytes_to_corrupt > sbuf.st_size) {
-      bytes_to_corrupt = sbuf.st_size - offset;
+    if (offset + bytes_to_corrupt > file_size) {
+      bytes_to_corrupt = file_size - offset;
     }
 
     // Do it
     std::string contents;
-    Status s = ReadFileToString(Env::Default(), fname, &contents);
+    Status s = ReadFileToString(env_.target(), fname, &contents);
     ASSERT_TRUE(s.ok()) << s.ToString();
     for (int i = 0; i < bytes_to_corrupt; i++) {
       contents[i + offset] ^= 0x80;
     }
-    s = WriteStringToFile(Env::Default(), contents, fname);
+    s = WriteStringToFile(env_.target(), contents, fname);
     ASSERT_TRUE(s.ok()) << s.ToString();
   }
 
@@ -385,16 +362,5 @@ TEST(CorruptionTest, UnrelatedKeys) {
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
-#if defined(LEVELDB_PLATFORM_WINDOWS)
-  // When Windows maps the contents of a file into memory, even if read/write,
-  // subsequent attempts to open that file for write access will fail. Forcing
-  // all RandomAccessFile instances to use base file I/O (e.g. ReadFile)
-  // allows these tests to open files in order to corrupt their contents.
-  leveldb::CorruptionTest::SetFileLimits(0);
-
-  // Allow this test to write to (and corrupt) files which are normally
-  // open for exclusive read access.
-  leveldb::CorruptionTest::RelaxFilePermissions();
-#endif  // defined(LEVELDB_PLATFORM_WINDOWS)
   return leveldb::test::RunAllTests();
 }
