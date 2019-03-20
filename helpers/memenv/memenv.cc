@@ -82,13 +82,6 @@ class FileState {
     assert(offset / kBlockSize <= std::numeric_limits<size_t>::max());
     size_t block = static_cast<size_t>(offset / kBlockSize);
     size_t block_offset = offset % kBlockSize;
-
-    if (n <= kBlockSize - block_offset) {
-      // The requested bytes are all in the first block.
-      *result = Slice(blocks_[block] + block_offset, n);
-      return Status::OK();
-    }
-
     size_t bytes_to_copy = n;
     char* dst = scratch;
 
