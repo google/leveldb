@@ -4,7 +4,9 @@
 
 // Prevent Windows headers from defining min/max macros and instead
 // use STL.
+#ifndef NOMINMAX
 #define NOMINMAX
+#endif  // ifndef NOMINMAX
 #include <windows.h>
 
 #include <algorithm>
