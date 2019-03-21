@@ -558,6 +558,26 @@ TEST(DBTest, Empty) {
   } while (ChangeOptions());
 }
 
+TEST(DBTest, EmptyKey) {
+  do {
+    ASSERT_OK(Put("", "v1"));
+    ASSERT_EQ("v1", Get(""));
+    ASSERT_OK(Put("", "v2"));
+    ASSERT_EQ("v2", Get(""));
+  } while (ChangeOptions());
+}
+
+TEST(DBTest, EmptyValue) {
+  do {
+    ASSERT_OK(Put("key", "v1"));
+    ASSERT_EQ("v1", Get("key"));
+    ASSERT_OK(Put("key", ""));
+    ASSERT_EQ("", Get("key"));
+    ASSERT_OK(Put("key", "v2"));
+    ASSERT_EQ("v2", Get("key"));
+  } while (ChangeOptions());
+}
+
 TEST(DBTest, ReadWrite) {
   do {
     ASSERT_OK(Put("foo", "v1"));
