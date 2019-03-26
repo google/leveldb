@@ -91,6 +91,9 @@ inline bool Snappy_Compress(const char* input, size_t length,
   snappy::RawCompress(input, length, &(*output)[0], &outlen);
   output->resize(outlen);
   return true;
+#else
+  // Silence compiler warnings about unused arguments.
+  (void)input; (void)length; (void)output;
 #endif  // HAVE_SNAPPY
 
   return false;
@@ -101,6 +104,8 @@ inline bool Snappy_GetUncompressedLength(const char* input, size_t length,
 #if HAVE_SNAPPY
   return snappy::GetUncompressedLength(input, length, result);
 #else
+  // Silence compiler warnings about unused arguments.
+  (void)input; (void)length; (void)result;
   return false;
 #endif  // HAVE_SNAPPY
 }
@@ -109,11 +114,15 @@ inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {
 #if HAVE_SNAPPY
   return snappy::RawUncompress(input, length, output);
 #else
+  // Silence compiler warnings about unused arguments.
+  (void)input; (void)length; (void)output;
   return false;
 #endif  // HAVE_SNAPPY
 }
 
 inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
+  // Silence compiler warnings about unused arguments.
+  (void)func; (void)arg;
   return false;
 }
 
@@ -121,6 +130,8 @@ inline uint32_t AcceleratedCRC32C(uint32_t crc, const char* buf, size_t size) {
 #if HAVE_CRC32C
   return ::crc32c::Extend(crc, reinterpret_cast<const uint8_t*>(buf), size);
 #else
+  // Silence compiler warnings about unused arguments.
+  (void)crc; (void)buf; (void)size;
   return 0;
 #endif  // HAVE_CRC32C
 }
