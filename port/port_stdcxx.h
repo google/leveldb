@@ -29,12 +29,13 @@
 #include <snappy.h>
 #endif  // HAVE_SNAPPY
 
-#include <stddef.h>
-#include <stdint.h>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <condition_variable>  // NOLINT
 #include <mutex>               // NOLINT
 #include <string>
+
 #include "port/thread_annotations.h"
 
 namespace leveldb {
@@ -84,7 +85,7 @@ class CondVar {
 };
 
 inline bool Snappy_Compress(const char* input, size_t length,
-                            ::std::string* output) {
+                            std::string* output) {
 #if HAVE_SNAPPY
   output->resize(snappy::MaxCompressedLength(length));
   size_t outlen;
