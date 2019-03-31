@@ -11,7 +11,7 @@
 #if defined(_WIN32)
 
 #if defined(LEVELDB_COMPILE_LIBRARY)
-#define LEVELDB_EXPORT __declspec(dllexport)
+#define LEVELDB_EXPORT __declspec(dllexport)  //声明一个函数从本DLL导出
 #else
 #define LEVELDB_EXPORT __declspec(dllimport)
 #endif  // defined(LEVELDB_COMPILE_LIBRARY)

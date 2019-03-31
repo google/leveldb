@@ -10,7 +10,7 @@
 
 namespace leveldb {
 
-class Cache;
+class Cache;  // 类声明，在其他地方定义；
 class Comparator;
 class Env;
 class FilterPolicy;
@@ -24,7 +24,7 @@ class Snapshot;
 enum CompressionType {
   // NOTE: do not change the values of existing entries, as these are
   // part of the persistent format on disk.
-  kNoCompression     = 0x0,
+  kNoCompression     = 0x0,  // k开头代表常量
   kSnappyCompression = 0x1
 };
 
@@ -178,7 +178,7 @@ struct LEVELDB_EXPORT WriteOptions {
   // system call followed by "fsync()".
   bool sync = false;
 
-  WriteOptions() = default;
+  WriteOptions() = default;       //default 语法 TODO
 };
 
 }  // namespace leveldb

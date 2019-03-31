@@ -17,10 +17,10 @@ namespace leveldb {
 static const int kMajorVersion = 1;
 static const int kMinorVersion = 20;
 
-struct Options;
+struct Options;  // 前向声明？
 struct ReadOptions;
 struct WriteOptions;
-class WriteBatch;
+class WriteBatch
 
 // Abstract handle to particular state of a DB.
 // A Snapshot is an immutable object and can therefore be safely

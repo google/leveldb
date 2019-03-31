@@ -83,7 +83,7 @@ class LEVELDB_EXPORT Slice {
   }
 
  private:
-  const char* data_;
+  const char* data_;  //不允许通过 *data_修改其指向的值；
   size_t size_;
 };
 

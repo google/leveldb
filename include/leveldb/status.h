@@ -23,13 +23,13 @@ namespace leveldb {
 class LEVELDB_EXPORT Status {
  public:
   // Create a success status.
-  Status() noexcept : state_(nullptr) { }
+  Status() noexcept : state_(nullptr) { }  // noexcept 定义该函数不抛出任何异常；
   ~Status() { delete[] state_; }
 
   Status(const Status& rhs);
-  Status& operator=(const Status& rhs);
+  Status& operator=(const Status& rhs);  // "="重载，形参和返回类型均为引用
 
-  Status(Status&& rhs) noexcept : state_(rhs.state_) { rhs.state_ = nullptr; }
+  Status(Status&& rhs) noexcept : state_(rhs.state_) { rhs.state_ = nullptr; }  // TODO
   Status& operator=(Status&& rhs) noexcept;
 
   // Return a success status.
