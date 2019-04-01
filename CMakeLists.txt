@@ -233,6 +233,10 @@ if(BUILD_SHARED_LIBS)
       # Used by include/export.h.
       LEVELDB_SHARED_LIBRARY
   )
+  set_target_properties(leveldb
+    PROPERTIES VERSION ${PROJECT_VERSION})
+  set_target_properties(leveldb
+    PROPERTIES SOVERSION 1)
 endif(BUILD_SHARED_LIBS)
 
 if(HAVE_CLANG_THREAD_SAFETY)
