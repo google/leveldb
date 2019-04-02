@@ -213,6 +213,10 @@ target_include_directories(leveldb
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
+
+set_target_properties(leveldb
+  PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+
 target_compile_definitions(leveldb
   PRIVATE
     # Used by include/export.h when building shared libraries.
@@ -233,10 +237,6 @@ if(BUILD_SHARED_LIBS)
       # Used by include/export.h.
       LEVELDB_SHARED_LIBRARY
   )
-  set_target_properties(leveldb
-    PROPERTIES VERSION ${PROJECT_VERSION})
-  set_target_properties(leveldb
-    PROPERTIES SOVERSION 1)
 endif(BUILD_SHARED_LIBS)
 
 if(HAVE_CLANG_THREAD_SAFETY)
