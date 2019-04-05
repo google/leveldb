@@ -527,6 +527,34 @@ int Version::PickLevelForMemTableOutput(
   return level;
 }
 
+// Store in "*inputs" all files in "level" that is included in [begin,end]
+void Version::GetIncludedInputs(
+    int level,
+    const InternalKey* begin,
+    const InternalKey* end,
+    std::vector<FileMetaData*>* inputs) {
+  assert(level >= 0);
+  assert(level < config::kNumLevels);
+  inputs->clear();
+  Slice user_begin, user_end;
+  if (begin != nullptr) {
+	  user_begin = begin->user_key();
+  }
+  if (end != nullptr) {
+	  user_end = end->user_key();
+  }
+  const Comparator* user_cmp = vset_->icmp_.user_comparator();
+  for (size_t i = 0; i < files_[level].size(); ) {
+    FileMetaData* f = files_[level][i++];
+    const Slice file_start = f->smallest.user_key();
+    const Slice file_limit = f->largest.user_key();
+    if ((begin == nullptr || user_cmp->Compare(file_start, user_begin) >= 0) &&
+	(end == nullptr || user_cmp->Compare(file_limit, user_end) <= 0)) {
+      inputs->push_back(f);
+    }
+  }
+}
+
 // Store in "*inputs" all files in "level" that overlap [begin,end]
 void Version::GetOverlappingInputs(
     int level,
@@ -1362,7 +1390,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
   // changing the number of "level+1" files we pick up.
   if (!c->inputs_[1].empty()) {
     std::vector<FileMetaData*> expanded0;
-    current_->GetOverlappingInputs(level, &all_start, &all_limit, &expanded0);
+    current_->GetIncludedInputs(level, &all_start, &all_limit, &expanded0);
     const int64_t inputs0_size = TotalFileSize(c->inputs_[0]);
     const int64_t inputs1_size = TotalFileSize(c->inputs_[1]);
     const int64_t expanded0_size = TotalFileSize(expanded0);
