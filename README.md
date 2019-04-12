@@ -45,7 +45,7 @@ cmake -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
 First generate the Visual Studio 2017 project/solution files:
 
 ```bash
-mkdir -p build
+mkdir build
 cd build
 cmake -G "Visual Studio 15" ..
 ```
