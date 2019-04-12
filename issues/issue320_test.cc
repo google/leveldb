@@ -1,47 +1,43 @@
 // Copyright (c) 2019 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
+
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
-#include <map>
 #include <memory>
-#include <sstream>
 #include <string>
 #include <vector>
-
-#include <math.h>
 
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
 #include "util/testharness.h"
 
-using namespace std;
-
 namespace leveldb {
 
 namespace {
 
-unsigned int random(unsigned int max) {
-  return std::rand() % max;
-}
+// Creates a random number in the range of [0, max).
+int GenerateRandomNumber(int max) { return std::rand() % max; }
 
-string newString(int32_t index) {
-  const unsigned int len = 1024;
+std::string CreateRandomString(int32_t index) {
+  static const size_t len = 1024;
   char bytes[len];
-  unsigned int i = 0;
+  size_t i = 0;
   while (i < 8) {
     bytes[i] = 'a' + ((index >> (4 * i)) & 0xf);
     ++i;
   }
   while (i < sizeof(bytes)) {
-    bytes[i] = 'a' + random(26);
+    bytes[i] = 'a' + GenerateRandomNumber(26);
     ++i;
   }
-  return string(bytes, sizeof(bytes));
+  return std::string(bytes, sizeof(bytes));
 }
 
 }  // namespace
 
-class Issue320 { };
+class Issue320 {};
 
 TEST(Issue320, Test) {
   std::srand(0);
@@ -49,8 +45,8 @@ TEST(Issue320, Test) {
   bool delete_before_put = false;
   bool keep_snapshots = true;
 
-  vector<pair<string, string>*> test_map(10000, nullptr);
-  vector<Snapshot const*> snapshots(100, nullptr);
+  std::vector<std::pair<std::string, std::string>*> test_map(10000, nullptr);
+  std::vector<Snapshot const*> snapshots(100, nullptr);
 
   DB* db;
   Options options;
@@ -59,11 +55,11 @@ TEST(Issue320, Test) {
   std::string dbpath = test::TmpDir() + "/leveldb_issue320_test";
   ASSERT_OK(DB::Open(options, dbpath, &db));
 
-  unsigned int target_size = 10000;
-  unsigned int num_items = 0;
-  unsigned long count = 0;
-  string key;
-  string value, old_value;
+  uint32_t target_size = 10000;
+  uint32_t num_items = 0;
+  uint32_t count = 0;
+  std::string key;
+  std::string value, old_value;
 
   WriteOptions writeOptions;
   ReadOptions readOptions;
@@ -72,13 +68,13 @@ TEST(Issue320, Test) {
       cout << "count: " << count << endl;
     }
 
-    unsigned int index = random(test_map.size());
+    int index = GenerateRandomNumber(test_map.size());
     WriteBatch batch;
 
     if (test_map[index] == nullptr) {
       num_items++;
-      test_map[index] =
-          new pair<string, string>(newString(index), newString(index));
+      test_map[index] = new std::pair<std::string, std::string>(
+          CreateRandomString(index), CreateRandomString(index));
       batch.Put(test_map[index]->first, test_map[index]->second);
     } else {
       ASSERT_OK(db->Get(readOptions, test_map[index]->first, &old_value));
@@ -92,13 +88,13 @@ TEST(Issue320, Test) {
         ASSERT_EQ(old_value, test_map[index]->second);
       }
 
-      if (num_items >= target_size && random(100) > 30) {
+      if (num_items >= target_size && GenerateRandomNumber(100) > 30) {
         batch.Delete(test_map[index]->first);
         delete test_map[index];
         test_map[index] = nullptr;
         --num_items;
       } else {
-        test_map[index]->second = newString(index);
+        test_map[index]->second = CreateRandomString(index);
         if (delete_before_put) batch.Delete(test_map[index]->first);
         batch.Put(test_map[index]->first, test_map[index]->second);
       }
@@ -106,8 +102,8 @@ TEST(Issue320, Test) {
 
     ASSERT_OK(db->Write(writeOptions, &batch));
 
-    if (keep_snapshots && random(10) == 0) {
-      unsigned int i = random(snapshots.size());
+    if (keep_snapshots && GenerateRandomNumber(10) == 0) {
+      int i = GenerateRandomNumber(snapshots.size());
       if (snapshots[i] != nullptr) {
         db->ReleaseSnapshot(snapshots[i]);
       }
@@ -134,6 +130,4 @@ TEST(Issue320, Test) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
