@@ -172,7 +172,153 @@ TEST(FindFileTest, OverlappingFiles) {
   ASSERT_TRUE(Overlaps("600", "700"));
 }
 
-}  // namespace leveldb
+void AddBoundaryInputs(const InternalKeyComparator &icmp,
+                       const std::vector<FileMetaData *> &levelFiles,
+                       std::vector<FileMetaData *> *compactionFiles);
+
+class AddBoundaryInputsTest {
+ public:
+  std::vector<FileMetaData *> levelFiles_;
+  std::vector<FileMetaData *> compactionFiles_;
+  std::vector<FileMetaData *> allFiles_;
+  InternalKeyComparator icmp_;
+
+  AddBoundaryInputsTest() : icmp_(BytewiseComparator()){};
+
+  ~AddBoundaryInputsTest() {
+    for (size_t i = 0; i < allFiles_.size(); ++i) {
+      delete allFiles_[i];
+    }
+    allFiles_.clear();
+  };
+
+  FileMetaData *CreateFileMetaData(uint64_t number, InternalKey smallest,
+                                   InternalKey largest) {
+    FileMetaData *f = new FileMetaData();
+    f->number = number;
+    f->smallest = smallest;
+    f->largest = largest;
+    allFiles_.push_back(f);
+    return f;
+  }
+};
+
+TEST(AddBoundaryInputsTest, TestEmptyFileSets) {
+  AddBoundaryInputs(icmp_, levelFiles_, &compactionFiles_);
+  ASSERT_TRUE(compactionFiles_.empty());
+  ASSERT_TRUE(levelFiles_.empty());
+}
+
+TEST(AddBoundaryInputsTest, TestEmptyLevelFiles) {
+  FileMetaData *f1 =
+      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
+                         InternalKey(InternalKey("100", 1, kTypeValue)));
+  compactionFiles_.push_back(f1);
+
+  AddBoundaryInputs(icmp_, levelFiles_, &compactionFiles_);
+  ASSERT_EQ(1, compactionFiles_.size());
+  ASSERT_EQ(f1, compactionFiles_[0]);
+  ASSERT_TRUE(levelFiles_.empty());
+}
+
+TEST(AddBoundaryInputsTest, TestEmptyCompactionFiles) {
+  FileMetaData *f1 =
+      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
+                         InternalKey(InternalKey("100", 1, kTypeValue)));
+  levelFiles_.push_back(f1);
+
+  AddBoundaryInputs(icmp_, levelFiles_, &compactionFiles_);
+  ASSERT_TRUE(compactionFiles_.empty());
+  ASSERT_EQ(1, levelFiles_.size());
+  ASSERT_EQ(f1, levelFiles_[0]);
+}
+
+TEST(AddBoundaryInputsTest, TestNoBoundaryFiles) {
+  FileMetaData *f1 =
+      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
+                         InternalKey(InternalKey("100", 1, kTypeValue)));
+  FileMetaData *f2 =
+      CreateFileMetaData(1, InternalKey("200", 2, kTypeValue),
+                         InternalKey(InternalKey("200", 1, kTypeValue)));
+  FileMetaData *f3 =
+      CreateFileMetaData(1, InternalKey("300", 2, kTypeValue),
+                         InternalKey(InternalKey("300", 1, kTypeValue)));
+
+  levelFiles_.push_back(f3);
+  levelFiles_.push_back(f2);
+  levelFiles_.push_back(f1);
+  compactionFiles_.push_back(f2);
+  compactionFiles_.push_back(f3);
+
+  AddBoundaryInputs(icmp_, levelFiles_, &compactionFiles_);
+  ASSERT_EQ(2, compactionFiles_.size());
+}
+
+TEST(AddBoundaryInputsTest, TestOneBoundaryFiles) {
+  FileMetaData *f1 =
+      CreateFileMetaData(1, InternalKey("100", 3, kTypeValue),
+                         InternalKey(InternalKey("100", 2, kTypeValue)));
+  FileMetaData *f2 =
+      CreateFileMetaData(1, InternalKey("100", 1, kTypeValue),
+                         InternalKey(InternalKey("200", 3, kTypeValue)));
+  FileMetaData *f3 =
+      CreateFileMetaData(1, InternalKey("300", 2, kTypeValue),
+                         InternalKey(InternalKey("300", 1, kTypeValue)));
+
+  levelFiles_.push_back(f3);
+  levelFiles_.push_back(f2);
+  levelFiles_.push_back(f1);
+  compactionFiles_.push_back(f1);
+
+  AddBoundaryInputs(icmp_, levelFiles_, &compactionFiles_);
+  ASSERT_EQ(2, compactionFiles_.size());
+  ASSERT_EQ(f1, compactionFiles_[0]);
+  ASSERT_EQ(f2, compactionFiles_[1]);
+}
+
+TEST(AddBoundaryInputsTest, TestTwoBoundaryFiles) {
+  FileMetaData *f1 =
+      CreateFileMetaData(1, InternalKey("100", 6, kTypeValue),
+                         InternalKey(InternalKey("100", 5, kTypeValue)));
+  FileMetaData *f2 =
+      CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
+                         InternalKey(InternalKey("300", 1, kTypeValue)));
+  FileMetaData *f3 =
+      CreateFileMetaData(1, InternalKey("100", 4, kTypeValue),
+                         InternalKey(InternalKey("100", 3, kTypeValue)));
+
+  levelFiles_.push_back(f2);
+  levelFiles_.push_back(f3);
+  levelFiles_.push_back(f1);
+  compactionFiles_.push_back(f1);
+
+  AddBoundaryInputs(icmp_, levelFiles_, &compactionFiles_);
+  ASSERT_EQ(3, compactionFiles_.size());
+  ASSERT_EQ(f1, compactionFiles_[0]);
+  ASSERT_EQ(f3, compactionFiles_[1]);
+  ASSERT_EQ(f2, compactionFiles_[2]);
+}
+
+TEST(AddBoundaryInputsTest, TestDisjoinFilePointers) {
+  FileMetaData *f1 = CreateFileMetaData(1, InternalKey("100", 6, kTypeValue), InternalKey(InternalKey("100", 5, kTypeValue)));
+  FileMetaData *f2 = CreateFileMetaData(1, InternalKey("100", 6, kTypeValue), InternalKey(InternalKey("100", 5, kTypeValue)));
+  FileMetaData *f3 = CreateFileMetaData(1, InternalKey("100", 2, kTypeValue), InternalKey(InternalKey("300", 1, kTypeValue)));
+  FileMetaData *f4 = CreateFileMetaData(1, InternalKey("100", 4, kTypeValue), InternalKey(InternalKey("100", 3, kTypeValue)));
+
+  levelFiles_.push_back(f2);
+  levelFiles_.push_back(f3);
+  levelFiles_.push_back(f4);
+
+  compactionFiles_.push_back(f1);
+
+  AddBoundaryInputs(icmp_, levelFiles_, &compactionFiles_);
+  ASSERT_EQ(3, compactionFiles_.size());
+  ASSERT_EQ(f1, compactionFiles_[0]);
+  ASSERT_EQ(f4, compactionFiles_[1]);
+  ASSERT_EQ(f3, compactionFiles_[2]);
+}
+
+} // namespace leveldb
 
 int main(int argc, char** argv) {
   return leveldb::test::RunAllTests();

@@ -301,6 +301,7 @@ if(LEVELDB_BUILD_TESTS)
 
   leveldb_test("${PROJECT_SOURCE_DIR}/issues/issue178_test.cc")
   leveldb_test("${PROJECT_SOURCE_DIR}/issues/issue200_test.cc")
+  leveldb_test("${PROJECT_SOURCE_DIR}/issues/issue320_test.cc")
 
   leveldb_test("${PROJECT_SOURCE_DIR}/util/env_test.cc")
   leveldb_test("${PROJECT_SOURCE_DIR}/util/status_test.cc")

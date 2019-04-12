@@ -1347,9 +1347,87 @@ Compaction* VersionSet::PickCompaction() {
   return c;
 }
 
+// find the largest key in a vector of files. returns true if files it not empty
+bool FindLargestKey(const InternalKeyComparator & icmp, const std::vector<FileMetaData*> & files, InternalKey *largestKey) {
+  if (files.empty()) {
+    return false;
+  }
+  *largestKey = files[0]->largest;
+  for (size_t i = 1; i < files.size(); ++i) {
+    FileMetaData* f = files[i];
+    if (icmp.Compare(f->largest, *largestKey) > 0) {
+      *largestKey = f->largest;
+    }
+  }
+  return true;
+}
+
+// find minimum file b2=(l2, u2) in level file for which l2 > u1 and user_key(l2) = user_key(u1)
+FileMetaData* FindSmallestBoundaryFile(const InternalKeyComparator & icmp,
+                                       const std::vector<FileMetaData*> & levelFiles,
+                                       const InternalKey & largestKey) {
+  const Comparator* user_cmp = icmp.user_comparator();
+  FileMetaData* smallestBoundaryFile = NULL;
+  for (size_t i = 0; i < levelFiles.size(); ++i) {
+    FileMetaData* f = levelFiles[i];
+    if (icmp.Compare(f->smallest, largestKey) > 0 &&
+        user_cmp->Compare(f->smallest.user_key(), largestKey.user_key()) == 0) {
+      if (smallestBoundaryFile == NULL ||
+          icmp.Compare(f->smallest, smallestBoundaryFile->smallest) < 0) {
+        smallestBoundaryFile = f;
+      }
+    }
+  }
+  return smallestBoundaryFile;
+}
+
+// If there are two blocks, b1=(l1, u1) and b2=(l2, u2) and
+// user_key(u1) = user_key(l2), and if we compact b1 but not
+// b2 then a subsequent get operation will yield an incorrect
+// result because it will return the record from b2 in level
+// i rather than from b1 because it searches level by level
+// for records matching the supplied user key.
+//
+// This function extracts the largest file b1 from compactionFiles
+// and then searches for a b2 in levelFiles for which user_key(u1) =
+// user_key(l2). If it finds such a file b2 (known as a boundary file)
+// it adds it to compactionFiles and then searches again using this
+// new upper bound.
+//
+// parameters:
+//   in     levelFiles:      list of files to search for boundary files
+//   in/out compactionFiles: list of files to extend by adding boundary files
+void AddBoundaryInputs(const InternalKeyComparator& icmp,
+                       const std::vector<FileMetaData*>& levelFiles,
+                       std::vector<FileMetaData*>* compactionFiles) {
+  InternalKey largestKey;
+
+  // find largestKey in compactionFiles, quick return if compactionFiles is
+  // empty
+  if (!FindLargestKey(icmp, *compactionFiles, &largestKey)) {
+    return;
+  }
+
+  bool continueSearching = true;
+  while (continueSearching) {
+    FileMetaData* smallestBoundaryFile =
+        FindSmallestBoundaryFile(icmp, levelFiles, largestKey);
+
+    // if a boundary file was found advance largestKey, otherwise we're done
+    if (smallestBoundaryFile != NULL) {
+      compactionFiles->push_back(smallestBoundaryFile);
+      largestKey = smallestBoundaryFile->largest;
+    } else {
+      continueSearching = false;
+    }
+  }
+}
+
 void VersionSet::SetupOtherInputs(Compaction* c) {
   const int level = c->level();
   InternalKey smallest, largest;
+
+  AddBoundaryInputs(icmp_, current_->files_[level], &c->inputs_[0]);
   GetRange(c->inputs_[0], &smallest, &largest);
 
   current_->GetOverlappingInputs(level+1, &smallest, &largest, &c->inputs_[1]);
@@ -1363,6 +1441,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
   if (!c->inputs_[1].empty()) {
     std::vector<FileMetaData*> expanded0;
     current_->GetOverlappingInputs(level, &all_start, &all_limit, &expanded0);
+    AddBoundaryInputs(icmp_, current_->files_[level], &expanded0);
     const int64_t inputs0_size = TotalFileSize(c->inputs_[0]);
     const int64_t inputs1_size = TotalFileSize(c->inputs_[1]);
     const int64_t expanded0_size = TotalFileSize(expanded0);
