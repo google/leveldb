@@ -45,7 +45,8 @@ TEST(Issue320, Test) {
   bool delete_before_put = false;
   bool keep_snapshots = true;
 
-  std::vector<std::pair<std::string, std::string>*> test_map(10000, nullptr);
+  std::vector<std::unique_ptr<std::pair<std::string, std::string>>> test_map(
+      10000);
   std::vector<Snapshot const*> snapshots(100, nullptr);
 
   DB* db;
@@ -73,7 +74,7 @@ TEST(Issue320, Test) {
 
     if (test_map[index] == nullptr) {
       num_items++;
-      test_map[index] = new std::pair<std::string, std::string>(
+      test_map[index] = std::make_unique<std::pair<std::string, std::string>>(
           CreateRandomString(index), CreateRandomString(index));
       batch.Put(test_map[index]->first, test_map[index]->second);
     } else {
@@ -90,7 +91,6 @@ TEST(Issue320, Test) {
 
       if (num_items >= target_size && GenerateRandomNumber(100) > 30) {
         batch.Delete(test_map[index]->first);
-        delete test_map[index];
         test_map[index] = nullptr;
         --num_items;
       } else {
@@ -114,13 +114,6 @@ TEST(Issue320, Test) {
   for (Snapshot const* snapshot : snapshots) {
     if (snapshot) {
       db->ReleaseSnapshot(snapshot);
-    }
-  }
-
-  for (size_t i = 0; i < test_map.size(); ++i) {
-    if (test_map[i] != nullptr) {
-      delete test_map[i];
-      test_map[i] = nullptr;
     }
   }
 
