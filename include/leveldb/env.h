@@ -173,7 +173,7 @@ class LEVELDB_EXPORT Env {
   virtual void StartThread(void (*function)(void* arg), void* arg) = 0;
 
   // *path is set to a temporary directory that can be used for testing. It may
-  // or many not have just been created. The directory may or may not differ
+  // or may not have just been created. The directory may or may not differ
   // between runs of the same process, but subsequent calls will return the
   // same directory.
   virtual Status GetTestDirectory(std::string* path) = 0;
