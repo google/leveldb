@@ -48,7 +48,8 @@ struct DBImpl::Writer {
   bool done;
   port::CondVar cv;
 
-  explicit Writer(port::Mutex* mu) : cv(mu) { }
+  explicit Writer(port::Mutex* mu)
+      : batch(nullptr), sync(false), done(false), cv(mu) {}
 };
 
 struct DBImpl::CompactionState {
@@ -78,10 +79,10 @@ struct DBImpl::CompactionState {
 
   explicit CompactionState(Compaction* c)
       : compaction(c),
+        smallest_snapshot(0),
         outfile(nullptr),
         builder(nullptr),
-        total_bytes(0) {
-  }
+        total_bytes(0) {}
 };
 
 // Fix user-supplied options to be reasonable

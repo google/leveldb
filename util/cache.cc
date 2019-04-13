@@ -196,8 +196,7 @@ class LRUCache {
   HandleTable table_ GUARDED_BY(mutex_);
 };
 
-LRUCache::LRUCache()
-    : usage_(0) {
+LRUCache::LRUCache() : capacity_(0), usage_(0) {
   // Make empty circular linked lists.
   lru_.next = &lru_;
   lru_.prev = &lru_;
