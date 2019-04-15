@@ -119,7 +119,7 @@ class StringSource: public RandomAccessFile {
 
   virtual Status Read(uint64_t offset, size_t n, Slice* result,
                        char* scratch) const {
-    if (offset > contents_.size()) {
+    if (offset >= contents_.size()) {
       return Status::InvalidArgument("invalid Read offset");
     }
     if (offset + n > contents_.size()) {
