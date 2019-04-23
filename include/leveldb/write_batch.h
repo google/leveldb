@@ -62,7 +62,7 @@ class LEVELDB_EXPORT WriteBatch {
   void Append(const WriteBatch& source);
 
   // Support for iterating over the contents of a batch.
-  class Handler {
+  class LEVELDB_EXPORT Handler {
    public:
     virtual ~Handler();
     virtual void Put(const Slice& key, const Slice& value) = 0;
