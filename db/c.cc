@@ -13,6 +13,7 @@
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
 #include "leveldb/status.h"
+#include "leveldb/table.h"
 #include "leveldb/write_batch.h"
 
 using leveldb::Cache;
@@ -36,6 +37,7 @@ using leveldb::SequentialFile;
 using leveldb::Slice;
 using leveldb::Snapshot;
 using leveldb::Status;
+using leveldb::Table;
 using leveldb::WritableFile;
 using leveldb::WriteBatch;
 using leveldb::WriteOptions;
@@ -43,6 +45,7 @@ using leveldb::WriteOptions;
 extern "C" {
 
 struct leveldb_t              { DB*               rep; };
+struct leveldb_table_t        { Table*            rep; };
 struct leveldb_iterator_t     { Iterator*         rep; };
 struct leveldb_writebatch_t   { WriteBatch        rep; };
 struct leveldb_snapshot_t     { const Snapshot*   rep; };
@@ -161,9 +164,35 @@ leveldb_t* leveldb_open(
   return result;
 }
 
+leveldb_table_t* leveldb_table_open(
+    const leveldb_options_t* options,
+    const char* fname,
+    char** errptr) {
+  uint64_t file_size;
+  RandomAccessFile* file;
+  Table* table;
+  if (SaveError(errptr, options->rep.env->GetFileSize(fname, &file_size))) {
+    return nullptr;
+  }
+  if (SaveError(errptr, options->rep.env->NewRandomAccessFile(fname, &file))) {
+    return nullptr;
+  }
+  if (SaveError(errptr, Table::Open(options->rep, file, file_size, &table))) {
+    return nullptr;
+  }
+  leveldb_table_t* result = new leveldb_table_t;
+  result->rep = table;
+  return result;
+}
+
 void leveldb_close(leveldb_t* db) {
   delete db->rep;
   delete db;
+}
+
+void leveldb_table_close(leveldb_table_t* table) {
+  delete table->rep;
+  delete table;
 }
 
 void leveldb_put(
@@ -219,6 +248,14 @@ leveldb_iterator_t* leveldb_create_iterator(
     const leveldb_readoptions_t* options) {
   leveldb_iterator_t* result = new leveldb_iterator_t;
   result->rep = db->rep->NewIterator(options->rep);
+  return result;
+}
+
+leveldb_iterator_t* leveldb_table_create_iterator(
+    leveldb_table_t* table,
+    const leveldb_readoptions_t* options) {
+  leveldb_iterator_t* result = new leveldb_iterator_t;
+  result->rep = table->rep->NewIterator(options->rep);
   return result;
 }
 
