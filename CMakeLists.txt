@@ -3,6 +3,14 @@
 # found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 cmake_minimum_required(VERSION 3.9)
+
+option(HUNTER_ENABLED "Enable Hunter package manager" OFF)
+include(cmake/HunterGate.cmake)
+HunterGate(
+    URL "https://github.com/ruslo/hunter/archive/v0.23.165.tar.gz"
+    SHA1 "5a73f91df5f6109c0bb1104d0c0ee423f7bece79"
+)
+
 # Keep the version below in sync with the one in db.h
 project(leveldb VERSION 1.21.0 LANGUAGES C CXX)
 
@@ -35,9 +43,19 @@ include(CheckIncludeFile)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
 include(CheckLibraryExists)
-check_library_exists(crc32c crc32c_value "" HAVE_CRC32C)
-check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
-check_library_exists(tcmalloc malloc "" HAVE_TCMALLOC)
+if(HUNTER_ENABLED)
+  hunter_add_package(crc32c)
+  find_package(crc32c CONFIG REQUIRED)
+  set(HAVE_CRC32C TRUE)
+
+  hunter_add_package(Snappy)
+  find_package(Snappy CONFIG REQUIRED)
+  set(HAVE_SNAPPY TRUE)
+else()
+  check_library_exists(crc32c crc32c_value "" HAVE_CRC32C)
+  check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
+  check_library_exists(tcmalloc malloc "" HAVE_TCMALLOC)
+endif()
 
 include(CheckCXXSymbolExists)
 # Using check_cxx_symbol_exists() instead of check_c_symbol_exists() because
@@ -245,15 +263,19 @@ if(HAVE_CLANG_THREAD_SAFETY)
       -Werror -Wthread-safety)
 endif(HAVE_CLANG_THREAD_SAFETY)
 
-if(HAVE_CRC32C)
-  target_link_libraries(leveldb crc32c)
-endif(HAVE_CRC32C)
-if(HAVE_SNAPPY)
-  target_link_libraries(leveldb snappy)
-endif(HAVE_SNAPPY)
-if(HAVE_TCMALLOC)
-  target_link_libraries(leveldb tcmalloc)
-endif(HAVE_TCMALLOC)
+if(HUNTER_ENABLED)
+  target_link_libraries(leveldb crc32c::crc32c Snappy::snappy)
+else()
+  if(HAVE_CRC32C)
+    target_link_libraries(leveldb crc32c)
+  endif(HAVE_CRC32C)
+  if(HAVE_SNAPPY)
+    target_link_libraries(leveldb snappy)
+  endif(HAVE_SNAPPY)
+  if(HAVE_TCMALLOC)
+    target_link_libraries(leveldb tcmalloc)
+  endif(HAVE_TCMALLOC)
+endif()
 
 # Needed by port_stdcxx.h
 find_package(Threads REQUIRED)
