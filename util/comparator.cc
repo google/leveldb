@@ -13,24 +13,21 @@
 
 namespace leveldb {
 
-Comparator::~Comparator() { }
+Comparator::~Comparator() {}
 
 namespace {
 class BytewiseComparatorImpl : public Comparator {
  public:
-  BytewiseComparatorImpl() { }
+  BytewiseComparatorImpl() {}
 
-  virtual const char* Name() const {
-    return "leveldb.BytewiseComparator";
-  }
+  virtual const char* Name() const { return "leveldb.BytewiseComparator"; }
 
   virtual int Compare(const Slice& a, const Slice& b) const {
     return a.compare(b);
   }
 
-  virtual void FindShortestSeparator(
-      std::string* start,
-      const Slice& limit) const {
+  virtual void FindShortestSeparator(std::string* start,
+                                     const Slice& limit) const {
     // Find length of common prefix
     size_t min_length = std::min(start->size(), limit.size());
     size_t diff_index = 0;
@@ -59,7 +56,7 @@ class BytewiseComparatorImpl : public Comparator {
       const uint8_t byte = (*key)[i];
       if (byte != static_cast<uint8_t>(0xff)) {
         (*key)[i] = byte + 1;
-        key->resize(i+1);
+        key->resize(i + 1);
         return;
       }
     }

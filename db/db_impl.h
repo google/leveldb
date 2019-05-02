@@ -35,8 +35,7 @@ class DBImpl : public DB {
   virtual Status Put(const WriteOptions&, const Slice& key, const Slice& value);
   virtual Status Delete(const WriteOptions&, const Slice& key);
   virtual Status Write(const WriteOptions& options, WriteBatch* updates);
-  virtual Status Get(const ReadOptions& options,
-                     const Slice& key,
+  virtual Status Get(const ReadOptions& options, const Slice& key,
                      std::string* value);
   virtual Iterator* NewIterator(const ReadOptions&);
   virtual const Snapshot* GetSnapshot();
@@ -166,9 +165,9 @@ class DBImpl : public DB {
   struct ManualCompaction {
     int level;
     bool done;
-    const InternalKey* begin;   // null means beginning of key range
-    const InternalKey* end;     // null means end of key range
-    InternalKey tmp_storage;    // Used to keep track of compaction progress
+    const InternalKey* begin;  // null means beginning of key range
+    const InternalKey* end;    // null means end of key range
+    InternalKey tmp_storage;   // Used to keep track of compaction progress
   };
   ManualCompaction* manual_compaction_ GUARDED_BY(mutex_);
 
@@ -184,7 +183,7 @@ class DBImpl : public DB {
     int64_t bytes_read;
     int64_t bytes_written;
 
-    CompactionStats() : micros(0), bytes_read(0), bytes_written(0) { }
+    CompactionStats() : micros(0), bytes_read(0), bytes_written(0) {}
 
     void Add(const CompactionStats& c) {
       this->micros += c.micros;

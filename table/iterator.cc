@@ -14,7 +14,7 @@ Iterator::Iterator() {
 Iterator::~Iterator() {
   if (!cleanup_head_.IsEmpty()) {
     cleanup_head_.Run();
-    for (CleanupNode* node = cleanup_head_.next; node != nullptr; ) {
+    for (CleanupNode* node = cleanup_head_.next; node != nullptr;) {
       node->Run();
       CleanupNode* next_node = node->next;
       delete node;
@@ -42,17 +42,23 @@ namespace {
 
 class EmptyIterator : public Iterator {
  public:
-  EmptyIterator(const Status& s) : status_(s) { }
+  EmptyIterator(const Status& s) : status_(s) {}
   ~EmptyIterator() override = default;
 
   bool Valid() const override { return false; }
-  void Seek(const Slice& target) override { }
-  void SeekToFirst() override { }
-  void SeekToLast() override { }
+  void Seek(const Slice& target) override {}
+  void SeekToFirst() override {}
+  void SeekToLast() override {}
   void Next() override { assert(false); }
   void Prev() override { assert(false); }
-  Slice key() const override { assert(false); return Slice(); }
-  Slice value() const override { assert(false); return Slice(); }
+  Slice key() const override {
+    assert(false);
+    return Slice();
+  }
+  Slice value() const override {
+    assert(false);
+    return Slice();
+  }
   Status status() const override { return status_; }
 
  private:
@@ -61,9 +67,7 @@ class EmptyIterator : public Iterator {
 
 }  // anonymous namespace
 
-Iterator* NewEmptyIterator() {
-  return new EmptyIterator(Status::OK());
-}
+Iterator* NewEmptyIterator() { return new EmptyIterator(Status::OK()); }
 
 Iterator* NewErrorIterator(const Status& status) {
   return new EmptyIterator(status);

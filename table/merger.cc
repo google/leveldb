@@ -24,13 +24,9 @@ class MergingIterator : public Iterator {
     }
   }
 
-  virtual ~MergingIterator() {
-    delete[] children_;
-  }
+  virtual ~MergingIterator() { delete[] children_; }
 
-  virtual bool Valid() const {
-    return (current_ != nullptr);
-  }
+  virtual bool Valid() const { return (current_ != nullptr); }
 
   virtual void SeekToFirst() {
     for (int i = 0; i < n_; i++) {
@@ -145,10 +141,7 @@ class MergingIterator : public Iterator {
   IteratorWrapper* current_;
 
   // Which direction is the iterator moving?
-  enum Direction {
-    kForward,
-    kReverse
-  };
+  enum Direction { kForward, kReverse };
   Direction direction_;
 };
 
@@ -169,7 +162,7 @@ void MergingIterator::FindSmallest() {
 
 void MergingIterator::FindLargest() {
   IteratorWrapper* largest = nullptr;
-  for (int i = n_-1; i >= 0; i--) {
+  for (int i = n_ - 1; i >= 0; i--) {
     IteratorWrapper* child = &children_[i];
     if (child->Valid()) {
       if (largest == nullptr) {
@@ -183,14 +176,15 @@ void MergingIterator::FindLargest() {
 }
 }  // namespace
 
-Iterator* NewMergingIterator(const Comparator* cmp, Iterator** list, int n) {
+Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children,
+                             int n) {
   assert(n >= 0);
   if (n == 0) {
     return NewEmptyIterator();
   } else if (n == 1) {
-    return list[0];
+    return children[0];
   } else {
-    return new MergingIterator(cmp, list, n);
+    return new MergingIterator(comparator, children, n);
   }
 }
 

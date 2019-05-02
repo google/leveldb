@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_DB_DBFORMAT_H_
 
 #include <stdio.h>
+
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
 #include "leveldb/filter_policy.h"
@@ -48,10 +49,7 @@ class InternalKey;
 // Value types encoded as the last component of internal keys.
 // DO NOT CHANGE THESE ENUM VALUES: they are embedded in the on-disk
 // data structures.
-enum ValueType {
-  kTypeDeletion = 0x0,
-  kTypeValue = 0x1
-};
+enum ValueType { kTypeDeletion = 0x0, kTypeValue = 0x1 };
 // kValueTypeForSeek defines the ValueType that should be passed when
 // constructing a ParsedInternalKey object for seeking to a particular
 // sequence number (since we sort sequence numbers in decreasing order
@@ -64,17 +62,16 @@ typedef uint64_t SequenceNumber;
 
 // We leave eight bits empty at the bottom so a type and sequence#
 // can be packed together into 64-bits.
-static const SequenceNumber kMaxSequenceNumber =
-    ((0x1ull << 56) - 1);
+static const SequenceNumber kMaxSequenceNumber = ((0x1ull << 56) - 1);
 
 struct ParsedInternalKey {
   Slice user_key;
   SequenceNumber sequence;
   ValueType type;
 
-  ParsedInternalKey() { }  // Intentionally left uninitialized (for speed)
+  ParsedInternalKey() {}  // Intentionally left uninitialized (for speed)
   ParsedInternalKey(const Slice& u, const SequenceNumber& seq, ValueType t)
-      : user_key(u), sequence(seq), type(t) { }
+      : user_key(u), sequence(seq), type(t) {}
   std::string DebugString() const;
 };
 
@@ -103,13 +100,13 @@ inline Slice ExtractUserKey(const Slice& internal_key) {
 class InternalKeyComparator : public Comparator {
  private:
   const Comparator* user_comparator_;
+
  public:
-  explicit InternalKeyComparator(const Comparator* c) : user_comparator_(c) { }
+  explicit InternalKeyComparator(const Comparator* c) : user_comparator_(c) {}
   virtual const char* Name() const;
   virtual int Compare(const Slice& a, const Slice& b) const;
-  virtual void FindShortestSeparator(
-      std::string* start,
-      const Slice& limit) const;
+  virtual void FindShortestSeparator(std::string* start,
+                                     const Slice& limit) const;
   virtual void FindShortSuccessor(std::string* key) const;
 
   const Comparator* user_comparator() const { return user_comparator_; }
@@ -121,8 +118,9 @@ class InternalKeyComparator : public Comparator {
 class InternalFilterPolicy : public FilterPolicy {
  private:
   const FilterPolicy* const user_policy_;
+
  public:
-  explicit InternalFilterPolicy(const FilterPolicy* p) : user_policy_(p) { }
+  explicit InternalFilterPolicy(const FilterPolicy* p) : user_policy_(p) {}
   virtual const char* Name() const;
   virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const;
   virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const;
@@ -134,8 +132,9 @@ class InternalFilterPolicy : public FilterPolicy {
 class InternalKey {
  private:
   std::string rep_;
+
  public:
-  InternalKey() { }   // Leave rep_ as empty to indicate it is invalid
+  InternalKey() {}  // Leave rep_ as empty to indicate it is invalid
   InternalKey(const Slice& user_key, SequenceNumber s, ValueType t) {
     AppendInternalKey(&rep_, ParsedInternalKey(user_key, s, t));
   }
@@ -158,8 +157,8 @@ class InternalKey {
   std::string DebugString() const;
 };
 
-inline int InternalKeyComparator::Compare(
-    const InternalKey& a, const InternalKey& b) const {
+inline int InternalKeyComparator::Compare(const InternalKey& a,
+                                          const InternalKey& b) const {
   return Compare(a.Encode(), b.Encode());
 }
 
@@ -204,7 +203,7 @@ class LookupKey {
   const char* start_;
   const char* kstart_;
   const char* end_;
-  char space_[200];      // Avoid allocation for short keys
+  char space_[200];  // Avoid allocation for short keys
 
   // No copying allowed
   LookupKey(const LookupKey&);

@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "leveldb/db.h"
-
 #include <sys/types.h>
-#include "leveldb/cache.h"
-#include "leveldb/table.h"
-#include "leveldb/write_batch.h"
+
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/log_format.h"
 #include "db/version_set.h"
+#include "leveldb/cache.h"
+#include "leveldb/db.h"
+#include "leveldb/table.h"
+#include "leveldb/write_batch.h"
 #include "util/logging.h"
 #include "util/testharness.h"
 #include "util/testutil.h"
@@ -42,8 +42,8 @@ class CorruptionTest {
   }
 
   ~CorruptionTest() {
-     delete db_;
-     delete tiny_cache_;
+    delete db_;
+    delete tiny_cache_;
   }
 
   Status TryReopen() {
@@ -52,9 +52,7 @@ class CorruptionTest {
     return DB::Open(options_, dbname_, &db_);
   }
 
-  void Reopen() {
-    ASSERT_OK(TryReopen());
-  }
+  void Reopen() { ASSERT_OK(TryReopen()); }
 
   void RepairDB() {
     delete db_;
@@ -66,7 +64,7 @@ class CorruptionTest {
     std::string key_space, value_space;
     WriteBatch batch;
     for (int i = 0; i < n; i++) {
-      //if ((i % 100) == 0) fprintf(stderr, "@ %d of %d\n", i, n);
+      // if ((i % 100) == 0) fprintf(stderr, "@ %d of %d\n", i, n);
       Slice key = Key(i, &key_space);
       batch.Clear();
       batch.Put(key, Value(i, &value_space));
@@ -95,8 +93,7 @@ class CorruptionTest {
         // Ignore boundary keys.
         continue;
       }
-      if (!ConsumeDecimalNumber(&in, &key) ||
-          !in.empty() ||
+      if (!ConsumeDecimalNumber(&in, &key) || !in.empty() ||
           key < next_expected) {
         bad_keys++;
         continue;
@@ -127,8 +124,7 @@ class CorruptionTest {
     std::string fname;
     int picked_number = -1;
     for (size_t i = 0; i < filenames.size(); i++) {
-      if (ParseFileName(filenames[i], &number, &type) &&
-          type == filetype &&
+      if (ParseFileName(filenames[i], &number, &type) && type == filetype &&
           int(number) > picked_number) {  // Pick latest file
         fname = dbname_ + "/" + filenames[i];
         picked_number = number;
@@ -194,7 +190,7 @@ class CorruptionTest {
 TEST(CorruptionTest, Recovery) {
   Build(100);
   Check(100, 100);
-  Corrupt(kLogFile, 19, 1);      // WriteBatch tag for first record
+  Corrupt(kLogFile, 19, 1);  // WriteBatch tag for first record
   Corrupt(kLogFile, log::kBlockSize + 1000, 1);  // Somewhere in second block
   Reopen();
 
@@ -361,6 +357,4 @@ TEST(CorruptionTest, UnrelatedKeys) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

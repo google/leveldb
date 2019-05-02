@@ -47,26 +47,27 @@ extern "C" {
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
+
 #include "leveldb/export.h"
 
 /* Exported types */
 
-typedef struct leveldb_t               leveldb_t;
-typedef struct leveldb_cache_t         leveldb_cache_t;
-typedef struct leveldb_comparator_t    leveldb_comparator_t;
-typedef struct leveldb_env_t           leveldb_env_t;
-typedef struct leveldb_filelock_t      leveldb_filelock_t;
-typedef struct leveldb_filterpolicy_t  leveldb_filterpolicy_t;
-typedef struct leveldb_iterator_t      leveldb_iterator_t;
-typedef struct leveldb_logger_t        leveldb_logger_t;
-typedef struct leveldb_options_t       leveldb_options_t;
-typedef struct leveldb_randomfile_t    leveldb_randomfile_t;
-typedef struct leveldb_readoptions_t   leveldb_readoptions_t;
-typedef struct leveldb_seqfile_t       leveldb_seqfile_t;
-typedef struct leveldb_snapshot_t      leveldb_snapshot_t;
-typedef struct leveldb_writablefile_t  leveldb_writablefile_t;
-typedef struct leveldb_writebatch_t    leveldb_writebatch_t;
-typedef struct leveldb_writeoptions_t  leveldb_writeoptions_t;
+typedef struct leveldb_t leveldb_t;
+typedef struct leveldb_cache_t leveldb_cache_t;
+typedef struct leveldb_comparator_t leveldb_comparator_t;
+typedef struct leveldb_env_t leveldb_env_t;
+typedef struct leveldb_filelock_t leveldb_filelock_t;
+typedef struct leveldb_filterpolicy_t leveldb_filterpolicy_t;
+typedef struct leveldb_iterator_t leveldb_iterator_t;
+typedef struct leveldb_logger_t leveldb_logger_t;
+typedef struct leveldb_options_t leveldb_options_t;
+typedef struct leveldb_randomfile_t leveldb_randomfile_t;
+typedef struct leveldb_readoptions_t leveldb_readoptions_t;
+typedef struct leveldb_seqfile_t leveldb_seqfile_t;
+typedef struct leveldb_snapshot_t leveldb_snapshot_t;
+typedef struct leveldb_writablefile_t leveldb_writablefile_t;
+typedef struct leveldb_writebatch_t leveldb_writebatch_t;
+typedef struct leveldb_writeoptions_t leveldb_writeoptions_t;
 
 /* DB operations */
 
@@ -189,10 +190,7 @@ LEVELDB_EXPORT void leveldb_options_set_block_restart_interval(
 LEVELDB_EXPORT void leveldb_options_set_max_file_size(leveldb_options_t*,
                                                       size_t);
 
-enum {
-  leveldb_no_compression = 0,
-  leveldb_snappy_compression = 1
-};
+enum { leveldb_no_compression = 0, leveldb_snappy_compression = 1 };
 LEVELDB_EXPORT void leveldb_options_set_compression(leveldb_options_t*, int);
 
 /* Comparator */
@@ -266,7 +264,7 @@ LEVELDB_EXPORT int leveldb_major_version();
 LEVELDB_EXPORT int leveldb_minor_version();
 
 #ifdef __cplusplus
-}  /* end extern "C" */
+} /* end extern "C" */
 #endif
 
-#endif  /* STORAGE_LEVELDB_INCLUDE_C_H_ */
+#endif /* STORAGE_LEVELDB_INCLUDE_C_H_ */

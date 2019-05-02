@@ -16,13 +16,11 @@
 namespace leveldb {
 
 static const int kDelayMicros = 100000;
-static const int kReadOnlyFileLimit = 4;
-static const int kMMapLimit = 4;
 
 class EnvTest {
  public:
   Env* env_;
-  EnvTest() : env_(Env::Default()) { }
+  EnvTest() : env_(Env::Default()) {}
 };
 
 namespace {
@@ -97,7 +95,7 @@ TEST(EnvTest, RunMany) {
     const int id_;  // Order# for the execution of this callback.
 
     Callback(std::atomic<int>* last_id_ptr, int id)
-        : last_id_ptr_(last_id_ptr), id_(id) { }
+        : last_id_ptr_(last_id_ptr), id_(id) {}
 
     static void Run(void* arg) {
       Callback* callback = reinterpret_cast<Callback*>(arg);
@@ -125,7 +123,7 @@ struct State {
   int val GUARDED_BY(mu);
   int num_running GUARDED_BY(mu);
 
-  State(int val, int num_running) : val(val), num_running(num_running) { }
+  State(int val, int num_running) : val(val), num_running(num_running) {}
 };
 
 static void ThreadBody(void* arg) {
@@ -164,8 +162,8 @@ TEST(EnvTest, TestOpenNonExistentFile) {
   ASSERT_TRUE(!env_->FileExists(non_existent_file));
 
   RandomAccessFile* random_access_file;
-  Status status = env_->NewRandomAccessFile(
-      non_existent_file, &random_access_file);
+  Status status =
+      env_->NewRandomAccessFile(non_existent_file, &random_access_file);
   ASSERT_TRUE(status.IsNotFound());
 
   SequentialFile* sequential_file;
@@ -223,6 +221,4 @@ TEST(EnvTest, ReopenAppendableFile) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

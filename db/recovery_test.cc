@@ -86,15 +86,13 @@ class RecoveryTest {
     std::string current;
     ASSERT_OK(ReadFileToString(env_, CurrentFileName(dbname_), &current));
     size_t len = current.size();
-    if (len > 0 && current[len-1] == '\n') {
+    if (len > 0 && current[len - 1] == '\n') {
       current.resize(len - 1);
     }
     return dbname_ + "/" + current;
   }
 
-  std::string LogName(uint64_t number) {
-    return LogFileName(dbname_, number);
-  }
+  std::string LogName(uint64_t number) { return LogFileName(dbname_, number); }
 
   size_t DeleteLogFiles() {
     // Linux allows unlinking open files, but Windows does not.
@@ -107,13 +105,9 @@ class RecoveryTest {
     return logs.size();
   }
 
-  void DeleteManifestFile() {
-    ASSERT_OK(env_->DeleteFile(ManifestFileName()));
-  }
+  void DeleteManifestFile() { ASSERT_OK(env_->DeleteFile(ManifestFileName())); }
 
-  uint64_t FirstLogFile() {
-    return GetFiles(kLogFile)[0];
-  }
+  uint64_t FirstLogFile() { return GetFiles(kLogFile)[0]; }
 
   std::vector<uint64_t> GetFiles(FileType t) {
     std::vector<std::string> filenames;
@@ -129,13 +123,9 @@ class RecoveryTest {
     return result;
   }
 
-  int NumLogs() {
-    return GetFiles(kLogFile).size();
-  }
+  int NumLogs() { return GetFiles(kLogFile).size(); }
 
-  int NumTables() {
-    return GetFiles(kTableFile).size();
-  }
+  int NumTables() { return GetFiles(kTableFile).size(); }
 
   uint64_t FileSize(const std::string& fname) {
     uint64_t result;
@@ -143,9 +133,7 @@ class RecoveryTest {
     return result;
   }
 
-  void CompactMemTable() {
-    dbfull()->TEST_CompactMemTable();
-  }
+  void CompactMemTable() { dbfull()->TEST_CompactMemTable(); }
 
   // Directly construct a log file that sets key to val.
   void MakeLogFile(uint64_t lognum, SequenceNumber seq, Slice key, Slice val) {
@@ -197,7 +185,7 @@ TEST(RecoveryTest, LargeManifestCompacted) {
     uint64_t len = FileSize(old_manifest);
     WritableFile* file;
     ASSERT_OK(env()->NewAppendableFile(old_manifest, &file));
-    std::string zeroes(3*1048576 - static_cast<size_t>(len), 0);
+    std::string zeroes(3 * 1048576 - static_cast<size_t>(len), 0);
     ASSERT_OK(file->Append(zeroes));
     ASSERT_OK(file->Flush());
     delete file;
@@ -270,7 +258,7 @@ TEST(RecoveryTest, MultipleMemTables) {
   // Force creation of multiple memtables by reducing the write buffer size.
   Options opt;
   opt.reuse_logs = true;
-  opt.write_buffer_size = (kNum*100) / 2;
+  opt.write_buffer_size = (kNum * 100) / 2;
   Open(&opt);
   ASSERT_LE(2, NumTables());
   ASSERT_EQ(1, NumLogs());
@@ -289,16 +277,16 @@ TEST(RecoveryTest, MultipleLogFiles) {
 
   // Make a bunch of uncompacted log files.
   uint64_t old_log = FirstLogFile();
-  MakeLogFile(old_log+1, 1000, "hello", "world");
-  MakeLogFile(old_log+2, 1001, "hi", "there");
-  MakeLogFile(old_log+3, 1002, "foo", "bar2");
+  MakeLogFile(old_log + 1, 1000, "hello", "world");
+  MakeLogFile(old_log + 2, 1001, "hi", "there");
+  MakeLogFile(old_log + 3, 1002, "foo", "bar2");
 
   // Recover and check that all log files were processed.
   Open();
   ASSERT_LE(1, NumTables());
   ASSERT_EQ(1, NumLogs());
   uint64_t new_log = FirstLogFile();
-  ASSERT_LE(old_log+3, new_log);
+  ASSERT_LE(old_log + 3, new_log);
   ASSERT_EQ("bar2", Get("foo"));
   ASSERT_EQ("world", Get("hello"));
   ASSERT_EQ("there", Get("hi"));
@@ -316,7 +304,7 @@ TEST(RecoveryTest, MultipleLogFiles) {
 
   // Check that introducing an older log file does not cause it to be re-read.
   Close();
-  MakeLogFile(old_log+1, 2000, "hello", "stale write");
+  MakeLogFile(old_log + 1, 2000, "hello", "stale write");
   Open();
   ASSERT_LE(1, NumTables());
   ASSERT_EQ(1, NumLogs());
@@ -339,6 +327,4 @@ TEST(RecoveryTest, ManifestMissing) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

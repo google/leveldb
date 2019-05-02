@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 
 #include <stddef.h>
+
 #include "leveldb/export.h"
 
 namespace leveldb {
@@ -24,7 +25,7 @@ class Snapshot;
 enum CompressionType {
   // NOTE: do not change the values of existing entries, as these are
   // part of the persistent format on disk.
-  kNoCompression     = 0x0,
+  kNoCompression = 0x0,
   kSnappyCompression = 0x1
 };
 

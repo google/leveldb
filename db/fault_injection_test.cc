@@ -9,12 +9,12 @@
 #include <map>
 #include <set>
 
-#include "leveldb/db.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/log_format.h"
 #include "db/version_set.h"
 #include "leveldb/cache.h"
+#include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "leveldb/table.h"
 #include "leveldb/write_batch.h"
@@ -56,8 +56,7 @@ Status Truncate(const std::string& filename, uint64_t length) {
 
   SequentialFile* orig_file;
   Status s = env->NewSequentialFile(filename, &orig_file);
-  if (!s.ok())
-    return s;
+  if (!s.ok()) return s;
 
   char* scratch = new char[length];
   leveldb::Slice result;
@@ -93,7 +92,7 @@ struct FileState {
       : filename_(filename),
         pos_(-1),
         pos_at_last_sync_(-1),
-        pos_at_last_flush_(-1) { }
+        pos_at_last_flush_(-1) {}
 
   FileState() : pos_(-1), pos_at_last_sync_(-1), pos_at_last_flush_(-1) {}
 
@@ -108,8 +107,7 @@ struct FileState {
 // is written to or sync'ed.
 class TestWritableFile : public WritableFile {
  public:
-  TestWritableFile(const FileState& state,
-                   WritableFile* f,
+  TestWritableFile(const FileState& state, WritableFile* f,
                    FaultInjectionTestEnv* env);
   virtual ~TestWritableFile();
   virtual Status Append(const Slice& data);
@@ -130,7 +128,7 @@ class FaultInjectionTestEnv : public EnvWrapper {
  public:
   FaultInjectionTestEnv()
       : EnvWrapper(Env::Default()), filesystem_active_(true) {}
-  virtual ~FaultInjectionTestEnv() { }
+  virtual ~FaultInjectionTestEnv() {}
   virtual Status NewWritableFile(const std::string& fname,
                                  WritableFile** result);
   virtual Status NewAppendableFile(const std::string& fname,
@@ -165,13 +163,9 @@ class FaultInjectionTestEnv : public EnvWrapper {
   bool filesystem_active_ GUARDED_BY(mutex_);  // Record flushes, syncs, writes
 };
 
-TestWritableFile::TestWritableFile(const FileState& state,
-                                   WritableFile* f,
+TestWritableFile::TestWritableFile(const FileState& state, WritableFile* f,
                                    FaultInjectionTestEnv* env)
-    : state_(state),
-      target_(f),
-      writable_file_opened_(true),
-      env_(env) {
+    : state_(state), target_(f), writable_file_opened_(true), env_(env) {
   assert(f != nullptr);
 }
 
@@ -395,9 +389,7 @@ class FaultInjectionTest {
     delete env_;
   }
 
-  void ReuseLogs(bool reuse) {
-    options_.reuse_logs = reuse;
-  }
+  void ReuseLogs(bool reuse) { options_.reuse_logs = reuse; }
 
   void Build(int start_idx, int num_vals) {
     std::string key_space, value_space;
@@ -497,18 +489,17 @@ class FaultInjectionTest {
   }
 
   void PartialCompactTestReopenWithFault(ResetMethod reset_method,
-                                         int num_pre_sync,
-                                         int num_post_sync) {
+                                         int num_pre_sync, int num_post_sync) {
     env_->SetFilesystemActive(false);
     CloseDB();
     ResetDBState(reset_method);
     ASSERT_OK(OpenDB());
     ASSERT_OK(Verify(0, num_pre_sync, FaultInjectionTest::VAL_EXPECT_NO_ERROR));
-    ASSERT_OK(Verify(num_pre_sync, num_post_sync, FaultInjectionTest::VAL_EXPECT_ERROR));
+    ASSERT_OK(Verify(num_pre_sync, num_post_sync,
+                     FaultInjectionTest::VAL_EXPECT_ERROR));
   }
 
-  void NoWriteTestPreFault() {
-  }
+  void NoWriteTestPreFault() {}
 
   void NoWriteTestReopenWithFault(ResetMethod reset_method) {
     CloseDB();
@@ -524,8 +515,7 @@ class FaultInjectionTest {
       int num_post_sync = rnd.Uniform(kMaxNumValues);
 
       PartialCompactTestPreFault(num_pre_sync, num_post_sync);
-      PartialCompactTestReopenWithFault(RESET_DROP_UNSYNCED_DATA,
-                                        num_pre_sync,
+      PartialCompactTestReopenWithFault(RESET_DROP_UNSYNCED_DATA, num_pre_sync,
                                         num_post_sync);
 
       NoWriteTestPreFault();
@@ -535,8 +525,7 @@ class FaultInjectionTest {
       // No new files created so we expect all values since no files will be
       // dropped.
       PartialCompactTestReopenWithFault(RESET_DELETE_UNSYNCED_FILES,
-                                        num_pre_sync + num_post_sync,
-                                        0);
+                                        num_pre_sync + num_post_sync, 0);
 
       NoWriteTestPreFault();
       NoWriteTestReopenWithFault(RESET_DELETE_UNSYNCED_FILES);
@@ -556,6 +545,4 @@ TEST(FaultInjectionTest, FaultTestWithLogReuse) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

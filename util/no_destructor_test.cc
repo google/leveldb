@@ -28,7 +28,7 @@ constexpr const uint64_t kGoldenB = 0xaabbccddeeffaabb;
 
 }  // namespace
 
-class NoDestructorTest { };
+class NoDestructorTest {};
 
 TEST(NoDestructorTest, StackInstance) {
   NoDestructor<DoNotDestruct> instance(kGoldenA, kGoldenB);
@@ -44,6 +44,4 @@ TEST(NoDestructorTest, StaticInstance) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

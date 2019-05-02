@@ -3,21 +3,19 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "leveldb/env.h"
-
 #include "port/port.h"
-#include "util/testharness.h"
 #include "util/env_posix_test_helper.h"
+#include "util/testharness.h"
 
 namespace leveldb {
 
-static const int kDelayMicros = 100000;
 static const int kReadOnlyFileLimit = 4;
 static const int kMMapLimit = 4;
 
 class EnvPosixTest {
  public:
   Env* env_;
-  EnvPosixTest() : env_(Env::Default()) { }
+  EnvPosixTest() : env_(Env::Default()) {}
 
   static void SetFileLimits(int read_only_file_limit, int mmap_limit) {
     EnvPosixTestHelper::SetReadOnlyFDLimit(read_only_file_limit);

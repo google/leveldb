@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <string>
+
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 
@@ -23,7 +24,7 @@ namespace leveldb {
 class LEVELDB_EXPORT Status {
  public:
   // Create a success status.
-  Status() noexcept : state_(nullptr) { }
+  Status() noexcept : state_(nullptr) {}
   ~Status() { delete[] state_; }
 
   Status(const Status& rhs);

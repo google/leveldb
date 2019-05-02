@@ -23,13 +23,9 @@ class WindowsLogger final : public Logger {
   // Creates a logger that writes to the given file.
   //
   // The PosixLogger instance takes ownership of the file handle.
-  explicit WindowsLogger(std::FILE* fp) : fp_(fp) {
-    assert(fp != nullptr);
-  }
+  explicit WindowsLogger(std::FILE* fp) : fp_(fp) { assert(fp != nullptr); }
 
-  ~WindowsLogger() override {
-    std::fclose(fp_);
-  }
+  ~WindowsLogger() override { std::fclose(fp_); }
 
   void Logv(const char* format, va_list arguments) override {
     // Record the time as close to the Logv() call as possible.
@@ -61,14 +57,9 @@ class WindowsLogger final : public Logger {
 
       // Print the header into the buffer.
       int buffer_offset = snprintf(
-          buffer, buffer_size,
-          "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
-          now_components.wYear,
-          now_components.wMonth,
-          now_components.wDay,
-          now_components.wHour,
-          now_components.wMinute,
-          now_components.wSecond,
+          buffer, buffer_size, "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
+          now_components.wYear, now_components.wMonth, now_components.wDay,
+          now_components.wHour, now_components.wMinute, now_components.wSecond,
           static_cast<int>(now_components.wMilliseconds * 1000),
           thread_id.c_str());
 
@@ -83,9 +74,9 @@ class WindowsLogger final : public Logger {
       // Print the message into the buffer.
       std::va_list arguments_copy;
       va_copy(arguments_copy, arguments);
-      buffer_offset += std::vsnprintf(buffer + buffer_offset,
-                                      buffer_size - buffer_offset, format,
-                                      arguments_copy);
+      buffer_offset +=
+          std::vsnprintf(buffer + buffer_offset, buffer_size - buffer_offset,
+                         format, arguments_copy);
       va_end(arguments_copy);
 
       // The code below may append a newline at the end of the buffer, which

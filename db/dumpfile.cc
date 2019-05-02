@@ -90,7 +90,6 @@ class WriteBatchItemPrinter : public WriteBatch::Handler {
   }
 };
 
-
 // Called on every log record (each one of which is a WriteBatch)
 // found in a kLogFile.
 static void WriteBatchPrinter(uint64_t pos, Slice record, WritableFile* dst) {
@@ -216,9 +215,12 @@ Status DumpFile(Env* env, const std::string& fname, WritableFile* dst) {
     return Status::InvalidArgument(fname + ": unknown file type");
   }
   switch (ftype) {
-    case kLogFile:         return DumpLog(env, fname, dst);
-    case kDescriptorFile:  return DumpDescriptor(env, fname, dst);
-    case kTableFile:       return DumpTable(env, fname, dst);
+    case kLogFile:
+      return DumpLog(env, fname, dst);
+    case kDescriptorFile:
+      return DumpDescriptor(env, fname, dst);
+    case kTableFile:
+      return DumpTable(env, fname, dst);
     default:
       break;
   }

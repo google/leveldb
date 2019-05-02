@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include "leveldb/iterator.h"
 
 namespace leveldb {
@@ -29,8 +30,8 @@ class Block {
 
   const char* data_;
   size_t size_;
-  uint32_t restart_offset_;     // Offset in data_ of restart array
-  bool owned_;                  // Block owns data_[]
+  uint32_t restart_offset_;  // Offset in data_ of restart array
+  bool owned_;               // Block owns data_[]
 
   // No copying allowed
   Block(const Block&);

@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_DB_LOG_WRITER_H_
 
 #include <stdint.h>
+
 #include "db/log_format.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
@@ -34,7 +35,7 @@ class Writer {
 
  private:
   WritableFile* dest_;
-  int block_offset_;       // Current offset in block
+  int block_offset_;  // Current offset in block
 
   // crc32c values for all supported record types.  These are
   // pre-computed to reduce the overhead of computing the crc of the

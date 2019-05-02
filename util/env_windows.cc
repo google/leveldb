@@ -122,8 +122,7 @@ class Limiter {
     int old_acquires_allowed =
         acquires_allowed_.fetch_sub(1, std::memory_order_relaxed);
 
-    if (old_acquires_allowed > 0)
-      return true;
+    if (old_acquires_allowed > 0) return true;
 
     acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
     return false;
@@ -131,9 +130,7 @@ class Limiter {
 
   // Release a resource acquired by a previous call to Acquire() that returned
   // true.
-  void Release() {
-    acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
-  }
+  void Release() { acquires_allowed_.fetch_add(1, std::memory_order_relaxed); }
 
  private:
   // The number of available resources.

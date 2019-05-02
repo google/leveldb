@@ -13,7 +13,7 @@ namespace leveldb {
 // Wraps an instance whose destructor is never called.
 //
 // This is intended for use with function-level static variables.
-template<typename InstanceType>
+template <typename InstanceType>
 class NoDestructor {
  public:
   template <typename... ConstructorArgTypes>
@@ -23,8 +23,8 @@ class NoDestructor {
     static_assert(
         alignof(decltype(instance_storage_)) >= alignof(InstanceType),
         "instance_storage_ does not meet the instance's alignment requirement");
-    new (&instance_storage_) InstanceType(
-        std::forward<ConstructorArgTypes>(constructor_args)...);
+    new (&instance_storage_)
+        InstanceType(std::forward<ConstructorArgTypes>(constructor_args)...);
   }
 
   ~NoDestructor() = default;
@@ -37,9 +37,8 @@ class NoDestructor {
   }
 
  private:
-  typename
-      std::aligned_storage<sizeof(InstanceType), alignof(InstanceType)>::type
-      instance_storage_;
+  typename std::aligned_storage<sizeof(InstanceType),
+                                alignof(InstanceType)>::type instance_storage_;
 };
 
 }  // namespace leveldb
