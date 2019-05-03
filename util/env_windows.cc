@@ -626,21 +626,19 @@ class WindowsEnv : public Env {
   }
 
  private:
+  // Entry per Schedule() call
+  struct BGItem {
+    void* arg;
+    void (*function)(void*);
+  };
+
   // BGThread() is the body of the background thread
   void BGThread();
 
   std::mutex mu_;
   std::condition_variable bgsignal_;
   bool started_bgthread_;
-
-  // Entry per Schedule() call
-  struct BGItem {
-    void* arg;
-    void (*function)(void*);
-  };
-  typedef std::deque<BGItem> BGQueue;
-  BGQueue queue_;
-
+  std::deque<BGItem> queue_;
   Limiter mmap_limiter_;
 };
 

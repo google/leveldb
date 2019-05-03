@@ -32,6 +32,13 @@ class Slice;
 
 class LEVELDB_EXPORT WriteBatch {
  public:
+  class LEVELDB_EXPORT Handler {
+   public:
+    virtual ~Handler();
+    virtual void Put(const Slice& key, const Slice& value) = 0;
+    virtual void Delete(const Slice& key) = 0;
+  };
+
   WriteBatch();
 
   // Intentionally copyable.
@@ -63,12 +70,6 @@ class LEVELDB_EXPORT WriteBatch {
   void Append(const WriteBatch& source);
 
   // Support for iterating over the contents of a batch.
-  class LEVELDB_EXPORT Handler {
-   public:
-    virtual ~Handler();
-    virtual void Put(const Slice& key, const Slice& value) = 0;
-    virtual void Delete(const Slice& key) = 0;
-  };
   Status Iterate(Handler* handler) const;
 
  private:

@@ -25,8 +25,6 @@ static int DecodeValue(void* v) { return reinterpret_cast<uintptr_t>(v); }
 
 class CacheTest {
  public:
-  static CacheTest* current_;
-
   static void Deleter(const Slice& key, void* v) {
     current_->deleted_keys_.push_back(DecodeKey(key));
     current_->deleted_values_.push_back(DecodeValue(v));
@@ -61,6 +59,8 @@ class CacheTest {
   }
 
   void Erase(int key) { cache_->Erase(EncodeKey(key)); }
+
+  static CacheTest* current_;
 };
 CacheTest* CacheTest::current_;
 

@@ -32,6 +32,9 @@ class FilterBlockBuilder {
  public:
   explicit FilterBlockBuilder(const FilterPolicy*);
 
+  FilterBlockBuilder(const FilterBlockBuilder&) = delete;
+  FilterBlockBuilder& operator=(const FilterBlockBuilder&) = delete;
+
   void StartBlock(uint64_t block_offset);
   void AddKey(const Slice& key);
   Slice Finish();
@@ -45,10 +48,6 @@ class FilterBlockBuilder {
   std::string result_;           // Filter data computed so far
   std::vector<Slice> tmp_keys_;  // policy_->CreateFilter() argument
   std::vector<uint32_t> filter_offsets_;
-
-  // No copying allowed
-  FilterBlockBuilder(const FilterBlockBuilder&);
-  void operator=(const FilterBlockBuilder&);
 };
 
 class FilterBlockReader {

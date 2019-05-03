@@ -19,6 +19,9 @@ class BlockBuilder {
  public:
   explicit BlockBuilder(const Options* options);
 
+  BlockBuilder(const BlockBuilder&) = delete;
+  BlockBuilder& operator=(const BlockBuilder&) = delete;
+
   // Reset the contents as if the BlockBuilder was just constructed.
   void Reset();
 
@@ -45,10 +48,6 @@ class BlockBuilder {
   int counter_;                     // Number of entries emitted since restart
   bool finished_;                   // Has Finish() been called?
   std::string last_key_;
-
-  // No copying allowed
-  BlockBuilder(const BlockBuilder&);
-  void operator=(const BlockBuilder&);
 };
 
 }  // namespace leveldb

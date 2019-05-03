@@ -49,6 +49,9 @@ class SkipList {
   // must remain allocated for the lifetime of the skiplist object.
   explicit SkipList(Comparator cmp, Arena* arena);
 
+  SkipList(const SkipList&) = delete;
+  SkipList& operator=(const SkipList&) = delete;
+
   // Insert key into the list.
   // REQUIRES: nothing that compares equal to key is currently in the list.
   void Insert(const Key& key);
@@ -98,22 +101,9 @@ class SkipList {
  private:
   enum { kMaxHeight = 12 };
 
-  // Immutable after construction
-  Comparator const compare_;
-  Arena* const arena_;  // Arena used for allocations of nodes
-
-  Node* const head_;
-
-  // Modified only by Insert().  Read racily by readers, but stale
-  // values are ok.
-  std::atomic<int> max_height_;  // Height of the entire list
-
   inline int GetMaxHeight() const {
     return max_height_.load(std::memory_order_relaxed);
   }
-
-  // Read/written only by Insert().
-  Random rnd_;
 
   Node* NewNode(const Key& key, int height);
   int RandomHeight();
@@ -137,9 +127,18 @@ class SkipList {
   // Return head_ if list is empty.
   Node* FindLast() const;
 
-  // No copying allowed
-  SkipList(const SkipList&);
-  void operator=(const SkipList&);
+  // Immutable after construction
+  Comparator const compare_;
+  Arena* const arena_;  // Arena used for allocations of nodes
+
+  Node* const head_;
+
+  // Modified only by Insert().  Read racily by readers, but stale
+  // values are ok.
+  std::atomic<int> max_height_;  // Height of the entire list
+
+  // Read/written only by Insert().
+  Random rnd_;
 };
 
 // Implementation details follow

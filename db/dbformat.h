@@ -181,6 +181,9 @@ class LookupKey {
   // the specified sequence number.
   LookupKey(const Slice& user_key, SequenceNumber sequence);
 
+  LookupKey(const LookupKey&) = delete;
+  LookupKey& operator=(const LookupKey&) = delete;
+
   ~LookupKey();
 
   // Return a key suitable for lookup in a MemTable.
@@ -204,10 +207,6 @@ class LookupKey {
   const char* kstart_;
   const char* end_;
   char space_[200];  // Avoid allocation for short keys
-
-  // No copying allowed
-  LookupKey(const LookupKey&);
-  void operator=(const LookupKey&);
 };
 
 inline LookupKey::~LookupKey() {

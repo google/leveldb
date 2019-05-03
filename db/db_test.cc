@@ -40,10 +40,6 @@ static std::string RandomKey(Random* rnd) {
 
 namespace {
 class AtomicCounter {
- private:
-  port::Mutex mu_;
-  int count_ GUARDED_BY(mu_);
-
  public:
   AtomicCounter() : count_(0) {}
   void Increment() { IncrementBy(1); }
@@ -59,6 +55,10 @@ class AtomicCounter {
     MutexLock l(&mu_);
     count_ = 0;
   }
+
+ private:
+  port::Mutex mu_;
+  int count_ GUARDED_BY(mu_);
 };
 
 void DelayMilliseconds(int millis) {
@@ -227,13 +227,6 @@ class SpecialEnv : public EnvWrapper {
 };
 
 class DBTest {
- private:
-  const FilterPolicy* filter_policy_;
-
-  // Sequence of option configurations to try
-  enum OptionConfig { kDefault, kReuse, kFilter, kUncompressed, kEnd };
-  int option_config_;
-
  public:
   std::string dbname_;
   SpecialEnv* env_;
@@ -241,7 +234,7 @@ class DBTest {
 
   Options last_options_;
 
-  DBTest() : option_config_(kDefault), env_(new SpecialEnv(Env::Default())) {
+  DBTest() : env_(new SpecialEnv(Env::Default())), option_config_(kDefault) {
     filter_policy_ = NewBloomFilterPolicy(10);
     dbname_ = test::TmpDir() + "/db_test";
     DestroyDB(dbname_, Options());
@@ -533,6 +526,13 @@ class DBTest {
     }
     return files_renamed;
   }
+
+ private:
+  // Sequence of option configurations to try
+  enum OptionConfig { kDefault, kReuse, kFilter, kUncompressed, kEnd };
+
+  const FilterPolicy* filter_policy_;
+  int option_config_;
 };
 
 TEST(DBTest, Empty) {

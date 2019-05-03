@@ -19,8 +19,9 @@ static const int kDelayMicros = 100000;
 
 class EnvTest {
  public:
-  Env* env_;
   EnvTest() : env_(Env::Default()) {}
+
+  Env* env_;
 };
 
 namespace {

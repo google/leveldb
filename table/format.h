@@ -23,6 +23,9 @@ struct ReadOptions;
 // block or a meta block.
 class BlockHandle {
  public:
+  // Maximum encoding length of a BlockHandle
+  enum { kMaxEncodedLength = 10 + 10 };
+
   BlockHandle();
 
   // The offset of the block in the file.
@@ -36,9 +39,6 @@ class BlockHandle {
   void EncodeTo(std::string* dst) const;
   Status DecodeFrom(Slice* input);
 
-  // Maximum encoding length of a BlockHandle
-  enum { kMaxEncodedLength = 10 + 10 };
-
  private:
   uint64_t offset_;
   uint64_t size_;
@@ -48,6 +48,11 @@ class BlockHandle {
 // end of every table file.
 class Footer {
  public:
+  // Encoded length of a Footer.  Note that the serialization of a
+  // Footer will always occupy exactly this many bytes.  It consists
+  // of two block handles and a magic number.
+  enum { kEncodedLength = 2 * BlockHandle::kMaxEncodedLength + 8 };
+
   Footer() {}
 
   // The block handle for the metaindex block of the table
@@ -60,11 +65,6 @@ class Footer {
 
   void EncodeTo(std::string* dst) const;
   Status DecodeFrom(Slice* input);
-
-  // Encoded length of a Footer.  Note that the serialization of a
-  // Footer will always occupy exactly this many bytes.  It consists
-  // of two block handles and a magic number.
-  enum { kEncodedLength = 2 * BlockHandle::kMaxEncodedLength + 8 };
 
  private:
   BlockHandle metaindex_handle_;

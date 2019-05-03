@@ -37,81 +37,6 @@ static std::string RandomSkewedString(int i, Random* rnd) {
 }
 
 class LogTest {
- private:
-  class StringDest : public WritableFile {
-   public:
-    std::string contents_;
-
-    virtual Status Close() { return Status::OK(); }
-    virtual Status Flush() { return Status::OK(); }
-    virtual Status Sync() { return Status::OK(); }
-    virtual Status Append(const Slice& slice) {
-      contents_.append(slice.data(), slice.size());
-      return Status::OK();
-    }
-  };
-
-  class StringSource : public SequentialFile {
-   public:
-    Slice contents_;
-    bool force_error_;
-    bool returned_partial_;
-    StringSource() : force_error_(false), returned_partial_(false) {}
-
-    virtual Status Read(size_t n, Slice* result, char* scratch) {
-      ASSERT_TRUE(!returned_partial_) << "must not Read() after eof/error";
-
-      if (force_error_) {
-        force_error_ = false;
-        returned_partial_ = true;
-        return Status::Corruption("read error");
-      }
-
-      if (contents_.size() < n) {
-        n = contents_.size();
-        returned_partial_ = true;
-      }
-      *result = Slice(contents_.data(), n);
-      contents_.remove_prefix(n);
-      return Status::OK();
-    }
-
-    virtual Status Skip(uint64_t n) {
-      if (n > contents_.size()) {
-        contents_.clear();
-        return Status::NotFound("in-memory file skipped past end");
-      }
-
-      contents_.remove_prefix(n);
-
-      return Status::OK();
-    }
-  };
-
-  class ReportCollector : public Reader::Reporter {
-   public:
-    size_t dropped_bytes_;
-    std::string message_;
-
-    ReportCollector() : dropped_bytes_(0) {}
-    virtual void Corruption(size_t bytes, const Status& status) {
-      dropped_bytes_ += bytes;
-      message_.append(status.ToString());
-    }
-  };
-
-  StringDest dest_;
-  StringSource source_;
-  ReportCollector report_;
-  bool reading_;
-  Writer* writer_;
-  Reader* reader_;
-
-  // Record metadata for testing initial offset functionality
-  static size_t initial_offset_record_sizes_[];
-  static uint64_t initial_offset_last_record_offsets_[];
-  static int num_initial_offset_records_;
-
  public:
   LogTest()
       : reading_(false),
@@ -232,6 +157,82 @@ class LogTest {
     }
     delete offset_reader;
   }
+
+ private:
+  class StringDest : public WritableFile {
+   public:
+    virtual Status Close() { return Status::OK(); }
+    virtual Status Flush() { return Status::OK(); }
+    virtual Status Sync() { return Status::OK(); }
+    virtual Status Append(const Slice& slice) {
+      contents_.append(slice.data(), slice.size());
+      return Status::OK();
+    }
+
+    std::string contents_;
+  };
+
+  class StringSource : public SequentialFile {
+   public:
+    StringSource() : force_error_(false), returned_partial_(false) {}
+
+    virtual Status Read(size_t n, Slice* result, char* scratch) {
+      ASSERT_TRUE(!returned_partial_) << "must not Read() after eof/error";
+
+      if (force_error_) {
+        force_error_ = false;
+        returned_partial_ = true;
+        return Status::Corruption("read error");
+      }
+
+      if (contents_.size() < n) {
+        n = contents_.size();
+        returned_partial_ = true;
+      }
+      *result = Slice(contents_.data(), n);
+      contents_.remove_prefix(n);
+      return Status::OK();
+    }
+
+    virtual Status Skip(uint64_t n) {
+      if (n > contents_.size()) {
+        contents_.clear();
+        return Status::NotFound("in-memory file skipped past end");
+      }
+
+      contents_.remove_prefix(n);
+
+      return Status::OK();
+    }
+
+    Slice contents_;
+    bool force_error_;
+    bool returned_partial_;
+  };
+
+  class ReportCollector : public Reader::Reporter {
+   public:
+    ReportCollector() : dropped_bytes_(0) {}
+    virtual void Corruption(size_t bytes, const Status& status) {
+      dropped_bytes_ += bytes;
+      message_.append(status.ToString());
+    }
+
+    size_t dropped_bytes_;
+    std::string message_;
+  };
+
+  // Record metadata for testing initial offset functionality
+  static size_t initial_offset_record_sizes_[];
+  static uint64_t initial_offset_last_record_offsets_[];
+  static int num_initial_offset_records_;
+
+  StringDest dest_;
+  StringSource source_;
+  ReportCollector report_;
+  bool reading_;
+  Writer* writer_;
+  Reader* reader_;
 };
 
 size_t LogTest::initial_offset_record_sizes_[] = {

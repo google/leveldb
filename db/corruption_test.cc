@@ -22,20 +22,14 @@ static const int kValueSize = 1000;
 
 class CorruptionTest {
  public:
-  test::ErrorEnv env_;
-  std::string dbname_;
-  Cache* tiny_cache_;
-  Options options_;
-  DB* db_;
-
-  CorruptionTest() {
-    tiny_cache_ = NewLRUCache(100);
+  CorruptionTest()
+      : db_(nullptr),
+        dbname_("/memenv/corruption_test"),
+        tiny_cache_(NewLRUCache(100)) {
     options_.env = &env_;
     options_.block_cache = tiny_cache_;
-    dbname_ = "/memenv/corruption_test";
     DestroyDB(dbname_, options_);
 
-    db_ = nullptr;
     options_.create_if_missing = true;
     Reopen();
     options_.create_if_missing = false;
@@ -185,6 +179,14 @@ class CorruptionTest {
     Random r(k);
     return test::RandomString(&r, kValueSize, storage);
   }
+
+  test::ErrorEnv env_;
+  Options options_;
+  DB* db_;
+
+ private:
+  std::string dbname_;
+  Cache* tiny_cache_;
 };
 
 TEST(CorruptionTest, Recovery) {

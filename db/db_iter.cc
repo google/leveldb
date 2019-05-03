@@ -55,6 +55,10 @@ class DBIter : public Iterator {
         valid_(false),
         rnd_(seed),
         bytes_until_read_sampling_(RandomCompactionPeriod()) {}
+
+  DBIter(const DBIter&) = delete;
+  DBIter& operator=(const DBIter&) = delete;
+
   virtual ~DBIter() { delete iter_; }
   virtual bool Valid() const { return valid_; }
   virtual Slice key() const {
@@ -106,19 +110,13 @@ class DBIter : public Iterator {
   const Comparator* const user_comparator_;
   Iterator* const iter_;
   SequenceNumber const sequence_;
-
   Status status_;
   std::string saved_key_;    // == current key when direction_==kReverse
   std::string saved_value_;  // == current raw value when direction_==kReverse
   Direction direction_;
   bool valid_;
-
   Random rnd_;
   size_t bytes_until_read_sampling_;
-
-  // No copying allowed
-  DBIter(const DBIter&);
-  void operator=(const DBIter&);
 };
 
 inline bool DBIter::ParseKey(ParsedInternalKey* ikey) {

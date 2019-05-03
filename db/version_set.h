@@ -59,11 +59,6 @@ bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
 
 class Version {
  public:
-  // Append to *iters a sequence of iterators that will
-  // yield the contents of this Version when merged together.
-  // REQUIRES: This version has been saved (see VersionSet::SaveTo)
-  void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters);
-
   // Lookup the value for key.  If found, store it in *val and
   // return OK.  Else return a non-OK status.  Fills *stats.
   // REQUIRES: lock is not held
@@ -71,6 +66,12 @@ class Version {
     FileMetaData* seek_file;
     int seek_file_level;
   };
+
+  // Append to *iters a sequence of iterators that will
+  // yield the contents of this Version when merged together.
+  // REQUIRES: This version has been saved (see VersionSet::SaveTo)
+  void AddIterators(const ReadOptions&, std::vector<Iterator*>* iters);
+
   Status Get(const ReadOptions&, const LookupKey& key, std::string* val,
              GetStats* stats);
 
@@ -118,6 +119,22 @@ class Version {
   friend class VersionSet;
 
   class LevelFileNumIterator;
+
+  explicit Version(VersionSet* vset)
+      : vset_(vset),
+        next_(this),
+        prev_(this),
+        refs_(0),
+        file_to_compact_(nullptr),
+        file_to_compact_level_(-1),
+        compaction_score_(-1),
+        compaction_level_(-1) {}
+
+  Version(const Version&) = delete;
+  Version& operator=(const Version&) = delete;
+
+  ~Version();
+
   Iterator* NewConcatenatingIterator(const ReadOptions&, int level) const;
 
   // Call func(arg, level, f) for every file that overlaps user_key in
@@ -145,28 +162,15 @@ class Version {
   // are initialized by Finalize().
   double compaction_score_;
   int compaction_level_;
-
-  explicit Version(VersionSet* vset)
-      : vset_(vset),
-        next_(this),
-        prev_(this),
-        refs_(0),
-        file_to_compact_(nullptr),
-        file_to_compact_level_(-1),
-        compaction_score_(-1),
-        compaction_level_(-1) {}
-
-  ~Version();
-
-  // No copying allowed
-  Version(const Version&);
-  void operator=(const Version&);
 };
 
 class VersionSet {
  public:
   VersionSet(const std::string& dbname, const Options* options,
              TableCache* table_cache, const InternalKeyComparator*);
+  VersionSet(const VersionSet&) = delete;
+  VersionSet& operator=(const VersionSet&) = delete;
+
   ~VersionSet();
 
   // Apply *edit to the current version to form a new descriptor that
@@ -309,10 +313,6 @@ class VersionSet {
   // Per-level key at which the next compaction at that level should start.
   // Either an empty string, or a valid InternalKey.
   std::string compact_pointer_[config::kNumLevels];
-
-  // No copying allowed
-  VersionSet(const VersionSet&);
-  void operator=(const VersionSet&);
 };
 
 // A Compaction encapsulates information about a compaction.

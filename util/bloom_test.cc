@@ -19,11 +19,6 @@ static Slice Key(int i, char* buffer) {
 }
 
 class BloomTest {
- private:
-  const FilterPolicy* policy_;
-  std::string filter_;
-  std::vector<std::string> keys_;
-
  public:
   BloomTest() : policy_(NewBloomFilterPolicy(10)) {}
 
@@ -78,6 +73,11 @@ class BloomTest {
     }
     return result / 10000.0;
   }
+
+ private:
+  const FilterPolicy* policy_;
+  std::string filter_;
+  std::vector<std::string> keys_;
 };
 
 TEST(BloomTest, EmptyFilter) {

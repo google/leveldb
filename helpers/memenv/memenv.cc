@@ -27,6 +27,10 @@ class FileState {
   // and the caller must call Ref() at least once.
   FileState() : refs_(0), size_(0) {}
 
+  // No copying allowed.
+  FileState(const FileState&) = delete;
+  FileState& operator=(const FileState&) = delete;
+
   // Increase the reference count.
   void Ref() {
     MutexLock lock(&refs_mutex_);
@@ -133,12 +137,10 @@ class FileState {
   }
 
  private:
+  enum { kBlockSize = 8 * 1024 };
+
   // Private since only Unref() should be used to delete it.
   ~FileState() { Truncate(); }
-
-  // No copying allowed.
-  FileState(const FileState&);
-  void operator=(const FileState&);
 
   port::Mutex refs_mutex_;
   int refs_ GUARDED_BY(refs_mutex_);
@@ -146,8 +148,6 @@ class FileState {
   mutable port::Mutex blocks_mutex_;
   std::vector<char*> blocks_ GUARDED_BY(blocks_mutex_);
   uint64_t size_ GUARDED_BY(blocks_mutex_);
-
-  enum { kBlockSize = 8 * 1024 };
 };
 
 class SequentialFileImpl : public SequentialFile {
@@ -380,6 +380,7 @@ class InMemoryEnv : public EnvWrapper {
  private:
   // Map from filenames to FileState objects, representing a simple file system.
   typedef std::map<std::string, FileState*> FileSystem;
+
   port::Mutex mutex_;
   FileSystem file_map_ GUARDED_BY(mutex_);
 };

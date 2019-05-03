@@ -14,12 +14,13 @@ static const int kMMapLimit = 4;
 
 class EnvWindowsTest {
  public:
-  Env* env_;
-  EnvWindowsTest() : env_(Env::Default()) {}
-
   static void SetFileLimits(int mmap_limit) {
     EnvWindowsTestHelper::SetReadOnlyMMapLimit(mmap_limit);
   }
+
+  EnvWindowsTest() : env_(Env::Default()) {}
+
+  Env* env_;
 };
 
 TEST(EnvWindowsTest, TestOpenOnRead) {

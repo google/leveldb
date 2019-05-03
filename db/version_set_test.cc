@@ -11,9 +11,6 @@ namespace leveldb {
 
 class FindFileTest {
  public:
-  std::vector<FileMetaData*> files_;
-  bool disjoint_sorted_files_;
-
   FindFileTest() : disjoint_sorted_files_(true) {}
 
   ~FindFileTest() {
@@ -46,6 +43,11 @@ class FindFileTest {
                                  (smallest != nullptr ? &s : nullptr),
                                  (largest != nullptr ? &l : nullptr));
   }
+
+  bool disjoint_sorted_files_;
+
+ private:
+  std::vector<FileMetaData*> files_;
 };
 
 TEST(FindFileTest, Empty) {

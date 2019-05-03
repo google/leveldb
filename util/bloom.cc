@@ -15,10 +15,6 @@ static uint32_t BloomHash(const Slice& key) {
 }
 
 class BloomFilterPolicy : public FilterPolicy {
- private:
-  size_t bits_per_key_;
-  size_t k_;
-
  public:
   explicit BloomFilterPolicy(int bits_per_key) : bits_per_key_(bits_per_key) {
     // We intentionally round down to reduce probing cost a little bit
@@ -82,6 +78,10 @@ class BloomFilterPolicy : public FilterPolicy {
     }
     return true;
   }
+
+ private:
+  size_t bits_per_key_;
+  size_t k_;
 };
 }  // namespace
 

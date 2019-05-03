@@ -23,6 +23,9 @@ class MemTable {
   // is zero and the caller must call Ref() at least once.
   explicit MemTable(const InternalKeyComparator& comparator);
 
+  MemTable(const MemTable&) = delete;
+  MemTable& operator=(const MemTable&) = delete;
+
   // Increase reference count.
   void Ref() { ++refs_; }
 
@@ -60,26 +63,23 @@ class MemTable {
   bool Get(const LookupKey& key, std::string* value, Status* s);
 
  private:
-  ~MemTable();  // Private since only Unref() should be used to delete it
+  friend class MemTableIterator;
+  friend class MemTableBackwardIterator;
 
   struct KeyComparator {
     const InternalKeyComparator comparator;
     explicit KeyComparator(const InternalKeyComparator& c) : comparator(c) {}
     int operator()(const char* a, const char* b) const;
   };
-  friend class MemTableIterator;
-  friend class MemTableBackwardIterator;
 
   typedef SkipList<const char*, KeyComparator> Table;
+
+  ~MemTable();  // Private since only Unref() should be used to delete it
 
   KeyComparator comparator_;
   int refs_;
   Arena arena_;
   Table table_;
-
-  // No copying allowed
-  MemTable(const MemTable&);
-  void operator=(const MemTable&);
 };
 
 }  // namespace leveldb

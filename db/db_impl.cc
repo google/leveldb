@@ -42,38 +42,23 @@ const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
 struct DBImpl::Writer {
+  explicit Writer(port::Mutex* mu)
+      : batch(nullptr), sync(false), done(false), cv(mu) {}
+
   Status status;
   WriteBatch* batch;
   bool sync;
   bool done;
   port::CondVar cv;
-
-  explicit Writer(port::Mutex* mu)
-      : batch(nullptr), sync(false), done(false), cv(mu) {}
 };
 
 struct DBImpl::CompactionState {
-  Compaction* const compaction;
-
-  // Sequence numbers < smallest_snapshot are not significant since we
-  // will never have to service a snapshot below smallest_snapshot.
-  // Therefore if we have seen a sequence number S <= smallest_snapshot,
-  // we can drop all entries for the same key with sequence numbers < S.
-  SequenceNumber smallest_snapshot;
-
   // Files produced by compaction
   struct Output {
     uint64_t number;
     uint64_t file_size;
     InternalKey smallest, largest;
   };
-  std::vector<Output> outputs;
-
-  // State kept for output being generated
-  WritableFile* outfile;
-  TableBuilder* builder;
-
-  uint64_t total_bytes;
 
   Output* current_output() { return &outputs[outputs.size() - 1]; }
 
@@ -83,6 +68,22 @@ struct DBImpl::CompactionState {
         outfile(nullptr),
         builder(nullptr),
         total_bytes(0) {}
+
+  Compaction* const compaction;
+
+  // Sequence numbers < smallest_snapshot are not significant since we
+  // will never have to service a snapshot below smallest_snapshot.
+  // Therefore if we have seen a sequence number S <= smallest_snapshot,
+  // we can drop all entries for the same key with sequence numbers < S.
+  SequenceNumber smallest_snapshot;
+
+  std::vector<Output> outputs;
+
+  // State kept for output being generated
+  WritableFile* outfile;
+  TableBuilder* builder;
+
+  uint64_t total_bytes;
 };
 
 // Fix user-supplied options to be reasonable

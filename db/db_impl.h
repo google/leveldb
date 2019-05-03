@@ -29,6 +29,10 @@ class VersionSet;
 class DBImpl : public DB {
  public:
   DBImpl(const Options& options, const std::string& dbname);
+
+  DBImpl(const DBImpl&) = delete;
+  DBImpl& operator=(const DBImpl&) = delete;
+
   virtual ~DBImpl();
 
   // Implementations of the DB interface
@@ -70,6 +74,31 @@ class DBImpl : public DB {
   friend class DB;
   struct CompactionState;
   struct Writer;
+
+  // Information for a manual compaction
+  struct ManualCompaction {
+    int level;
+    bool done;
+    const InternalKey* begin;  // null means beginning of key range
+    const InternalKey* end;    // null means end of key range
+    InternalKey tmp_storage;   // Used to keep track of compaction progress
+  };
+
+  // Per level compaction stats.  stats_[level] stores the stats for
+  // compactions that produced data for the specified "level".
+  struct CompactionStats {
+    CompactionStats() : micros(0), bytes_read(0), bytes_written(0) {}
+
+    void Add(const CompactionStats& c) {
+      this->micros += c.micros;
+      this->bytes_read += c.bytes_read;
+      this->bytes_written += c.bytes_written;
+    }
+
+    int64_t micros;
+    int64_t bytes_read;
+    int64_t bytes_written;
+  };
 
   Iterator* NewInternalIterator(const ReadOptions&,
                                 SequenceNumber* latest_snapshot,
@@ -121,6 +150,10 @@ class DBImpl : public DB {
   Status InstallCompactionResults(CompactionState* compact)
       EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
+  const Comparator* user_comparator() const {
+    return internal_comparator_.user_comparator();
+  }
+
   // Constant after construction
   Env* const env_;
   const InternalKeyComparator internal_comparator_;
@@ -161,14 +194,6 @@ class DBImpl : public DB {
   // Has a background compaction been scheduled or is running?
   bool background_compaction_scheduled_ GUARDED_BY(mutex_);
 
-  // Information for a manual compaction
-  struct ManualCompaction {
-    int level;
-    bool done;
-    const InternalKey* begin;  // null means beginning of key range
-    const InternalKey* end;    // null means end of key range
-    InternalKey tmp_storage;   // Used to keep track of compaction progress
-  };
   ManualCompaction* manual_compaction_ GUARDED_BY(mutex_);
 
   VersionSet* const versions_;
@@ -176,30 +201,7 @@ class DBImpl : public DB {
   // Have we encountered a background error in paranoid mode?
   Status bg_error_ GUARDED_BY(mutex_);
 
-  // Per level compaction stats.  stats_[level] stores the stats for
-  // compactions that produced data for the specified "level".
-  struct CompactionStats {
-    int64_t micros;
-    int64_t bytes_read;
-    int64_t bytes_written;
-
-    CompactionStats() : micros(0), bytes_read(0), bytes_written(0) {}
-
-    void Add(const CompactionStats& c) {
-      this->micros += c.micros;
-      this->bytes_read += c.bytes_read;
-      this->bytes_written += c.bytes_written;
-    }
-  };
   CompactionStats stats_[config::kNumLevels] GUARDED_BY(mutex_);
-
-  // No copying allowed
-  DBImpl(const DBImpl&);
-  void operator=(const DBImpl&);
-
-  const Comparator* user_comparator() const {
-    return internal_comparator_.user_comparator();
-  }
 };
 
 // Sanitize db options.  The caller should delete result.info_log if

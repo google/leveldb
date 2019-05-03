@@ -129,6 +129,9 @@ class MergingIterator : public Iterator {
   }
 
  private:
+  // Which direction is the iterator moving?
+  enum Direction { kForward, kReverse };
+
   void FindSmallest();
   void FindLargest();
 
@@ -139,9 +142,6 @@ class MergingIterator : public Iterator {
   IteratorWrapper* children_;
   int n_;
   IteratorWrapper* current_;
-
-  // Which direction is the iterator moving?
-  enum Direction { kForward, kReverse };
   Direction direction_;
 };
 

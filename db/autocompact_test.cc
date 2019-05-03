@@ -12,11 +12,6 @@ namespace leveldb {
 
 class AutoCompactTest {
  public:
-  std::string dbname_;
-  Cache* tiny_cache_;
-  Options options_;
-  DB* db_;
-
   AutoCompactTest() {
     dbname_ = test::TmpDir() + "/autocompact_test";
     tiny_cache_ = NewLRUCache(100);
@@ -47,6 +42,12 @@ class AutoCompactTest {
   }
 
   void DoReads(int n);
+
+ private:
+  std::string dbname_;
+  Cache* tiny_cache_;
+  Options options_;
+  DB* db_;
 };
 
 static const int kValueSize = 200 * 1024;

@@ -33,11 +33,11 @@ class LEVELDB_EXPORT Snapshot {
 
 // A range of keys
 struct LEVELDB_EXPORT Range {
-  Slice start;  // Included in the range
-  Slice limit;  // Not included in the range
-
   Range() {}
   Range(const Slice& s, const Slice& l) : start(s), limit(l) {}
+
+  Slice start;  // Included in the range
+  Slice limit;  // Not included in the range
 };
 
 // A DB is a persistent ordered map from keys to values.

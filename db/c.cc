@@ -84,12 +84,6 @@ struct leveldb_filelock_t {
 };
 
 struct leveldb_comparator_t : public Comparator {
-  void* state_;
-  void (*destructor_)(void*);
-  int (*compare_)(void*, const char* a, size_t alen, const char* b,
-                  size_t blen);
-  const char* (*name_)(void*);
-
   virtual ~leveldb_comparator_t() { (*destructor_)(state_); }
 
   virtual int Compare(const Slice& a, const Slice& b) const {
@@ -101,18 +95,15 @@ struct leveldb_comparator_t : public Comparator {
   // No-ops since the C binding does not support key shortening methods.
   virtual void FindShortestSeparator(std::string*, const Slice&) const {}
   virtual void FindShortSuccessor(std::string* key) const {}
+
+  void* state_;
+  void (*destructor_)(void*);
+  int (*compare_)(void*, const char* a, size_t alen, const char* b,
+                  size_t blen);
+  const char* (*name_)(void*);
 };
 
 struct leveldb_filterpolicy_t : public FilterPolicy {
-  void* state_;
-  void (*destructor_)(void*);
-  const char* (*name_)(void*);
-  char* (*create_)(void*, const char* const* key_array,
-                   const size_t* key_length_array, int num_keys,
-                   size_t* filter_length);
-  unsigned char (*key_match_)(void*, const char* key, size_t length,
-                              const char* filter, size_t filter_length);
-
   virtual ~leveldb_filterpolicy_t() { (*destructor_)(state_); }
 
   virtual const char* Name() const { return (*name_)(state_); }
@@ -134,6 +125,15 @@ struct leveldb_filterpolicy_t : public FilterPolicy {
     return (*key_match_)(state_, key.data(), key.size(), filter.data(),
                          filter.size());
   }
+
+  void* state_;
+  void (*destructor_)(void*);
+  const char* (*name_)(void*);
+  char* (*create_)(void*, const char* const* key_array,
+                   const size_t* key_length_array, int num_keys,
+                   size_t* filter_length);
+  unsigned char (*key_match_)(void*, const char* key, size_t length,
+                              const char* filter, size_t filter_length);
 };
 
 struct leveldb_env_t {
@@ -470,7 +470,8 @@ leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(int bits_per_key) {
   // they delegate to a NewBloomFilterPolicy() instead of user
   // supplied C functions.
   struct Wrapper : public leveldb_filterpolicy_t {
-    const FilterPolicy* rep_;
+    static void DoNothing(void*) {}
+
     ~Wrapper() { delete rep_; }
     const char* Name() const { return rep_->Name(); }
     void CreateFilter(const Slice* keys, int n, std::string* dst) const {
@@ -479,7 +480,8 @@ leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(int bits_per_key) {
     bool KeyMayMatch(const Slice& key, const Slice& filter) const {
       return rep_->KeyMayMatch(key, filter);
     }
-    static void DoNothing(void*) {}
+
+    const FilterPolicy* rep_;
   };
   Wrapper* wrapper = new Wrapper;
   wrapper->rep_ = NewBloomFilterPolicy(bits_per_key);

@@ -14,13 +14,14 @@ static const int kMMapLimit = 4;
 
 class EnvPosixTest {
  public:
-  Env* env_;
-  EnvPosixTest() : env_(Env::Default()) {}
-
   static void SetFileLimits(int read_only_file_limit, int mmap_limit) {
     EnvPosixTestHelper::SetReadOnlyFDLimit(read_only_file_limit);
     EnvPosixTestHelper::SetReadOnlyMMapLimit(mmap_limit);
   }
+
+  EnvPosixTest() : env_(Env::Default()) {}
+
+  Env* env_;
 };
 
 TEST(EnvPosixTest, TestOpenOnRead) {

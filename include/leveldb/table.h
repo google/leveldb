@@ -41,7 +41,7 @@ class LEVELDB_EXPORT Table {
                      uint64_t file_size, Table** table);
 
   Table(const Table&) = delete;
-  void operator=(const Table&) = delete;
+  Table& operator=(const Table&) = delete;
 
   ~Table();
 
@@ -59,22 +59,24 @@ class LEVELDB_EXPORT Table {
   uint64_t ApproximateOffsetOf(const Slice& key) const;
 
  private:
+  friend class TableCache;
   struct Rep;
-  Rep* rep_;
 
-  explicit Table(Rep* rep) { rep_ = rep; }
   static Iterator* BlockReader(void*, const ReadOptions&, const Slice&);
+
+  explicit Table(Rep* rep) : rep_(rep) {}
 
   // Calls (*handle_result)(arg, ...) with the entry found after a call
   // to Seek(key).  May not make such a call if filter policy says
   // that key is not present.
-  friend class TableCache;
   Status InternalGet(const ReadOptions&, const Slice& key, void* arg,
                      void (*handle_result)(void* arg, const Slice& k,
                                            const Slice& v));
 
   void ReadMeta(const Footer& footer);
   void ReadFilter(const Slice& filter_handle_value);
+
+  Rep* const rep_;
 };
 
 }  // namespace leveldb

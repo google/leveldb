@@ -95,22 +95,6 @@ class Repairer {
     SequenceNumber max_sequence;
   };
 
-  std::string const dbname_;
-  Env* const env_;
-  InternalKeyComparator const icmp_;
-  InternalFilterPolicy const ipolicy_;
-  Options const options_;
-  bool owns_info_log_;
-  bool owns_cache_;
-  TableCache* table_cache_;
-  VersionEdit edit_;
-
-  std::vector<std::string> manifests_;
-  std::vector<uint64_t> table_numbers_;
-  std::vector<uint64_t> logs_;
-  std::vector<TableInfo> tables_;
-  uint64_t next_file_number_;
-
   Status FindFiles() {
     std::vector<std::string> filenames;
     Status status = env_->GetChildren(dbname_, &filenames);
@@ -439,6 +423,22 @@ class Repairer {
     Log(options_.info_log, "Archiving %s: %s\n", fname.c_str(),
         s.ToString().c_str());
   }
+
+  const std::string dbname_;
+  Env* const env_;
+  InternalKeyComparator const icmp_;
+  InternalFilterPolicy const ipolicy_;
+  const Options options_;
+  bool owns_info_log_;
+  bool owns_cache_;
+  TableCache* table_cache_;
+  VersionEdit edit_;
+
+  std::vector<std::string> manifests_;
+  std::vector<uint64_t> table_numbers_;
+  std::vector<uint64_t> logs_;
+  std::vector<TableInfo> tables_;
+  uint64_t next_file_number_;
 };
 }  // namespace
 
