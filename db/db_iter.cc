@@ -160,6 +160,15 @@ void DBIter::Next() {
   } else {
     // Store in saved_key_ the current key so we skip it below.
     SaveKey(ExtractUserKey(iter_->key()), &saved_key_);
+
+    // iter_ is pointing to current key. We can now safely move to the next to
+    // avoid checking current key.
+    iter_->Next();
+    if (!iter_->Valid()) {
+      valid_ = false;
+      saved_key_.clear();
+      return;
+    }
   }
 
   FindNextUserEntry(true, &saved_key_);
