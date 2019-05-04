@@ -467,11 +467,14 @@ class WindowsEnv : public Env {
     do {
       char base_name[_MAX_FNAME];
       char ext[_MAX_EXT];
-
+      if(!(find_data.cFileName[0] == '.' && find_data.cFileName[1] == '\0' ||
+           find_data.cFileName[0] == '.' && find_data.cFileName[1] == '.' && 
+           find_data.cFileName[2] == '\0')) {
       if (!_splitpath_s(find_data.cFileName, nullptr, 0, nullptr, 0, base_name,
                         ARRAYSIZE(base_name), ext, ARRAYSIZE(ext))) {
         result->emplace_back(std::string(base_name) + ext);
       }
+     }
     } while (::FindNextFileA(dir_handle, &find_data));
     DWORD last_error = ::GetLastError();
     ::FindClose(dir_handle);
