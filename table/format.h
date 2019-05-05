@@ -53,7 +53,7 @@ class Footer {
   // of two block handles and a magic number.
   enum { kEncodedLength = 2 * BlockHandle::kMaxEncodedLength + 8 };
 
-  Footer() {}
+  Footer() = default;
 
   // The block handle for the metaindex block of the table
   const BlockHandle& metaindex_handle() const { return metaindex_handle_; }

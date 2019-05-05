@@ -13,7 +13,7 @@
 namespace leveldb {
 namespace log {
 
-Reader::Reporter::~Reporter() {}
+Reader::Reporter::~Reporter() = default;
 
 Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
                uint64_t initial_offset)

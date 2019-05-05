@@ -223,16 +223,15 @@ class InMemoryEnv : public EnvWrapper {
  public:
   explicit InMemoryEnv(Env* base_env) : EnvWrapper(base_env) {}
 
-  virtual ~InMemoryEnv() {
-    for (FileSystem::iterator i = file_map_.begin(); i != file_map_.end();
-         ++i) {
-      i->second->Unref();
+  ~InMemoryEnv() override {
+    for (const auto& kvp : file_map_) {
+      kvp.second->Unref();
     }
   }
 
   // Partial implementation of the Env interface.
-  virtual Status NewSequentialFile(const std::string& fname,
-                                   SequentialFile** result) {
+  Status NewSequentialFile(const std::string& fname,
+                           SequentialFile** result) override {
     MutexLock lock(&mutex_);
     if (file_map_.find(fname) == file_map_.end()) {
       *result = nullptr;
@@ -243,8 +242,8 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
-  virtual Status NewRandomAccessFile(const std::string& fname,
-                                     RandomAccessFile** result) {
+  Status NewRandomAccessFile(const std::string& fname,
+                             RandomAccessFile** result) override {
     MutexLock lock(&mutex_);
     if (file_map_.find(fname) == file_map_.end()) {
       *result = nullptr;
@@ -255,8 +254,8 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
-  virtual Status NewWritableFile(const std::string& fname,
-                                 WritableFile** result) {
+  Status NewWritableFile(const std::string& fname,
+                         WritableFile** result) override {
     MutexLock lock(&mutex_);
     FileSystem::iterator it = file_map_.find(fname);
 
@@ -275,8 +274,8 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
-  virtual Status NewAppendableFile(const std::string& fname,
-                                   WritableFile** result) {
+  Status NewAppendableFile(const std::string& fname,
+                           WritableFile** result) override {
     MutexLock lock(&mutex_);
     FileState** sptr = &file_map_[fname];
     FileState* file = *sptr;
@@ -288,19 +287,18 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
-  virtual bool FileExists(const std::string& fname) {
+  bool FileExists(const std::string& fname) override {
     MutexLock lock(&mutex_);
     return file_map_.find(fname) != file_map_.end();
   }
 
-  virtual Status GetChildren(const std::string& dir,
-                             std::vector<std::string>* result) {
+  Status GetChildren(const std::string& dir,
+                     std::vector<std::string>* result) override {
     MutexLock lock(&mutex_);
     result->clear();
 
-    for (FileSystem::iterator i = file_map_.begin(); i != file_map_.end();
-         ++i) {
-      const std::string& filename = i->first;
+    for (const auto& kvp : file_map_) {
+      const std::string& filename = kvp.first;
 
       if (filename.size() >= dir.size() + 1 && filename[dir.size()] == '/' &&
           Slice(filename).starts_with(Slice(dir))) {
@@ -321,7 +319,7 @@ class InMemoryEnv : public EnvWrapper {
     file_map_.erase(fname);
   }
 
-  virtual Status DeleteFile(const std::string& fname) {
+  Status DeleteFile(const std::string& fname) override {
     MutexLock lock(&mutex_);
     if (file_map_.find(fname) == file_map_.end()) {
       return Status::IOError(fname, "File not found");
@@ -331,11 +329,11 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
-  virtual Status CreateDir(const std::string& dirname) { return Status::OK(); }
+  Status CreateDir(const std::string& dirname) override { return Status::OK(); }
 
-  virtual Status DeleteDir(const std::string& dirname) { return Status::OK(); }
+  Status DeleteDir(const std::string& dirname) override { return Status::OK(); }
 
-  virtual Status GetFileSize(const std::string& fname, uint64_t* file_size) {
+  Status GetFileSize(const std::string& fname, uint64_t* file_size) override {
     MutexLock lock(&mutex_);
     if (file_map_.find(fname) == file_map_.end()) {
       return Status::IOError(fname, "File not found");
@@ -345,7 +343,8 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
-  virtual Status RenameFile(const std::string& src, const std::string& target) {
+  Status RenameFile(const std::string& src,
+                    const std::string& target) override {
     MutexLock lock(&mutex_);
     if (file_map_.find(src) == file_map_.end()) {
       return Status::IOError(src, "File not found");
@@ -357,22 +356,22 @@ class InMemoryEnv : public EnvWrapper {
     return Status::OK();
   }
 
-  virtual Status LockFile(const std::string& fname, FileLock** lock) {
+  Status LockFile(const std::string& fname, FileLock** lock) override {
     *lock = new FileLock;
     return Status::OK();
   }
 
-  virtual Status UnlockFile(FileLock* lock) {
+  Status UnlockFile(FileLock* lock) override {
     delete lock;
     return Status::OK();
   }
 
-  virtual Status GetTestDirectory(std::string* path) {
+  Status GetTestDirectory(std::string* path) override {
     *path = "/test";
     return Status::OK();
   }
 
-  virtual Status NewLogger(const std::string& fname, Logger** result) {
+  Status NewLogger(const std::string& fname, Logger** result) override {
     *result = new NoOpLogger;
     return Status::OK();
   }

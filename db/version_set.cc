@@ -656,11 +656,9 @@ class VersionSet::Builder {
     }
 
     // Delete files
-    const VersionEdit::DeletedFileSet& del = edit->deleted_files_;
-    for (VersionEdit::DeletedFileSet::const_iterator iter = del.begin();
-         iter != del.end(); ++iter) {
-      const int level = iter->first;
-      const uint64_t number = iter->second;
+    for (const auto& deleted_file_set_kvp : edit->deleted_files_) {
+      const int level = deleted_file_set_kvp.first;
+      const uint64_t number = deleted_file_set_kvp.second;
       levels_[level].deleted_files.insert(number);
     }
 
@@ -701,18 +699,17 @@ class VersionSet::Builder {
       const std::vector<FileMetaData*>& base_files = base_->files_[level];
       std::vector<FileMetaData*>::const_iterator base_iter = base_files.begin();
       std::vector<FileMetaData*>::const_iterator base_end = base_files.end();
-      const FileSet* added = levels_[level].added_files;
-      v->files_[level].reserve(base_files.size() + added->size());
-      for (FileSet::const_iterator added_iter = added->begin();
-           added_iter != added->end(); ++added_iter) {
+      const FileSet* added_files = levels_[level].added_files;
+      v->files_[level].reserve(base_files.size() + added_files->size());
+      for (const auto& added_file : *added_files) {
         // Add all smaller files listed in base_
         for (std::vector<FileMetaData*>::const_iterator bpos =
-                 std::upper_bound(base_iter, base_end, *added_iter, cmp);
+                 std::upper_bound(base_iter, base_end, added_file, cmp);
              base_iter != bpos; ++base_iter) {
           MaybeAddFile(v, level, *base_iter);
         }
 
-        MaybeAddFile(v, level, *added_iter);
+        MaybeAddFile(v, level, added_file);
       }
 
       // Add remaining base files

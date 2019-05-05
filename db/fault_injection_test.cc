@@ -109,11 +109,11 @@ class TestWritableFile : public WritableFile {
  public:
   TestWritableFile(const FileState& state, WritableFile* f,
                    FaultInjectionTestEnv* env);
-  virtual ~TestWritableFile();
-  virtual Status Append(const Slice& data);
-  virtual Status Close();
-  virtual Status Flush();
-  virtual Status Sync();
+  ~TestWritableFile() override;
+  Status Append(const Slice& data) override;
+  Status Close() override;
+  Status Flush() override;
+  Status Sync() override;
 
  private:
   FileState state_;
@@ -128,13 +128,13 @@ class FaultInjectionTestEnv : public EnvWrapper {
  public:
   FaultInjectionTestEnv()
       : EnvWrapper(Env::Default()), filesystem_active_(true) {}
-  virtual ~FaultInjectionTestEnv() {}
-  virtual Status NewWritableFile(const std::string& fname,
-                                 WritableFile** result);
-  virtual Status NewAppendableFile(const std::string& fname,
-                                   WritableFile** result);
-  virtual Status DeleteFile(const std::string& f);
-  virtual Status RenameFile(const std::string& s, const std::string& t);
+  ~FaultInjectionTestEnv() override = default;
+  Status NewWritableFile(const std::string& fname,
+                         WritableFile** result) override;
+  Status NewAppendableFile(const std::string& fname,
+                           WritableFile** result) override;
+  Status DeleteFile(const std::string& f) override;
+  Status RenameFile(const std::string& s, const std::string& t) override;
 
   void WritableFileClosed(const FileState& state);
   Status DropUnsyncedFileData();
@@ -268,10 +268,11 @@ Status FaultInjectionTestEnv::NewAppendableFile(const std::string& fname,
 Status FaultInjectionTestEnv::DropUnsyncedFileData() {
   Status s;
   MutexLock l(&mutex_);
-  for (std::map<std::string, FileState>::const_iterator it =
-           db_file_state_.begin();
-       s.ok() && it != db_file_state_.end(); ++it) {
-    const FileState& state = it->second;
+  for (const auto& kvp : db_file_state_) {
+    if (!s.ok()) {
+      break;
+    }
+    const FileState& state = kvp.second;
     if (!state.IsFullySynced()) {
       s = state.DropUnsyncedData();
     }
@@ -340,12 +341,14 @@ Status FaultInjectionTestEnv::DeleteFilesCreatedAfterLastDirSync() {
   std::set<std::string> new_files(new_files_since_last_dir_sync_.begin(),
                                   new_files_since_last_dir_sync_.end());
   mutex_.Unlock();
-  Status s;
-  std::set<std::string>::const_iterator it;
-  for (it = new_files.begin(); s.ok() && it != new_files.end(); ++it) {
-    s = DeleteFile(*it);
+  Status status;
+  for (const auto& new_file : new_files) {
+    Status delete_status = DeleteFile(new_file);
+    if (!delete_status.ok() && status.ok()) {
+      status = std::move(delete_status);
+    }
   }
-  return s;
+  return status;
 }
 
 void FaultInjectionTestEnv::WritableFileClosed(const FileState& state) {

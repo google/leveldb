@@ -29,7 +29,7 @@ struct FileMetaData {
 class VersionEdit {
  public:
   VersionEdit() { Clear(); }
-  ~VersionEdit() {}
+  ~VersionEdit() = default;
 
   void Clear();
 

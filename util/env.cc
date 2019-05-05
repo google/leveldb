@@ -6,21 +6,21 @@
 
 namespace leveldb {
 
-Env::~Env() {}
+Env::~Env() = default;
 
 Status Env::NewAppendableFile(const std::string& fname, WritableFile** result) {
   return Status::NotSupported("NewAppendableFile", fname);
 }
 
-SequentialFile::~SequentialFile() {}
+SequentialFile::~SequentialFile() = default;
 
-RandomAccessFile::~RandomAccessFile() {}
+RandomAccessFile::~RandomAccessFile() = default;
 
-WritableFile::~WritableFile() {}
+WritableFile::~WritableFile() = default;
 
-Logger::~Logger() {}
+Logger::~Logger() = default;
 
-FileLock::~FileLock() {}
+FileLock::~FileLock() = default;
 
 void Log(Logger* info_log, const char* format, ...) {
   if (info_log != nullptr) {

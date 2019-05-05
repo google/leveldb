@@ -2024,19 +2024,19 @@ class ModelDB : public DB {
   };
 
   explicit ModelDB(const Options& options) : options_(options) {}
-  ~ModelDB() {}
+  ~ModelDB() override = default;
   virtual Status Put(const WriteOptions& o, const Slice& k, const Slice& v) {
     return DB::Put(o, k, v);
   }
-  virtual Status Delete(const WriteOptions& o, const Slice& key) {
+  Status Delete(const WriteOptions& o, const Slice& key) override {
     return DB::Delete(o, key);
   }
-  virtual Status Get(const ReadOptions& options, const Slice& key,
-                     std::string* value) {
+  Status Get(const ReadOptions& options, const Slice& key,
+             std::string* value) override {
     assert(false);  // Not implemented
     return Status::NotFound(key);
   }
-  virtual Iterator* NewIterator(const ReadOptions& options) {
+  Iterator* NewIterator(const ReadOptions& options) override {
     if (options.snapshot == nullptr) {
       KVMap* saved = new KVMap;
       *saved = map_;
@@ -2047,16 +2047,16 @@ class ModelDB : public DB {
       return new ModelIter(snapshot_state, false);
     }
   }
-  virtual const Snapshot* GetSnapshot() {
+  const Snapshot* GetSnapshot() override {
     ModelSnapshot* snapshot = new ModelSnapshot;
     snapshot->map_ = map_;
     return snapshot;
   }
 
-  virtual void ReleaseSnapshot(const Snapshot* snapshot) {
+  void ReleaseSnapshot(const Snapshot* snapshot) override {
     delete reinterpret_cast<const ModelSnapshot*>(snapshot);
   }
-  virtual Status Write(const WriteOptions& options, WriteBatch* batch) {
+  Status Write(const WriteOptions& options, WriteBatch* batch) override {
     class Handler : public WriteBatch::Handler {
      public:
       KVMap* map_;
@@ -2070,15 +2070,15 @@ class ModelDB : public DB {
     return batch->Iterate(&handler);
   }
 
-  virtual bool GetProperty(const Slice& property, std::string* value) {
+  bool GetProperty(const Slice& property, std::string* value) override {
     return false;
   }
-  virtual void GetApproximateSizes(const Range* r, int n, uint64_t* sizes) {
+  void GetApproximateSizes(const Range* r, int n, uint64_t* sizes) override {
     for (int i = 0; i < n; i++) {
       sizes[i] = 0;
     }
   }
-  virtual void CompactRange(const Slice* start, const Slice* end) {}
+  void CompactRange(const Slice* start, const Slice* end) override {}
 
  private:
   class ModelIter : public Iterator {

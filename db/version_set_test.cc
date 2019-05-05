@@ -184,14 +184,14 @@ class AddBoundaryInputsTest {
   std::vector<FileMetaData*> all_files_;
   InternalKeyComparator icmp_;
 
-  AddBoundaryInputsTest() : icmp_(BytewiseComparator()){};
+  AddBoundaryInputsTest() : icmp_(BytewiseComparator()) {}
 
   ~AddBoundaryInputsTest() {
     for (size_t i = 0; i < all_files_.size(); ++i) {
       delete all_files_[i];
     }
     all_files_.clear();
-  };
+  }
 
   FileMetaData* CreateFileMetaData(uint64_t number, InternalKey smallest,
                                    InternalKey largest) {

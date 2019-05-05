@@ -77,7 +77,7 @@ TwoLevelIterator::TwoLevelIterator(Iterator* index_iter,
       index_iter_(index_iter),
       data_iter_(nullptr) {}
 
-TwoLevelIterator::~TwoLevelIterator() {}
+TwoLevelIterator::~TwoLevelIterator() = default;
 
 void TwoLevelIterator::Seek(const Slice& target) {
   index_iter_.Seek(target);

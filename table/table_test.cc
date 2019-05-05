@@ -89,7 +89,7 @@ struct STLLessThan {
 
 class StringSink : public WritableFile {
  public:
-  ~StringSink() {}
+  ~StringSink() = default;
 
   const std::string& contents() const { return contents_; }
 
@@ -111,7 +111,7 @@ class StringSource : public RandomAccessFile {
   StringSource(const Slice& contents)
       : contents_(contents.data(), contents.size()) {}
 
-  virtual ~StringSource() {}
+  virtual ~StringSource() = default;
 
   uint64_t Size() const { return contents_.size(); }
 
@@ -139,7 +139,7 @@ typedef std::map<std::string, std::string, STLLessThan> KVMap;
 class Constructor {
  public:
   explicit Constructor(const Comparator* cmp) : data_(STLLessThan(cmp)) {}
-  virtual ~Constructor() {}
+  virtual ~Constructor() = default;
 
   void Add(const std::string& key, const Slice& value) {
     data_[key] = value.ToString();
@@ -152,8 +152,8 @@ class Constructor {
               KVMap* kvmap) {
     *kvmap = data_;
     keys->clear();
-    for (KVMap::const_iterator it = data_.begin(); it != data_.end(); ++it) {
-      keys->push_back(it->first);
+    for (const auto& kvp : data_) {
+      keys->push_back(kvp.first);
     }
     data_.clear();
     Status s = FinishImpl(options, *kvmap);
@@ -165,7 +165,7 @@ class Constructor {
 
   virtual Iterator* NewIterator() const = 0;
 
-  virtual const KVMap& data() { return data_; }
+  const KVMap& data() const { return data_; }
 
   virtual DB* db() const { return nullptr; }  // Overridden in DBConstructor
 
@@ -177,14 +177,14 @@ class BlockConstructor : public Constructor {
  public:
   explicit BlockConstructor(const Comparator* cmp)
       : Constructor(cmp), comparator_(cmp), block_(nullptr) {}
-  ~BlockConstructor() { delete block_; }
-  virtual Status FinishImpl(const Options& options, const KVMap& data) {
+  ~BlockConstructor() override { delete block_; }
+  Status FinishImpl(const Options& options, const KVMap& data) override {
     delete block_;
     block_ = nullptr;
     BlockBuilder builder(&options);
 
-    for (KVMap::const_iterator it = data.begin(); it != data.end(); ++it) {
-      builder.Add(it->first, it->second);
+    for (const auto& kvp : data) {
+      builder.Add(kvp.first, kvp.second);
     }
     // Open the block
     data_ = builder.Finish().ToString();
@@ -195,12 +195,12 @@ class BlockConstructor : public Constructor {
     block_ = new Block(contents);
     return Status::OK();
   }
-  virtual Iterator* NewIterator() const {
+  Iterator* NewIterator() const override {
     return block_->NewIterator(comparator_);
   }
 
  private:
-  const Comparator* comparator_;
+  const Comparator* const comparator_;
   std::string data_;
   Block* block_;
 
@@ -211,14 +211,14 @@ class TableConstructor : public Constructor {
  public:
   TableConstructor(const Comparator* cmp)
       : Constructor(cmp), source_(nullptr), table_(nullptr) {}
-  ~TableConstructor() { Reset(); }
-  virtual Status FinishImpl(const Options& options, const KVMap& data) {
+  ~TableConstructor() override { Reset(); }
+  Status FinishImpl(const Options& options, const KVMap& data) override {
     Reset();
     StringSink sink;
     TableBuilder builder(options, &sink);
 
-    for (KVMap::const_iterator it = data.begin(); it != data.end(); ++it) {
-      builder.Add(it->first, it->second);
+    for (const auto& kvp : data) {
+      builder.Add(kvp.first, kvp.second);
       ASSERT_TRUE(builder.status().ok());
     }
     Status s = builder.Finish();
@@ -233,7 +233,7 @@ class TableConstructor : public Constructor {
     return Table::Open(table_options, source_, sink.contents().size(), &table_);
   }
 
-  virtual Iterator* NewIterator() const {
+  Iterator* NewIterator() const override {
     return table_->NewIterator(ReadOptions());
   }
 
@@ -259,20 +259,25 @@ class TableConstructor : public Constructor {
 class KeyConvertingIterator : public Iterator {
  public:
   explicit KeyConvertingIterator(Iterator* iter) : iter_(iter) {}
-  virtual ~KeyConvertingIterator() { delete iter_; }
-  virtual bool Valid() const { return iter_->Valid(); }
-  virtual void Seek(const Slice& target) {
+
+  KeyConvertingIterator(const KeyConvertingIterator&) = delete;
+  KeyConvertingIterator& operator=(const KeyConvertingIterator&) = delete;
+
+  ~KeyConvertingIterator() override { delete iter_; }
+
+  bool Valid() const override { return iter_->Valid(); }
+  void Seek(const Slice& target) override {
     ParsedInternalKey ikey(target, kMaxSequenceNumber, kTypeValue);
     std::string encoded;
     AppendInternalKey(&encoded, ikey);
     iter_->Seek(encoded);
   }
-  virtual void SeekToFirst() { iter_->SeekToFirst(); }
-  virtual void SeekToLast() { iter_->SeekToLast(); }
-  virtual void Next() { iter_->Next(); }
-  virtual void Prev() { iter_->Prev(); }
+  void SeekToFirst() override { iter_->SeekToFirst(); }
+  void SeekToLast() override { iter_->SeekToLast(); }
+  void Next() override { iter_->Next(); }
+  void Prev() override { iter_->Prev(); }
 
-  virtual Slice key() const {
+  Slice key() const override {
     assert(Valid());
     ParsedInternalKey key;
     if (!ParseInternalKey(iter_->key(), &key)) {
@@ -282,18 +287,14 @@ class KeyConvertingIterator : public Iterator {
     return key.user_key;
   }
 
-  virtual Slice value() const { return iter_->value(); }
-  virtual Status status() const {
+  Slice value() const override { return iter_->value(); }
+  Status status() const override {
     return status_.ok() ? iter_->status() : status_;
   }
 
  private:
   mutable Status status_;
   Iterator* iter_;
-
-  // No copying allowed
-  KeyConvertingIterator(const KeyConvertingIterator&);
-  void operator=(const KeyConvertingIterator&);
 };
 
 class MemTableConstructor : public Constructor {
@@ -303,24 +304,24 @@ class MemTableConstructor : public Constructor {
     memtable_ = new MemTable(internal_comparator_);
     memtable_->Ref();
   }
-  ~MemTableConstructor() { memtable_->Unref(); }
-  virtual Status FinishImpl(const Options& options, const KVMap& data) {
+  ~MemTableConstructor() override { memtable_->Unref(); }
+  Status FinishImpl(const Options& options, const KVMap& data) override {
     memtable_->Unref();
     memtable_ = new MemTable(internal_comparator_);
     memtable_->Ref();
     int seq = 1;
-    for (KVMap::const_iterator it = data.begin(); it != data.end(); ++it) {
-      memtable_->Add(seq, kTypeValue, it->first, it->second);
+    for (const auto& kvp : data) {
+      memtable_->Add(seq, kTypeValue, kvp.first, kvp.second);
       seq++;
     }
     return Status::OK();
   }
-  virtual Iterator* NewIterator() const {
+  Iterator* NewIterator() const override {
     return new KeyConvertingIterator(memtable_->NewIterator());
   }
 
  private:
-  InternalKeyComparator internal_comparator_;
+  const InternalKeyComparator internal_comparator_;
   MemTable* memtable_;
 };
 
@@ -331,23 +332,23 @@ class DBConstructor : public Constructor {
     db_ = nullptr;
     NewDB();
   }
-  ~DBConstructor() { delete db_; }
-  virtual Status FinishImpl(const Options& options, const KVMap& data) {
+  ~DBConstructor() override { delete db_; }
+  Status FinishImpl(const Options& options, const KVMap& data) override {
     delete db_;
     db_ = nullptr;
     NewDB();
-    for (KVMap::const_iterator it = data.begin(); it != data.end(); ++it) {
+    for (const auto& kvp : data) {
       WriteBatch batch;
-      batch.Put(it->first, it->second);
+      batch.Put(kvp.first, kvp.second);
       ASSERT_TRUE(db_->Write(WriteOptions(), &batch).ok());
     }
     return Status::OK();
   }
-  virtual Iterator* NewIterator() const {
+  Iterator* NewIterator() const override {
     return db_->NewIterator(ReadOptions());
   }
 
-  virtual DB* db() const { return db_; }
+  DB* db() const override { return db_; }
 
  private:
   void NewDB() {
@@ -365,7 +366,7 @@ class DBConstructor : public Constructor {
     ASSERT_TRUE(status.ok()) << status.ToString();
   }
 
-  const Comparator* comparator_;
+  const Comparator* const comparator_;
   DB* db_;
 };
 
