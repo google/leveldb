@@ -2025,7 +2025,7 @@ class ModelDB : public DB {
 
   explicit ModelDB(const Options& options) : options_(options) {}
   ~ModelDB() override = default;
-  virtual Status Put(const WriteOptions& o, const Slice& k, const Slice& v) {
+  Status Put(const WriteOptions& o, const Slice& k, const Slice& v) override {
     return DB::Put(o, k, v);
   }
   Status Delete(const WriteOptions& o, const Slice& key) override {
