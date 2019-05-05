@@ -374,12 +374,12 @@ if(LEVELDB_BUILD_BENCHMARKS)
   endfunction(leveldb_benchmark)
 
   if(NOT BUILD_SHARED_LIBS)
-    leveldb_benchmark("${PROJECT_SOURCE_DIR}/db/db_bench.cc")
+    leveldb_benchmark("${PROJECT_SOURCE_DIR}/benchmarks/db_bench.cc")
   endif(NOT BUILD_SHARED_LIBS)
 
   check_library_exists(sqlite3 sqlite3_open "" HAVE_SQLITE3)
   if(HAVE_SQLITE3)
-    leveldb_benchmark("${PROJECT_SOURCE_DIR}/doc/bench/db_bench_sqlite3.cc")
+    leveldb_benchmark("${PROJECT_SOURCE_DIR}/benchmarks/db_bench_sqlite3.cc")
     target_link_libraries(db_bench_sqlite3 sqlite3)
   endif(HAVE_SQLITE3)
 
@@ -399,7 +399,7 @@ int main() {
   "  HAVE_KYOTOCABINET)
   set(CMAKE_REQUIRED_LIBRARIES ${OLD_CMAKE_REQURED_LIBRARIES})
   if(HAVE_KYOTOCABINET)
-    leveldb_benchmark("${PROJECT_SOURCE_DIR}/doc/bench/db_bench_tree_db.cc")
+    leveldb_benchmark("${PROJECT_SOURCE_DIR}/benchmarks/db_bench_tree_db.cc")
     target_link_libraries(db_bench_tree_db kyotocabinet)
   endif(HAVE_KYOTOCABINET)
 endif(LEVELDB_BUILD_BENCHMARKS)
