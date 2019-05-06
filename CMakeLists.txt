@@ -50,6 +50,8 @@ check_cxx_symbol_exists(F_FULLFSYNC "fcntl.h" HAVE_FULLFSYNC)
 
 include(CheckCXXSourceCompiles)
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wstrict-prototypes")
+
 # Test whether -Wthread-safety is available. See
 # https://clang.llvm.org/docs/ThreadSafetyAnalysis.html
 # -Werror is necessary because unknown attributes only generate warnings.

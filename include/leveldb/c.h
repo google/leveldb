@@ -147,7 +147,7 @@ LEVELDB_EXPORT void leveldb_iter_get_error(const leveldb_iterator_t*,
 
 /* Write batch */
 
-LEVELDB_EXPORT leveldb_writebatch_t* leveldb_writebatch_create();
+LEVELDB_EXPORT leveldb_writebatch_t* leveldb_writebatch_create(void);
 LEVELDB_EXPORT void leveldb_writebatch_destroy(leveldb_writebatch_t*);
 LEVELDB_EXPORT void leveldb_writebatch_clear(leveldb_writebatch_t*);
 LEVELDB_EXPORT void leveldb_writebatch_put(leveldb_writebatch_t*,
@@ -164,7 +164,7 @@ LEVELDB_EXPORT void leveldb_writebatch_append(
 
 /* Options */
 
-LEVELDB_EXPORT leveldb_options_t* leveldb_options_create();
+LEVELDB_EXPORT leveldb_options_t* leveldb_options_create(void);
 LEVELDB_EXPORT void leveldb_options_destroy(leveldb_options_t*);
 LEVELDB_EXPORT void leveldb_options_set_comparator(leveldb_options_t*,
                                                    leveldb_comparator_t*);
@@ -219,7 +219,7 @@ LEVELDB_EXPORT leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(
 
 /* Read options */
 
-LEVELDB_EXPORT leveldb_readoptions_t* leveldb_readoptions_create();
+LEVELDB_EXPORT leveldb_readoptions_t* leveldb_readoptions_create(void);
 LEVELDB_EXPORT void leveldb_readoptions_destroy(leveldb_readoptions_t*);
 LEVELDB_EXPORT void leveldb_readoptions_set_verify_checksums(
     leveldb_readoptions_t*, unsigned char);
@@ -230,7 +230,7 @@ LEVELDB_EXPORT void leveldb_readoptions_set_snapshot(leveldb_readoptions_t*,
 
 /* Write options */
 
-LEVELDB_EXPORT leveldb_writeoptions_t* leveldb_writeoptions_create();
+LEVELDB_EXPORT leveldb_writeoptions_t* leveldb_writeoptions_create(void);
 LEVELDB_EXPORT void leveldb_writeoptions_destroy(leveldb_writeoptions_t*);
 LEVELDB_EXPORT void leveldb_writeoptions_set_sync(leveldb_writeoptions_t*,
                                                   unsigned char);
@@ -242,7 +242,7 @@ LEVELDB_EXPORT void leveldb_cache_destroy(leveldb_cache_t* cache);
 
 /* Env */
 
-LEVELDB_EXPORT leveldb_env_t* leveldb_create_default_env();
+LEVELDB_EXPORT leveldb_env_t* leveldb_create_default_env(void);
 LEVELDB_EXPORT void leveldb_env_destroy(leveldb_env_t*);
 
 /* If not NULL, the returned buffer must be released using leveldb_free(). */
@@ -258,10 +258,10 @@ LEVELDB_EXPORT char* leveldb_env_get_test_directory(leveldb_env_t*);
 LEVELDB_EXPORT void leveldb_free(void* ptr);
 
 /* Return the major version number for this release. */
-LEVELDB_EXPORT int leveldb_major_version();
+LEVELDB_EXPORT int leveldb_major_version(void);
 
 /* Return the minor version number for this release. */
-LEVELDB_EXPORT int leveldb_minor_version();
+LEVELDB_EXPORT int leveldb_minor_version(void);
 
 #ifdef __cplusplus
 } /* end extern "C" */
