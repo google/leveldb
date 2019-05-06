@@ -117,7 +117,7 @@ TEST(EnvPosixTest, TestCloseOnExec) {
 
 #endif  // defined(HAVE_O_CLOEXEC)
 
-int cloexecChild() {
+int CloexecChild() {
   // Checks for open file descriptors in the range 3..FD_SETSIZE.
   for (int i = 3; i < FD_SETSIZE; i++) {
     int dup_result = dup2(i, i);
@@ -156,7 +156,7 @@ int cloexecChild() {
 int main(int argc, char** argv) {
   // Check if this is the child process for TestCloseOnExec
   if (argc > 1 && strcmp(argv[1], "-cloexec-child") == 0) {
-    return leveldb::cloexecChild();
+    return leveldb::CloexecChild();
   }
   // All tests currently run with the same read-only file limits.
   leveldb::EnvPosixTest::SetFileLimits(leveldb::kReadOnlyFileLimit,

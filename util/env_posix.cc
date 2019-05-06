@@ -50,9 +50,9 @@ int g_mmap_limit = kDefaultMmapLimit;
 
 // Common flags defined for all posix open operations
 #if defined(HAVE_O_CLOEXEC)
-constexpr const int O_FLAGS = O_CLOEXEC;
+constexpr const int kOpenBaseFlags = O_CLOEXEC;
 #else
-constexpr const int O_FLAGS = 0;
+constexpr const int kOpenBaseFlags = 0;
 #endif  // defined(HAVE_O_CLOEXEC)
 
 constexpr const size_t kWritableFileBufferSize = 65536;
@@ -172,7 +172,7 @@ class PosixRandomAccessFile final : public RandomAccessFile {
               char* scratch) const override {
     int fd = fd_;
     if (!has_permanent_fd_) {
-      fd = ::open(filename_.c_str(), O_RDONLY | O_FLAGS);
+      fd = ::open(filename_.c_str(), O_RDONLY | kOpenBaseFlags);
       if (fd < 0) {
         return PosixError(filename_, errno);
       }
@@ -350,7 +350,7 @@ class PosixWritableFile final : public WritableFile {
       return status;
     }
 
-    int fd = ::open(dirname_.c_str(), O_RDONLY | O_FLAGS);
+    int fd = ::open(dirname_.c_str(), O_RDONLY | kOpenBaseFlags);
     if (fd < 0) {
       status = PosixError(dirname_, errno);
     } else {
@@ -498,7 +498,7 @@ class PosixEnv : public Env {
 
   Status NewSequentialFile(const std::string& filename,
                            SequentialFile** result) override {
-    int fd = ::open(filename.c_str(), O_RDONLY | O_FLAGS);
+    int fd = ::open(filename.c_str(), O_RDONLY | kOpenBaseFlags);
     if (fd < 0) {
       *result = nullptr;
       return PosixError(filename, errno);
@@ -511,7 +511,7 @@ class PosixEnv : public Env {
   Status NewRandomAccessFile(const std::string& filename,
                              RandomAccessFile** result) override {
     *result = nullptr;
-    int fd = ::open(filename.c_str(), O_RDONLY | O_FLAGS);
+    int fd = ::open(filename.c_str(), O_RDONLY | kOpenBaseFlags);
     if (fd < 0) {
       return PosixError(filename, errno);
     }
@@ -543,8 +543,8 @@ class PosixEnv : public Env {
 
   Status NewWritableFile(const std::string& filename,
                          WritableFile** result) override {
-    int fd =
-        ::open(filename.c_str(), O_TRUNC | O_WRONLY | O_CREAT | O_FLAGS, 0644);
+    int fd = ::open(filename.c_str(),
+                    O_TRUNC | O_WRONLY | O_CREAT | kOpenBaseFlags, 0644);
     if (fd < 0) {
       *result = nullptr;
       return PosixError(filename, errno);
@@ -556,8 +556,8 @@ class PosixEnv : public Env {
 
   Status NewAppendableFile(const std::string& filename,
                            WritableFile** result) override {
-    int fd =
-        ::open(filename.c_str(), O_APPEND | O_WRONLY | O_CREAT | O_FLAGS, 0644);
+    int fd = ::open(filename.c_str(),
+                    O_APPEND | O_WRONLY | O_CREAT | kOpenBaseFlags, 0644);
     if (fd < 0) {
       *result = nullptr;
       return PosixError(filename, errno);
@@ -627,7 +627,7 @@ class PosixEnv : public Env {
   Status LockFile(const std::string& filename, FileLock** lock) override {
     *lock = nullptr;
 
-    int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | O_FLAGS, 0644);
+    int fd = ::open(filename.c_str(), O_RDWR | O_CREAT | kOpenBaseFlags, 0644);
     if (fd < 0) {
       return PosixError(filename, errno);
     }
