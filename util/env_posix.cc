@@ -683,8 +683,16 @@ class PosixEnv : public Env {
   }
 
   Status NewLogger(const std::string& filename, Logger** result) override {
-    std::FILE* fp = std::fopen(filename.c_str(), "we");
+    int fd = ::open(filename.c_str(),
+                    O_APPEND | O_WRONLY | O_CREAT | kOpenBaseFlags, 0644);
+    if (fd < 0) {
+      *result = nullptr;
+      return PosixError(filename, errno);
+    }
+
+    std::FILE* fp = ::fdopen(fd, "w");
     if (fp == nullptr) {
+      ::close(fd);
       *result = nullptr;
       return PosixError(filename, errno);
     } else {
