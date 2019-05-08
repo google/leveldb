@@ -5,7 +5,7 @@
 #include "leveldb/c.h"
 
 #include <stdlib.h>
-#include <unistd.h>
+
 #include "leveldb/cache.h"
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
@@ -43,67 +43,70 @@ using leveldb::WriteOptions;
 
 extern "C" {
 
-struct leveldb_t              { DB*               rep; };
-struct leveldb_iterator_t     { Iterator*         rep; };
-struct leveldb_writebatch_t   { WriteBatch        rep; };
-struct leveldb_snapshot_t     { const Snapshot*   rep; };
-struct leveldb_readoptions_t  { ReadOptions       rep; };
-struct leveldb_writeoptions_t { WriteOptions      rep; };
-struct leveldb_options_t      { Options           rep; };
-struct leveldb_cache_t        { Cache*            rep; };
-struct leveldb_seqfile_t      { SequentialFile*   rep; };
-struct leveldb_randomfile_t   { RandomAccessFile* rep; };
-struct leveldb_writablefile_t { WritableFile*     rep; };
-struct leveldb_logger_t       { Logger*           rep; };
-struct leveldb_filelock_t     { FileLock*         rep; };
+struct leveldb_t {
+  DB* rep;
+};
+struct leveldb_iterator_t {
+  Iterator* rep;
+};
+struct leveldb_writebatch_t {
+  WriteBatch rep;
+};
+struct leveldb_snapshot_t {
+  const Snapshot* rep;
+};
+struct leveldb_readoptions_t {
+  ReadOptions rep;
+};
+struct leveldb_writeoptions_t {
+  WriteOptions rep;
+};
+struct leveldb_options_t {
+  Options rep;
+};
+struct leveldb_cache_t {
+  Cache* rep;
+};
+struct leveldb_seqfile_t {
+  SequentialFile* rep;
+};
+struct leveldb_randomfile_t {
+  RandomAccessFile* rep;
+};
+struct leveldb_writablefile_t {
+  WritableFile* rep;
+};
+struct leveldb_logger_t {
+  Logger* rep;
+};
+struct leveldb_filelock_t {
+  FileLock* rep;
+};
 
 struct leveldb_comparator_t : public Comparator {
-  void* state_;
-  void (*destructor_)(void*);
-  int (*compare_)(
-      void*,
-      const char* a, size_t alen,
-      const char* b, size_t blen);
-  const char* (*name_)(void*);
-
-  virtual ~leveldb_comparator_t() {
-    (*destructor_)(state_);
-  }
+  virtual ~leveldb_comparator_t() { (*destructor_)(state_); }
 
   virtual int Compare(const Slice& a, const Slice& b) const {
     return (*compare_)(state_, a.data(), a.size(), b.data(), b.size());
   }
 
-  virtual const char* Name() const {
-    return (*name_)(state_);
-  }
+  virtual const char* Name() const { return (*name_)(state_); }
 
   // No-ops since the C binding does not support key shortening methods.
-  virtual void FindShortestSeparator(std::string*, const Slice&) const { }
-  virtual void FindShortSuccessor(std::string* key) const { }
+  virtual void FindShortestSeparator(std::string*, const Slice&) const {}
+  virtual void FindShortSuccessor(std::string* key) const {}
+
+  void* state_;
+  void (*destructor_)(void*);
+  int (*compare_)(void*, const char* a, size_t alen, const char* b,
+                  size_t blen);
+  const char* (*name_)(void*);
 };
 
 struct leveldb_filterpolicy_t : public FilterPolicy {
-  void* state_;
-  void (*destructor_)(void*);
-  const char* (*name_)(void*);
-  char* (*create_)(
-      void*,
-      const char* const* key_array, const size_t* key_length_array,
-      int num_keys,
-      size_t* filter_length);
-  unsigned char (*key_match_)(
-      void*,
-      const char* key, size_t length,
-      const char* filter, size_t filter_length);
+  virtual ~leveldb_filterpolicy_t() { (*destructor_)(state_); }
 
-  virtual ~leveldb_filterpolicy_t() {
-    (*destructor_)(state_);
-  }
-
-  virtual const char* Name() const {
-    return (*name_)(state_);
-  }
+  virtual const char* Name() const { return (*name_)(state_); }
 
   virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const {
     std::vector<const char*> key_pointers(n);
@@ -119,9 +122,18 @@ struct leveldb_filterpolicy_t : public FilterPolicy {
   }
 
   virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const {
-    return (*key_match_)(state_, key.data(), key.size(),
-                         filter.data(), filter.size());
+    return (*key_match_)(state_, key.data(), key.size(), filter.data(),
+                         filter.size());
   }
+
+  void* state_;
+  void (*destructor_)(void*);
+  const char* (*name_)(void*);
+  char* (*create_)(void*, const char* const* key_array,
+                   const size_t* key_length_array, int num_keys,
+                   size_t* filter_length);
+  unsigned char (*key_match_)(void*, const char* key, size_t length,
+                              const char* filter, size_t filter_length);
 };
 
 struct leveldb_env_t {
@@ -130,10 +142,10 @@ struct leveldb_env_t {
 };
 
 static bool SaveError(char** errptr, const Status& s) {
-  assert(errptr != NULL);
+  assert(errptr != nullptr);
   if (s.ok()) {
     return false;
-  } else if (*errptr == NULL) {
+  } else if (*errptr == nullptr) {
     *errptr = strdup(s.ToString().c_str());
   } else {
     // TODO(sanjay): Merge with existing error?
@@ -149,13 +161,11 @@ static char* CopyString(const std::string& str) {
   return result;
 }
 
-leveldb_t* leveldb_open(
-    const leveldb_options_t* options,
-    const char* name,
-    char** errptr) {
+leveldb_t* leveldb_open(const leveldb_options_t* options, const char* name,
+                        char** errptr) {
   DB* db;
   if (SaveError(errptr, DB::Open(options->rep, std::string(name), &db))) {
-    return NULL;
+    return nullptr;
   }
   leveldb_t* result = new leveldb_t;
   result->rep = db;
@@ -167,40 +177,27 @@ void leveldb_close(leveldb_t* db) {
   delete db;
 }
 
-void leveldb_put(
-    leveldb_t* db,
-    const leveldb_writeoptions_t* options,
-    const char* key, size_t keylen,
-    const char* val, size_t vallen,
-    char** errptr) {
+void leveldb_put(leveldb_t* db, const leveldb_writeoptions_t* options,
+                 const char* key, size_t keylen, const char* val, size_t vallen,
+                 char** errptr) {
   SaveError(errptr,
             db->rep->Put(options->rep, Slice(key, keylen), Slice(val, vallen)));
 }
 
-void leveldb_delete(
-    leveldb_t* db,
-    const leveldb_writeoptions_t* options,
-    const char* key, size_t keylen,
-    char** errptr) {
+void leveldb_delete(leveldb_t* db, const leveldb_writeoptions_t* options,
+                    const char* key, size_t keylen, char** errptr) {
   SaveError(errptr, db->rep->Delete(options->rep, Slice(key, keylen)));
 }
 
-
-void leveldb_write(
-    leveldb_t* db,
-    const leveldb_writeoptions_t* options,
-    leveldb_writebatch_t* batch,
-    char** errptr) {
+void leveldb_write(leveldb_t* db, const leveldb_writeoptions_t* options,
+                   leveldb_writebatch_t* batch, char** errptr) {
   SaveError(errptr, db->rep->Write(options->rep, &batch->rep));
 }
 
-char* leveldb_get(
-    leveldb_t* db,
-    const leveldb_readoptions_t* options,
-    const char* key, size_t keylen,
-    size_t* vallen,
-    char** errptr) {
-  char* result = NULL;
+char* leveldb_get(leveldb_t* db, const leveldb_readoptions_t* options,
+                  const char* key, size_t keylen, size_t* vallen,
+                  char** errptr) {
+  char* result = nullptr;
   std::string tmp;
   Status s = db->rep->Get(options->rep, Slice(key, keylen), &tmp);
   if (s.ok()) {
@@ -216,45 +213,40 @@ char* leveldb_get(
 }
 
 leveldb_iterator_t* leveldb_create_iterator(
-    leveldb_t* db,
-    const leveldb_readoptions_t* options) {
+    leveldb_t* db, const leveldb_readoptions_t* options) {
   leveldb_iterator_t* result = new leveldb_iterator_t;
   result->rep = db->rep->NewIterator(options->rep);
   return result;
 }
 
-const leveldb_snapshot_t* leveldb_create_snapshot(
-    leveldb_t* db) {
+const leveldb_snapshot_t* leveldb_create_snapshot(leveldb_t* db) {
   leveldb_snapshot_t* result = new leveldb_snapshot_t;
   result->rep = db->rep->GetSnapshot();
   return result;
 }
 
-void leveldb_release_snapshot(
-    leveldb_t* db,
-    const leveldb_snapshot_t* snapshot) {
+void leveldb_release_snapshot(leveldb_t* db,
+                              const leveldb_snapshot_t* snapshot) {
   db->rep->ReleaseSnapshot(snapshot->rep);
   delete snapshot;
 }
 
-char* leveldb_property_value(
-    leveldb_t* db,
-    const char* propname) {
+char* leveldb_property_value(leveldb_t* db, const char* propname) {
   std::string tmp;
   if (db->rep->GetProperty(Slice(propname), &tmp)) {
     // We use strdup() since we expect human readable output.
     return strdup(tmp.c_str());
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 
-void leveldb_approximate_sizes(
-    leveldb_t* db,
-    int num_ranges,
-    const char* const* range_start_key, const size_t* range_start_key_len,
-    const char* const* range_limit_key, const size_t* range_limit_key_len,
-    uint64_t* sizes) {
+void leveldb_approximate_sizes(leveldb_t* db, int num_ranges,
+                               const char* const* range_start_key,
+                               const size_t* range_start_key_len,
+                               const char* const* range_limit_key,
+                               const size_t* range_limit_key_len,
+                               uint64_t* sizes) {
   Range* ranges = new Range[num_ranges];
   for (int i = 0; i < num_ranges; i++) {
     ranges[i].start = Slice(range_start_key[i], range_start_key_len[i]);
@@ -264,28 +256,23 @@ void leveldb_approximate_sizes(
   delete[] ranges;
 }
 
-void leveldb_compact_range(
-    leveldb_t* db,
-    const char* start_key, size_t start_key_len,
-    const char* limit_key, size_t limit_key_len) {
+void leveldb_compact_range(leveldb_t* db, const char* start_key,
+                           size_t start_key_len, const char* limit_key,
+                           size_t limit_key_len) {
   Slice a, b;
   db->rep->CompactRange(
-      // Pass NULL Slice if corresponding "const char*" is NULL
-      (start_key ? (a = Slice(start_key, start_key_len), &a) : NULL),
-      (limit_key ? (b = Slice(limit_key, limit_key_len), &b) : NULL));
+      // Pass null Slice if corresponding "const char*" is null
+      (start_key ? (a = Slice(start_key, start_key_len), &a) : nullptr),
+      (limit_key ? (b = Slice(limit_key, limit_key_len), &b) : nullptr));
 }
 
-void leveldb_destroy_db(
-    const leveldb_options_t* options,
-    const char* name,
-    char** errptr) {
+void leveldb_destroy_db(const leveldb_options_t* options, const char* name,
+                        char** errptr) {
   SaveError(errptr, DestroyDB(name, options->rep));
 }
 
-void leveldb_repair_db(
-    const leveldb_options_t* options,
-    const char* name,
-    char** errptr) {
+void leveldb_repair_db(const leveldb_options_t* options, const char* name,
+                       char** errptr) {
   SaveError(errptr, RepairDB(name, options->rep));
 }
 
@@ -310,13 +297,9 @@ void leveldb_iter_seek(leveldb_iterator_t* iter, const char* k, size_t klen) {
   iter->rep->Seek(Slice(k, klen));
 }
 
-void leveldb_iter_next(leveldb_iterator_t* iter) {
-  iter->rep->Next();
-}
+void leveldb_iter_next(leveldb_iterator_t* iter) { iter->rep->Next(); }
 
-void leveldb_iter_prev(leveldb_iterator_t* iter) {
-  iter->rep->Prev();
-}
+void leveldb_iter_prev(leveldb_iterator_t* iter) { iter->rep->Prev(); }
 
 const char* leveldb_iter_key(const leveldb_iterator_t* iter, size_t* klen) {
   Slice s = iter->rep->key();
@@ -338,32 +321,25 @@ leveldb_writebatch_t* leveldb_writebatch_create() {
   return new leveldb_writebatch_t;
 }
 
-void leveldb_writebatch_destroy(leveldb_writebatch_t* b) {
-  delete b;
-}
+void leveldb_writebatch_destroy(leveldb_writebatch_t* b) { delete b; }
 
-void leveldb_writebatch_clear(leveldb_writebatch_t* b) {
-  b->rep.Clear();
-}
+void leveldb_writebatch_clear(leveldb_writebatch_t* b) { b->rep.Clear(); }
 
-void leveldb_writebatch_put(
-    leveldb_writebatch_t* b,
-    const char* key, size_t klen,
-    const char* val, size_t vlen) {
+void leveldb_writebatch_put(leveldb_writebatch_t* b, const char* key,
+                            size_t klen, const char* val, size_t vlen) {
   b->rep.Put(Slice(key, klen), Slice(val, vlen));
 }
 
-void leveldb_writebatch_delete(
-    leveldb_writebatch_t* b,
-    const char* key, size_t klen) {
+void leveldb_writebatch_delete(leveldb_writebatch_t* b, const char* key,
+                               size_t klen) {
   b->rep.Delete(Slice(key, klen));
 }
 
-void leveldb_writebatch_iterate(
-    leveldb_writebatch_t* b,
-    void* state,
-    void (*put)(void*, const char* k, size_t klen, const char* v, size_t vlen),
-    void (*deleted)(void*, const char* k, size_t klen)) {
+void leveldb_writebatch_iterate(const leveldb_writebatch_t* b, void* state,
+                                void (*put)(void*, const char* k, size_t klen,
+                                            const char* v, size_t vlen),
+                                void (*deleted)(void*, const char* k,
+                                                size_t klen)) {
   class H : public WriteBatch::Handler {
    public:
     void* state_;
@@ -383,47 +359,46 @@ void leveldb_writebatch_iterate(
   b->rep.Iterate(&handler);
 }
 
-leveldb_options_t* leveldb_options_create() {
-  return new leveldb_options_t;
+void leveldb_writebatch_append(leveldb_writebatch_t* destination,
+                               const leveldb_writebatch_t* source) {
+  destination->rep.Append(source->rep);
 }
 
-void leveldb_options_destroy(leveldb_options_t* options) {
-  delete options;
-}
+leveldb_options_t* leveldb_options_create() { return new leveldb_options_t; }
 
-void leveldb_options_set_comparator(
-    leveldb_options_t* opt,
-    leveldb_comparator_t* cmp) {
+void leveldb_options_destroy(leveldb_options_t* options) { delete options; }
+
+void leveldb_options_set_comparator(leveldb_options_t* opt,
+                                    leveldb_comparator_t* cmp) {
   opt->rep.comparator = cmp;
 }
 
-void leveldb_options_set_filter_policy(
-    leveldb_options_t* opt,
-    leveldb_filterpolicy_t* policy) {
+void leveldb_options_set_filter_policy(leveldb_options_t* opt,
+                                       leveldb_filterpolicy_t* policy) {
   opt->rep.filter_policy = policy;
 }
 
-void leveldb_options_set_create_if_missing(
-    leveldb_options_t* opt, unsigned char v) {
+void leveldb_options_set_create_if_missing(leveldb_options_t* opt,
+                                           unsigned char v) {
   opt->rep.create_if_missing = v;
 }
 
-void leveldb_options_set_error_if_exists(
-    leveldb_options_t* opt, unsigned char v) {
+void leveldb_options_set_error_if_exists(leveldb_options_t* opt,
+                                         unsigned char v) {
   opt->rep.error_if_exists = v;
 }
 
-void leveldb_options_set_paranoid_checks(
-    leveldb_options_t* opt, unsigned char v) {
+void leveldb_options_set_paranoid_checks(leveldb_options_t* opt,
+                                         unsigned char v) {
   opt->rep.paranoid_checks = v;
 }
 
 void leveldb_options_set_env(leveldb_options_t* opt, leveldb_env_t* env) {
-  opt->rep.env = (env ? env->rep : NULL);
+  opt->rep.env = (env ? env->rep : nullptr);
 }
 
 void leveldb_options_set_info_log(leveldb_options_t* opt, leveldb_logger_t* l) {
-  opt->rep.info_log = (l ? l->rep : NULL);
+  opt->rep.info_log = (l ? l->rep : nullptr);
 }
 
 void leveldb_options_set_write_buffer_size(leveldb_options_t* opt, size_t s) {
@@ -446,17 +421,18 @@ void leveldb_options_set_block_restart_interval(leveldb_options_t* opt, int n) {
   opt->rep.block_restart_interval = n;
 }
 
+void leveldb_options_set_max_file_size(leveldb_options_t* opt, size_t s) {
+  opt->rep.max_file_size = s;
+}
+
 void leveldb_options_set_compression(leveldb_options_t* opt, int t) {
   opt->rep.compression = static_cast<CompressionType>(t);
 }
 
 leveldb_comparator_t* leveldb_comparator_create(
-    void* state,
-    void (*destructor)(void*),
-    int (*compare)(
-        void*,
-        const char* a, size_t alen,
-        const char* b, size_t blen),
+    void* state, void (*destructor)(void*),
+    int (*compare)(void*, const char* a, size_t alen, const char* b,
+                   size_t blen),
     const char* (*name)(void*)) {
   leveldb_comparator_t* result = new leveldb_comparator_t;
   result->state_ = state;
@@ -466,22 +442,15 @@ leveldb_comparator_t* leveldb_comparator_create(
   return result;
 }
 
-void leveldb_comparator_destroy(leveldb_comparator_t* cmp) {
-  delete cmp;
-}
+void leveldb_comparator_destroy(leveldb_comparator_t* cmp) { delete cmp; }
 
 leveldb_filterpolicy_t* leveldb_filterpolicy_create(
-    void* state,
-    void (*destructor)(void*),
-    char* (*create_filter)(
-        void*,
-        const char* const* key_array, const size_t* key_length_array,
-        int num_keys,
-        size_t* filter_length),
-    unsigned char (*key_may_match)(
-        void*,
-        const char* key, size_t length,
-        const char* filter, size_t filter_length),
+    void* state, void (*destructor)(void*),
+    char* (*create_filter)(void*, const char* const* key_array,
+                           const size_t* key_length_array, int num_keys,
+                           size_t* filter_length),
+    unsigned char (*key_may_match)(void*, const char* key, size_t length,
+                                   const char* filter, size_t filter_length),
     const char* (*name)(void*)) {
   leveldb_filterpolicy_t* result = new leveldb_filterpolicy_t;
   result->state_ = state;
@@ -501,7 +470,8 @@ leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(int bits_per_key) {
   // they delegate to a NewBloomFilterPolicy() instead of user
   // supplied C functions.
   struct Wrapper : public leveldb_filterpolicy_t {
-    const FilterPolicy* rep_;
+    static void DoNothing(void*) {}
+
     ~Wrapper() { delete rep_; }
     const char* Name() const { return rep_->Name(); }
     void CreateFilter(const Slice* keys, int n, std::string* dst) const {
@@ -510,11 +480,12 @@ leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(int bits_per_key) {
     bool KeyMayMatch(const Slice& key, const Slice& filter) const {
       return rep_->KeyMayMatch(key, filter);
     }
-    static void DoNothing(void*) { }
+
+    const FilterPolicy* rep_;
   };
   Wrapper* wrapper = new Wrapper;
   wrapper->rep_ = NewBloomFilterPolicy(bits_per_key);
-  wrapper->state_ = NULL;
+  wrapper->state_ = nullptr;
   wrapper->destructor_ = &Wrapper::DoNothing;
   return wrapper;
 }
@@ -523,37 +494,31 @@ leveldb_readoptions_t* leveldb_readoptions_create() {
   return new leveldb_readoptions_t;
 }
 
-void leveldb_readoptions_destroy(leveldb_readoptions_t* opt) {
-  delete opt;
-}
+void leveldb_readoptions_destroy(leveldb_readoptions_t* opt) { delete opt; }
 
-void leveldb_readoptions_set_verify_checksums(
-    leveldb_readoptions_t* opt,
-    unsigned char v) {
+void leveldb_readoptions_set_verify_checksums(leveldb_readoptions_t* opt,
+                                              unsigned char v) {
   opt->rep.verify_checksums = v;
 }
 
-void leveldb_readoptions_set_fill_cache(
-    leveldb_readoptions_t* opt, unsigned char v) {
+void leveldb_readoptions_set_fill_cache(leveldb_readoptions_t* opt,
+                                        unsigned char v) {
   opt->rep.fill_cache = v;
 }
 
-void leveldb_readoptions_set_snapshot(
-    leveldb_readoptions_t* opt,
-    const leveldb_snapshot_t* snap) {
-  opt->rep.snapshot = (snap ? snap->rep : NULL);
+void leveldb_readoptions_set_snapshot(leveldb_readoptions_t* opt,
+                                      const leveldb_snapshot_t* snap) {
+  opt->rep.snapshot = (snap ? snap->rep : nullptr);
 }
 
 leveldb_writeoptions_t* leveldb_writeoptions_create() {
   return new leveldb_writeoptions_t;
 }
 
-void leveldb_writeoptions_destroy(leveldb_writeoptions_t* opt) {
-  delete opt;
-}
+void leveldb_writeoptions_destroy(leveldb_writeoptions_t* opt) { delete opt; }
 
-void leveldb_writeoptions_set_sync(
-    leveldb_writeoptions_t* opt, unsigned char v) {
+void leveldb_writeoptions_set_sync(leveldb_writeoptions_t* opt,
+                                   unsigned char v) {
   opt->rep.sync = v;
 }
 
@@ -580,16 +545,22 @@ void leveldb_env_destroy(leveldb_env_t* env) {
   delete env;
 }
 
-void leveldb_free(void* ptr) {
-  free(ptr);
+char* leveldb_env_get_test_directory(leveldb_env_t* env) {
+  std::string result;
+  if (!env->rep->GetTestDirectory(&result).ok()) {
+    return nullptr;
+  }
+
+  char* buffer = static_cast<char*>(malloc(result.size() + 1));
+  memcpy(buffer, result.data(), result.size());
+  buffer[result.size()] = '\0';
+  return buffer;
 }
 
-int leveldb_major_version() {
-  return kMajorVersion;
-}
+void leveldb_free(void* ptr) { free(ptr); }
 
-int leveldb_minor_version() {
-  return kMinorVersion;
-}
+int leveldb_major_version() { return kMajorVersion; }
+
+int leveldb_minor_version() { return kMinorVersion; }
 
 }  // end extern "C"

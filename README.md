@@ -1,10 +1,12 @@
 **LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.**
 
 [![Build Status](https://travis-ci.org/google/leveldb.svg?branch=master)](https://travis-ci.org/google/leveldb)
+[![Build status](https://ci.appveyor.com/api/projects/status/g2j5j4rfkda6eyw5/branch/master?svg=true)](https://ci.appveyor.com/project/pwnall/leveldb)
 
 Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
 
 # Features
+
   * Keys and values are arbitrary byte arrays.
   * Data is stored sorted by key.
   * Callers can provide a custom comparison function to override the sort order.
@@ -16,15 +18,55 @@ Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
   * External activity (file system operations etc.) is relayed through a virtual interface so users can customize the operating system interactions.
 
 # Documentation
+
   [LevelDB library documentation](https://github.com/google/leveldb/blob/master/doc/index.md) is online and bundled with the source code.
 
-
 # Limitations
+
   * This is not a SQL database.  It does not have a relational data model, it does not support SQL queries, and it has no support for indexes.
   * Only a single process (possibly multi-threaded) can access a particular database at a time.
   * There is no client-server support builtin to the library.  An application that needs such support will have to wrap their own server around the library.
 
+# Building
+
+This project supports [CMake](https://cmake.org/) out of the box.
+
+### Build for POSIX
+
+Quick start:
+
+```bash
+mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
+```
+
+### Building for Windows
+
+First generate the Visual Studio 2017 project/solution files:
+
+```cmd
+mkdir build
+cd build
+cmake -G "Visual Studio 15" ..
+```
+The default default will build for x86. For 64-bit run:
+
+```cmd
+cmake -G "Visual Studio 15 Win64" ..
+```
+
+To compile the Windows solution from the command-line:
+
+```cmd
+devenv /build Debug leveldb.sln
+```
+
+or open leveldb.sln in Visual Studio and build from within.
+
+Please see the CMake documentation and `CMakeLists.txt` for more advanced usage.
+
 # Contributing to the leveldb Project
+
 The leveldb project welcomes contributions. leveldb's primary goal is to be
 a reliable and fast key/value store. Changes that are in line with the
 features/limitations outlined above, and meet the requirements below,
@@ -32,10 +74,10 @@ will be considered.
 
 Contribution requirements:
 
-1. **POSIX only**. We _generally_ will only accept changes that are both
-   compiled, and tested on a POSIX platform - usually Linux. Very small
-   changes will sometimes be accepted, but consider that more of an
-   exception than the rule.
+1. **Tested platforms only**. We _generally_ will only accept changes for
+   platforms that are compiled and tested. This means POSIX (for Linux and
+   macOS) or Windows. Very small changes will sometimes be accepted, but
+   consider that more of an exception than the rule.
 
 2. **Stable API**. We strive very hard to maintain a stable API. Changes that
    require changes for projects using leveldb _might_ be rejected without
@@ -44,7 +86,16 @@ Contribution requirements:
 3. **Tests**: All changes must be accompanied by a new (or changed) test, or
    a sufficient explanation as to why a new (or changed) test is not required.
 
+4. **Consistent Style**: This project conforms to the
+   [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+   To ensure your changes are properly formatted please run:
+
+   ```
+   clang-format -i --style=file <file>
+   ```
+
 ## Submitting a Pull Request
+
 Before any pull request will be accepted the author must first sign a
 Contributor License Agreement (CLA) at https://cla.developers.google.com/.
 
