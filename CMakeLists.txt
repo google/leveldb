@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 3.9)
 # Keep the version below in sync with the one in db.h
 project(leveldb VERSION 1.22.0 LANGUAGES C CXX)
 
+# Include local CMake modules.
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 # This project can use C11, but will gracefully decay down to C89.
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED OFF)
@@ -31,12 +34,13 @@ option(LEVELDB_INSTALL "Install LevelDB's header and library" ON)
 include(TestBigEndian)
 test_big_endian(LEVELDB_IS_BIG_ENDIAN)
 
+find_package(Snappy)
+
 include(CheckIncludeFile)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
 include(CheckLibraryExists)
 check_library_exists(crc32c crc32c_value "" HAVE_CRC32C)
-check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
 check_library_exists(tcmalloc malloc "" HAVE_TCMALLOC)
 
 include(CheckCXXSymbolExists)
@@ -251,9 +255,9 @@ endif(HAVE_CLANG_THREAD_SAFETY)
 if(HAVE_CRC32C)
   target_link_libraries(leveldb crc32c)
 endif(HAVE_CRC32C)
-if(HAVE_SNAPPY)
-  target_link_libraries(leveldb snappy)
-endif(HAVE_SNAPPY)
+if(TARGET Snappy::snappy)
+  target_link_libraries(leveldb Snappy::snappy)
+endif()
 if(HAVE_TCMALLOC)
   target_link_libraries(leveldb tcmalloc)
 endif(HAVE_TCMALLOC)
