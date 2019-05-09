@@ -59,17 +59,17 @@ class DBIter : public Iterator {
   DBIter(const DBIter&) = delete;
   DBIter& operator=(const DBIter&) = delete;
 
-  virtual ~DBIter() { delete iter_; }
-  virtual bool Valid() const { return valid_; }
-  virtual Slice key() const {
+  ~DBIter() override { delete iter_; }
+  bool Valid() const override { return valid_; }
+  Slice key() const override {
     assert(valid_);
     return (direction_ == kForward) ? ExtractUserKey(iter_->key()) : saved_key_;
   }
-  virtual Slice value() const {
+  Slice value() const override {
     assert(valid_);
     return (direction_ == kForward) ? iter_->value() : saved_value_;
   }
-  virtual Status status() const {
+  Status status() const override {
     if (status_.ok()) {
       return iter_->status();
     } else {
@@ -77,11 +77,11 @@ class DBIter : public Iterator {
     }
   }
 
-  virtual void Next();
-  virtual void Prev();
-  virtual void Seek(const Slice& target);
-  virtual void SeekToFirst();
-  virtual void SeekToLast();
+  void Next() override;
+  void Prev() override;
+  void Seek(const Slice& target) override;
+  void SeekToFirst() override;
+  void SeekToLast() override;
 
  private:
   void FindNextUserEntry(bool skipping, std::string* skip);

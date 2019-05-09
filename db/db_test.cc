@@ -210,9 +210,9 @@ class SpecialEnv : public EnvWrapper {
      public:
       CountingFile(RandomAccessFile* target, AtomicCounter* counter)
           : target_(target), counter_(counter) {}
-      virtual ~CountingFile() { delete target_; }
-      virtual Status Read(uint64_t offset, size_t n, Slice* result,
-                          char* scratch) const {
+      ~CountingFile() override { delete target_; }
+      Status Read(uint64_t offset, size_t n, Slice* result,
+                  char* scratch) const override {
         counter_->Increment();
         return target_->Read(offset, n, result, scratch);
       }
@@ -1504,14 +1504,14 @@ TEST(DBTest, Fflush_Issue474) {
 TEST(DBTest, ComparatorCheck) {
   class NewComparator : public Comparator {
    public:
-    virtual const char* Name() const { return "leveldb.NewComparator"; }
-    virtual int Compare(const Slice& a, const Slice& b) const {
+    const char* Name() const override { return "leveldb.NewComparator"; }
+    int Compare(const Slice& a, const Slice& b) const override {
       return BytewiseComparator()->Compare(a, b);
     }
-    virtual void FindShortestSeparator(std::string* s, const Slice& l) const {
+    void FindShortestSeparator(std::string* s, const Slice& l) const override {
       BytewiseComparator()->FindShortestSeparator(s, l);
     }
-    virtual void FindShortSuccessor(std::string* key) const {
+    void FindShortSuccessor(std::string* key) const override {
       BytewiseComparator()->FindShortSuccessor(key);
     }
   };
@@ -1527,15 +1527,15 @@ TEST(DBTest, ComparatorCheck) {
 TEST(DBTest, CustomComparator) {
   class NumberComparator : public Comparator {
    public:
-    virtual const char* Name() const { return "test.NumberComparator"; }
-    virtual int Compare(const Slice& a, const Slice& b) const {
+    const char* Name() const override { return "test.NumberComparator"; }
+    int Compare(const Slice& a, const Slice& b) const override {
       return ToNumber(a) - ToNumber(b);
     }
-    virtual void FindShortestSeparator(std::string* s, const Slice& l) const {
+    void FindShortestSeparator(std::string* s, const Slice& l) const override {
       ToNumber(*s);  // Check format
       ToNumber(l);   // Check format
     }
-    virtual void FindShortSuccessor(std::string* key) const {
+    void FindShortSuccessor(std::string* key) const override {
       ToNumber(*key);  // Check format
     }
 
@@ -2060,10 +2060,10 @@ class ModelDB : public DB {
     class Handler : public WriteBatch::Handler {
      public:
       KVMap* map_;
-      virtual void Put(const Slice& key, const Slice& value) {
+      void Put(const Slice& key, const Slice& value) override {
         (*map_)[key.ToString()] = value.ToString();
       }
-      virtual void Delete(const Slice& key) { map_->erase(key.ToString()); }
+      void Delete(const Slice& key) override { map_->erase(key.ToString()); }
     };
     Handler handler;
     handler.map_ = &map_;
@@ -2085,26 +2085,26 @@ class ModelDB : public DB {
    public:
     ModelIter(const KVMap* map, bool owned)
         : map_(map), owned_(owned), iter_(map_->end()) {}
-    ~ModelIter() {
+    ~ModelIter() override {
       if (owned_) delete map_;
     }
-    virtual bool Valid() const { return iter_ != map_->end(); }
-    virtual void SeekToFirst() { iter_ = map_->begin(); }
-    virtual void SeekToLast() {
+    bool Valid() const override { return iter_ != map_->end(); }
+    void SeekToFirst() override { iter_ = map_->begin(); }
+    void SeekToLast() override {
       if (map_->empty()) {
         iter_ = map_->end();
       } else {
         iter_ = map_->find(map_->rbegin()->first);
       }
     }
-    virtual void Seek(const Slice& k) {
+    void Seek(const Slice& k) override {
       iter_ = map_->lower_bound(k.ToString());
     }
-    virtual void Next() { ++iter_; }
-    virtual void Prev() { --iter_; }
-    virtual Slice key() const { return iter_->first; }
-    virtual Slice value() const { return iter_->second; }
-    virtual Status status() const { return Status::OK(); }
+    void Next() override { ++iter_; }
+    void Prev() override { --iter_; }
+    Slice key() const override { return iter_->first; }
+    Slice value() const override { return iter_->second; }
+    Status status() const override { return Status::OK(); }
 
    private:
     const KVMap* const map_;

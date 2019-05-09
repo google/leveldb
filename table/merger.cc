@@ -24,11 +24,11 @@ class MergingIterator : public Iterator {
     }
   }
 
-  virtual ~MergingIterator() { delete[] children_; }
+  ~MergingIterator() override { delete[] children_; }
 
-  virtual bool Valid() const { return (current_ != nullptr); }
+  bool Valid() const override { return (current_ != nullptr); }
 
-  virtual void SeekToFirst() {
+  void SeekToFirst() override {
     for (int i = 0; i < n_; i++) {
       children_[i].SeekToFirst();
     }
@@ -36,7 +36,7 @@ class MergingIterator : public Iterator {
     direction_ = kForward;
   }
 
-  virtual void SeekToLast() {
+  void SeekToLast() override {
     for (int i = 0; i < n_; i++) {
       children_[i].SeekToLast();
     }
@@ -44,7 +44,7 @@ class MergingIterator : public Iterator {
     direction_ = kReverse;
   }
 
-  virtual void Seek(const Slice& target) {
+  void Seek(const Slice& target) override {
     for (int i = 0; i < n_; i++) {
       children_[i].Seek(target);
     }
@@ -52,7 +52,7 @@ class MergingIterator : public Iterator {
     direction_ = kForward;
   }
 
-  virtual void Next() {
+  void Next() override {
     assert(Valid());
 
     // Ensure that all children are positioned after key().
@@ -78,7 +78,7 @@ class MergingIterator : public Iterator {
     FindSmallest();
   }
 
-  virtual void Prev() {
+  void Prev() override {
     assert(Valid());
 
     // Ensure that all children are positioned before key().
@@ -107,17 +107,17 @@ class MergingIterator : public Iterator {
     FindLargest();
   }
 
-  virtual Slice key() const {
+  Slice key() const override {
     assert(Valid());
     return current_->key();
   }
 
-  virtual Slice value() const {
+  Slice value() const override {
     assert(Valid());
     return current_->value();
   }
 
-  virtual Status status() const {
+  Status status() const override {
     Status status;
     for (int i = 0; i < n_; i++) {
       status = children_[i].status();

@@ -16,16 +16,16 @@ namespace leveldb {
 // For testing: emit an array with one hash value per key
 class TestHashFilter : public FilterPolicy {
  public:
-  virtual const char* Name() const { return "TestHashFilter"; }
+  const char* Name() const override { return "TestHashFilter"; }
 
-  virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const {
+  void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
     for (int i = 0; i < n; i++) {
       uint32_t h = Hash(keys[i].data(), keys[i].size(), 1);
       PutFixed32(dst, h);
     }
   }
 
-  virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const {
+  bool KeyMayMatch(const Slice& key, const Slice& filter) const override {
     uint32_t h = Hash(key.data(), key.size(), 1);
     for (size_t i = 0; i + 4 <= filter.size(); i += 4) {
       if (h == DecodeFixed32(filter.data() + i)) {

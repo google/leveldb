@@ -156,9 +156,9 @@ class SequentialFileImpl : public SequentialFile {
     file_->Ref();
   }
 
-  ~SequentialFileImpl() { file_->Unref(); }
+  ~SequentialFileImpl() override { file_->Unref(); }
 
-  virtual Status Read(size_t n, Slice* result, char* scratch) {
+  Status Read(size_t n, Slice* result, char* scratch) override {
     Status s = file_->Read(pos_, n, result, scratch);
     if (s.ok()) {
       pos_ += result->size();
@@ -166,7 +166,7 @@ class SequentialFileImpl : public SequentialFile {
     return s;
   }
 
-  virtual Status Skip(uint64_t n) {
+  Status Skip(uint64_t n) override {
     if (pos_ > file_->Size()) {
       return Status::IOError("pos_ > file_->Size()");
     }
@@ -187,10 +187,10 @@ class RandomAccessFileImpl : public RandomAccessFile {
  public:
   explicit RandomAccessFileImpl(FileState* file) : file_(file) { file_->Ref(); }
 
-  ~RandomAccessFileImpl() { file_->Unref(); }
+  ~RandomAccessFileImpl() override { file_->Unref(); }
 
-  virtual Status Read(uint64_t offset, size_t n, Slice* result,
-                      char* scratch) const {
+  Status Read(uint64_t offset, size_t n, Slice* result,
+              char* scratch) const override {
     return file_->Read(offset, n, result, scratch);
   }
 
@@ -202,13 +202,13 @@ class WritableFileImpl : public WritableFile {
  public:
   WritableFileImpl(FileState* file) : file_(file) { file_->Ref(); }
 
-  ~WritableFileImpl() { file_->Unref(); }
+  ~WritableFileImpl() override { file_->Unref(); }
 
-  virtual Status Append(const Slice& data) { return file_->Append(data); }
+  Status Append(const Slice& data) override { return file_->Append(data); }
 
-  virtual Status Close() { return Status::OK(); }
-  virtual Status Flush() { return Status::OK(); }
-  virtual Status Sync() { return Status::OK(); }
+  Status Close() override { return Status::OK(); }
+  Status Flush() override { return Status::OK(); }
+  Status Sync() override { return Status::OK(); }
 
  private:
   FileState* file_;
@@ -216,7 +216,7 @@ class WritableFileImpl : public WritableFile {
 
 class NoOpLogger : public Logger {
  public:
-  virtual void Logv(const char* format, va_list ap) {}
+  void Logv(const char* format, va_list ap) override {}
 };
 
 class InMemoryEnv : public EnvWrapper {

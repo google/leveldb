@@ -161,10 +161,10 @@ class LogTest {
  private:
   class StringDest : public WritableFile {
    public:
-    virtual Status Close() { return Status::OK(); }
-    virtual Status Flush() { return Status::OK(); }
-    virtual Status Sync() { return Status::OK(); }
-    virtual Status Append(const Slice& slice) {
+    Status Close() override { return Status::OK(); }
+    Status Flush() override { return Status::OK(); }
+    Status Sync() override { return Status::OK(); }
+    Status Append(const Slice& slice) override {
       contents_.append(slice.data(), slice.size());
       return Status::OK();
     }
@@ -176,7 +176,7 @@ class LogTest {
    public:
     StringSource() : force_error_(false), returned_partial_(false) {}
 
-    virtual Status Read(size_t n, Slice* result, char* scratch) {
+    Status Read(size_t n, Slice* result, char* scratch) override {
       ASSERT_TRUE(!returned_partial_) << "must not Read() after eof/error";
 
       if (force_error_) {
@@ -194,7 +194,7 @@ class LogTest {
       return Status::OK();
     }
 
-    virtual Status Skip(uint64_t n) {
+    Status Skip(uint64_t n) override {
       if (n > contents_.size()) {
         contents_.clear();
         return Status::NotFound("in-memory file skipped past end");
@@ -213,7 +213,7 @@ class LogTest {
   class ReportCollector : public Reader::Reporter {
    public:
     ReportCollector() : dropped_bytes_(0) {}
-    virtual void Corruption(size_t bytes, const Status& status) {
+    void Corruption(size_t bytes, const Status& status) override {
       dropped_bytes_ += bytes;
       message_.append(status.ToString());
     }

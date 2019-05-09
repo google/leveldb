@@ -84,17 +84,17 @@ struct leveldb_filelock_t {
 };
 
 struct leveldb_comparator_t : public Comparator {
-  virtual ~leveldb_comparator_t() { (*destructor_)(state_); }
+  ~leveldb_comparator_t() override { (*destructor_)(state_); }
 
-  virtual int Compare(const Slice& a, const Slice& b) const {
+  int Compare(const Slice& a, const Slice& b) const override {
     return (*compare_)(state_, a.data(), a.size(), b.data(), b.size());
   }
 
-  virtual const char* Name() const { return (*name_)(state_); }
+  const char* Name() const override { return (*name_)(state_); }
 
   // No-ops since the C binding does not support key shortening methods.
-  virtual void FindShortestSeparator(std::string*, const Slice&) const {}
-  virtual void FindShortSuccessor(std::string* key) const {}
+  void FindShortestSeparator(std::string*, const Slice&) const override {}
+  void FindShortSuccessor(std::string* key) const override {}
 
   void* state_;
   void (*destructor_)(void*);
@@ -104,11 +104,11 @@ struct leveldb_comparator_t : public Comparator {
 };
 
 struct leveldb_filterpolicy_t : public FilterPolicy {
-  virtual ~leveldb_filterpolicy_t() { (*destructor_)(state_); }
+  ~leveldb_filterpolicy_t() override { (*destructor_)(state_); }
 
-  virtual const char* Name() const { return (*name_)(state_); }
+  const char* Name() const override { return (*name_)(state_); }
 
-  virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const {
+  void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
     std::vector<const char*> key_pointers(n);
     std::vector<size_t> key_sizes(n);
     for (int i = 0; i < n; i++) {
@@ -121,7 +121,7 @@ struct leveldb_filterpolicy_t : public FilterPolicy {
     free(filter);
   }
 
-  virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const {
+  bool KeyMayMatch(const Slice& key, const Slice& filter) const override {
     return (*key_match_)(state_, key.data(), key.size(), filter.data(),
                          filter.size());
   }
@@ -345,10 +345,10 @@ void leveldb_writebatch_iterate(const leveldb_writebatch_t* b, void* state,
     void* state_;
     void (*put_)(void*, const char* k, size_t klen, const char* v, size_t vlen);
     void (*deleted_)(void*, const char* k, size_t klen);
-    virtual void Put(const Slice& key, const Slice& value) {
+    void Put(const Slice& key, const Slice& value) override {
       (*put_)(state_, key.data(), key.size(), value.data(), value.size());
     }
-    virtual void Delete(const Slice& key) {
+    void Delete(const Slice& key) override {
       (*deleted_)(state_, key.data(), key.size());
     }
   };

@@ -145,7 +145,7 @@ class Repairer {
       Env* env;
       Logger* info_log;
       uint64_t lognum;
-      virtual void Corruption(size_t bytes, const Status& s) {
+      void Corruption(size_t bytes, const Status& s) override {
         // We print error messages for corruption, but continue repairing.
         Log(info_log, "Log #%llu: dropping %d bytes; %s",
             (unsigned long long)lognum, static_cast<int>(bytes),

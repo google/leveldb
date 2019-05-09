@@ -167,19 +167,19 @@ class Version::LevelFileNumIterator : public Iterator {
                        const std::vector<FileMetaData*>* flist)
       : icmp_(icmp), flist_(flist), index_(flist->size()) {  // Marks as invalid
   }
-  virtual bool Valid() const { return index_ < flist_->size(); }
-  virtual void Seek(const Slice& target) {
+  bool Valid() const override { return index_ < flist_->size(); }
+  void Seek(const Slice& target) override {
     index_ = FindFile(icmp_, *flist_, target);
   }
-  virtual void SeekToFirst() { index_ = 0; }
-  virtual void SeekToLast() {
+  void SeekToFirst() override { index_ = 0; }
+  void SeekToLast() override {
     index_ = flist_->empty() ? 0 : flist_->size() - 1;
   }
-  virtual void Next() {
+  void Next() override {
     assert(Valid());
     index_++;
   }
-  virtual void Prev() {
+  void Prev() override {
     assert(Valid());
     if (index_ == 0) {
       index_ = flist_->size();  // Marks as invalid
@@ -187,17 +187,17 @@ class Version::LevelFileNumIterator : public Iterator {
       index_--;
     }
   }
-  Slice key() const {
+  Slice key() const override {
     assert(Valid());
     return (*flist_)[index_]->largest.Encode();
   }
-  Slice value() const {
+  Slice value() const override {
     assert(Valid());
     EncodeFixed64(value_buf_, (*flist_)[index_]->number);
     EncodeFixed64(value_buf_ + 8, (*flist_)[index_]->file_size);
     return Slice(value_buf_, sizeof(value_buf_));
   }
-  virtual Status status() const { return Status::OK(); }
+  Status status() const override { return Status::OK(); }
 
  private:
   const InternalKeyComparator icmp_;
@@ -883,7 +883,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
 Status VersionSet::Recover(bool* save_manifest) {
   struct LogReporter : public log::Reader::Reporter {
     Status* status;
-    virtual void Corruption(size_t bytes, const Status& s) {
+    void Corruption(size_t bytes, const Status& s) override {
       if (this->status->ok()) *this->status = s;
     }
   };

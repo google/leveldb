@@ -13,13 +13,13 @@ namespace {
 
 class StdoutPrinter : public WritableFile {
  public:
-  virtual Status Append(const Slice& data) {
+  Status Append(const Slice& data) override {
     fwrite(data.data(), 1, data.size(), stdout);
     return Status::OK();
   }
-  virtual Status Close() { return Status::OK(); }
-  virtual Status Flush() { return Status::OK(); }
-  virtual Status Sync() { return Status::OK(); }
+  Status Close() override { return Status::OK(); }
+  Status Flush() override { return Status::OK(); }
+  Status Sync() override { return Status::OK(); }
 };
 
 bool HandleDumpCommand(Env* env, char** files, int num) {

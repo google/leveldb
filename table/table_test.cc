@@ -38,23 +38,23 @@ static std::string Reverse(const Slice& key) {
 namespace {
 class ReverseKeyComparator : public Comparator {
  public:
-  virtual const char* Name() const {
+  const char* Name() const override {
     return "leveldb.ReverseBytewiseComparator";
   }
 
-  virtual int Compare(const Slice& a, const Slice& b) const {
+  int Compare(const Slice& a, const Slice& b) const override {
     return BytewiseComparator()->Compare(Reverse(a), Reverse(b));
   }
 
-  virtual void FindShortestSeparator(std::string* start,
-                                     const Slice& limit) const {
+  void FindShortestSeparator(std::string* start,
+                             const Slice& limit) const override {
     std::string s = Reverse(*start);
     std::string l = Reverse(limit);
     BytewiseComparator()->FindShortestSeparator(&s, l);
     *start = Reverse(s);
   }
 
-  virtual void FindShortSuccessor(std::string* key) const {
+  void FindShortSuccessor(std::string* key) const override {
     std::string s = Reverse(*key);
     BytewiseComparator()->FindShortSuccessor(&s);
     *key = Reverse(s);
@@ -89,15 +89,15 @@ struct STLLessThan {
 
 class StringSink : public WritableFile {
  public:
-  ~StringSink() = default;
+  ~StringSink() override = default;
 
   const std::string& contents() const { return contents_; }
 
-  virtual Status Close() { return Status::OK(); }
-  virtual Status Flush() { return Status::OK(); }
-  virtual Status Sync() { return Status::OK(); }
+  Status Close() override { return Status::OK(); }
+  Status Flush() override { return Status::OK(); }
+  Status Sync() override { return Status::OK(); }
 
-  virtual Status Append(const Slice& data) {
+  Status Append(const Slice& data) override {
     contents_.append(data.data(), data.size());
     return Status::OK();
   }
@@ -111,12 +111,12 @@ class StringSource : public RandomAccessFile {
   StringSource(const Slice& contents)
       : contents_(contents.data(), contents.size()) {}
 
-  virtual ~StringSource() = default;
+  ~StringSource() override = default;
 
   uint64_t Size() const { return contents_.size(); }
 
-  virtual Status Read(uint64_t offset, size_t n, Slice* result,
-                      char* scratch) const {
+  Status Read(uint64_t offset, size_t n, Slice* result,
+              char* scratch) const override {
     if (offset >= contents_.size()) {
       return Status::InvalidArgument("invalid Read offset");
     }

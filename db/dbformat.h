@@ -103,11 +103,11 @@ class InternalKeyComparator : public Comparator {
 
  public:
   explicit InternalKeyComparator(const Comparator* c) : user_comparator_(c) {}
-  virtual const char* Name() const;
-  virtual int Compare(const Slice& a, const Slice& b) const;
-  virtual void FindShortestSeparator(std::string* start,
-                                     const Slice& limit) const;
-  virtual void FindShortSuccessor(std::string* key) const;
+  const char* Name() const override;
+  int Compare(const Slice& a, const Slice& b) const override;
+  void FindShortestSeparator(std::string* start,
+                             const Slice& limit) const override;
+  void FindShortSuccessor(std::string* key) const override;
 
   const Comparator* user_comparator() const { return user_comparator_; }
 
@@ -121,9 +121,9 @@ class InternalFilterPolicy : public FilterPolicy {
 
  public:
   explicit InternalFilterPolicy(const FilterPolicy* p) : user_policy_(p) {}
-  virtual const char* Name() const;
-  virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const;
-  virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const;
+  const char* Name() const override;
+  void CreateFilter(const Slice* keys, int n, std::string* dst) const override;
+  bool KeyMayMatch(const Slice& key, const Slice& filter) const override;
 };
 
 // Modules in this directory should keep internal keys wrapped inside

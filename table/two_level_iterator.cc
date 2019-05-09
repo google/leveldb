@@ -20,24 +20,24 @@ class TwoLevelIterator : public Iterator {
   TwoLevelIterator(Iterator* index_iter, BlockFunction block_function,
                    void* arg, const ReadOptions& options);
 
-  virtual ~TwoLevelIterator();
+  ~TwoLevelIterator() override;
 
-  virtual void Seek(const Slice& target);
-  virtual void SeekToFirst();
-  virtual void SeekToLast();
-  virtual void Next();
-  virtual void Prev();
+  void Seek(const Slice& target) override;
+  void SeekToFirst() override;
+  void SeekToLast() override;
+  void Next() override;
+  void Prev() override;
 
-  virtual bool Valid() const { return data_iter_.Valid(); }
-  virtual Slice key() const {
+  bool Valid() const override { return data_iter_.Valid(); }
+  Slice key() const override {
     assert(Valid());
     return data_iter_.key();
   }
-  virtual Slice value() const {
+  Slice value() const override {
     assert(Valid());
     return data_iter_.value();
   }
-  virtual Status status() const {
+  Status status() const override {
     // It'd be nice if status() returned a const Status& instead of a Status
     if (!index_iter_.status().ok()) {
       return index_iter_.status();
