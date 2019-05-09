@@ -6,6 +6,8 @@
 
 #include <stdio.h>
 
+#include <sstream>
+
 #include "port/port.h"
 #include "util/coding.h"
 
@@ -23,25 +25,20 @@ void AppendInternalKey(std::string* result, const ParsedInternalKey& key) {
 }
 
 std::string ParsedInternalKey::DebugString() const {
-  char buf[50];
-  snprintf(buf, sizeof(buf), "' @ %llu : %d", (unsigned long long)sequence,
-           int(type));
-  std::string result = "'";
-  result += EscapeString(user_key.ToString());
-  result += buf;
-  return result;
+  std::ostringstream ss;
+  ss << '\'' << EscapeString(user_key.ToString()) << "' @ " << sequence << " : "
+     << static_cast<int>(type);
+  return ss.str();
 }
 
 std::string InternalKey::DebugString() const {
-  std::string result;
   ParsedInternalKey parsed;
   if (ParseInternalKey(rep_, &parsed)) {
-    result = parsed.DebugString();
-  } else {
-    result = "(bad)";
-    result.append(EscapeString(rep_));
+    return parsed.DebugString();
   }
-  return result;
+  std::ostringstream ss;
+  ss << "(bad)" << EscapeString(rep_);
+  return ss.str();
 }
 
 const char* InternalKeyComparator::Name() const {

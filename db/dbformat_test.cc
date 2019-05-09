@@ -106,6 +106,20 @@ TEST(FormatTest, InternalKeyShortestSuccessor) {
             ShortSuccessor(IKey("\xff\xff", 100, kTypeValue)));
 }
 
+TEST(FormatTest, ParsedInternalKeyDebugString) {
+  ParsedInternalKey key("The \"key\" in 'single quotes'", 42, kTypeValue);
+
+  ASSERT_EQ("'The \"key\" in 'single quotes'' @ 42 : 1", key.DebugString());
+}
+
+TEST(FormatTest, InternalKeyDebugString) {
+  InternalKey key("The \"key\" in 'single quotes'", 42, kTypeValue);
+  ASSERT_EQ("'The \"key\" in 'single quotes'' @ 42 : 1", key.DebugString());
+
+  InternalKey invalid_key;
+  ASSERT_EQ("(bad)", invalid_key.DebugString());
+}
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
