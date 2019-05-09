@@ -463,7 +463,7 @@ class PosixFileLock : public FileLock {
 
 // Tracks the files locked by PosixEnv::LockFile().
 //
-// We maintain a separate set instead of relying on fcntrl(F_SETLK) because
+// We maintain a separate set instead of relying on fcntl(F_SETLK) because
 // fcntl(F_SETLK) does not provide any protection against multiple uses from the
 // same process.
 //
