@@ -65,6 +65,12 @@ TEST(FormatTest, InternalKey_EncodeDecode) {
   }
 }
 
+TEST(FormatTest, InternalKey_DecodeFromEmpty) {
+  InternalKey internal_key;
+
+  ASSERT_TRUE(!internal_key.DecodeFrom(""));
+}
+
 TEST(FormatTest, InternalKeyShortSeparator) {
   // When user keys are same
   ASSERT_EQ(IKey("foo", 100, kTypeValue),
