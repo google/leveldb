@@ -893,10 +893,11 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
     compact->smallest_snapshot = snapshots_.oldest()->sequence_number();
   }
 
+  Iterator* input = versions_->MakeInputIterator(compact->compaction);
+
   // Release mutex while we're actually doing the compaction work
   mutex_.Unlock();
 
-  Iterator* input = versions_->MakeInputIterator(compact->compaction);
   input->SeekToFirst();
   Status status;
   ParsedInternalKey ikey;
@@ -1433,12 +1434,9 @@ bool DBImpl::GetProperty(const Slice& property, std::string* value) {
 
 void DBImpl::GetApproximateSizes(const Range* range, int n, uint64_t* sizes) {
   // TODO(opt): better implementation
-  Version* v;
-  {
-    MutexLock l(&mutex_);
-    versions_->current()->Ref();
-    v = versions_->current();
-  }
+  MutexLock l(&mutex_);
+  Version* v = versions_->current();
+  v->Ref();
 
   for (int i = 0; i < n; i++) {
     // Convert user_key into a corresponding internal key.
@@ -1449,10 +1447,7 @@ void DBImpl::GetApproximateSizes(const Range* range, int n, uint64_t* sizes) {
     sizes[i] = (limit >= start ? limit - start : 0);
   }
 
-  {
-    MutexLock l(&mutex_);
-    v->Unref();
-  }
+  v->Unref();
 }
 
 // Default implementations of convenience methods that subclasses of DB
