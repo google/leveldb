@@ -25,8 +25,8 @@ addons:
     packages:
     - clang-8
     - cmake
-    - gcc-8
-    - g++-8
+    - gcc-9
+    - g++-9
     - libgoogle-perftools-dev
     - libkyotocabinet-dev
     - libsnappy-dev
@@ -36,7 +36,7 @@ addons:
     packages:
     - cmake
     - crc32c
-    - gcc@8
+    - gcc@9
     - gperftools
     - kyotocabinet
     - llvm@8
@@ -52,7 +52,7 @@ install:
     export PATH="$(brew --prefix llvm)/bin:$PATH";
   fi
 # /usr/bin/gcc points to an older compiler on both Linux and macOS.
-- if [ "$CXX" = "g++" ]; then export CXX="g++-8" CC="gcc-8"; fi
+- if [ "$CXX" = "g++" ]; then export CXX="g++-9" CC="gcc-9"; fi
 # /usr/bin/clang points to an older compiler on both Linux and macOS.
 #
 # Homebrew's llvm package doesn't ship a versioned clang++ binary, so the values
