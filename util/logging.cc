@@ -56,14 +56,13 @@ bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
 
   uint64_t value = 0;
 
-  // reinterpret_cast-ing from char* to unsigned char* to avoid signedness.
-  const unsigned char* start =
-      reinterpret_cast<const unsigned char*>(in->data());
+  // reinterpret_cast-ing from char* to uint8_t* to avoid signedness.
+  const uint8_t* start = reinterpret_cast<const uint8_t*>(in->data());
 
-  const unsigned char* end = start + in->size();
-  const unsigned char* current = start;
+  const uint8_t* end = start + in->size();
+  const uint8_t* current = start;
   for (; current != end; ++current) {
-    const unsigned char ch = *current;
+    const uint8_t ch = *current;
     if (ch < '0' || ch > '9') break;
 
     // Overflow check.

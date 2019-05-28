@@ -5,7 +5,9 @@
 #ifndef STORAGE_LEVELDB_DB_DBFORMAT_H_
 #define STORAGE_LEVELDB_DB_DBFORMAT_H_
 
-#include <stdio.h>
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
 #include "leveldb/comparator.h"
 #include "leveldb/db.h"
@@ -171,11 +173,11 @@ inline bool ParseInternalKey(const Slice& internal_key,
   const size_t n = internal_key.size();
   if (n < 8) return false;
   uint64_t num = DecodeFixed64(internal_key.data() + n - 8);
-  unsigned char c = num & 0xff;
+  uint8_t c = num & 0xff;
   result->sequence = num >> 8;
   result->type = static_cast<ValueType>(c);
   result->user_key = Slice(internal_key.data(), n - 8);
-  return (c <= static_cast<unsigned char>(kTypeValue));
+  return (c <= static_cast<uint8_t>(kTypeValue));
 }
 
 // A helper class useful for DBImpl::Get()

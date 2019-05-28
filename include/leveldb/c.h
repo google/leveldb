@@ -32,7 +32,7 @@
   On failure, leveldb frees the old value of *errptr and
   set *errptr to a malloc()ed error message.
 
-  (4) Bools have the type unsigned char (0 == false; rest == true)
+  (4) Bools have the type uint8_t (0 == false; rest == true)
 
   (5) All of the pointer arguments must be non-NULL.
 */
@@ -131,7 +131,7 @@ LEVELDB_EXPORT void leveldb_repair_db(const leveldb_options_t* options,
 /* Iterator */
 
 LEVELDB_EXPORT void leveldb_iter_destroy(leveldb_iterator_t*);
-LEVELDB_EXPORT unsigned char leveldb_iter_valid(const leveldb_iterator_t*);
+LEVELDB_EXPORT uint8_t leveldb_iter_valid(const leveldb_iterator_t*);
 LEVELDB_EXPORT void leveldb_iter_seek_to_first(leveldb_iterator_t*);
 LEVELDB_EXPORT void leveldb_iter_seek_to_last(leveldb_iterator_t*);
 LEVELDB_EXPORT void leveldb_iter_seek(leveldb_iterator_t*, const char* k,
@@ -171,11 +171,11 @@ LEVELDB_EXPORT void leveldb_options_set_comparator(leveldb_options_t*,
 LEVELDB_EXPORT void leveldb_options_set_filter_policy(leveldb_options_t*,
                                                       leveldb_filterpolicy_t*);
 LEVELDB_EXPORT void leveldb_options_set_create_if_missing(leveldb_options_t*,
-                                                          unsigned char);
+                                                          uint8_t);
 LEVELDB_EXPORT void leveldb_options_set_error_if_exists(leveldb_options_t*,
-                                                        unsigned char);
+                                                        uint8_t);
 LEVELDB_EXPORT void leveldb_options_set_paranoid_checks(leveldb_options_t*,
-                                                        unsigned char);
+                                                        uint8_t);
 LEVELDB_EXPORT void leveldb_options_set_env(leveldb_options_t*, leveldb_env_t*);
 LEVELDB_EXPORT void leveldb_options_set_info_log(leveldb_options_t*,
                                                  leveldb_logger_t*);
@@ -209,8 +209,8 @@ LEVELDB_EXPORT leveldb_filterpolicy_t* leveldb_filterpolicy_create(
     char* (*create_filter)(void*, const char* const* key_array,
                            const size_t* key_length_array, int num_keys,
                            size_t* filter_length),
-    unsigned char (*key_may_match)(void*, const char* key, size_t length,
-                                   const char* filter, size_t filter_length),
+    uint8_t (*key_may_match)(void*, const char* key, size_t length,
+                             const char* filter, size_t filter_length),
     const char* (*name)(void*));
 LEVELDB_EXPORT void leveldb_filterpolicy_destroy(leveldb_filterpolicy_t*);
 
@@ -222,9 +222,9 @@ LEVELDB_EXPORT leveldb_filterpolicy_t* leveldb_filterpolicy_create_bloom(
 LEVELDB_EXPORT leveldb_readoptions_t* leveldb_readoptions_create(void);
 LEVELDB_EXPORT void leveldb_readoptions_destroy(leveldb_readoptions_t*);
 LEVELDB_EXPORT void leveldb_readoptions_set_verify_checksums(
-    leveldb_readoptions_t*, unsigned char);
+    leveldb_readoptions_t*, uint8_t);
 LEVELDB_EXPORT void leveldb_readoptions_set_fill_cache(leveldb_readoptions_t*,
-                                                       unsigned char);
+                                                       uint8_t);
 LEVELDB_EXPORT void leveldb_readoptions_set_snapshot(leveldb_readoptions_t*,
                                                      const leveldb_snapshot_t*);
 
@@ -233,7 +233,7 @@ LEVELDB_EXPORT void leveldb_readoptions_set_snapshot(leveldb_readoptions_t*,
 LEVELDB_EXPORT leveldb_writeoptions_t* leveldb_writeoptions_create(void);
 LEVELDB_EXPORT void leveldb_writeoptions_destroy(leveldb_writeoptions_t*);
 LEVELDB_EXPORT void leveldb_writeoptions_set_sync(leveldb_writeoptions_t*,
-                                                  unsigned char);
+                                                  uint8_t);
 
 /* Cache */
 

@@ -7,6 +7,7 @@
 #include "table/block.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <vector>
 
 #include "leveldb/comparator.h"
@@ -55,9 +56,9 @@ static inline const char* DecodeEntry(const char* p, const char* limit,
                                       uint32_t* shared, uint32_t* non_shared,
                                       uint32_t* value_length) {
   if (limit - p < 3) return nullptr;
-  *shared = reinterpret_cast<const unsigned char*>(p)[0];
-  *non_shared = reinterpret_cast<const unsigned char*>(p)[1];
-  *value_length = reinterpret_cast<const unsigned char*>(p)[2];
+  *shared = reinterpret_cast<const uint8_t*>(p)[0];
+  *non_shared = reinterpret_cast<const uint8_t*>(p)[1];
+  *value_length = reinterpret_cast<const uint8_t*>(p)[2];
   if ((*shared | *non_shared | *value_length) < 128) {
     // Fast path: all three values are encoded in one byte each
     p += 3;

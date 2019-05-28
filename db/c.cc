@@ -4,7 +4,8 @@
 
 #include "leveldb/c.h"
 
-#include <stdlib.h>
+#include <cstdint>
+#include <cstdlib>
 
 #include "leveldb/cache.h"
 #include "leveldb/comparator.h"
@@ -132,8 +133,8 @@ struct leveldb_filterpolicy_t : public FilterPolicy {
   char* (*create_)(void*, const char* const* key_array,
                    const size_t* key_length_array, int num_keys,
                    size_t* filter_length);
-  unsigned char (*key_match_)(void*, const char* key, size_t length,
-                              const char* filter, size_t filter_length);
+  uint8_t (*key_match_)(void*, const char* key, size_t length,
+                        const char* filter, size_t filter_length);
 };
 
 struct leveldb_env_t {
@@ -281,7 +282,7 @@ void leveldb_iter_destroy(leveldb_iterator_t* iter) {
   delete iter;
 }
 
-unsigned char leveldb_iter_valid(const leveldb_iterator_t* iter) {
+uint8_t leveldb_iter_valid(const leveldb_iterator_t* iter) {
   return iter->rep->Valid();
 }
 
@@ -378,18 +379,15 @@ void leveldb_options_set_filter_policy(leveldb_options_t* opt,
   opt->rep.filter_policy = policy;
 }
 
-void leveldb_options_set_create_if_missing(leveldb_options_t* opt,
-                                           unsigned char v) {
+void leveldb_options_set_create_if_missing(leveldb_options_t* opt, uint8_t v) {
   opt->rep.create_if_missing = v;
 }
 
-void leveldb_options_set_error_if_exists(leveldb_options_t* opt,
-                                         unsigned char v) {
+void leveldb_options_set_error_if_exists(leveldb_options_t* opt, uint8_t v) {
   opt->rep.error_if_exists = v;
 }
 
-void leveldb_options_set_paranoid_checks(leveldb_options_t* opt,
-                                         unsigned char v) {
+void leveldb_options_set_paranoid_checks(leveldb_options_t* opt, uint8_t v) {
   opt->rep.paranoid_checks = v;
 }
 
@@ -449,8 +447,8 @@ leveldb_filterpolicy_t* leveldb_filterpolicy_create(
     char* (*create_filter)(void*, const char* const* key_array,
                            const size_t* key_length_array, int num_keys,
                            size_t* filter_length),
-    unsigned char (*key_may_match)(void*, const char* key, size_t length,
-                                   const char* filter, size_t filter_length),
+    uint8_t (*key_may_match)(void*, const char* key, size_t length,
+                             const char* filter, size_t filter_length),
     const char* (*name)(void*)) {
   leveldb_filterpolicy_t* result = new leveldb_filterpolicy_t;
   result->state_ = state;
@@ -497,12 +495,11 @@ leveldb_readoptions_t* leveldb_readoptions_create() {
 void leveldb_readoptions_destroy(leveldb_readoptions_t* opt) { delete opt; }
 
 void leveldb_readoptions_set_verify_checksums(leveldb_readoptions_t* opt,
-                                              unsigned char v) {
+                                              uint8_t v) {
   opt->rep.verify_checksums = v;
 }
 
-void leveldb_readoptions_set_fill_cache(leveldb_readoptions_t* opt,
-                                        unsigned char v) {
+void leveldb_readoptions_set_fill_cache(leveldb_readoptions_t* opt, uint8_t v) {
   opt->rep.fill_cache = v;
 }
 
@@ -517,8 +514,7 @@ leveldb_writeoptions_t* leveldb_writeoptions_create() {
 
 void leveldb_writeoptions_destroy(leveldb_writeoptions_t* opt) { delete opt; }
 
-void leveldb_writeoptions_set_sync(leveldb_writeoptions_t* opt,
-                                   unsigned char v) {
+void leveldb_writeoptions_set_sync(leveldb_writeoptions_t* opt, uint8_t v) {
   opt->rep.sync = v;
 }
 
