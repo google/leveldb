@@ -14,7 +14,7 @@ class ArenaTest {};
 TEST(ArenaTest, Empty) { Arena arena; }
 
 TEST(ArenaTest, Simple) {
-  std::vector<std::pair<size_t, char*> > allocated;
+  std::vector<std::pair<size_t, char*>> allocated;
   Arena arena;
   const int N = 100000;
   size_t bytes = 0;
