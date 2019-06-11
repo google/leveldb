@@ -327,7 +327,6 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   Slice ikey = k.internal_key();
   Slice user_key = k.user_key();
   const Comparator* ucmp = vset_->icmp_.user_comparator();
-
   stats->seek_file = nullptr;
   stats->seek_file_level = -1;
 
@@ -339,7 +338,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
     const Comparator* ucmp;
     std::string* value;
     FileMetaData* last_file_read;
-    int last_file_level;
+    int last_file_read_level;
 
     VersionSet* vset;
     Status s;
@@ -347,14 +346,15 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
     static bool Match(void* arg, int level, FileMetaData* f) {
       State* state = reinterpret_cast<State*>(arg);
 
-      if (state->last_file_read != nullptr &&
-          state->stats->seek_file == nullptr) {
+      if (state->stats->seek_file == nullptr &&
+          state->last_file_read != nullptr) {
         // We have had more than one seek for this read.  Charge the 1st file.
         state->stats->seek_file = state->last_file_read;
-        state->stats->seek_file_level = state->last_file_level;
+        state->stats->seek_file_level = state->last_file_read_level;
       }
+
       state->last_file_read = f;
-      state->last_file_level = level;
+      state->last_file_read_level = level;
 
       Saver saver;
       saver.state = kNotFound;
@@ -388,8 +388,9 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   state.s = Status::NotFound(Slice());
   state.stats = stats;
   state.last_file_read = nullptr;
-  state.last_file_level = -1;
+  state.last_file_read_level = -1;
 
+  state.options = &options;
   state.ikey = ikey;
   state.user_key = user_key;
   state.ucmp = ucmp;
