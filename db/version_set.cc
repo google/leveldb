@@ -281,7 +281,6 @@ static bool NewestFirst(FileMetaData* a, FileMetaData* b) {
 
 void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
                                  bool (*func)(void*, int, FileMetaData*)) {
-  // TODO(sanjay): Change Version::Get() to use this function.
   const Comparator* ucmp = vset_->icmp_.user_comparator();
 
   // Search level-0 in order from newest to oldest.
