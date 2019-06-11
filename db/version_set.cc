@@ -328,7 +328,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   Slice ikey = k.internal_key();
   Slice user_key = k.user_key();
   const Comparator* ucmp = vset_->icmp_.user_comparator();
-  
+
   stats->seek_file = nullptr;
   stats->seek_file_level = -1;
 
@@ -339,16 +339,17 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
     Slice user_key;
     const Comparator* ucmp;
     std::string* value;
-    FileMetaData *last_file_read;
+    FileMetaData* last_file_read;
     int last_file_level;
 
-    VersionSet *vset;
+    VersionSet* vset;
     Status s;
 
     static bool Match(void* arg, int level, FileMetaData* f) {
       State* state = reinterpret_cast<State*>(arg);
 
-      if (state->last_file_read != nullptr && state->stats->seek_file == nullptr) {
+      if (state->last_file_read != nullptr &&
+          state->stats->seek_file == nullptr) {
         // We have had more than one seek for this read.  Charge the 1st file.
         state->stats->seek_file = state->last_file_read;
         state->stats->seek_file_level = state->last_file_level;
@@ -371,7 +372,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
       }
       switch (saver.state) {
         case kNotFound:
-          return true; // Keep saerching in other files
+          return true;  // Keep saerching in other files
         case kFound:
           state->s = s;
           return false;
@@ -395,7 +396,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   state.ucmp = ucmp;
   state.value = value;
   state.vset = vset_;
-  
+
   ForEachOverlapping(user_key, ikey, &state, &State::Match);
 
   return state.s;
