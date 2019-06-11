@@ -330,94 +330,69 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   const Comparator* ucmp = vset_->icmp_.user_comparator();
   Status s;
 
-  stats->seek_file = nullptr;
-  stats->seek_file_level = -1;
-  FileMetaData* last_file_read = nullptr;
-  int last_file_read_level = -1;
+  struct State {
+    GetStats* stats;
+    const ReadOptions* options;
+    Slice ikey;
+    Slice user_key;
+    const Comparator* ucmp;
+    std::string* value;
 
-  // We can search level-by-level since entries never hop across
-  // levels.  Therefore we are guaranteed that if we find data
-  // in a smaller level, later levels are irrelevant.
-  std::vector<FileMetaData*> tmp;
-  FileMetaData* tmp2;
-  for (int level = 0; level < config::kNumLevels; level++) {
-    size_t num_files = files_[level].size();
-    if (num_files == 0) continue;
+    VersionSet *vset;
+    Status s;
 
-    // Get the list of files to search in this level
-    FileMetaData* const* files = &files_[level][0];
-    if (level == 0) {
-      // Level-0 files may overlap each other.  Find all files that
-      // overlap user_key and process them in order from newest to oldest.
-      tmp.reserve(num_files);
-      for (uint32_t i = 0; i < num_files; i++) {
-        FileMetaData* f = files[i];
-        if (ucmp->Compare(user_key, f->smallest.user_key()) >= 0 &&
-            ucmp->Compare(user_key, f->largest.user_key()) <= 0) {
-          tmp.push_back(f);
-        }
-      }
-      if (tmp.empty()) continue;
+    static bool Match(void* arg, int level, FileMetaData* f) {
+      State* state = reinterpret_cast<State*>(arg);
 
-      std::sort(tmp.begin(), tmp.end(), NewestFirst);
-      files = &tmp[0];
-      num_files = tmp.size();
-    } else {
-      // Binary search to find earliest index whose largest key >= ikey.
-      uint32_t index = FindFile(vset_->icmp_, files_[level], ikey);
-      if (index >= num_files) {
-        files = nullptr;
-        num_files = 0;
-      } else {
-        tmp2 = files[index];
-        if (ucmp->Compare(user_key, tmp2->smallest.user_key()) < 0) {
-          // All of "tmp2" is past any data for user_key
-          files = nullptr;
-          num_files = 0;
-        } else {
-          files = &tmp2;
-          num_files = 1;
-        }
-      }
-    }
-
-    for (uint32_t i = 0; i < num_files; ++i) {
-      if (last_file_read != nullptr && stats->seek_file == nullptr) {
+      if (state->stats->seek_file == nullptr) {
         // We have had more than one seek for this read.  Charge the 1st file.
-        stats->seek_file = last_file_read;
-        stats->seek_file_level = last_file_read_level;
+        state->stats->seek_file = f;
+        state->stats->seek_file_level = level;
       }
-
-      FileMetaData* f = files[i];
-      last_file_read = f;
-      last_file_read_level = level;
 
       Saver saver;
       saver.state = kNotFound;
-      saver.ucmp = ucmp;
-      saver.user_key = user_key;
-      saver.value = value;
-      s = vset_->table_cache_->Get(options, f->number, f->file_size, ikey,
-                                   &saver, SaveValue);
+      saver.ucmp = state->ucmp;
+      saver.user_key = state->user_key;
+      saver.value = state->value;
+
+      Status s = state->vset->table_cache_->Get(*state->options, f->number,
+                                                f->file_size, state->ikey,
+                                                &saver, SaveValue);
       if (!s.ok()) {
-        return s;
+        state->s = s;
+        return false;
       }
       switch (saver.state) {
         case kNotFound:
-          break;  // Keep searching in other files
+          return true; // Keep saerching in other files
         case kFound:
-          return s;
+          state->s = s;
+          return false;
         case kDeleted:
-          s = Status::NotFound(Slice());  // Use empty error message for speed
-          return s;
+          return false;
         case kCorrupt:
-          s = Status::Corruption("corrupted key for ", user_key);
-          return s;
+          state->s = Status::Corruption("corrupted key for ", state->user_key);
+          return false;
       }
     }
-  }
+  };
 
-  return Status::NotFound(Slice());  // Use an empty error message for speed
+  stats->seek_file = nullptr;
+  stats->seek_file_level = -1;
+
+  State state;
+  state.s = Status::NotFound(Slice());
+  state.stats = stats;
+  state.ikey = ikey;
+  state.user_key = user_key;
+  state.ucmp = ucmp;
+  state.value = value;
+  state.vset = vset_;
+
+  ForEachOverlapping(user_key, ikey, &state, &State::Match);
+
+  return state.s;
 }
 
 bool Version::UpdateStats(const GetStats& stats) {
