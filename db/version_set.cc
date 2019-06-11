@@ -324,13 +324,11 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
 
 Status Version::Get(const ReadOptions& options, const LookupKey& k,
                     std::string* value, GetStats* stats) {
-  Slice ikey = k.internal_key();
-  Slice user_key = k.user_key();
-  const Comparator* ucmp = vset_->icmp_.user_comparator();
   stats->seek_file = nullptr;
   stats->seek_file_level = -1;
 
   struct State {
+    Saver saver;
     GetStats* stats;
     const ReadOptions* options;
     Slice ikey;
@@ -342,6 +340,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
 
     VersionSet* vset;
     Status s;
+    bool found;
 
     static bool Match(void* arg, int level, FileMetaData* f) {
       State* state = reinterpret_cast<State*>(arg);
@@ -356,50 +355,50 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
       state->last_file_read = f;
       state->last_file_read_level = level;
 
-      Saver saver;
-      saver.state = kNotFound;
-      saver.ucmp = state->ucmp;
-      saver.user_key = state->user_key;
-      saver.value = state->value;
-
-      Status s = state->vset->table_cache_->Get(*state->options, f->number,
+      state->s = state->vset->table_cache_->Get(*state->options, f->number,
                                                 f->file_size, state->ikey,
-                                                &saver, SaveValue);
-      if (!s.ok()) {
-        state->s = s;
+                                                &state->saver, SaveValue);
+      if (!state->s.ok()) {
+        state->found = true;
         return false;
       }
-      switch (saver.state) {
+      switch (state->saver.state) {
         case kNotFound:
           return true;  // Keep saerching in other files
         case kFound:
-          state->s = s;
+          state->found = true;
           return false;
         case kDeleted:
           return false;
         case kCorrupt:
           state->s = Status::Corruption("corrupted key for ", state->user_key);
+          state->found = true;
           return false;
       }
     }
   };
 
   State state;
-  state.s = Status::NotFound(Slice());
+  state.found = false;
   state.stats = stats;
   state.last_file_read = nullptr;
   state.last_file_read_level = -1;
 
   state.options = &options;
-  state.ikey = ikey;
-  state.user_key = user_key;
-  state.ucmp = ucmp;
+  state.ikey = k.internal_key();
+  state.user_key = k.user_key();
+  state.ucmp = vset_->icmp_.user_comparator();
   state.value = value;
   state.vset = vset_;
 
-  ForEachOverlapping(user_key, ikey, &state, &State::Match);
+  state.saver.state = kNotFound;
+  state.saver.ucmp = state.ucmp;
+  state.saver.user_key = state.user_key;
+  state.saver.value = state.value;
 
-  return state.s;
+  ForEachOverlapping(state.user_key, state.ikey, &state, &State::Match);
+
+  return state.found ? state.s : Status::NotFound(Slice());
 }
 
 bool Version::UpdateStats(const GetStats& stats) {
