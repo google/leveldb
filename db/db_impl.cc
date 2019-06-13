@@ -229,32 +229,27 @@ void DBImpl::DeleteObsoleteFiles() {
     return;
   }
 
-  const uint64_t log_number = versions_->LogNumber();
-  const uint64_t prev_log_number = versions_->PrevLogNumber();
-  const uint64_t manifest_file_number = versions_->ManifestFileNumber();
-
   // Make a set of all of the live files
   std::set<uint64_t> live = pending_outputs_;
   versions_->AddLiveFiles(&live);
 
   std::vector<std::string> filenames;
   env_->GetChildren(dbname_, &filenames);  // Ignoring errors on purpose
-
-  // Unlock while deleting obsolete files
-  mutex_.Unlock();
   uint64_t number;
   FileType type;
-  for (size_t i = 0; i < filenames.size(); i++) {
-    if (ParseFileName(filenames[i], &number, &type)) {
+  std::vector<std::string> files_to_delete;
+  for (std::string& filename : filenames) {
+    if (ParseFileName(filename, &number, &type)) {
       bool keep = true;
       switch (type) {
         case kLogFile:
-          keep = ((number >= log_number) || (number == prev_log_number));
+          keep = ((number >= versions_->LogNumber()) ||
+                  (number == versions_->PrevLogNumber()));
           break;
         case kDescriptorFile:
           // Keep my manifest file, and any newer incarnations'
           // (in case there is a race that allows other incarnations)
-          keep = (number >= manifest_file_number);
+          keep = (number >= versions_->ManifestFileNumber());
           break;
         case kTableFile:
           keep = (live.find(number) != live.end());
@@ -272,14 +267,22 @@ void DBImpl::DeleteObsoleteFiles() {
       }
 
       if (!keep) {
+        files_to_delete.push_back(std::move(filename));
         if (type == kTableFile) {
           table_cache_->Evict(number);
         }
         Log(options_.info_log, "Delete type=%d #%lld\n", static_cast<int>(type),
             static_cast<unsigned long long>(number));
-        env_->DeleteFile(dbname_ + "/" + filenames[i]);
       }
     }
+  }
+
+  // While deleting all files unblock other threads. All files being deleted
+  // have unique names which will not collide with newly created files and
+  // are therefore safe to delete while allowing other threads to proceed.
+  mutex_.Unlock();
+  for (const std::string& filename : files_to_delete) {
+    env_->DeleteFile(dbname_ + "/" + filename);
   }
   mutex_.Lock();
 }
