@@ -229,12 +229,18 @@ void DBImpl::DeleteObsoleteFiles() {
     return;
   }
 
+  std::vector<std::string> filenames;
+  // Dealing with many thousand file can make getting children very slow.
+  // All file numbers are incremental, so any file produced concurrently
+  // will have same or greater Number.
+  mutex_.Unlock();
+  env_->GetChildren(dbname_, &filenames);  // Ignoring errors on purpose
+  mutex_.Lock();
+
   // Make a set of all of the live files
   std::set<uint64_t> live = pending_outputs_;
   versions_->AddLiveFiles(&live);
 
-  std::vector<std::string> filenames;
-  env_->GetChildren(dbname_, &filenames);  // Ignoring errors on purpose
   uint64_t number;
   FileType type;
   std::vector<std::string> files_to_delete;
