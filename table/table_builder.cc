@@ -43,7 +43,7 @@ struct TableBuilder::Rep {
   BlockBuilder data_block;
   BlockBuilder index_block;
   std::string last_key;
-  int64_t num_entries;
+  uint64_t num_entries;
   bool closed;  // Either Finish() or Abandon() has been called.
   FilterBlockBuilder* filter_block;
 
