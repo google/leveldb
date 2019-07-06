@@ -1194,6 +1194,10 @@ Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
 }
 
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
+  if (options.sync && options.disableWAL) {
+    return Status::InvalidArgument("Sync writes has to enable WAL.");
+  }
+
   Writer w(&mutex_);
   w.batch = updates;
   w.sync = options.sync;
@@ -1223,12 +1227,14 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     // into mem_.
     {
       mutex_.Unlock();
-      status = log_->AddRecord(WriteBatchInternal::Contents(updates));
       bool sync_error = false;
-      if (status.ok() && options.sync) {
-        status = logfile_->Sync();
-        if (!status.ok()) {
-          sync_error = true;
+      if (!options.disableWAL) {
+        status = log_->AddRecord(WriteBatchInternal::Contents(updates));
+        if (status.ok() && options.sync) {
+          status = logfile_->Sync();
+          if (!status.ok()) {
+            sync_error = true;
+          }
         }
       }
       if (status.ok()) {

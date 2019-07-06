@@ -111,6 +111,9 @@ static bool FLAGS_reuse_logs = false;
 // Use the db with the following name.
 static const char* FLAGS_db = nullptr;
 
+// If true, disable wal  when writing.
+static bool FLAGS_disable_wal = false;
+
 namespace leveldb {
 
 namespace {
@@ -418,6 +421,9 @@ class Benchmark {
   }
 
   ~Benchmark() {
+    if (FLAGS_disable_wal) {
+      db_->CompactRange(nullptr, nullptr);
+    }
     delete db_;
     delete cache_;
     delete filter_policy_;
@@ -445,6 +451,7 @@ class Benchmark {
       value_size_ = FLAGS_value_size;
       entries_per_batch_ = 1;
       write_options_ = WriteOptions();
+      write_options_.disableWAL = FLAGS_disable_wal;
 
       void (Benchmark::*method)(ThreadState*) = nullptr;
       bool fresh_db = false;
@@ -960,6 +967,9 @@ int main(int argc, char** argv) {
       FLAGS_open_files = n;
     } else if (strncmp(argv[i], "--db=", 5) == 0) {
       FLAGS_db = argv[i] + 5;
+    } else if (sscanf(argv[i], "--disable_wal=%d%c", &n, &junk) == 1 &&
+	       (n == 0 || n == 1)) {
+      FLAGS_disable_wal = n;
     } else {
       fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
       exit(1);

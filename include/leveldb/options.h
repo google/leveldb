@@ -180,6 +180,10 @@ struct LEVELDB_EXPORT WriteOptions {
   // with sync==true has similar crash semantics to a "write()"
   // system call followed by "fsync()".
   bool sync = false;
+
+  // If true, writes will not first go to the write ahead log,
+  // and the write may got lost after a crash.
+  bool disableWAL = false;
 };
 
 }  // namespace leveldb
