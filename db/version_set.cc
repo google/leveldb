@@ -332,9 +332,6 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
     GetStats* stats;
     const ReadOptions* options;
     Slice ikey;
-    Slice user_key;
-    const Comparator* ucmp;
-    std::string* value;
     FileMetaData* last_file_read;
     int last_file_read_level;
 
@@ -364,14 +361,15 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
       }
       switch (state->saver.state) {
         case kNotFound:
-          return true;  // Keep saerching in other files
+          return true;  // Keep searching in other files
         case kFound:
           state->found = true;
           return false;
         case kDeleted:
           return false;
         case kCorrupt:
-          state->s = Status::Corruption("corrupted key for ", state->user_key);
+          state->s =
+              Status::Corruption("corrupted key for ", state->saver.user_key);
           state->found = true;
           return false;
       }
@@ -386,17 +384,14 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
 
   state.options = &options;
   state.ikey = k.internal_key();
-  state.user_key = k.user_key();
-  state.ucmp = vset_->icmp_.user_comparator();
-  state.value = value;
   state.vset = vset_;
 
   state.saver.state = kNotFound;
-  state.saver.ucmp = state.ucmp;
-  state.saver.user_key = state.user_key;
-  state.saver.value = state.value;
+  state.saver.ucmp = vset_->icmp_.user_comparator();
+  state.saver.user_key = k.user_key();
+  state.saver.value = value;
 
-  ForEachOverlapping(state.user_key, state.ikey, &state, &State::Match);
+  ForEachOverlapping(state.saver.user_key, state.ikey, &state, &State::Match);
 
   return state.found ? state.s : Status::NotFound(Slice());
 }
