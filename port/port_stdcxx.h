@@ -178,7 +178,7 @@ inline bool ZLib_Compress(const char* input, size_t length,
 #endif  // HAVE_ZLIB
 }
 
-inline bool ZLib_GetUncompressedLength(const char* input, size_t length,
+/*inline bool ZLib_GetUncompressedLength(const char* input, size_t length,
                                        size_t* result) {
 #ifdef HAVE_ZLIB
   z_stream stream;
@@ -215,7 +215,7 @@ inline bool ZLib_GetUncompressedLength(const char* input, size_t length,
   (void)result;
   return false;
 #endif  // HAVE_ZLIB
-}
+}*/
 
 inline bool ZLib_Uncompress(const char* input, size_t length, char* output,
                             size_t* outSize) {
