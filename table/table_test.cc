@@ -871,6 +871,7 @@ TEST(TableTest, ApproximateOffsetOfZLibCompressed) {
   // Have now emitted two large compressible strings, so adjust expected offset.
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
 }
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
