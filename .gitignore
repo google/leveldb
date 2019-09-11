@@ -6,3 +6,8 @@
 # Build directory.
 build/
 out/
+
+*.a
+*.o
+*.so
+*.so.*
