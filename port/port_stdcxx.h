@@ -133,7 +133,7 @@ inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {
 
 inline bool ZLib_Compress(const char* input, size_t length,
                           std::string* output) {
-#ifdef HAVE_ZLIB
+#if HAVE_ZLIB
 
   z_stream stream;
   size_t currentOutSize = 0;
@@ -155,7 +155,7 @@ inline bool ZLib_Compress(const char* input, size_t length,
     stream.next_out = (Bytef*)(output->data() + currentOutSize);
     stream.avail_out = length;
 
-    if (Z_OK != deflate(&stream, Z_FINISH)) return false;
+    if (Z_STREAM_ERROR == deflate(&stream, Z_FINISH)) return false;
     if (stream.avail_in == 0) {
       // free unneeded `out` bytes
       output->resize(output->size() - stream.avail_out);
@@ -163,9 +163,9 @@ inline bool ZLib_Compress(const char* input, size_t length,
       currentOutSize += length;
   } while (stream.avail_in > 0);
 
-  if (Z_OK != deflateEnd(&stream)) return false;
+  deflateEnd(&stream);
   return true;
-  //#else
+#else
   // Silence compiler warnings about unused arguments.
   (void)input;
   (void)length;
@@ -216,7 +216,7 @@ inline bool ZLib_Compress(const char* input, size_t length,
 
 inline bool ZLib_Uncompress(const char* input, size_t length, char* output,
                             size_t* outSize) {
-#ifdef HAVE_ZLIB
+#if HAVE_ZLIB
   z_stream stream;
   *outSize = 0;
   output = (char*)malloc(length);
@@ -234,14 +234,14 @@ inline bool ZLib_Uncompress(const char* input, size_t length, char* output,
     stream.next_out = (Bytef*)(output + (*outSize));
     stream.avail_out = length;
 
-    if (Z_OK != inflate(&stream, Z_FINISH)) return false;
+    if (Z_STREAM_ERROR == inflate(&stream, Z_FINISH)) return false;
 
     (*outSize) += length - stream.avail_out;
     if (stream.avail_in > 0) {
       output = (char*)realloc(output, *(outSize) + length);
     }
   } while (stream.avail_in > 0);
-  if (Z_OK != inflateEnd(&stream)) return false;
+  inflateEnd(&stream);
   return true;
 #else
   (void)input;
