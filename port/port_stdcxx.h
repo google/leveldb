@@ -32,6 +32,9 @@
 #include <zlib.h>
 #endif  // HAV_ZLIB
 
+/// REMOVE ME....
+#include <zlib.h>
+
 #include <cassert>
 #include <condition_variable>  // NOLINT
 #include <cstddef>
@@ -132,12 +135,125 @@ inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {
 }
 
 inline bool ZLib_Compress(const char* input, size_t length,
-                          std::string* output) {}
+                          std::string* output) {
+#ifdef HAVE_ZLIB
 
-inline bool Snappy_GetUncompressedLength(const char* input, size_t length,
-                                         size_t* result) {}
+  z_stream stream;
+  size_t currentOutSize = 0;
+  stream.zalloc = Z_NULL;
+  stream.zfree = Z_NULL;
+  stream.opaque = Z_NULL;
 
-inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {}
+  if (Z_OK != deflateInit(&stream, Z_BEST_COMPRESSION)) return false;
+
+  stream.next_in = (Bytef*)input;
+  stream.avail_in = length;
+  output->clear();
+
+  // Now, Compress...
+  do {
+    size_t currentOutSize = output->size();
+    // grow output size by `length`
+    output->resize(output->size() + length);
+    stream.next_out = (Bytef*)(output->data() + currentOutSize);
+    stream.avail_out = length;
+
+    if (Z_OK != deflate(&stream, Z_FINISH)) return false;
+    if (stream.avail_in == 0) {
+      // free unneeded `out` bytes
+      output->resize(output->size() - stream.avail_out);
+    } else
+      currentOutSize += length;
+  } while (stream.avail_in > 0);
+
+  if (Z_OK != deflateEnd(&stream)) return false;
+  return true;
+  //#else
+  // Silence compiler warnings about unused arguments.
+  (void)input;
+  (void)length;
+  (void)output;
+
+  return false;
+#endif  // HAVE_ZLIB
+}
+
+inline bool ZLib_GetUncompressedLength(const char* input, size_t length,
+                                       size_t* result) {
+#ifdef HAVE_ZLIB
+  z_stream stream;
+  *result = 0;
+  std::string tmp;
+  tmp.resize(length);
+
+  stream.zalloc = Z_NULL;
+  stream.zfree = Z_NULL;
+  stream.opaque = Z_NULL;
+
+  if (Z_OK != inflateInit(&stream)) return false;
+
+  stream.avail_in = length;
+  stream.next_in = (Bytef*)input;
+
+  do {
+    stream.avail_out = length;
+    stream.next_out = (Bytef*)tmp.data();
+    if (Z_OK != inflate(&stream, Z_FINISH)) return false;
+
+    if (stream.avail_in == 0) {
+      *result += (length - stream.avail_out);
+    } else {
+      *result += length;
+    }
+
+  } while (stream.avail_in > 0);
+  if (Z_OK != inflateEnd(&stream)) return false;
+  return true;
+#else
+  (void)input;
+  (void)length;
+  (void)result;
+  return false;
+#endif  // HAVE_ZLIB
+}
+
+inline bool ZLib_Uncompress(const char* input, size_t length, char* output,
+                            size_t* outSize) {
+#ifdef HAVE_ZLIB
+  z_stream stream;
+  *outSize = 0;
+  output = (char*)malloc(length);
+
+  stream.zalloc = Z_NULL;
+  stream.zfree = Z_NULL;
+  stream.opaque = Z_NULL;
+
+  if (Z_OK != inflateInit(&stream)) return false;
+
+  stream.next_in = (Bytef*)input;
+  stream.avail_in = length;
+
+  do {
+    stream.next_out = (Bytef*)(output + (*outSize));
+    stream.avail_out = length;
+
+    if (Z_OK != inflate(&stream, Z_FINISH)) return false;
+
+    (*outSize) += length - stream.avail_out;
+    if (stream.avail_in > 0) {
+      output = (char*)realloc(output, *(outSize) + length);
+    }
+  } while (stream.avail_in > 0);
+  if (Z_OK != inflateEnd(&stream)) return false;
+  return true;
+#else
+  (void)input;
+
+  (void)length;
+  (void)output;
+  return false;
+#endif  // HAVE_ZLIB
+}
 
 inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
   // Silence compiler warnings about unused arguments.
