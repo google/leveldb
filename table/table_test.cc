@@ -794,9 +794,9 @@ static bool SnappyCompressionSupported() {
   return port::Snappy_Compress(in.data(), in.size(), &out);
 }
 
-TEST(TableTest, ApproximateOffsetOfCompressed) {
+TEST(TableTest, ApproximateOffsetOfSnappyCompressed) {
   if (!SnappyCompressionSupported()) {
-    fprintf(stderr, "skipping compression tests\n");
+    fprintf(stderr, "skipping snappy compression tests\n");
     return;
   }
 
@@ -812,6 +812,48 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
   Options options;
   options.block_size = 1024;
   options.compression = kSnappyCompression;
+  c.Finish(options, &keys, &kvmap);
+
+  // Expected upper and lower bounds of space used by compressible strings.
+  static const int kSlop = 1000;  // Compressor effectiveness varies.
+  const int expected = 2500;      // 10000 * compression ratio (0.25)
+  const int min_z = expected - kSlop;
+  const int max_z = expected + kSlop;
+
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("abc"), 0, kSlop));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k01"), 0, kSlop));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k02"), 0, kSlop));
+  // Have now emitted a large compressible string, so adjust expected offset.
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k03"), min_z, max_z));
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("k04"), min_z, max_z));
+  // Have now emitted two large compressible strings, so adjust expected offset.
+  ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
+}
+
+static bool ZLibCompressionSupported() {
+  std::string out;
+  Slice in = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+  return port::ZLib_Compress(in.data(), in.size(), &out);
+}
+
+TEST(TableTest, ApproximateOffsetOfZLibCompressed) {
+  if (!ZLibCompressionSupported()) {
+    fprintf(stderr, "skipping zlib compression tests\n");
+    return;
+  }
+
+  Random rnd(301);
+  TableConstructor c(BytewiseComparator());
+  std::string tmp;
+  c.Add("k01", "hello");
+  c.Add("k02", test::CompressibleString(&rnd, 0.25, 10000, &tmp));
+  c.Add("k03", "hello3");
+  c.Add("k04", test::CompressibleString(&rnd, 0.25, 10000, &tmp));
+  std::vector<std::string> keys;
+  KVMap kvmap;
+  Options options;
+  options.block_size = 1024;
+  options.compression = kZlibCompression;
   c.Finish(options, &keys, &kvmap);
 
   // Expected upper and lower bounds of space used by compressible strings.
