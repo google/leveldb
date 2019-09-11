@@ -32,9 +32,6 @@
 #include <zlib.h>
 #endif  // HAV_ZLIB
 
-/// REMOVE ME....
-#include <zlib.h>
-
 #include <cassert>
 #include <condition_variable>  // NOLINT
 #include <cstddef>
