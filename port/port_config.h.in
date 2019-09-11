@@ -30,6 +30,11 @@
 #cmakedefine01 HAVE_SNAPPY
 #endif  // !defined(HAVE_SNAPPY)
 
+// Define to 1 if you have zlib.
+#if !defined(HAVE_ZLIB)
+#cmakedefine01 HAVE_ZLIB
+#endif  // !defined(HAVE_SNAPPY)
+
 // Define to 1 if your processor stores words with the most significant byte
 // first (like Motorola and SPARC, unlike Intel and VAX).
 #if !defined(LEVELDB_IS_BIG_ENDIAN)
