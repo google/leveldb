@@ -175,45 +175,6 @@ inline bool ZLib_Compress(const char* input, size_t length,
 #endif  // HAVE_ZLIB
 }
 
-/*inline bool ZLib_GetUncompressedLength(const char* input, size_t length,
-                                       size_t* result) {
-#ifdef HAVE_ZLIB
-  z_stream stream;
-  *result = 0;
-  std::string tmp;
-  tmp.resize(length);
-
-  stream.zalloc = Z_NULL;
-  stream.zfree = Z_NULL;
-  stream.opaque = Z_NULL;
-
-  if (Z_OK != inflateInit(&stream)) return false;
-
-  stream.avail_in = length;
-  stream.next_in = (Bytef*)input;
-
-  do {
-    stream.avail_out = length;
-    stream.next_out = (Bytef*)tmp.data();
-    if (Z_OK != inflate(&stream, Z_FINISH)) return false;
-
-    if (stream.avail_in == 0) {
-      *result += (length - stream.avail_out);
-    } else {
-      *result += length;
-    }
-
-  } while (stream.avail_in > 0);
-  if (Z_OK != inflateEnd(&stream)) return false;
-  return true;
-#else
-  (void)input;
-  (void)length;
-  (void)result;
-  return false;
-#endif  // HAVE_ZLIB
-}*/
-
 inline bool ZLib_Uncompress(const char* input, size_t length, char* output,
                             size_t* outSize) {
 #if HAVE_ZLIB
