@@ -81,10 +81,61 @@ class Block::Iter : public Iterator {
   uint32_t const restarts_;      // Offset of restart array (list of fixed32)
   uint32_t const num_restarts_;  // Number of uint32_t entries in restart array
 
+  class IterKey {
+   private:
+    char* buf_;
+    size_t size_;
+    size_t capacity_;
+
+   public:
+    IterKey()
+        : buf_(nullptr),
+          size_(0),
+          capacity_(0) {
+    }
+
+    IterKey(const IterKey&) = delete;
+    IterKey& operator=(const IterKey&) = delete;
+
+    ~IterKey() {
+      delete []buf_;
+    }
+
+    // Append s to its back at pos. pos must be larger than current size. If
+    // buf_ is smaller than pos + len, buf_ would be expanded.
+    void TrimAppend(size_t pos, const char* s, size_t len) {
+      assert(pos <= size_);
+
+      if (buf_ == nullptr) {
+        size_ = len;
+        capacity_ = len;
+        buf_ = new char[capacity_];
+
+        memcpy(buf_, s, len);
+      } else {
+        // expand buf_
+        if ((pos + len) > capacity_) {
+          capacity_ = pos + len;
+          char* new_buf = new char[capacity_];
+          memcpy(new_buf, buf_, pos);
+          delete []buf_;
+          buf_ = new_buf;
+        }
+
+        size_ = pos + len;
+        memcpy(buf_ + pos, s, len);
+      }
+    }
+
+    void clear() { size_ = 0; }
+    const char* data() const { return buf_; }
+    size_t size() const { return size_; }
+  };
+
   // current_ is offset in data_ of current entry.  >= restarts_ if !Valid
   uint32_t current_;
   uint32_t restart_index_;  // Index of restart block in which current_ falls
-  std::string key_;
+  IterKey key_;
   Slice value_;
   Status status_;
 
@@ -128,7 +179,7 @@ class Block::Iter : public Iterator {
   Status status() const override { return status_; }
   Slice key() const override {
     assert(Valid());
-    return key_;
+    return Slice(key_.data(), key_.size());
   }
   Slice value() const override {
     assert(Valid());
@@ -195,7 +246,7 @@ class Block::Iter : public Iterator {
       if (!ParseNextKey()) {
         return;
       }
-      if (Compare(key_, target) >= 0) {
+      if (Compare(Slice(key_.data(), key_.size()), target) >= 0) {
         return;
       }
     }
@@ -240,8 +291,7 @@ class Block::Iter : public Iterator {
       CorruptionError();
       return false;
     } else {
-      key_.resize(shared);
-      key_.append(p, non_shared);
+      key_.TrimAppend(shared, p, non_shared);
       value_ = Slice(p + non_shared, value_length);
       while (restart_index_ + 1 < num_restarts_ &&
              GetRestartPoint(restart_index_ + 1) < current_) {
