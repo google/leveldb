@@ -130,6 +130,27 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
       result->cachable = true;
       break;
     }
+
+    case kZlibCompression: {
+      size_t ulength = 0;
+      /*if (!port::ZLib_GetUncompressedLength(data, n, &ulength)) {
+        delete[] buf;
+        return Status::Corruption("corrupted compressed block contents");
+      }*/   //not nedded as ZLib_uncompress reports out size
+      char* ubuf /*= new char[ulength]*/;
+      if (!port::ZLib_Uncompress(data, n, ubuf, &ulength)) {
+        delete[] buf;
+        //delete[] ubuf;
+        free(ubuf);
+        return Status::Corruption("corrupted compressed block contents");
+      }
+      delete[] buf;
+      result->data = Slice(ubuf, ulength);
+      result->heap_allocated = true;
+      result->cachable = true;
+      break;
+      break;
+    }
     default:
       delete[] buf;
       return Status::Corruption("bad block type");
