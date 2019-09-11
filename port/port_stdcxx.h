@@ -28,6 +28,9 @@
 #if HAVE_SNAPPY
 #include <snappy.h>
 #endif  // HAVE_SNAPPY
+#if HAVE_ZLIB
+#include <zlib.h>
+#endif  // HAV_ZLIB
 
 #include <cassert>
 #include <condition_variable>  // NOLINT
@@ -127,6 +130,14 @@ inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {
   return false;
 #endif  // HAVE_SNAPPY
 }
+
+inline bool ZLib_Compress(const char* input, size_t length,
+                          std::string* output) {}
+
+inline bool Snappy_GetUncompressedLength(const char* input, size_t length,
+                                         size_t* result) {}
+
+inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {}
 
 inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {
   // Silence compiler warnings about unused arguments.
