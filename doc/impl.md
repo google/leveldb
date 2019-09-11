@@ -160,7 +160,7 @@ So maybe even the sharding is not necessary on modern filesystems?
 * Read CURRENT to find name of the latest committed MANIFEST
 * Read the named MANIFEST file
 * Clean up stale files
-* We could open all sstables here, but it is probably better to be lazy...
+* We could open all stables here, but it is probably better to be lazy...
 * Convert log chunk to a new level-0 sstable
 * Start directing new writes to a new log file with recovered sequence#
 
