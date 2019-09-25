@@ -131,7 +131,7 @@ static char* FilterCreate(
     int num_keys,
     size_t* filter_length) {
   *filter_length = 4;
-  char* result = malloc(4);
+  char* result = (char *)malloc(4);
   memcpy(result, "fake", 4);
   return result;
 }
