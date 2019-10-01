@@ -73,25 +73,12 @@ else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
 endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
-include(CheckCXXSourceCompiles)
-
 # Test whether -Wthread-safety is available. See
 # https://clang.llvm.org/docs/ThreadSafetyAnalysis.html
-# -Werror is necessary because unknown attributes only generate warnings.
-set(OLD_CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS})
-list(APPEND CMAKE_REQUIRED_FLAGS -Werror -Wthread-safety)
-check_cxx_source_compiles("
-struct __attribute__((lockable)) Lock {
-  void Acquire() __attribute__((exclusive_lock_function()));
-  void Release() __attribute__((unlock_function()));
-};
-struct ThreadSafeType {
-  Lock lock_;
-  int data_ __attribute__((guarded_by(lock_)));
-};
-int main() { return 0; }
-"  HAVE_CLANG_THREAD_SAFETY)
-set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wthread-safety HAVE_CLANG_THREAD_SAFETY)
+
+include(CheckCXXSourceCompiles)
 
 # Test whether C++17 __has_include is available.
 check_cxx_source_compiles("
