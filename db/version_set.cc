@@ -373,6 +373,10 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
           state->found = true;
           return false;
       }
+
+      // Not reached. Added to avoid false compilation warnings of
+      // "control reaches end of non-void function".
+      return false;
     }
   };
 
