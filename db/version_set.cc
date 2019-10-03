@@ -373,6 +373,8 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
           state->found = true;
           return false;
       }
+      
+      return false;
     }
   };
 
