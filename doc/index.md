@@ -307,7 +307,7 @@ version numbers found in the keys to decide how to interpret them.
 ## Performance
 
 Performance can be tuned by changing the default values of the types defined in
-`include/options.h`.
+`include/leveldb/options.h`.
 
 ### Block size
 
@@ -438,14 +438,14 @@ class CustomFilterPolicy : public leveldb::FilterPolicy {
     for (int i = 0; i < n; i++) {
       trimmed[i] = RemoveTrailingSpaces(keys[i]);
     }
-    return builtin_policy_->CreateFilter(&trimmed[i], n, dst);
+    builtin_policy_->CreateFilter(&trimmed[i], n, dst);
   }
 };
 ```
 
 Advanced applications may provide a filter policy that does not use a bloom
 filter but uses some other mechanism for summarizing a set of keys. See
-`leveldb/filter_policy.h` for detail.
+`include/leveldb/filter_policy.h` for detail.
 
 ## Checksums
 
@@ -508,10 +508,10 @@ Status s = leveldb::DB::Open(options, ...);
 
 leveldb may be ported to a new platform by providing platform specific
 implementations of the types/methods/functions exported by
-`leveldb/port/port.h`.  See `leveldb/port/port_example.h` for more details.
+`port/port.h`.  See `port/port_example.h` for more details.
 
 In addition, the new platform may need a new default `leveldb::Env`
-implementation.  See `leveldb/util/env_posix.h` for an example.
+implementation.  See `util/env_posix.h` for an example.
 
 ## Other Information
 
