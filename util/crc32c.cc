@@ -256,8 +256,8 @@ inline uint32_t ReadUint32LE(const uint8_t* buffer) {
 template <int N>
 constexpr inline const uint8_t* RoundUp(const uint8_t* pointer) {
   return reinterpret_cast<uint8_t*>(
-      (reinterpret_cast<uintptr_t>(pointer) + (N - 1))
-      & ~static_cast<uintptr_t>(N - 1));
+      (reinterpret_cast<uintptr_t>(pointer) + (N - 1)) &
+      ~static_cast<uintptr_t>(N - 1));
 }
 
 }  // namespace
@@ -273,14 +273,14 @@ static bool CanAccelerateCRC32C() {
   return port::AcceleratedCRC32C(0, kTestCRCBuffer, kBufSize) == kTestCRCValue;
 }
 
-uint32_t Extend(uint32_t crc, const char* buf, size_t size) {
+uint32_t Extend(uint32_t crc, const char* data, size_t n) {
   static bool accelerate = CanAccelerateCRC32C();
   if (accelerate) {
-    return port::AcceleratedCRC32C(crc, buf, size);
+    return port::AcceleratedCRC32C(crc, data, n);
   }
 
-  const uint8_t* p = reinterpret_cast<const uint8_t*>(buf);
-  const uint8_t* e = p + size;
+  const uint8_t* p = reinterpret_cast<const uint8_t*>(data);
+  const uint8_t* e = p + n;
   uint32_t l = crc ^ kCRC32Xor;
 
 // Process one byte at a time.

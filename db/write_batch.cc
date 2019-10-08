@@ -15,10 +15,10 @@
 
 #include "leveldb/write_batch.h"
 
-#include "leveldb/db.h"
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
+#include "leveldb/db.h"
 #include "util/coding.h"
 
 namespace leveldb {
@@ -26,22 +26,18 @@ namespace leveldb {
 // WriteBatch header has an 8-byte sequence number followed by a 4-byte count.
 static const size_t kHeader = 12;
 
-WriteBatch::WriteBatch() {
-  Clear();
-}
+WriteBatch::WriteBatch() { Clear(); }
 
-WriteBatch::~WriteBatch() { }
+WriteBatch::~WriteBatch() = default;
 
-WriteBatch::Handler::~Handler() { }
+WriteBatch::Handler::~Handler() = default;
 
 void WriteBatch::Clear() {
   rep_.clear();
   rep_.resize(kHeader);
 }
 
-size_t WriteBatch::ApproximateSize() const {
-  return rep_.size();
-}
+size_t WriteBatch::ApproximateSize() const { return rep_.size(); }
 
 Status WriteBatch::Iterate(Handler* handler) const {
   Slice input(rep_);
@@ -112,7 +108,7 @@ void WriteBatch::Delete(const Slice& key) {
   PutLengthPrefixedSlice(&rep_, key);
 }
 
-void WriteBatch::Append(const WriteBatch &source) {
+void WriteBatch::Append(const WriteBatch& source) {
   WriteBatchInternal::Append(this, &source);
 }
 
@@ -122,19 +118,18 @@ class MemTableInserter : public WriteBatch::Handler {
   SequenceNumber sequence_;
   MemTable* mem_;
 
-  virtual void Put(const Slice& key, const Slice& value) {
+  void Put(const Slice& key, const Slice& value) override {
     mem_->Add(sequence_, kTypeValue, key, value);
     sequence_++;
   }
-  virtual void Delete(const Slice& key) {
+  void Delete(const Slice& key) override {
     mem_->Add(sequence_, kTypeDeletion, key, Slice());
     sequence_++;
   }
 };
 }  // namespace
 
-Status WriteBatchInternal::InsertInto(const WriteBatch* b,
-                                      MemTable* memtable) {
+Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
   MemTableInserter inserter;
   inserter.sequence_ = WriteBatchInternal::Sequence(b);
   inserter.mem_ = memtable;

@@ -38,8 +38,7 @@ bool GuessType(const std::string& fname, FileType* type) {
 // Notified when log reader encounters corruption.
 class CorruptionReporter : public log::Reader::Reporter {
  public:
-  WritableFile* dst_;
-  virtual void Corruption(size_t bytes, const Status& status) {
+  void Corruption(size_t bytes, const Status& status) override {
     std::string r = "corruption: ";
     AppendNumberTo(&r, bytes);
     r += " bytes; ";
@@ -47,6 +46,8 @@ class CorruptionReporter : public log::Reader::Reporter {
     r.push_back('\n');
     dst_->Append(r);
   }
+
+  WritableFile* dst_;
 };
 
 // Print contents of a log file. (*func)() is called on every record.
@@ -73,8 +74,7 @@ Status PrintLogContents(Env* env, const std::string& fname,
 // Called on every item found in a WriteBatch.
 class WriteBatchItemPrinter : public WriteBatch::Handler {
  public:
-  WritableFile* dst_;
-  virtual void Put(const Slice& key, const Slice& value) {
+  void Put(const Slice& key, const Slice& value) override {
     std::string r = "  put '";
     AppendEscapedStringTo(&r, key);
     r += "' '";
@@ -82,14 +82,15 @@ class WriteBatchItemPrinter : public WriteBatch::Handler {
     r += "'\n";
     dst_->Append(r);
   }
-  virtual void Delete(const Slice& key) {
+  void Delete(const Slice& key) override {
     std::string r = "  del '";
     AppendEscapedStringTo(&r, key);
     r += "'\n";
     dst_->Append(r);
   }
-};
 
+  WritableFile* dst_;
+};
 
 // Called on every log record (each one of which is a WriteBatch)
 // found in a kLogFile.
@@ -216,9 +217,12 @@ Status DumpFile(Env* env, const std::string& fname, WritableFile* dst) {
     return Status::InvalidArgument(fname + ": unknown file type");
   }
   switch (ftype) {
-    case kLogFile:         return DumpLog(env, fname, dst);
-    case kDescriptorFile:  return DumpDescriptor(env, fname, dst);
-    case kTableFile:       return DumpTable(env, fname, dst);
+    case kLogFile:
+      return DumpLog(env, fname, dst);
+    case kDescriptorFile:
+      return DumpDescriptor(env, fname, dst);
+    case kTableFile:
+      return DumpTable(env, fname, dst);
     default:
       break;
   }

@@ -11,7 +11,7 @@
 
 namespace leveldb {
 
-class Logging { };
+class Logging {};
 
 TEST(Logging, NumberToString) {
   ASSERT_EQ("0", NumberToString(0));
@@ -140,6 +140,4 @@ TEST(Logging, ConsumeDecimalNumberNoDigits) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

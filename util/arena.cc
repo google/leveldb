@@ -8,10 +8,8 @@ namespace leveldb {
 
 static const int kBlockSize = 4096;
 
-Arena::Arena() : memory_usage_(0) {
-  alloc_ptr_ = nullptr;  // First allocation will allocate a block
-  alloc_bytes_remaining_ = 0;
-}
+Arena::Arena()
+    : alloc_ptr_(nullptr), alloc_bytes_remaining_(0), memory_usage_(0) {}
 
 Arena::~Arena() {
   for (size_t i = 0; i < blocks_.size(); i++) {
@@ -39,8 +37,9 @@ char* Arena::AllocateFallback(size_t bytes) {
 
 char* Arena::AllocateAligned(size_t bytes) {
   const int align = (sizeof(void*) > 8) ? sizeof(void*) : 8;
-  assert((align & (align-1)) == 0);   // Pointer size should be a power of 2
-  size_t current_mod = reinterpret_cast<uintptr_t>(alloc_ptr_) & (align-1);
+  static_assert((align & (align - 1)) == 0,
+                "Pointer size should be a power of 2");
+  size_t current_mod = reinterpret_cast<uintptr_t>(alloc_ptr_) & (align - 1);
   size_t slop = (current_mod == 0 ? 0 : align - current_mod);
   size_t needed = bytes + slop;
   char* result;
@@ -52,7 +51,7 @@ char* Arena::AllocateAligned(size_t bytes) {
     // AllocateFallback always returned aligned memory
     result = AllocateFallback(bytes);
   }
-  assert((reinterpret_cast<uintptr_t>(result) & (align-1)) == 0);
+  assert((reinterpret_cast<uintptr_t>(result) & (align - 1)) == 0);
   return result;
 }
 

@@ -120,7 +120,7 @@ static const char* CmpName(void* arg) {
 }
 
 // Custom filter policy
-static unsigned char fake_filter_result = 1;
+static uint8_t fake_filter_result = 1;
 static void FilterDestroy(void* arg) { }
 static const char* FilterName(void* arg) {
   return "TestFilter";
@@ -135,10 +135,8 @@ static char* FilterCreate(
   memcpy(result, "fake", 4);
   return result;
 }
-unsigned char FilterKeyMatch(
-    void* arg,
-    const char* key, size_t length,
-    const char* filter, size_t filter_length) {
+uint8_t FilterKeyMatch(void* arg, const char* key, size_t length,
+                       const char* filter, size_t filter_length) {
   CheckCondition(filter_length == 4);
   CheckCondition(memcmp(filter, "fake", 4) == 0);
   return fake_filter_result;

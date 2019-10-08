@@ -2,17 +2,18 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include "leveldb/db.h"
+
 #include <atomic>
 #include <string>
 
-#include "leveldb/db.h"
-#include "leveldb/filter_policy.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
 #include "leveldb/cache.h"
 #include "leveldb/env.h"
+#include "leveldb/filter_policy.h"
 #include "leveldb/table.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
@@ -31,22 +32,17 @@ static std::string RandomString(Random* rnd, int len) {
 }
 
 static std::string RandomKey(Random* rnd) {
-  int len = (rnd->OneIn(3)
-             ? 1                // Short sometimes to encourage collisions
-             : (rnd->OneIn(100) ? rnd->Skewed(10) : rnd->Uniform(10)));
+  int len =
+      (rnd->OneIn(3) ? 1  // Short sometimes to encourage collisions
+                     : (rnd->OneIn(100) ? rnd->Skewed(10) : rnd->Uniform(10)));
   return test::RandomKey(rnd, len);
 }
 
 namespace {
 class AtomicCounter {
- private:
-  port::Mutex mu_;
-  int count_ GUARDED_BY(mu_);
  public:
-  AtomicCounter() : count_(0) { }
-  void Increment() {
-    IncrementBy(1);
-  }
+  AtomicCounter() : count_(0) {}
+  void Increment() { IncrementBy(1); }
   void IncrementBy(int count) LOCKS_EXCLUDED(mu_) {
     MutexLock l(&mu_);
     count_ += count;
@@ -59,6 +55,10 @@ class AtomicCounter {
     MutexLock l(&mu_);
     count_ = 0;
   }
+
+ private:
+  port::Mutex mu_;
+  int count_ GUARDED_BY(mu_);
 };
 
 void DelayMilliseconds(int millis) {
@@ -120,15 +120,15 @@ class SpecialEnv : public EnvWrapper {
   bool count_random_reads_;
   AtomicCounter random_read_counter_;
 
-  explicit SpecialEnv(Env* base) : EnvWrapper(base),
-    delay_data_sync_(false),
-    data_sync_error_(false),
-    no_space_(false),
-    non_writable_(false),
-    manifest_sync_error_(false),
-    manifest_write_error_(false),
-    count_random_reads_(false) {
-  }
+  explicit SpecialEnv(Env* base)
+      : EnvWrapper(base),
+        delay_data_sync_(false),
+        data_sync_error_(false),
+        no_space_(false),
+        non_writable_(false),
+        manifest_sync_error_(false),
+        manifest_write_error_(false),
+        count_random_reads_(false) {}
 
   Status NewWritableFile(const std::string& f, WritableFile** r) {
     class DataFile : public WritableFile {
@@ -137,10 +137,7 @@ class SpecialEnv : public EnvWrapper {
       WritableFile* const base_;
 
      public:
-      DataFile(SpecialEnv* env, WritableFile* base)
-          : env_(env),
-            base_(base) {
-      }
+      DataFile(SpecialEnv* env, WritableFile* base) : env_(env), base_(base) {}
       ~DataFile() { delete base_; }
       Status Append(const Slice& data) {
         if (env_->no_space_.load(std::memory_order_acquire)) {
@@ -166,8 +163,9 @@ class SpecialEnv : public EnvWrapper {
      private:
       SpecialEnv* env_;
       WritableFile* base_;
+
      public:
-      ManifestFile(SpecialEnv* env, WritableFile* b) : env_(env), base_(b) { }
+      ManifestFile(SpecialEnv* env, WritableFile* b) : env_(env), base_(b) {}
       ~ManifestFile() { delete base_; }
       Status Append(const Slice& data) {
         if (env_->manifest_write_error_.load(std::memory_order_acquire)) {
@@ -208,13 +206,13 @@ class SpecialEnv : public EnvWrapper {
      private:
       RandomAccessFile* target_;
       AtomicCounter* counter_;
+
      public:
       CountingFile(RandomAccessFile* target, AtomicCounter* counter)
-          : target_(target), counter_(counter) {
-      }
-      virtual ~CountingFile() { delete target_; }
-      virtual Status Read(uint64_t offset, size_t n, Slice* result,
-                          char* scratch) const {
+          : target_(target), counter_(counter) {}
+      ~CountingFile() override { delete target_; }
+      Status Read(uint64_t offset, size_t n, Slice* result,
+                  char* scratch) const override {
         counter_->Increment();
         return target_->Read(offset, n, result, scratch);
       }
@@ -229,19 +227,6 @@ class SpecialEnv : public EnvWrapper {
 };
 
 class DBTest {
- private:
-  const FilterPolicy* filter_policy_;
-
-  // Sequence of option configurations to try
-  enum OptionConfig {
-    kDefault,
-    kReuse,
-    kFilter,
-    kUncompressed,
-    kEnd
-  };
-  int option_config_;
-
  public:
   std::string dbname_;
   SpecialEnv* env_;
@@ -249,8 +234,7 @@ class DBTest {
 
   Options last_options_;
 
-  DBTest() : option_config_(kDefault),
-             env_(new SpecialEnv(Env::Default())) {
+  DBTest() : env_(new SpecialEnv(Env::Default())), option_config_(kDefault) {
     filter_policy_ = NewBloomFilterPolicy(10);
     dbname_ = test::TmpDir() + "/db_test";
     DestroyDB(dbname_, Options());
@@ -297,13 +281,9 @@ class DBTest {
     return options;
   }
 
-  DBImpl* dbfull() {
-    return reinterpret_cast<DBImpl*>(db_);
-  }
+  DBImpl* dbfull() { return reinterpret_cast<DBImpl*>(db_); }
 
-  void Reopen(Options* options = nullptr) {
-    ASSERT_OK(TryReopen(options));
-  }
+  void Reopen(Options* options = nullptr) { ASSERT_OK(TryReopen(options)); }
 
   void Close() {
     delete db_;
@@ -336,9 +316,7 @@ class DBTest {
     return db_->Put(WriteOptions(), k, v);
   }
 
-  Status Delete(const std::string& k) {
-    return db_->Delete(WriteOptions(), k);
-  }
+  Status Delete(const std::string& k) { return db_->Delete(WriteOptions(), k); }
 
   std::string Get(const std::string& k, const Snapshot* snapshot = nullptr) {
     ReadOptions options;
@@ -424,9 +402,8 @@ class DBTest {
 
   int NumTableFilesAtLevel(int level) {
     std::string property;
-    ASSERT_TRUE(
-        db_->GetProperty("leveldb.num-files-at-level" + NumberToString(level),
-                         &property));
+    ASSERT_TRUE(db_->GetProperty(
+        "leveldb.num-files-at-level" + NumberToString(level), &property));
     return std::stoi(property);
   }
 
@@ -491,9 +468,9 @@ class DBTest {
 
   void DumpFileCounts(const char* label) {
     fprintf(stderr, "---\n%s:\n", label);
-    fprintf(stderr, "maxoverlap: %lld\n",
-            static_cast<long long>(
-                dbfull()->TEST_MaxNextLevelOverlappingBytes()));
+    fprintf(
+        stderr, "maxoverlap: %lld\n",
+        static_cast<long long>(dbfull()->TEST_MaxNextLevelOverlappingBytes()));
     for (int level = 0; level < config::kNumLevels; level++) {
       int num = NumTableFilesAtLevel(level);
       if (num > 0) {
@@ -549,12 +526,39 @@ class DBTest {
     }
     return files_renamed;
   }
+
+ private:
+  // Sequence of option configurations to try
+  enum OptionConfig { kDefault, kReuse, kFilter, kUncompressed, kEnd };
+
+  const FilterPolicy* filter_policy_;
+  int option_config_;
 };
 
 TEST(DBTest, Empty) {
   do {
     ASSERT_TRUE(db_ != nullptr);
     ASSERT_EQ("NOT_FOUND", Get("foo"));
+  } while (ChangeOptions());
+}
+
+TEST(DBTest, EmptyKey) {
+  do {
+    ASSERT_OK(Put("", "v1"));
+    ASSERT_EQ("v1", Get(""));
+    ASSERT_OK(Put("", "v2"));
+    ASSERT_EQ("v2", Get(""));
+  } while (ChangeOptions());
+}
+
+TEST(DBTest, EmptyValue) {
+  do {
+    ASSERT_OK(Put("key", "v1"));
+    ASSERT_EQ("v1", Get("key"));
+    ASSERT_OK(Put("key", ""));
+    ASSERT_EQ("", Get("key"));
+    ASSERT_OK(Put("key", "v2"));
+    ASSERT_EQ("v2", Get("key"));
   } while (ChangeOptions());
 }
 
@@ -592,8 +596,8 @@ TEST(DBTest, GetFromImmutableLayer) {
 
     // Block sync calls.
     env_->delay_data_sync_.store(true, std::memory_order_release);
-    Put("k1", std::string(100000, 'x'));             // Fill memtable.
-    Put("k2", std::string(100000, 'y'));             // Trigger compaction.
+    Put("k1", std::string(100000, 'x'));  // Fill memtable.
+    Put("k2", std::string(100000, 'y'));  // Trigger compaction.
     ASSERT_EQ("v1", Get("foo"));
     // Release sync calls.
     env_->delay_data_sync_.store(false, std::memory_order_release);
@@ -615,7 +619,7 @@ TEST(DBTest, GetMemUsage) {
     ASSERT_TRUE(db_->GetProperty("leveldb.approximate-memory-usage", &val));
     int mem_usage = std::stoi(val);
     ASSERT_GT(mem_usage, 0);
-    ASSERT_LT(mem_usage, 5*1024*1024);
+    ASSERT_LT(mem_usage, 5 * 1024 * 1024);
   } while (ChangeOptions());
 }
 
@@ -740,8 +744,7 @@ TEST(DBTest, GetEncountersEmptyLevel) {
 
     // Step 1: First place sstables in levels 0 and 2
     int compaction_count = 0;
-    while (NumTableFilesAtLevel(0) == 0 ||
-           NumTableFilesAtLevel(2) == 0) {
+    while (NumTableFilesAtLevel(0) == 0 || NumTableFilesAtLevel(2) == 0) {
       ASSERT_LE(compaction_count, 100) << "could not fill levels 0 and 2";
       compaction_count++;
       Put("a", "begin");
@@ -878,10 +881,10 @@ TEST(DBTest, IterMulti) {
   ASSERT_EQ(IterStatus(iter), "b->vb");
 
   // Make sure iter stays at snapshot
-  ASSERT_OK(Put("a",  "va2"));
+  ASSERT_OK(Put("a", "va2"));
   ASSERT_OK(Put("a2", "va3"));
-  ASSERT_OK(Put("b",  "vb2"));
-  ASSERT_OK(Put("c",  "vc2"));
+  ASSERT_OK(Put("b", "vb2"));
+  ASSERT_OK(Put("c", "vc2"));
   ASSERT_OK(Delete("b"));
   iter->SeekToFirst();
   ASSERT_EQ(IterStatus(iter), "a->va");
@@ -1072,7 +1075,7 @@ TEST(DBTest, RecoverWithLargeLog) {
 
 TEST(DBTest, CompactionsGenerateMultipleFiles) {
   Options options = CurrentOptions();
-  options.write_buffer_size = 100000000;        // Large write buffer
+  options.write_buffer_size = 100000000;  // Large write buffer
   Reopen(&options);
 
   Random rnd(301);
@@ -1141,26 +1144,25 @@ TEST(DBTest, SparseMerge) {
   dbfull()->TEST_CompactRange(0, nullptr, nullptr);
 
   // Make sparse update
-  Put("A",    "va2");
+  Put("A", "va2");
   Put("B100", "bvalue2");
-  Put("C",    "vc2");
+  Put("C", "vc2");
   dbfull()->TEST_CompactMemTable();
 
   // Compactions should not cause us to create a situation where
   // a file overlaps too much data at the next level.
-  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20*1048576);
+  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20 * 1048576);
   dbfull()->TEST_CompactRange(0, nullptr, nullptr);
-  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20*1048576);
+  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20 * 1048576);
   dbfull()->TEST_CompactRange(1, nullptr, nullptr);
-  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20*1048576);
+  ASSERT_LE(dbfull()->TEST_MaxNextLevelOverlappingBytes(), 20 * 1048576);
 }
 
 static bool Between(uint64_t val, uint64_t low, uint64_t high) {
   bool result = (val >= low) && (val <= high);
   if (!result) {
     fprintf(stderr, "Value %llu is not in range [%llu, %llu]\n",
-            (unsigned long long)(val),
-            (unsigned long long)(low),
+            (unsigned long long)(val), (unsigned long long)(low),
             (unsigned long long)(high));
   }
   return result;
@@ -1169,7 +1171,7 @@ static bool Between(uint64_t val, uint64_t low, uint64_t high) {
 TEST(DBTest, ApproximateSizes) {
   do {
     Options options = CurrentOptions();
-    options.write_buffer_size = 100000000;        // Large write buffer
+    options.write_buffer_size = 100000000;  // Large write buffer
     options.compression = kNoCompression;
     DestroyAndReopen();
 
@@ -1204,12 +1206,13 @@ TEST(DBTest, ApproximateSizes) {
 
       for (int compact_start = 0; compact_start < N; compact_start += 10) {
         for (int i = 0; i < N; i += 10) {
-          ASSERT_TRUE(Between(Size("", Key(i)), S1*i, S2*i));
-          ASSERT_TRUE(Between(Size("", Key(i)+".suffix"), S1*(i+1), S2*(i+1)));
-          ASSERT_TRUE(Between(Size(Key(i), Key(i+10)), S1*10, S2*10));
+          ASSERT_TRUE(Between(Size("", Key(i)), S1 * i, S2 * i));
+          ASSERT_TRUE(Between(Size("", Key(i) + ".suffix"), S1 * (i + 1),
+                              S2 * (i + 1)));
+          ASSERT_TRUE(Between(Size(Key(i), Key(i + 10)), S1 * 10, S2 * 10));
         }
-        ASSERT_TRUE(Between(Size("", Key(50)), S1*50, S2*50));
-        ASSERT_TRUE(Between(Size("", Key(50)+".suffix"), S1*50, S2*50));
+        ASSERT_TRUE(Between(Size("", Key(50)), S1 * 50, S2 * 50));
+        ASSERT_TRUE(Between(Size("", Key(50) + ".suffix"), S1 * 50, S2 * 50));
 
         std::string cstart_str = Key(compact_start);
         std::string cend_str = Key(compact_start + 9);
@@ -1328,7 +1331,7 @@ TEST(DBTest, HiddenValuesAreRemoved) {
     Put("pastfoo", "v");
     const Snapshot* snapshot = db_->GetSnapshot();
     Put("foo", "tiny");
-    Put("pastfoo2", "v2");        // Advance sequence number one more
+    Put("pastfoo2", "v2");  // Advance sequence number one more
 
     ASSERT_OK(dbfull()->TEST_CompactMemTable());
     ASSERT_GT(NumTableFilesAtLevel(0), 0);
@@ -1353,14 +1356,14 @@ TEST(DBTest, DeletionMarkers1) {
   Put("foo", "v1");
   ASSERT_OK(dbfull()->TEST_CompactMemTable());
   const int last = config::kMaxMemCompactLevel;
-  ASSERT_EQ(NumTableFilesAtLevel(last), 1);   // foo => v1 is now in last level
+  ASSERT_EQ(NumTableFilesAtLevel(last), 1);  // foo => v1 is now in last level
 
   // Place a table at level last-1 to prevent merging with preceding mutation
   Put("a", "begin");
   Put("z", "end");
   dbfull()->TEST_CompactMemTable();
   ASSERT_EQ(NumTableFilesAtLevel(last), 1);
-  ASSERT_EQ(NumTableFilesAtLevel(last-1), 1);
+  ASSERT_EQ(NumTableFilesAtLevel(last - 1), 1);
 
   Delete("foo");
   Put("foo", "v2");
@@ -1368,11 +1371,11 @@ TEST(DBTest, DeletionMarkers1) {
   ASSERT_OK(dbfull()->TEST_CompactMemTable());  // Moves to level last-2
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2, DEL, v1 ]");
   Slice z("z");
-  dbfull()->TEST_CompactRange(last-2, nullptr, &z);
+  dbfull()->TEST_CompactRange(last - 2, nullptr, &z);
   // DEL eliminated, but v1 remains because we aren't compacting that level
   // (DEL can be eliminated because v2 hides v1).
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2, v1 ]");
-  dbfull()->TEST_CompactRange(last-1, nullptr, nullptr);
+  dbfull()->TEST_CompactRange(last - 1, nullptr, nullptr);
   // Merging last-1 w/ last, so we are the base level for "foo", so
   // DEL is removed.  (as is v1).
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2 ]");
@@ -1382,23 +1385,23 @@ TEST(DBTest, DeletionMarkers2) {
   Put("foo", "v1");
   ASSERT_OK(dbfull()->TEST_CompactMemTable());
   const int last = config::kMaxMemCompactLevel;
-  ASSERT_EQ(NumTableFilesAtLevel(last), 1);   // foo => v1 is now in last level
+  ASSERT_EQ(NumTableFilesAtLevel(last), 1);  // foo => v1 is now in last level
 
   // Place a table at level last-1 to prevent merging with preceding mutation
   Put("a", "begin");
   Put("z", "end");
   dbfull()->TEST_CompactMemTable();
   ASSERT_EQ(NumTableFilesAtLevel(last), 1);
-  ASSERT_EQ(NumTableFilesAtLevel(last-1), 1);
+  ASSERT_EQ(NumTableFilesAtLevel(last - 1), 1);
 
   Delete("foo");
   ASSERT_EQ(AllEntriesFor("foo"), "[ DEL, v1 ]");
   ASSERT_OK(dbfull()->TEST_CompactMemTable());  // Moves to level last-2
   ASSERT_EQ(AllEntriesFor("foo"), "[ DEL, v1 ]");
-  dbfull()->TEST_CompactRange(last-2, nullptr, nullptr);
+  dbfull()->TEST_CompactRange(last - 2, nullptr, nullptr);
   // DEL kept: "last" file overlaps
   ASSERT_EQ(AllEntriesFor("foo"), "[ DEL, v1 ]");
-  dbfull()->TEST_CompactRange(last-1, nullptr, nullptr);
+  dbfull()->TEST_CompactRange(last - 1, nullptr, nullptr);
   // Merging last-1 w/ last, so we are the base level for "foo", so
   // DEL is removed.  (as is v1).
   ASSERT_EQ(AllEntriesFor("foo"), "[ ]");
@@ -1408,7 +1411,8 @@ TEST(DBTest, OverlapInLevel0) {
   do {
     ASSERT_EQ(config::kMaxMemCompactLevel, 2) << "Fix test to match config";
 
-    // Fill levels 1 and 2 to disable the pushing of new memtables to levels > 0.
+    // Fill levels 1 and 2 to disable the pushing of new memtables to levels >
+    // 0.
     ASSERT_OK(Put("100", "v100"));
     ASSERT_OK(Put("999", "v999"));
     dbfull()->TEST_CompactMemTable();
@@ -1500,14 +1504,14 @@ TEST(DBTest, Fflush_Issue474) {
 TEST(DBTest, ComparatorCheck) {
   class NewComparator : public Comparator {
    public:
-    virtual const char* Name() const { return "leveldb.NewComparator"; }
-    virtual int Compare(const Slice& a, const Slice& b) const {
+    const char* Name() const override { return "leveldb.NewComparator"; }
+    int Compare(const Slice& a, const Slice& b) const override {
       return BytewiseComparator()->Compare(a, b);
     }
-    virtual void FindShortestSeparator(std::string* s, const Slice& l) const {
+    void FindShortestSeparator(std::string* s, const Slice& l) const override {
       BytewiseComparator()->FindShortestSeparator(s, l);
     }
-    virtual void FindShortSuccessor(std::string* key) const {
+    void FindShortSuccessor(std::string* key) const override {
       BytewiseComparator()->FindShortSuccessor(key);
     }
   };
@@ -1523,21 +1527,22 @@ TEST(DBTest, ComparatorCheck) {
 TEST(DBTest, CustomComparator) {
   class NumberComparator : public Comparator {
    public:
-    virtual const char* Name() const { return "test.NumberComparator"; }
-    virtual int Compare(const Slice& a, const Slice& b) const {
+    const char* Name() const override { return "test.NumberComparator"; }
+    int Compare(const Slice& a, const Slice& b) const override {
       return ToNumber(a) - ToNumber(b);
     }
-    virtual void FindShortestSeparator(std::string* s, const Slice& l) const {
-      ToNumber(*s);     // Check format
-      ToNumber(l);      // Check format
+    void FindShortestSeparator(std::string* s, const Slice& l) const override {
+      ToNumber(*s);  // Check format
+      ToNumber(l);   // Check format
     }
-    virtual void FindShortSuccessor(std::string* key) const {
-      ToNumber(*key);   // Check format
+    void FindShortSuccessor(std::string* key) const override {
+      ToNumber(*key);  // Check format
     }
+
    private:
     static int ToNumber(const Slice& x) {
       // Check that there are no extra characters.
-      ASSERT_TRUE(x.size() >= 2 && x[0] == '[' && x[x.size()-1] == ']')
+      ASSERT_TRUE(x.size() >= 2 && x[0] == '[' && x[x.size() - 1] == ']')
           << EscapeString(x);
       int val;
       char ignored;
@@ -1550,7 +1555,7 @@ TEST(DBTest, CustomComparator) {
   Options new_options = CurrentOptions();
   new_options.create_if_missing = true;
   new_options.comparator = &cmp;
-  new_options.filter_policy = nullptr;     // Cannot use bloom filters
+  new_options.filter_policy = nullptr;   // Cannot use bloom filters
   new_options.write_buffer_size = 1000;  // Compact more often
   DestroyAndReopen(&new_options);
   ASSERT_OK(Put("[10]", "ten"));
@@ -1568,7 +1573,7 @@ TEST(DBTest, CustomComparator) {
   for (int run = 0; run < 2; run++) {
     for (int i = 0; i < 1000; i++) {
       char buf[100];
-      snprintf(buf, sizeof(buf), "[%d]", i*10);
+      snprintf(buf, sizeof(buf), "[%d]", i * 10);
       ASSERT_OK(Put(buf, buf));
     }
     Compact("[0]", "[1000000]");
@@ -1719,7 +1724,7 @@ TEST(DBTest, NoSpace) {
   // Force out-of-space errors.
   env_->no_space_.store(true, std::memory_order_release);
   for (int i = 0; i < 10; i++) {
-    for (int level = 0; level < config::kNumLevels-1; level++) {
+    for (int level = 0; level < config::kNumLevels - 1; level++) {
       dbfull()->TEST_CompactRange(level, nullptr, nullptr);
     }
   }
@@ -1789,9 +1794,8 @@ TEST(DBTest, ManifestWriteError) {
   // We iterate twice.  In the second iteration, everything is the
   // same except the log record never makes it to the MANIFEST file.
   for (int iter = 0; iter < 2; iter++) {
-    std::atomic<bool>* error_type = (iter == 0)
-        ? &env_->manifest_sync_error_
-        : &env_->manifest_write_error_;
+    std::atomic<bool>* error_type = (iter == 0) ? &env_->manifest_sync_error_
+                                                : &env_->manifest_write_error_;
 
     // Insert foo=>bar mapping
     Options options = CurrentOptions();
@@ -1806,7 +1810,7 @@ TEST(DBTest, ManifestWriteError) {
     dbfull()->TEST_CompactMemTable();
     ASSERT_EQ("bar", Get("foo"));
     const int last = config::kMaxMemCompactLevel;
-    ASSERT_EQ(NumTableFilesAtLevel(last), 1);   // foo=>bar is now in last level
+    ASSERT_EQ(NumTableFilesAtLevel(last), 1);  // foo=>bar is now in last level
 
     // Merging compaction (will fail)
     error_type->store(true, std::memory_order_release);
@@ -1834,8 +1838,7 @@ TEST(DBTest, MissingSSTFile) {
   options.paranoid_checks = true;
   Status s = TryReopen(&options);
   ASSERT_TRUE(!s.ok());
-  ASSERT_TRUE(s.ToString().find("issing") != std::string::npos)
-      << s.ToString();
+  ASSERT_TRUE(s.ToString().find("issing") != std::string::npos) << s.ToString();
 }
 
 TEST(DBTest, StillReadSST) {
@@ -1895,7 +1898,7 @@ TEST(DBTest, BloomFilter) {
   int reads = env_->random_read_counter_.Read();
   fprintf(stderr, "%d present => %d reads\n", N, reads);
   ASSERT_GE(reads, N);
-  ASSERT_LE(reads, N + 2*N/100);
+  ASSERT_LE(reads, N + 2 * N / 100);
 
   // Lookup present keys.  Should rarely read from either sstable.
   env_->random_read_counter_.Reset();
@@ -1904,7 +1907,7 @@ TEST(DBTest, BloomFilter) {
   }
   reads = env_->random_read_counter_.Read();
   fprintf(stderr, "%d missing => %d reads\n", N, reads);
-  ASSERT_LE(reads, 3*N/100);
+  ASSERT_LE(reads, 3 * N / 100);
 
   env_->delay_data_sync_.store(false, std::memory_order_release);
   Close();
@@ -1950,8 +1953,8 @@ static void MTThreadBody(void* arg) {
     if (rnd.OneIn(2)) {
       // Write values of the form <key, my id, counter>.
       // We add some padding for force compactions.
-      snprintf(valbuf, sizeof(valbuf), "%d.%d.%-1000d",
-               key, id, static_cast<int>(counter));
+      snprintf(valbuf, sizeof(valbuf), "%d.%d.%-1000d", key, id,
+               static_cast<int>(counter));
       ASSERT_OK(db->Put(WriteOptions(), Slice(keybuf), Slice(valbuf)));
     } else {
       // Read a value and verify that it matches the pattern written above.
@@ -2013,27 +2016,27 @@ namespace {
 typedef std::map<std::string, std::string> KVMap;
 }
 
-class ModelDB: public DB {
+class ModelDB : public DB {
  public:
   class ModelSnapshot : public Snapshot {
    public:
     KVMap map_;
   };
 
-  explicit ModelDB(const Options& options): options_(options) { }
-  ~ModelDB() { }
-  virtual Status Put(const WriteOptions& o, const Slice& k, const Slice& v) {
+  explicit ModelDB(const Options& options) : options_(options) {}
+  ~ModelDB() override = default;
+  Status Put(const WriteOptions& o, const Slice& k, const Slice& v) override {
     return DB::Put(o, k, v);
   }
-  virtual Status Delete(const WriteOptions& o, const Slice& key) {
+  Status Delete(const WriteOptions& o, const Slice& key) override {
     return DB::Delete(o, key);
   }
-  virtual Status Get(const ReadOptions& options,
-                     const Slice& key, std::string* value) {
-    assert(false);      // Not implemented
+  Status Get(const ReadOptions& options, const Slice& key,
+             std::string* value) override {
+    assert(false);  // Not implemented
     return Status::NotFound(key);
   }
-  virtual Iterator* NewIterator(const ReadOptions& options) {
+  Iterator* NewIterator(const ReadOptions& options) override {
     if (options.snapshot == nullptr) {
       KVMap* saved = new KVMap;
       *saved = map_;
@@ -2044,68 +2047,64 @@ class ModelDB: public DB {
       return new ModelIter(snapshot_state, false);
     }
   }
-  virtual const Snapshot* GetSnapshot() {
+  const Snapshot* GetSnapshot() override {
     ModelSnapshot* snapshot = new ModelSnapshot;
     snapshot->map_ = map_;
     return snapshot;
   }
 
-  virtual void ReleaseSnapshot(const Snapshot* snapshot) {
+  void ReleaseSnapshot(const Snapshot* snapshot) override {
     delete reinterpret_cast<const ModelSnapshot*>(snapshot);
   }
-  virtual Status Write(const WriteOptions& options, WriteBatch* batch) {
+  Status Write(const WriteOptions& options, WriteBatch* batch) override {
     class Handler : public WriteBatch::Handler {
      public:
       KVMap* map_;
-      virtual void Put(const Slice& key, const Slice& value) {
+      void Put(const Slice& key, const Slice& value) override {
         (*map_)[key.ToString()] = value.ToString();
       }
-      virtual void Delete(const Slice& key) {
-        map_->erase(key.ToString());
-      }
+      void Delete(const Slice& key) override { map_->erase(key.ToString()); }
     };
     Handler handler;
     handler.map_ = &map_;
     return batch->Iterate(&handler);
   }
 
-  virtual bool GetProperty(const Slice& property, std::string* value) {
+  bool GetProperty(const Slice& property, std::string* value) override {
     return false;
   }
-  virtual void GetApproximateSizes(const Range* r, int n, uint64_t* sizes) {
+  void GetApproximateSizes(const Range* r, int n, uint64_t* sizes) override {
     for (int i = 0; i < n; i++) {
       sizes[i] = 0;
     }
   }
-  virtual void CompactRange(const Slice* start, const Slice* end) {
-  }
+  void CompactRange(const Slice* start, const Slice* end) override {}
 
  private:
-  class ModelIter: public Iterator {
+  class ModelIter : public Iterator {
    public:
     ModelIter(const KVMap* map, bool owned)
-        : map_(map), owned_(owned), iter_(map_->end()) {
-    }
-    ~ModelIter() {
+        : map_(map), owned_(owned), iter_(map_->end()) {}
+    ~ModelIter() override {
       if (owned_) delete map_;
     }
-    virtual bool Valid() const { return iter_ != map_->end(); }
-    virtual void SeekToFirst() { iter_ = map_->begin(); }
-    virtual void SeekToLast() {
+    bool Valid() const override { return iter_ != map_->end(); }
+    void SeekToFirst() override { iter_ = map_->begin(); }
+    void SeekToLast() override {
       if (map_->empty()) {
         iter_ = map_->end();
       } else {
         iter_ = map_->find(map_->rbegin()->first);
       }
     }
-    virtual void Seek(const Slice& k) {
+    void Seek(const Slice& k) override {
       iter_ = map_->lower_bound(k.ToString());
     }
-    virtual void Next() { ++iter_; }
-    virtual void Prev() { --iter_; }
-    virtual Slice key() const { return iter_->first; }
-    virtual Slice value() const { return iter_->second; }
-    virtual Status status() const { return Status::OK(); }
+    void Next() override { ++iter_; }
+    void Prev() override { --iter_; }
+    Slice key() const override { return iter_->first; }
+    Slice value() const override { return iter_->second; }
+    Status status() const override { return Status::OK(); }
 
    private:
     const KVMap* const map_;
@@ -2116,9 +2115,7 @@ class ModelDB: public DB {
   KVMap map_;
 };
 
-static bool CompareIterators(int step,
-                             DB* model,
-                             DB* db,
+static bool CompareIterators(int step, DB* model, DB* db,
                              const Snapshot* model_snap,
                              const Snapshot* db_snap) {
   ReadOptions options;
@@ -2129,12 +2126,10 @@ static bool CompareIterators(int step,
   bool ok = true;
   int count = 0;
   for (miter->SeekToFirst(), dbiter->SeekToFirst();
-       ok && miter->Valid() && dbiter->Valid();
-       miter->Next(), dbiter->Next()) {
+       ok && miter->Valid() && dbiter->Valid(); miter->Next(), dbiter->Next()) {
     count++;
     if (miter->key().compare(dbiter->key()) != 0) {
-      fprintf(stderr, "step %d: Key mismatch: '%s' vs. '%s'\n",
-              step,
+      fprintf(stderr, "step %d: Key mismatch: '%s' vs. '%s'\n", step,
               EscapeString(miter->key()).c_str(),
               EscapeString(dbiter->key()).c_str());
       ok = false;
@@ -2143,8 +2138,7 @@ static bool CompareIterators(int step,
 
     if (miter->value().compare(dbiter->value()) != 0) {
       fprintf(stderr, "step %d: Value mismatch for key '%s': '%s' vs. '%s'\n",
-              step,
-              EscapeString(miter->key()).c_str(),
+              step, EscapeString(miter->key()).c_str(),
               EscapeString(miter->value()).c_str(),
               EscapeString(miter->value()).c_str());
       ok = false;
@@ -2178,22 +2172,19 @@ TEST(DBTest, Randomized) {
       }
       // TODO(sanjay): Test Get() works
       int p = rnd.Uniform(100);
-      if (p < 45) {                               // Put
+      if (p < 45) {  // Put
         k = RandomKey(&rnd);
-        v = RandomString(&rnd,
-                         rnd.OneIn(20)
-                         ? 100 + rnd.Uniform(100)
-                         : rnd.Uniform(8));
+        v = RandomString(
+            &rnd, rnd.OneIn(20) ? 100 + rnd.Uniform(100) : rnd.Uniform(8));
         ASSERT_OK(model.Put(WriteOptions(), k, v));
         ASSERT_OK(db_->Put(WriteOptions(), k, v));
 
-      } else if (p < 90) {                        // Delete
+      } else if (p < 90) {  // Delete
         k = RandomKey(&rnd);
         ASSERT_OK(model.Delete(WriteOptions(), k));
         ASSERT_OK(db_->Delete(WriteOptions(), k));
 
-
-      } else {                                    // Multi-element batch
+      } else {  // Multi-element batch
         WriteBatch b;
         const int num = rnd.Uniform(8);
         for (int i = 0; i < num; i++) {
@@ -2268,8 +2259,8 @@ void BM_LogAndApply(int iters, int num_base_files) {
   VersionEdit vbase;
   uint64_t fnum = 1;
   for (int i = 0; i < num_base_files; i++) {
-    InternalKey start(MakeKey(2*fnum), 1, kTypeValue);
-    InternalKey limit(MakeKey(2*fnum+1), 1, kTypeDeletion);
+    InternalKey start(MakeKey(2 * fnum), 1, kTypeValue);
+    InternalKey limit(MakeKey(2 * fnum + 1), 1, kTypeDeletion);
     vbase.AddFile(2, fnum++, 1 /* file size */, start, limit);
   }
   ASSERT_OK(vset.LogAndApply(&vbase, &mu));
@@ -2279,8 +2270,8 @@ void BM_LogAndApply(int iters, int num_base_files) {
   for (int i = 0; i < iters; i++) {
     VersionEdit vedit;
     vedit.DeleteFile(2, fnum);
-    InternalKey start(MakeKey(2*fnum), 1, kTypeValue);
-    InternalKey limit(MakeKey(2*fnum+1), 1, kTypeDeletion);
+    InternalKey start(MakeKey(2 * fnum), 1, kTypeValue);
+    InternalKey limit(MakeKey(2 * fnum + 1), 1, kTypeDeletion);
     vedit.AddFile(2, fnum++, 1 /* file size */, start, limit);
     vset.LogAndApply(&vedit, &mu);
   }
@@ -2289,8 +2280,8 @@ void BM_LogAndApply(int iters, int num_base_files) {
   char buf[16];
   snprintf(buf, sizeof(buf), "%d", num_base_files);
   fprintf(stderr,
-          "BM_LogAndApply/%-6s   %8d iters : %9u us (%7.0f us / iter)\n",
-          buf, iters, us, ((float)us) / iters);
+          "BM_LogAndApply/%-6s   %8d iters : %9u us (%7.0f us / iter)\n", buf,
+          iters, us, ((float)us) / iters);
 }
 
 }  // namespace leveldb

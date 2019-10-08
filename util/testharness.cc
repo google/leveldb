@@ -23,7 +23,7 @@ struct Test {
   void (*func)();
 };
 std::vector<Test>* tests;
-}
+}  // namespace
 
 bool RegisterTest(const char* base, const char* name, void (*func)()) {
   if (tests == nullptr) {

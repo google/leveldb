@@ -16,6 +16,10 @@ namespace leveldb {
 class Arena {
  public:
   Arena();
+
+  Arena(const Arena&) = delete;
+  Arena& operator=(const Arena&) = delete;
+
   ~Arena();
 
   // Return a pointer to a newly allocated memory block of "bytes" bytes.
@@ -46,10 +50,6 @@ class Arena {
   // TODO(costan): This member is accessed via atomics, but the others are
   //               accessed without any locking. Is this OK?
   std::atomic<size_t> memory_usage_;
-
-  // No copying allowed
-  Arena(const Arena&);
-  void operator=(const Arena&);
 };
 
 inline char* Arena::Allocate(size_t bytes) {

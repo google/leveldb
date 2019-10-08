@@ -44,20 +44,20 @@ cmake -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
 
 First generate the Visual Studio 2017 project/solution files:
 
-```bash
-mkdir -p build
+```cmd
+mkdir build
 cd build
 cmake -G "Visual Studio 15" ..
 ```
 The default default will build for x86. For 64-bit run:
 
-```bash
+```cmd
 cmake -G "Visual Studio 15 Win64" ..
 ```
 
 To compile the Windows solution from the command-line:
 
-```bash
+```cmd
 devenv /build Debug leveldb.sln
 ```
 
@@ -85,6 +85,14 @@ Contribution requirements:
 
 3. **Tests**: All changes must be accompanied by a new (or changed) test, or
    a sufficient explanation as to why a new (or changed) test is not required.
+
+4. **Consistent Style**: This project conforms to the
+   [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+   To ensure your changes are properly formatted please run:
+
+   ```
+   clang-format -i --style=file <file>
+   ```
 
 ## Submitting a Pull Request
 
@@ -181,37 +189,37 @@ uncompressed blocks in memory, the read performance improves again:
 See [doc/index.md](doc/index.md) for more explanation. See
 [doc/impl.md](doc/impl.md) for a brief overview of the implementation.
 
-The public interface is in include/*.h.  Callers should not include or
+The public interface is in include/leveldb/*.h.  Callers should not include or
 rely on the details of any other header files in this package.  Those
 internal APIs may be changed without warning.
 
 Guide to header files:
 
-* **include/db.h**: Main interface to the DB: Start here
+* **include/leveldb/db.h**: Main interface to the DB: Start here.
 
-* **include/options.h**: Control over the behavior of an entire database,
+* **include/leveldb/options.h**: Control over the behavior of an entire database,
 and also control over the behavior of individual reads and writes.
 
-* **include/comparator.h**: Abstraction for user-specified comparison function.
+* **include/leveldb/comparator.h**: Abstraction for user-specified comparison function.
 If you want just bytewise comparison of keys, you can use the default
 comparator, but clients can write their own comparator implementations if they
-want custom ordering (e.g. to handle different character encodings, etc.)
+want custom ordering (e.g. to handle different character encodings, etc.).
 
-* **include/iterator.h**: Interface for iterating over data. You can get
+* **include/leveldb/iterator.h**: Interface for iterating over data. You can get
 an iterator from a DB object.
 
-* **include/write_batch.h**: Interface for atomically applying multiple
+* **include/leveldb/write_batch.h**: Interface for atomically applying multiple
 updates to a database.
 
-* **include/slice.h**: A simple module for maintaining a pointer and a
+* **include/leveldb/slice.h**: A simple module for maintaining a pointer and a
 length into some other byte array.
 
-* **include/status.h**: Status is returned from many of the public interfaces
+* **include/leveldb/status.h**: Status is returned from many of the public interfaces
 and is used to report success and various kinds of errors.
 
-* **include/env.h**:
+* **include/leveldb/env.h**:
 Abstraction of the OS environment.  A posix implementation of this interface is
-in util/env_posix.cc
+in util/env_posix.cc.
 
-* **include/table.h, include/table_builder.h**: Lower-level modules that most
-clients probably won't use directly
+* **include/leveldb/table.h, include/leveldb/table_builder.h**: Lower-level modules that most
+clients probably won't use directly.
