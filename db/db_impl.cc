@@ -1213,9 +1213,9 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   uint64_t last_sequence = versions_->LastSequence();
   Writer* last_writer = &w;
   if (status.ok() && updates != nullptr) {  // nullptr batch is for compactions
-    WriteBatch* updates = BuildBatchGroup(&last_writer);
-    WriteBatchInternal::SetSequence(updates, last_sequence + 1);
-    last_sequence += WriteBatchInternal::Count(updates);
+    WriteBatch* write_batch = BuildBatchGroup(&last_writer);
+    WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);
+    last_sequence += WriteBatchInternal::Count(write_batch);
 
     // Add to log and apply to memtable.  We can release the lock
     // during this phase since &w is currently responsible for logging
@@ -1223,7 +1223,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     // into mem_.
     {
       mutex_.Unlock();
-      status = log_->AddRecord(WriteBatchInternal::Contents(updates));
+      status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));
       bool sync_error = false;
       if (status.ok() && options.sync) {
         status = logfile_->Sync();
@@ -1232,7 +1232,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
         }
       }
       if (status.ok()) {
-        status = WriteBatchInternal::InsertInto(updates, mem_);
+        status = WriteBatchInternal::InsertInto(write_batch, mem_);
       }
       mutex_.Lock();
       if (sync_error) {
@@ -1242,7 +1242,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
         RecordBackgroundError(status);
       }
     }
-    if (updates == tmp_batch_) tmp_batch_->Clear();
+    if (write_batch == tmp_batch_) tmp_batch_->Clear();
 
     versions_->SetLastSequence(last_sequence);
   }
