@@ -106,6 +106,9 @@ if(BUILD_SHARED_LIBS)
   add_compile_options(-fvisibility=hidden)
 endif(BUILD_SHARED_LIBS)
 
+# Must be included before CMAKE_INSTALL_INCLUDEDIR is used.
+include(GNUInstallDirs)
+
 add_library(leveldb "")
 target_sources(leveldb
   PRIVATE
@@ -417,7 +420,6 @@ int main() {
 endif(LEVELDB_BUILD_BENCHMARKS)
 
 if(LEVELDB_INSTALL)
-  include(GNUInstallDirs)
   install(TARGETS leveldb
     EXPORT leveldbTargets
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
