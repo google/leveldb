@@ -443,23 +443,28 @@ if(LEVELDB_INSTALL)
       "${LEVELDB_PUBLIC_INCLUDE_DIR}/table_builder.h"
       "${LEVELDB_PUBLIC_INCLUDE_DIR}/table.h"
       "${LEVELDB_PUBLIC_INCLUDE_DIR}/write_batch.h"
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/leveldb
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/leveldb"
   )
 
   include(CMakePackageConfigHelpers)
+  configure_package_config_file(
+    "cmake/${PROJECT_NAME}Config.cmake.in"
+    "${PROJECT_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
+  )
   write_basic_package_version_file(
-      "${PROJECT_BINARY_DIR}/leveldbConfigVersion.cmake"
-      COMPATIBILITY SameMajorVersion
+    "${PROJECT_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake"
+    COMPATIBILITY SameMajorVersion
   )
   install(
     EXPORT leveldbTargets
     NAMESPACE leveldb::
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/leveldb"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   )
   install(
     FILES
-      "cmake/leveldbConfig.cmake"
-      "${PROJECT_BINARY_DIR}/leveldbConfigVersion.cmake"
-    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/leveldb"
+      "${PROJECT_BINARY_DIR}/cmake/${PROJECT_NAME}Config.cmake"
+      "${PROJECT_BINARY_DIR}/cmake/${PROJECT_NAME}ConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}"
   )
 endif(LEVELDB_INSTALL)
