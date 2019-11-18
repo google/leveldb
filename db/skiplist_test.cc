@@ -10,10 +10,12 @@
 #include "leveldb/env.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 #include "util/arena.h"
 #include "util/hash.h"
 #include "util/random.h"
-#include "util/testharness.h"
+#include "util/testutil.h"
+
 
 namespace leveldb {
 
@@ -30,8 +32,6 @@ struct Comparator {
     }
   }
 };
-
-class SkipTest {};
 
 TEST(SkipTest, Empty) {
   Arena arena;
@@ -366,4 +366,7 @@ TEST(SkipTest, Concurrent5) { RunConcurrent(5); }
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

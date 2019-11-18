@@ -22,7 +22,7 @@
 #include "port/thread_annotations.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -300,7 +300,7 @@ void FaultInjectionTestEnv::UntrackFile(const std::string& f) {
 
 Status FaultInjectionTestEnv::DeleteFile(const std::string& f) {
   Status s = EnvWrapper::DeleteFile(f);
-  ASSERT_OK(s);
+  EXPECT_OK(s);
   if (s.ok()) {
     UntrackFile(f);
   }
@@ -361,7 +361,7 @@ Status FileState::DropUnsyncedData() const {
   return Truncate(filename_, sync_pos);
 }
 
-class FaultInjectionTest {
+class FaultInjectionTest : public testing::Test {
  public:
   enum ExpectedVerifResult { VAL_EXPECT_NO_ERROR, VAL_EXPECT_ERROR };
   enum ResetMethod { RESET_DROP_UNSYNCED_DATA, RESET_DELETE_UNSYNCED_FILES };
@@ -376,7 +376,7 @@ class FaultInjectionTest {
       : env_(new FaultInjectionTestEnv),
         tiny_cache_(NewLRUCache(100)),
         db_(nullptr) {
-    dbname_ = test::TmpDir() + "/fault_test";
+    dbname_ = testing::TempDir() + "fault_test";
     DestroyDB(dbname_, Options());  // Destroy any db from earlier run
     options_.reuse_logs = true;
     options_.env = env_;
@@ -424,7 +424,7 @@ class FaultInjectionTest {
       s = ReadValue(i, &val);
       if (expected == VAL_EXPECT_NO_ERROR) {
         if (s.ok()) {
-          ASSERT_EQ(value_space, val);
+          EXPECT_EQ(value_space, val);
         }
       } else if (s.ok()) {
         fprintf(stderr, "Expected an error at %d, but was OK\n", i);
@@ -536,16 +536,19 @@ class FaultInjectionTest {
   }
 };
 
-TEST(FaultInjectionTest, FaultTestNoLogReuse) {
+TEST_F(FaultInjectionTest, FaultTestNoLogReuse) {
   ReuseLogs(false);
   DoTest();
 }
 
-TEST(FaultInjectionTest, FaultTestWithLogReuse) {
+TEST_F(FaultInjectionTest, FaultTestWithLogReuse) {
   ReuseLogs(true);
   DoTest();
 }
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

@@ -5,14 +5,15 @@
 #include "leveldb/env.h"
 
 #include "port/port.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 #include "util/env_windows_test_helper.h"
-#include "util/testharness.h"
+#include "util/testutil.h"
 
 namespace leveldb {
 
 static const int kMMapLimit = 4;
 
-class EnvWindowsTest {
+class EnvWindowsTest : public testing::Test {
  public:
   static void SetFileLimits(int mmap_limit) {
     EnvWindowsTestHelper::SetReadOnlyMMapLimit(mmap_limit);
@@ -23,7 +24,7 @@ class EnvWindowsTest {
   Env* env_;
 };
 
-TEST(EnvWindowsTest, TestOpenOnRead) {
+TEST_F(EnvWindowsTest, TestOpenOnRead) {
   // Write some test data to a single file that will be opened |n| times.
   std::string test_dir;
   ASSERT_OK(env_->GetTestDirectory(&test_dir));
@@ -60,5 +61,6 @@ TEST(EnvWindowsTest, TestOpenOnRead) {
 int main(int argc, char** argv) {
   // All tests currently run with the same read-only file limits.
   leveldb::EnvWindowsTest::SetFileLimits(leveldb::kMMapLimit);
-  return leveldb::test::RunAllTests();
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

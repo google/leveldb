@@ -8,10 +8,24 @@
 #include "helpers/memenv/memenv.h"
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "third_party/googletest/googlemock/include/gmock/gmock.h"
 #include "util/random.h"
 
 namespace leveldb {
 namespace test {
+
+MATCHER(IsOK, "") { return arg.ok(); }
+
+// Macros for testing the results of functions that return util::Status or
+// util::StatusOr<T> (for any type T).
+#define EXPECT_OK(expression) EXPECT_THAT(expression, leveldb::test::IsOK())
+#define ASSERT_OK(expression) ASSERT_THAT(expression, leveldb::test::IsOK())
+
+// Returns the random seed used at the start of the current test run.
+inline int RandomSeed() {
+  return testing::UnitTest::GetInstance()->random_seed();
+}
 
 // Store in *dst a random string of length "len" and return a Slice that
 // references the generated data.

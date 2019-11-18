@@ -13,14 +13,15 @@
 #include "leveldb/table.h"
 #include "leveldb/write_batch.h"
 #include "util/logging.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "third_party/googletest/googlemock/include/gmock/gmock.h"
 #include "util/testutil.h"
 
 namespace leveldb {
 
 static const int kValueSize = 1000;
 
-class CorruptionTest {
+class CorruptionTest : public testing::Test {
  public:
   CorruptionTest()
       : db_(nullptr),
@@ -189,7 +190,7 @@ class CorruptionTest {
   Cache* tiny_cache_;
 };
 
-TEST(CorruptionTest, Recovery) {
+TEST_F(CorruptionTest, Recovery) {
   Build(100);
   Check(100, 100);
   Corrupt(kLogFile, 19, 1);  // WriteBatch tag for first record
@@ -200,13 +201,13 @@ TEST(CorruptionTest, Recovery) {
   Check(36, 36);
 }
 
-TEST(CorruptionTest, RecoverWriteError) {
+TEST_F(CorruptionTest, RecoverWriteError) {
   env_.writable_file_error_ = true;
   Status s = TryReopen();
   ASSERT_TRUE(!s.ok());
 }
 
-TEST(CorruptionTest, NewFileErrorDuringWrite) {
+TEST_F(CorruptionTest, NewFileErrorDuringWrite) {
   // Do enough writing to force minor compaction
   env_.writable_file_error_ = true;
   const int num = 3 + (Options().write_buffer_size / kValueSize);
@@ -223,7 +224,7 @@ TEST(CorruptionTest, NewFileErrorDuringWrite) {
   Reopen();
 }
 
-TEST(CorruptionTest, TableFile) {
+TEST_F(CorruptionTest, TableFile) {
   Build(100);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
@@ -234,7 +235,7 @@ TEST(CorruptionTest, TableFile) {
   Check(90, 99);
 }
 
-TEST(CorruptionTest, TableFileRepair) {
+TEST_F(CorruptionTest, TableFileRepair) {
   options_.block_size = 2 * kValueSize;  // Limit scope of corruption
   options_.paranoid_checks = true;
   Reopen();
@@ -250,7 +251,7 @@ TEST(CorruptionTest, TableFileRepair) {
   Check(95, 99);
 }
 
-TEST(CorruptionTest, TableFileIndexData) {
+TEST_F(CorruptionTest, TableFileIndexData) {
   Build(10000);  // Enough to build multiple Tables
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
@@ -260,14 +261,14 @@ TEST(CorruptionTest, TableFileIndexData) {
   Check(5000, 9999);
 }
 
-TEST(CorruptionTest, MissingDescriptor) {
+TEST_F(CorruptionTest, MissingDescriptor) {
   Build(1000);
   RepairDB();
   Reopen();
   Check(1000, 1000);
 }
 
-TEST(CorruptionTest, SequenceNumberRecovery) {
+TEST_F(CorruptionTest, SequenceNumberRecovery) {
   ASSERT_OK(db_->Put(WriteOptions(), "foo", "v1"));
   ASSERT_OK(db_->Put(WriteOptions(), "foo", "v2"));
   ASSERT_OK(db_->Put(WriteOptions(), "foo", "v3"));
@@ -288,7 +289,7 @@ TEST(CorruptionTest, SequenceNumberRecovery) {
   ASSERT_EQ("v6", v);
 }
 
-TEST(CorruptionTest, CorruptedDescriptor) {
+TEST_F(CorruptionTest, CorruptedDescriptor) {
   ASSERT_OK(db_->Put(WriteOptions(), "foo", "hello"));
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
@@ -305,7 +306,7 @@ TEST(CorruptionTest, CorruptedDescriptor) {
   ASSERT_EQ("hello", v);
 }
 
-TEST(CorruptionTest, CompactionInputError) {
+TEST_F(CorruptionTest, CompactionInputError) {
   Build(10);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
@@ -320,7 +321,7 @@ TEST(CorruptionTest, CompactionInputError) {
   Check(10000, 10000);
 }
 
-TEST(CorruptionTest, CompactionInputErrorParanoid) {
+TEST_F(CorruptionTest, CompactionInputErrorParanoid) {
   options_.paranoid_checks = true;
   options_.write_buffer_size = 512 << 10;
   Reopen();
@@ -341,7 +342,7 @@ TEST(CorruptionTest, CompactionInputErrorParanoid) {
   ASSERT_TRUE(!s.ok()) << "write did not fail in corrupted paranoid db";
 }
 
-TEST(CorruptionTest, UnrelatedKeys) {
+TEST_F(CorruptionTest, UnrelatedKeys) {
   Build(10);
   DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
   dbi->TEST_CompactMemTable();
@@ -359,4 +360,7 @@ TEST(CorruptionTest, UnrelatedKeys) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

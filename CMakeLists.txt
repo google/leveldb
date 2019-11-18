@@ -84,6 +84,16 @@ endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 include(CheckCXXCompilerFlag)
 check_cxx_compiler_flag(-Wthread-safety HAVE_CLANG_THREAD_SAFETY)
 
+# Used by glog.
+check_cxx_compiler_flag(-Wno-deprecated LEVELDB_HAVE_NO_DEPRECATED)
+# Used by glog.
+check_cxx_compiler_flag(-Wno-sign-compare LEVELDB_HAVE_NO_SIGN_COMPARE)
+# Used by glog.
+check_cxx_compiler_flag(-Wno-unused-parameter LEVELDB_HAVE_NO_UNUSED_PARAMETER)
+# Used by googletest.
+check_cxx_compiler_flag(-Wno-missing-field-initializers
+                        LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+
 include(CheckCXXSourceCompiles)
 
 # Test whether C++17 __has_include is available.
@@ -288,6 +298,23 @@ target_link_libraries(leveldbutil leveldb)
 if(LEVELDB_BUILD_TESTS)
   enable_testing()
 
+  # Prevent overriding the parent project's compiler/linker settings on Windows.
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  set(install_gtest OFF)
+  set(install_gmock OFF)
+  set(build_gmock ON)
+
+  # This project is tested using GoogleTest.
+  add_subdirectory("third_party/googletest")
+
+  # GoogleTest triggers a missing field initializers warning.
+  if(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+    set_property(TARGET gtest
+        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+    set_property(TARGET gmock
+        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+  endif(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+
   function(leveldb_test test_file)
     get_filename_component(test_target_name "${test_file}" NAME_WE)
 
@@ -295,14 +322,12 @@ if(LEVELDB_BUILD_TESTS)
     target_sources("${test_target_name}"
       PRIVATE
         "${PROJECT_BINARY_DIR}/${LEVELDB_PORT_CONFIG_DIR}/port_config.h"
-        "util/testharness.cc"
-        "util/testharness.h"
         "util/testutil.cc"
         "util/testutil.h"
 
         "${test_file}"
     )
-    target_link_libraries("${test_target_name}" leveldb)
+    target_link_libraries("${test_target_name}" leveldb gmock gtest)
     target_compile_definitions("${test_target_name}"
       PRIVATE
         ${LEVELDB_PLATFORM_NAME}=1
@@ -374,14 +399,12 @@ if(LEVELDB_BUILD_BENCHMARKS)
         "${PROJECT_BINARY_DIR}/${LEVELDB_PORT_CONFIG_DIR}/port_config.h"
         "util/histogram.cc"
         "util/histogram.h"
-        "util/testharness.cc"
-        "util/testharness.h"
         "util/testutil.cc"
         "util/testutil.h"
 
         "${bench_file}"
     )
-    target_link_libraries("${bench_target_name}" leveldb)
+    target_link_libraries("${bench_target_name}" leveldb gmock gtest)
     target_compile_definitions("${bench_target_name}"
       PRIVATE
         ${LEVELDB_PLATFORM_NAME}=1

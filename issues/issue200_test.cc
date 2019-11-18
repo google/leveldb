@@ -7,15 +7,14 @@
 // mutation has been added just before the current key.
 
 #include "leveldb/db.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "util/testutil.h"
 
 namespace leveldb {
 
-class Issue200 {};
-
 TEST(Issue200, Test) {
   // Get rid of any state from an old run.
-  std::string dbpath = test::TmpDir() + "/leveldb_issue200_test";
+  std::string dbpath = testing::TempDir() + "leveldb_issue200_test";
   DestroyDB(dbpath, Options());
 
   DB* db;
@@ -54,4 +53,7 @@ TEST(Issue200, Test) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

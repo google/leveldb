@@ -9,21 +9,21 @@
 #include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/mutexlock.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 #include "util/testutil.h"
 
 namespace leveldb {
 
 static const int kDelayMicros = 100000;
 
-class EnvTest {
+class EnvTest : public testing::Test {
  public:
   EnvTest() : env_(Env::Default()) {}
 
   Env* env_;
 };
 
-TEST(EnvTest, ReadWrite) {
+TEST_F(EnvTest, ReadWrite) {
   Random rnd(test::RandomSeed());
 
   // Get file to use for testing.
@@ -70,7 +70,7 @@ TEST(EnvTest, ReadWrite) {
   delete sequential_file;
 }
 
-TEST(EnvTest, RunImmediately) {
+TEST_F(EnvTest, RunImmediately) {
   struct RunState {
     port::Mutex mu;
     port::CondVar cvar{&mu};
@@ -94,7 +94,7 @@ TEST(EnvTest, RunImmediately) {
   }
 }
 
-TEST(EnvTest, RunMany) {
+TEST_F(EnvTest, RunMany) {
   struct RunState {
     port::Mutex mu;
     port::CondVar cvar{&mu};
@@ -153,7 +153,7 @@ static void ThreadBody(void* arg) {
   s->mu.Unlock();
 }
 
-TEST(EnvTest, StartThread) {
+TEST_F(EnvTest, StartThread) {
   State state(0, 3);
   for (int i = 0; i < 3; i++) {
     env_->StartThread(&ThreadBody, &state);
@@ -166,7 +166,7 @@ TEST(EnvTest, StartThread) {
   ASSERT_EQ(state.val, 3);
 }
 
-TEST(EnvTest, TestOpenNonExistentFile) {
+TEST_F(EnvTest, TestOpenNonExistentFile) {
   // Write some test data to a single file that will be opened |n| times.
   std::string test_dir;
   ASSERT_OK(env_->GetTestDirectory(&test_dir));
@@ -184,7 +184,7 @@ TEST(EnvTest, TestOpenNonExistentFile) {
   ASSERT_TRUE(status.IsNotFound());
 }
 
-TEST(EnvTest, ReopenWritableFile) {
+TEST_F(EnvTest, ReopenWritableFile) {
   std::string test_dir;
   ASSERT_OK(env_->GetTestDirectory(&test_dir));
   std::string test_file_name = test_dir + "/reopen_writable_file.txt";
@@ -208,7 +208,7 @@ TEST(EnvTest, ReopenWritableFile) {
   env_->DeleteFile(test_file_name);
 }
 
-TEST(EnvTest, ReopenAppendableFile) {
+TEST_F(EnvTest, ReopenAppendableFile) {
   std::string test_dir;
   ASSERT_OK(env_->GetTestDirectory(&test_dir));
   std::string test_file_name = test_dir + "/reopen_appendable_file.txt";
@@ -234,4 +234,5 @@ TEST(EnvTest, ReopenAppendableFile) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {   testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();}

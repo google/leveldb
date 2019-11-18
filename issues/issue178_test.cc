@@ -9,7 +9,8 @@
 
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "util/testutil.h"
 
 namespace {
 
@@ -23,11 +24,9 @@ std::string Key1(int i) {
 
 std::string Key2(int i) { return Key1(i) + "_xxx"; }
 
-class Issue178 {};
-
 TEST(Issue178, Test) {
   // Get rid of any state from an old run.
-  std::string dbpath = leveldb::test::TmpDir() + "/leveldb_cbug_test";
+  std::string dbpath = testing::TempDir() + "leveldb_cbug_test";
   DestroyDB(dbpath, leveldb::Options());
 
   // Open database.  Disable compression since it affects the creation
@@ -85,4 +84,7 @@ TEST(Issue178, Test) {
 
 }  // anonymous namespace
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

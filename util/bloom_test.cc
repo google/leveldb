@@ -4,9 +4,9 @@
 
 #include "leveldb/filter_policy.h"
 
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 #include "util/coding.h"
 #include "util/logging.h"
-#include "util/testharness.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -18,7 +18,7 @@ static Slice Key(int i, char* buffer) {
   return Slice(buffer, sizeof(uint32_t));
 }
 
-class BloomTest {
+class BloomTest : public testing::Test {
  public:
   BloomTest() : policy_(NewBloomFilterPolicy(10)) {}
 
@@ -80,12 +80,12 @@ class BloomTest {
   std::vector<std::string> keys_;
 };
 
-TEST(BloomTest, EmptyFilter) {
+TEST_F(BloomTest, EmptyFilter) {
   ASSERT_TRUE(!Matches("hello"));
   ASSERT_TRUE(!Matches("world"));
 }
 
-TEST(BloomTest, Small) {
+TEST_F(BloomTest, Small) {
   Add("hello");
   Add("world");
   ASSERT_TRUE(Matches("hello"));
@@ -107,7 +107,7 @@ static int NextLength(int length) {
   return length;
 }
 
-TEST(BloomTest, VaryingLengths) {
+TEST_F(BloomTest, VaryingLengths) {
   char buffer[sizeof(int)];
 
   // Count number of filters that significantly exceed the false positive rate
@@ -153,4 +153,7 @@ TEST(BloomTest, VaryingLengths) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

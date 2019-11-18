@@ -5,21 +5,21 @@
 #include "db/db_impl.h"
 #include "leveldb/cache.h"
 #include "leveldb/db.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 #include "util/testutil.h"
 
 namespace leveldb {
 
-class AutoCompactTest {
+class AutoCompactTest : public testing::Test {
  public:
   AutoCompactTest() {
-    dbname_ = test::TmpDir() + "/autocompact_test";
+    dbname_ = testing::TempDir() + "autocompact_test";
     tiny_cache_ = NewLRUCache(100);
     options_.block_cache = tiny_cache_;
     DestroyDB(dbname_, options_);
     options_.create_if_missing = true;
     options_.compression = kNoCompression;
-    ASSERT_OK(DB::Open(options_, dbname_, &db_));
+    EXPECT_OK(DB::Open(options_, dbname_, &db_));
   }
 
   ~AutoCompactTest() {
@@ -103,10 +103,13 @@ void AutoCompactTest::DoReads(int n) {
   ASSERT_GE(final_other_size, initial_other_size / 5 - 1048576);
 }
 
-TEST(AutoCompactTest, ReadAll) { DoReads(kCount); }
+TEST_F(AutoCompactTest, ReadAll) { DoReads(kCount); }
 
-TEST(AutoCompactTest, ReadHalf) { DoReads(kCount / 2); }
+TEST_F(AutoCompactTest, ReadHalf) { DoReads(kCount / 2); }
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

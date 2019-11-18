@@ -8,7 +8,7 @@
 #include "db/write_batch_internal.h"
 #include "leveldb/env.h"
 #include "util/logging.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 
 namespace leveldb {
 
@@ -22,7 +22,7 @@ static std::string PrintContents(WriteBatch* b) {
   Iterator* iter = mem->NewIterator();
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     ParsedInternalKey ikey;
-    ASSERT_TRUE(ParseInternalKey(iter->key(), &ikey));
+    EXPECT_TRUE(ParseInternalKey(iter->key(), &ikey));
     switch (ikey.type) {
       case kTypeValue:
         state.append("Put(");
@@ -51,8 +51,6 @@ static std::string PrintContents(WriteBatch* b) {
   mem->Unref();
   return state;
 }
-
-class WriteBatchTest {};
 
 TEST(WriteBatchTest, Empty) {
   WriteBatch batch;
@@ -134,4 +132,7 @@ TEST(WriteBatchTest, ApproximateSize) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

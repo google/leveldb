@@ -11,7 +11,8 @@
 
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "util/testutil.h"
 
 namespace leveldb {
 
@@ -37,8 +38,6 @@ std::string CreateRandomString(int32_t index) {
 
 }  // namespace
 
-class Issue320 {};
-
 TEST(Issue320, Test) {
   std::srand(0);
 
@@ -53,7 +52,7 @@ TEST(Issue320, Test) {
   Options options;
   options.create_if_missing = true;
 
-  std::string dbpath = test::TmpDir() + "/leveldb_issue320_test";
+  std::string dbpath = testing::TempDir() + "leveldb_issue320_test";
   ASSERT_OK(DB::Open(options, dbpath, &db));
 
   uint32_t target_size = 10000;
@@ -125,4 +124,7 @@ TEST(Issue320, Test) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

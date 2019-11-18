@@ -7,7 +7,7 @@
 
 #include "leveldb/slice.h"
 #include "util/logging.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 
 namespace leveldb {
 
@@ -140,4 +140,5 @@ TEST(Logging, ConsumeDecimalNumberNoDigits) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {   testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();}

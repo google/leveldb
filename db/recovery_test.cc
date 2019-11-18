@@ -10,15 +10,15 @@
 #include "leveldb/env.h"
 #include "leveldb/write_batch.h"
 #include "util/logging.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 #include "util/testutil.h"
 
 namespace leveldb {
 
-class RecoveryTest {
+class RecoveryTest : public testing::Test {
  public:
   RecoveryTest() : env_(Env::Default()), db_(nullptr) {
-    dbname_ = test::TmpDir() + "/recovery_test";
+    dbname_ = testing::TempDir() + "/recovery_test";
     DestroyDB(dbname_, Options());
     Open();
   }
@@ -84,7 +84,7 @@ class RecoveryTest {
 
   std::string ManifestFileName() {
     std::string current;
-    ASSERT_OK(ReadFileToString(env_, CurrentFileName(dbname_), &current));
+    EXPECT_OK(ReadFileToString(env_, CurrentFileName(dbname_), &current));
     size_t len = current.size();
     if (len > 0 && current[len - 1] == '\n') {
       current.resize(len - 1);
@@ -100,7 +100,7 @@ class RecoveryTest {
     Close();
     std::vector<uint64_t> logs = GetFiles(kLogFile);
     for (size_t i = 0; i < logs.size(); i++) {
-      ASSERT_OK(env_->DeleteFile(LogName(logs[i]))) << LogName(logs[i]);
+      EXPECT_OK(env_->DeleteFile(LogName(logs[i]))) << LogName(logs[i]);
     }
     return logs.size();
   }
@@ -111,7 +111,7 @@ class RecoveryTest {
 
   std::vector<uint64_t> GetFiles(FileType t) {
     std::vector<std::string> filenames;
-    ASSERT_OK(env_->GetChildren(dbname_, &filenames));
+    EXPECT_OK(env_->GetChildren(dbname_, &filenames));
     std::vector<uint64_t> result;
     for (size_t i = 0; i < filenames.size(); i++) {
       uint64_t number;
@@ -129,7 +129,7 @@ class RecoveryTest {
 
   uint64_t FileSize(const std::string& fname) {
     uint64_t result;
-    ASSERT_OK(env_->GetFileSize(fname, &result)) << fname;
+    EXPECT_OK(env_->GetFileSize(fname, &result)) << fname;
     return result;
   }
 
@@ -155,7 +155,7 @@ class RecoveryTest {
   DB* db_;
 };
 
-TEST(RecoveryTest, ManifestReused) {
+TEST_F(RecoveryTest, ManifestReused) {
   if (!CanAppend()) {
     fprintf(stderr, "skipping test because env does not support appending\n");
     return;
@@ -171,7 +171,7 @@ TEST(RecoveryTest, ManifestReused) {
   ASSERT_EQ("bar", Get("foo"));
 }
 
-TEST(RecoveryTest, LargeManifestCompacted) {
+TEST_F(RecoveryTest, LargeManifestCompacted) {
   if (!CanAppend()) {
     fprintf(stderr, "skipping test because env does not support appending\n");
     return;
@@ -202,7 +202,7 @@ TEST(RecoveryTest, LargeManifestCompacted) {
   ASSERT_EQ("bar", Get("foo"));
 }
 
-TEST(RecoveryTest, NoLogFiles) {
+TEST_F(RecoveryTest, NoLogFiles) {
   ASSERT_OK(Put("foo", "bar"));
   ASSERT_EQ(1, DeleteLogFiles());
   Open();
@@ -211,7 +211,7 @@ TEST(RecoveryTest, NoLogFiles) {
   ASSERT_EQ("NOT_FOUND", Get("foo"));
 }
 
-TEST(RecoveryTest, LogFileReuse) {
+TEST_F(RecoveryTest, LogFileReuse) {
   if (!CanAppend()) {
     fprintf(stderr, "skipping test because env does not support appending\n");
     return;
@@ -241,7 +241,7 @@ TEST(RecoveryTest, LogFileReuse) {
   }
 }
 
-TEST(RecoveryTest, MultipleMemTables) {
+TEST_F(RecoveryTest, MultipleMemTables) {
   // Make a large log.
   const int kNum = 1000;
   for (int i = 0; i < kNum; i++) {
@@ -270,7 +270,7 @@ TEST(RecoveryTest, MultipleMemTables) {
   }
 }
 
-TEST(RecoveryTest, MultipleLogFiles) {
+TEST_F(RecoveryTest, MultipleLogFiles) {
   ASSERT_OK(Put("foo", "bar"));
   Close();
   ASSERT_EQ(1, NumLogs());
@@ -316,7 +316,7 @@ TEST(RecoveryTest, MultipleLogFiles) {
   ASSERT_EQ("there", Get("hi"));
 }
 
-TEST(RecoveryTest, ManifestMissing) {
+TEST_F(RecoveryTest, ManifestMissing) {
   ASSERT_OK(Put("foo", "bar"));
   Close();
   DeleteManifestFile();
@@ -327,4 +327,7 @@ TEST(RecoveryTest, ManifestMissing) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

@@ -10,11 +10,12 @@
 #include "db/db_impl.h"
 #include "leveldb/db.h"
 #include "leveldb/env.h"
-#include "util/testharness.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "util/testutil.h"
 
 namespace leveldb {
 
-class MemEnvTest {
+class MemEnvTest : public testing::Test {
  public:
   MemEnvTest() : env_(NewMemEnv(Env::Default())) {}
   ~MemEnvTest() { delete env_; }
@@ -22,7 +23,7 @@ class MemEnvTest {
   Env* env_;
 };
 
-TEST(MemEnvTest, Basics) {
+TEST_F(MemEnvTest, Basics) {
   uint64_t file_size;
   WritableFile* writable_file;
   std::vector<std::string> children;
@@ -90,7 +91,7 @@ TEST(MemEnvTest, Basics) {
   ASSERT_OK(env_->DeleteDir("/dir"));
 }
 
-TEST(MemEnvTest, ReadWrite) {
+TEST_F(MemEnvTest, ReadWrite) {
   WritableFile* writable_file;
   SequentialFile* seq_file;
   RandomAccessFile* rand_file;
@@ -132,7 +133,7 @@ TEST(MemEnvTest, ReadWrite) {
   delete rand_file;
 }
 
-TEST(MemEnvTest, Locks) {
+TEST_F(MemEnvTest, Locks) {
   FileLock* lock;
 
   // These are no-ops, but we test they return success.
@@ -140,7 +141,7 @@ TEST(MemEnvTest, Locks) {
   ASSERT_OK(env_->UnlockFile(lock));
 }
 
-TEST(MemEnvTest, Misc) {
+TEST_F(MemEnvTest, Misc) {
   std::string test_dir;
   ASSERT_OK(env_->GetTestDirectory(&test_dir));
   ASSERT_TRUE(!test_dir.empty());
@@ -155,7 +156,7 @@ TEST(MemEnvTest, Misc) {
   delete writable_file;
 }
 
-TEST(MemEnvTest, LargeWrite) {
+TEST_F(MemEnvTest, LargeWrite) {
   const size_t kWriteSize = 300 * 1024;
   char* scratch = new char[kWriteSize * 2];
 
@@ -188,10 +189,10 @@ TEST(MemEnvTest, LargeWrite) {
   delete[] scratch;
 }
 
-TEST(MemEnvTest, OverwriteOpenFile) {
+TEST_F(MemEnvTest, OverwriteOpenFile) {
   const char kWrite1Data[] = "Write #1 data";
   const size_t kFileDataLen = sizeof(kWrite1Data) - 1;
-  const std::string kTestFileName = test::TmpDir() + "/leveldb-TestFile.dat";
+  const std::string kTestFileName = testing::TempDir() + "leveldb-TestFile.dat";
 
   ASSERT_OK(WriteStringToFile(env_, kWrite1Data, kTestFileName));
 
@@ -211,7 +212,7 @@ TEST(MemEnvTest, OverwriteOpenFile) {
   delete rand_file;
 }
 
-TEST(MemEnvTest, DBTest) {
+TEST_F(MemEnvTest, DBTest) {
   Options options;
   options.create_if_missing = true;
   options.env = env_;
@@ -256,4 +257,7 @@ TEST(MemEnvTest, DBTest) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

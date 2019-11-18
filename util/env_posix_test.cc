@@ -15,8 +15,9 @@
 
 #include "leveldb/env.h"
 #include "port/port.h"
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 #include "util/env_posix_test_helper.h"
-#include "util/testharness.h"
+#include "util/testutil.h"
 
 #if HAVE_O_CLOEXEC
 
@@ -168,7 +169,7 @@ namespace leveldb {
 static const int kReadOnlyFileLimit = 4;
 static const int kMMapLimit = 4;
 
-class EnvPosixTest {
+class EnvPosixTest : public testing::Test {
  public:
   static void SetFileLimits(int read_only_file_limit, int mmap_limit) {
     EnvPosixTestHelper::SetReadOnlyFDLimit(read_only_file_limit);
@@ -180,7 +181,7 @@ class EnvPosixTest {
   Env* env_;
 };
 
-TEST(EnvPosixTest, TestOpenOnRead) {
+TEST_F(EnvPosixTest, TestOpenOnRead) {
   // Write some test data to a single file that will be opened |n| times.
   std::string test_dir;
   ASSERT_OK(env_->GetTestDirectory(&test_dir));
@@ -213,7 +214,7 @@ TEST(EnvPosixTest, TestOpenOnRead) {
 
 #if HAVE_O_CLOEXEC
 
-TEST(EnvPosixTest, TestCloseOnExecSequentialFile) {
+TEST_F(EnvPosixTest, TestCloseOnExecSequentialFile) {
   std::unordered_set<int> open_fds;
   GetOpenFileDescriptors(&open_fds);
 
@@ -230,7 +231,7 @@ TEST(EnvPosixTest, TestCloseOnExecSequentialFile) {
   ASSERT_OK(env_->DeleteFile(file_path));
 }
 
-TEST(EnvPosixTest, TestCloseOnExecRandomAccessFile) {
+TEST_F(EnvPosixTest, TestCloseOnExecRandomAccessFile) {
   std::unordered_set<int> open_fds;
   GetOpenFileDescriptors(&open_fds);
 
@@ -258,7 +259,7 @@ TEST(EnvPosixTest, TestCloseOnExecRandomAccessFile) {
   ASSERT_OK(env_->DeleteFile(file_path));
 }
 
-TEST(EnvPosixTest, TestCloseOnExecWritableFile) {
+TEST_F(EnvPosixTest, TestCloseOnExecWritableFile) {
   std::unordered_set<int> open_fds;
   GetOpenFileDescriptors(&open_fds);
 
@@ -275,7 +276,7 @@ TEST(EnvPosixTest, TestCloseOnExecWritableFile) {
   ASSERT_OK(env_->DeleteFile(file_path));
 }
 
-TEST(EnvPosixTest, TestCloseOnExecAppendableFile) {
+TEST_F(EnvPosixTest, TestCloseOnExecAppendableFile) {
   std::unordered_set<int> open_fds;
   GetOpenFileDescriptors(&open_fds);
 
@@ -292,7 +293,7 @@ TEST(EnvPosixTest, TestCloseOnExecAppendableFile) {
   ASSERT_OK(env_->DeleteFile(file_path));
 }
 
-TEST(EnvPosixTest, TestCloseOnExecLockFile) {
+TEST_F(EnvPosixTest, TestCloseOnExecLockFile) {
   std::unordered_set<int> open_fds;
   GetOpenFileDescriptors(&open_fds);
 
@@ -309,7 +310,7 @@ TEST(EnvPosixTest, TestCloseOnExecLockFile) {
   ASSERT_OK(env_->DeleteFile(file_path));
 }
 
-TEST(EnvPosixTest, TestCloseOnExecLogger) {
+TEST_F(EnvPosixTest, TestCloseOnExecLogger) {
   std::unordered_set<int> open_fds;
   GetOpenFileDescriptors(&open_fds);
 
@@ -346,5 +347,7 @@ int main(int argc, char** argv) {
   // All tests currently run with the same read-only file limits.
   leveldb::EnvPosixTest::SetFileLimits(leveldb::kReadOnlyFileLimit,
                                        leveldb::kMMapLimit);
-  return leveldb::test::RunAllTests();
+
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
