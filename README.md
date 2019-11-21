@@ -27,6 +27,12 @@ Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
   * Only a single process (possibly multi-threaded) can access a particular database at a time.
   * There is no client-server support builtin to the library.  An application that needs such support will have to wrap their own server around the library.
 
+# Getting the Source
+
+```bash
+git clone --recurse-submodules https://github.com/google/leveldb.git
+```
+
 # Building
 
 This project supports [CMake](https://cmake.org/) out of the box.

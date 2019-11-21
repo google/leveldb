@@ -3,7 +3,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/version_edit.h"
-#include "util/testharness.h"
+
+#include "third_party/googletest/googletest/include/gtest/gtest.h"
 
 namespace leveldb {
 
@@ -16,8 +17,6 @@ static void TestEncodeDecode(const VersionEdit& edit) {
   parsed.EncodeTo(&encoded2);
   ASSERT_EQ(encoded, encoded2);
 }
-
-class VersionEditTest {};
 
 TEST(VersionEditTest, EncodeDecode) {
   static const uint64_t kBig = 1ull << 50;
@@ -41,4 +40,7 @@ TEST(VersionEditTest, EncodeDecode) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}
