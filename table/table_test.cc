@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"

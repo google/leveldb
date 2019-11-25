@@ -4,7 +4,7 @@
 
 #include "util/crc32c.h"
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 
 namespace leveldb {
 namespace crc32c {

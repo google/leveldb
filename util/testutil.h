@@ -5,8 +5,8 @@
 #ifndef STORAGE_LEVELDB_UTIL_TESTUTIL_H_
 #define STORAGE_LEVELDB_UTIL_TESTUTIL_H_
 
-#include "third_party/googletest/googlemock/include/gmock/gmock.h"
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "helpers/memenv/memenv.h"
 #include "leveldb/env.h"
 #include "leveldb/slice.h"

@@ -6,7 +6,7 @@
 // to forward, the current key can be yielded unexpectedly if a new
 // mutation has been added just before the current key.
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "leveldb/db.h"
 #include "util/testutil.h"
 

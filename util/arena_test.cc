@@ -4,7 +4,7 @@
 
 #include "util/arena.h"
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "util/random.h"
 
 namespace leveldb {

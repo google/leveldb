@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
 #include "util/testutil.h"

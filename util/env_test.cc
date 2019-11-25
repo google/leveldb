@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/mutexlock.h"

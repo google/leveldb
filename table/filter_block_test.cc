@@ -4,7 +4,7 @@
 
 #include "table/filter_block.h"
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "leveldb/filter_policy.h"
 #include "util/coding.h"
 #include "util/hash.h"

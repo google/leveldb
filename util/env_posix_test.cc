@@ -13,7 +13,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "leveldb/env.h"
 #include "port/port.h"
 #include "util/env_posix_test_helper.h"

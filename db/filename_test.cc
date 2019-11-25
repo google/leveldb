@@ -4,7 +4,7 @@
 
 #include "db/filename.h"
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "db/dbformat.h"
 #include "port/port.h"
 #include "util/logging.h"

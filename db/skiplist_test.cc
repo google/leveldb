@@ -7,7 +7,7 @@
 #include <atomic>
 #include <set>
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "leveldb/env.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"

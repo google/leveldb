@@ -4,7 +4,7 @@
 
 #include "db/dbformat.h"
 
-#include "third_party/googletest/googletest/include/gtest/gtest.h"
+#include "gtest/gtest.h"
 #include "util/logging.h"
 
 namespace leveldb {
