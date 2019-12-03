@@ -18,6 +18,11 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
+#if defined(_WIN32) && defined(DeleteFile)
+// See rationale in env.h
+#undef DeleteFile
+#endif
+
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
 //      fillseq       -- write N values in sequential key order in async mode

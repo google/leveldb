@@ -13,6 +13,11 @@
 #include "util/logging.h"
 #include "util/testutil.h"
 
+#if defined(_WIN32) && defined(DeleteFile)
+// See rationale in env.h
+#undef DeleteFile
+#endif
+
 namespace leveldb {
 
 class RecoveryTest : public testing::Test {

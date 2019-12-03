@@ -23,6 +23,11 @@
 #include "util/mutexlock.h"
 #include "util/testutil.h"
 
+#if defined(_WIN32) && defined(DeleteFile)
+// See rationale in env.h
+#undef DeleteFile
+#endif
+
 namespace leveldb {
 
 static std::string RandomString(Random* rnd, int len) {
