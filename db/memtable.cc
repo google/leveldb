@@ -12,9 +12,9 @@
 namespace leveldb {
 
 static Slice GetLengthPrefixedSlice(const char* data) {
-  uint32_t len;
+  uint64_t len;
   const char* p = data;
-  p = GetVarint32Ptr(p, p + 5, &len);  // +5: we assume "p" is not corrupted
+  p = GetVarint64Ptr(p, p + 10, &len);  // +10: we assume "p" is not corrupted
   return Slice(p, len);
 }
 
@@ -78,7 +78,7 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
   // Format of an entry is concatenation of:
   //  key_size     : varint32 of internal_key.size()
   //  key bytes    : char[internal_key.size()]
-  //  value_size   : varint32 of value.size()
+  //  value_size   : varint64 of value.size()
   //  value bytes  : char[value.size()]
   size_t key_size = key.size();
   size_t val_size = value.size();
@@ -92,7 +92,7 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
   p += key_size;
   EncodeFixed64(p, (s << 8) | type);
   p += 8;
-  p = EncodeVarint32(p, val_size);
+  p = EncodeVarint64(p, val_size);
   memcpy(p, value.data(), val_size);
   assert(p + val_size == buf + encoded_len);
   table_.Insert(buf);
@@ -107,7 +107,7 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
     //    klength  varint32
     //    userkey  char[klength]
     //    tag      uint64
-    //    vlength  varint32
+    //    vlength  varint64
     //    value    char[vlength]
     // Check that it belongs to same user key.  We do not check the
     // sequence number since the Seek() call above should have skipped
