@@ -54,7 +54,7 @@ Block::~Block() {
 // pointer to the key delta (just past the three decoded values).
 static inline const char* DecodeEntry(const char* p, const char* limit,
                                       uint32_t* shared, uint32_t* non_shared,
-                                      uint32_t* value_length) {
+                                      uint64_t* value_length) {
   if (limit - p < 3) return nullptr;
   *shared = reinterpret_cast<const uint8_t*>(p)[0];
   *non_shared = reinterpret_cast<const uint8_t*>(p)[1];
@@ -65,10 +65,10 @@ static inline const char* DecodeEntry(const char* p, const char* limit,
   } else {
     if ((p = GetVarint32Ptr(p, limit, shared)) == nullptr) return nullptr;
     if ((p = GetVarint32Ptr(p, limit, non_shared)) == nullptr) return nullptr;
-    if ((p = GetVarint32Ptr(p, limit, value_length)) == nullptr) return nullptr;
+    if ((p = GetVarint64Ptr(p, limit, value_length)) == nullptr) return nullptr;
   }
 
-  if (static_cast<uint32_t>(limit - p) < (*non_shared + *value_length)) {
+  if (static_cast<uint64_t>(limit - p) < (*non_shared + *value_length)) {
     return nullptr;
   }
   return p;
@@ -169,7 +169,8 @@ class Block::Iter : public Iterator {
     while (left < right) {
       uint32_t mid = (left + right + 1) / 2;
       uint32_t region_offset = GetRestartPoint(mid);
-      uint32_t shared, non_shared, value_length;
+      uint32_t shared, non_shared;
+      uint64_t value_length;
       const char* key_ptr =
           DecodeEntry(data_ + region_offset, data_ + restarts_, &shared,
                       &non_shared, &value_length);
@@ -234,7 +235,8 @@ class Block::Iter : public Iterator {
     }
 
     // Decode next entry
-    uint32_t shared, non_shared, value_length;
+    uint32_t shared, non_shared;
+    uint64_t value_length;
     p = DecodeEntry(p, limit, &shared, &non_shared, &value_length);
     if (p == nullptr || key_.size() < shared) {
       CorruptionError();

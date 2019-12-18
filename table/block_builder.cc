@@ -16,7 +16,7 @@
 // An entry for a particular key-value pair has the form:
 //     shared_bytes: varint32
 //     unshared_bytes: varint32
-//     value_length: varint32
+//     value_length: varint64
 //     key_delta: char[unshared_bytes]
 //     value: char[value_length]
 // shared_bytes == 0 for restart points.
@@ -92,7 +92,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
   // Add "<shared><non_shared><value_size>" to buffer_
   PutVarint32(&buffer_, shared);
   PutVarint32(&buffer_, non_shared);
-  PutVarint32(&buffer_, value.size());
+  PutVarint64(&buffer_, value.size());
 
   // Add string delta to buffer_ followed by value
   buffer_.append(key.data() + shared, non_shared);
