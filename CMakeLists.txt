@@ -342,6 +342,7 @@ if(LEVELDB_BUILD_TESTS)
   leveldb_test("issues/issue178_test.cc")
   leveldb_test("issues/issue200_test.cc")
   leveldb_test("issues/issue320_test.cc")
+  leveldb_test("issues/issue718_test.cc")
 
   leveldb_test("util/env_test.cc")
   leveldb_test("util/status_test.cc")

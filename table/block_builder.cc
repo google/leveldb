@@ -22,7 +22,7 @@
 // shared_bytes == 0 for restart points.
 //
 // The trailer of the block has the form:
-//     restarts: uint32[num_restarts]
+//     restarts: uint64[num_restarts]
 //     num_restarts: uint32
 // restarts[i] contains the offset within the block of the ith restart point.
 
@@ -55,14 +55,14 @@ void BlockBuilder::Reset() {
 
 size_t BlockBuilder::CurrentSizeEstimate() const {
   return (buffer_.size() +                       // Raw data buffer
-          restarts_.size() * sizeof(uint32_t) +  // Restart array
+          restarts_.size() * sizeof(uint64_t) +  // Restart array
           sizeof(uint32_t));                     // Restart array length
 }
 
 Slice BlockBuilder::Finish() {
   // Append restart array
   for (size_t i = 0; i < restarts_.size(); i++) {
-    PutFixed32(&buffer_, restarts_[i]);
+    PutFixed64(&buffer_, restarts_[i]);
   }
   PutFixed32(&buffer_, restarts_.size());
   finished_ = true;

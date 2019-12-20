@@ -572,9 +572,6 @@ TEST_F(DBTest, ReadWrite) {
     ASSERT_LEVELDB_OK(Put("foo", "v3"));
     ASSERT_EQ("v3", Get("foo"));
     ASSERT_EQ("v2", Get("bar"));
-    size_t sz = 1ull << 32;
-    ASSERT_LEVELDB_OK(Put("goo", std::string(sz, 'h')));
-    ASSERT_EQ(sz, Get("goo").size());
   } while (ChangeOptions());
 }
 
