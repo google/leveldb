@@ -15,10 +15,33 @@
 
 #include <stdarg.h>
 #include <stdint.h>
+
 #include <string>
 #include <vector>
+
 #include "leveldb/export.h"
 #include "leveldb/status.h"
+
+#if defined(_WIN32)
+// The leveldb::Env class below contains a DeleteFile method.
+// At the same time, <windows.h>, a fairly popular header
+// file for Windows applications, defines a DeleteFile macro.
+//
+// Without any intervention on our part, the result of this
+// unfortunate coincidence is that the name of the
+// leveldb::Env::DeleteFile method seen by the compiler depends on
+// whether <windows.h> was included before or after the LevelDB
+// headers.
+//
+// To avoid headaches, we undefined DeleteFile (if defined) and
+// redefine it at the bottom of this file. This way <windows.h>
+// can be included before this file (or not at all) and the
+// exported method will always be leveldb::Env::DeleteFile.
+#if defined(DeleteFile)
+#undef DeleteFile
+#define LEVELDB_DELETEFILE_UNDEFINED
+#endif  // defined(DeleteFile)
+#endif  // defined(_WIN32)
 
 namespace leveldb {
 
@@ -45,7 +68,7 @@ class LEVELDB_EXPORT Env {
   // The result of Default() belongs to leveldb and must never be deleted.
   static Env* Default();
 
-  // Create a brand new sequentially-readable file with the specified name.
+  // Create an object that sequentially reads the file with the specified name.
   // On success, stores a pointer to the new file in *result and returns OK.
   // On failure stores nullptr in *result and returns non-OK.  If the file does
   // not exist, returns a non-OK status.  Implementations should return a
@@ -55,7 +78,7 @@ class LEVELDB_EXPORT Env {
   virtual Status NewSequentialFile(const std::string& fname,
                                    SequentialFile** result) = 0;
 
-  // Create a brand new random access read-only file with the
+  // Create an object supporting random-access reads from the file with the
   // specified name.  On success, stores a pointer to the new file in
   // *result and returns OK.  On failure stores nullptr in *result and
   // returns non-OK.  If the file does not exist, returns a non-OK
@@ -143,16 +166,14 @@ class LEVELDB_EXPORT Env {
   // added to the same Env may run concurrently in different threads.
   // I.e., the caller may not assume that background work items are
   // serialized.
-  virtual void Schedule(
-      void (*function)(void* arg),
-      void* arg) = 0;
+  virtual void Schedule(void (*function)(void* arg), void* arg) = 0;
 
   // Start a new thread, invoking "function(arg)" within the new thread.
   // When "function(arg)" returns, the thread will be destroyed.
   virtual void StartThread(void (*function)(void* arg), void* arg) = 0;
 
   // *path is set to a temporary directory that can be used for testing. It may
-  // or many not have just been created. The directory may or may not differ
+  // or may not have just been created. The directory may or may not differ
   // between runs of the same process, but subsequent calls will return the
   // same directory.
   virtual Status GetTestDirectory(std::string* path) = 0;
@@ -266,9 +287,9 @@ class LEVELDB_EXPORT FileLock {
 
 // Log the specified data to *info_log if info_log is non-null.
 void Log(Logger* info_log, const char* format, ...)
-#   if defined(__GNUC__) || defined(__clang__)
-    __attribute__((__format__ (__printf__, 2, 3)))
-#   endif
+#if defined(__GNUC__) || defined(__clang__)
+    __attribute__((__format__(__printf__, 2, 3)))
+#endif
     ;
 
 // A utility routine: write "data" to the named file.
@@ -285,7 +306,7 @@ LEVELDB_EXPORT Status ReadFileToString(Env* env, const std::string& fname,
 class LEVELDB_EXPORT EnvWrapper : public Env {
  public:
   // Initialize an EnvWrapper that delegates all calls to *t.
-  explicit EnvWrapper(Env* t) : target_(t) { }
+  explicit EnvWrapper(Env* t) : target_(t) {}
   virtual ~EnvWrapper();
 
   // Return the target to which this Env forwards all calls.
@@ -343,9 +364,7 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   Status NewLogger(const std::string& fname, Logger** result) override {
     return target_->NewLogger(fname, result);
   }
-  uint64_t NowMicros() override {
-    return target_->NowMicros();
-  }
+  uint64_t NowMicros() override { return target_->NowMicros(); }
   void SleepForMicroseconds(int micros) override {
     target_->SleepForMicroseconds(micros);
   }
@@ -355,5 +374,14 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
 };
 
 }  // namespace leveldb
+
+// Redefine DeleteFile if necessary.
+#if defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
+#if defined(UNICODE)
+#define DeleteFile DeleteFileW
+#else
+#define DeleteFile DeleteFileA
+#endif  // defined(UNICODE)
+#endif  // defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
 
 #endif  // STORAGE_LEVELDB_INCLUDE_ENV_H_

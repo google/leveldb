@@ -43,6 +43,9 @@ class Reader {
   Reader(SequentialFile* file, Reporter* reporter, bool checksum,
          uint64_t initial_offset);
 
+  Reader(const Reader&) = delete;
+  Reader& operator=(const Reader&) = delete;
+
   ~Reader();
 
   // Read the next record into *record.  Returns true if read
@@ -58,26 +61,6 @@ class Reader {
   uint64_t LastRecordOffset();
 
  private:
-  SequentialFile* const file_;
-  Reporter* const reporter_;
-  bool const checksum_;
-  char* const backing_store_;
-  Slice buffer_;
-  bool eof_;   // Last Read() indicated EOF by returning < kBlockSize
-
-  // Offset of the last record returned by ReadRecord.
-  uint64_t last_record_offset_;
-  // Offset of the first location past the end of buffer_.
-  uint64_t end_of_buffer_offset_;
-
-  // Offset at which to start looking for the first record to return
-  uint64_t const initial_offset_;
-
-  // True if we are resynchronizing after a seek (initial_offset_ > 0). In
-  // particular, a run of kMiddleType and kLastType records can be silently
-  // skipped in this mode
-  bool resyncing_;
-
   // Extend record types with the following special values
   enum {
     kEof = kMaxRecordType + 1,
@@ -102,9 +85,25 @@ class Reader {
   void ReportCorruption(uint64_t bytes, const char* reason);
   void ReportDrop(uint64_t bytes, const Status& reason);
 
-  // No copying allowed
-  Reader(const Reader&);
-  void operator=(const Reader&);
+  SequentialFile* const file_;
+  Reporter* const reporter_;
+  bool const checksum_;
+  char* const backing_store_;
+  Slice buffer_;
+  bool eof_;  // Last Read() indicated EOF by returning < kBlockSize
+
+  // Offset of the last record returned by ReadRecord.
+  uint64_t last_record_offset_;
+  // Offset of the first location past the end of buffer_.
+  uint64_t end_of_buffer_offset_;
+
+  // Offset at which to start looking for the first record to return
+  uint64_t const initial_offset_;
+
+  // True if we are resynchronizing after a seek (initial_offset_ > 0). In
+  // particular, a run of kMiddleType and kLastType records can be silently
+  // skipped in this mode
+  bool resyncing_;
 };
 
 }  // namespace log

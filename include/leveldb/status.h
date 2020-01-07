@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <string>
+
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 
@@ -23,7 +24,7 @@ namespace leveldb {
 class LEVELDB_EXPORT Status {
  public:
   // Create a success status.
-  Status() noexcept : state_(nullptr) { }
+  Status() noexcept : state_(nullptr) {}
   ~Status() { delete[] state_; }
 
   Status(const Status& rhs);
@@ -75,13 +76,6 @@ class LEVELDB_EXPORT Status {
   std::string ToString() const;
 
  private:
-  // OK status has a null state_.  Otherwise, state_ is a new[] array
-  // of the following form:
-  //    state_[0..3] == length of message
-  //    state_[4]    == code
-  //    state_[5..]  == message
-  const char* state_;
-
   enum Code {
     kOk = 0,
     kNotFound = 1,
@@ -97,6 +91,13 @@ class LEVELDB_EXPORT Status {
 
   Status(Code code, const Slice& msg, const Slice& msg2);
   static const char* CopyState(const char* s);
+
+  // OK status has a null state_.  Otherwise, state_ is a new[] array
+  // of the following form:
+  //    state_[0..3] == length of message
+  //    state_[4]    == code
+  //    state_[5..]  == message
+  const char* state_;
 };
 
 inline Status::Status(const Status& rhs) {

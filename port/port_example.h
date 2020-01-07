@@ -62,45 +62,6 @@ class CondVar {
   void SignallAll();
 };
 
-// Thread-safe initialization.
-// Used as follows:
-//      static port::OnceType init_control = LEVELDB_ONCE_INIT;
-//      static void Initializer() { ... do something ...; }
-//      ...
-//      port::InitOnce(&init_control, &Initializer);
-typedef intptr_t OnceType;
-#define LEVELDB_ONCE_INIT 0
-void InitOnce(port::OnceType*, void (*initializer)());
-
-// A type that holds a pointer that can be read or written atomically
-// (i.e., without word-tearing.)
-class AtomicPointer {
- private:
-  intptr_t rep_;
- public:
-  // Initialize to arbitrary value
-  AtomicPointer();
-
-  // Initialize to hold v
-  explicit AtomicPointer(void* v) : rep_(v) { }
-
-  // Read and return the stored pointer with the guarantee that no
-  // later memory access (read or write) by this thread can be
-  // reordered ahead of this read.
-  void* Acquire_Load() const;
-
-  // Set v as the stored pointer with the guarantee that no earlier
-  // memory access (read or write) by this thread can be reordered
-  // after this store.
-  void Release_Store(void* v);
-
-  // Read the stored pointer with no ordering guarantees.
-  void* NoBarrier_Load() const;
-
-  // Set va as the stored pointer with no ordering guarantees.
-  void NoBarrier_Store(void* v);
-};
-
 // ------------------ Compression -------------------
 
 // Store the snappy compression of "input[0,input_length-1]" in *output.
