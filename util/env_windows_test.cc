@@ -52,7 +52,7 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
   for (int i = 0; i < kNumFiles; i++) {
     delete files[i];
   }
-  ASSERT_LEVELDB_OK(env_->DeleteFile(test_file));
+  ASSERT_LEVELDB_OK(env_->RemoveFile(test_file));
 }
 
 }  // namespace leveldb

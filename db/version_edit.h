@@ -71,7 +71,7 @@ class VersionEdit {
   }
 
   // Delete the specified "file" from the specified "level".
-  void DeleteFile(int level, uint64_t file) {
+  void RemoveFile(int level, uint64_t file) {
     deleted_files_.insert(std::make_pair(level, file));
   }
 

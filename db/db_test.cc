@@ -509,7 +509,7 @@ class DBTest : public testing::Test {
     FileType type;
     for (size_t i = 0; i < filenames.size(); i++) {
       if (ParseFileName(filenames[i], &number, &type) && type == kTableFile) {
-        EXPECT_LEVELDB_OK(env_->DeleteFile(TableFileName(dbname_, number)));
+        EXPECT_LEVELDB_OK(env_->RemoveFile(TableFileName(dbname_, number)));
         return true;
       }
     }
@@ -1666,7 +1666,7 @@ TEST_F(DBTest, DBOpen_Options) {
 TEST_F(DBTest, DestroyEmptyDir) {
   std::string dbname = testing::TempDir() + "db_empty_dir";
   TestEnv env(Env::Default());
-  env.DeleteDir(dbname);
+  env.RemoveDir(dbname);
   ASSERT_TRUE(!env.FileExists(dbname));
 
   Options opts;
@@ -1693,7 +1693,7 @@ TEST_F(DBTest, DestroyEmptyDir) {
 
 TEST_F(DBTest, DestroyOpenDB) {
   std::string dbname = testing::TempDir() + "open_db_dir";
-  env_->DeleteDir(dbname);
+  env_->RemoveDir(dbname);
   ASSERT_TRUE(!env_->FileExists(dbname));
 
   Options opts;
@@ -2279,7 +2279,7 @@ void BM_LogAndApply(int iters, int num_base_files) {
 
   for (int i = 0; i < iters; i++) {
     VersionEdit vedit;
-    vedit.DeleteFile(2, fnum);
+    vedit.RemoveFile(2, fnum);
     InternalKey start(MakeKey(2 * fnum), 1, kTypeValue);
     InternalKey limit(MakeKey(2 * fnum + 1), 1, kTypeDeletion);
     vedit.AddFile(2, fnum++, 1 /* file size */, start, limit);

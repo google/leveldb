@@ -853,7 +853,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
       delete descriptor_file_;
       descriptor_log_ = nullptr;
       descriptor_file_ = nullptr;
-      env_->DeleteFile(new_manifest_file);
+      env_->RemoveFile(new_manifest_file);
     }
   }
 
@@ -1502,7 +1502,7 @@ bool Compaction::IsTrivialMove() const {
 void Compaction::AddInputDeletions(VersionEdit* edit) {
   for (int which = 0; which < 2; which++) {
     for (size_t i = 0; i < inputs_[which].size(); i++) {
-      edit->DeleteFile(level_ + which, inputs_[which][i]->number);
+      edit->RemoveFile(level_ + which, inputs_[which][i]->number);
     }
   }
 }

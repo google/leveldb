@@ -71,7 +71,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
   if (s.ok() && meta->file_size > 0) {
     // Keep it
   } else {
-    env->DeleteFile(fname);
+    env->RemoveFile(fname);
   }
   return s;
 }
