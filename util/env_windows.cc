@@ -28,7 +28,6 @@
 #include "leveldb/slice.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
-#include "util/env_windows_test_helper.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
 #include "util/windows_logger.h"
@@ -38,12 +37,6 @@ namespace leveldb {
 namespace {
 
 constexpr const size_t kWritableFileBufferSize = 65536;
-
-// Up to 1000 mmaps for 64-bit binaries; none for 32-bit.
-constexpr int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;
-
-// Can be set by by EnvWindowsTestHelper::SetReadOnlyMMapLimit().
-int g_mmap_limit = kDefaultMmapLimit;
 
 std::string GetWindowsErrorMessage(DWORD error_code) {
   std::string message;
@@ -362,7 +355,8 @@ class WindowsFileLock : public FileLock {
 
 class WindowsEnv : public Env {
  public:
-  WindowsEnv();
+  explicit WindowsEnv(const EnvOptions& env_options);
+  WindowsEnv() : WindowsEnv(EnvOptions()) {}
   ~WindowsEnv() override {
     static const char msg[] =
         "WindowsEnv singleton destroyed. Unsupported behavior!\n";
@@ -680,13 +674,10 @@ class WindowsEnv : public Env {
   Limiter mmap_limiter_;  // Thread-safe.
 };
 
-// Return the maximum number of concurrent mmaps.
-int MaxMmaps() { return g_mmap_limit; }
-
-WindowsEnv::WindowsEnv()
+WindowsEnv::WindowsEnv(const EnvOptions &env_options)
     : background_work_cv_(&background_work_mutex_),
       started_background_thread_(false),
-      mmap_limiter_(MaxMmaps()) {}
+      mmap_limiter_(env_options.readonly_mmap_files_limit) {}
 
 void WindowsEnv::Schedule(
     void (*background_work_function)(void* background_work_arg),
@@ -783,14 +774,13 @@ using WindowsDefaultEnv = SingletonEnv<WindowsEnv>;
 
 }  // namespace
 
-void EnvWindowsTestHelper::SetReadOnlyMMapLimit(int limit) {
-  WindowsDefaultEnv::AssertEnvNotInitialized();
-  g_mmap_limit = limit;
-}
-
 Env* Env::Default() {
   static WindowsDefaultEnv env_container;
   return env_container.env();
+}
+
+Env* Env::CreateWithOptions(const EnvOptions &env_options) {
+  return new WindowsEnv(env_options);
 }
 
 }  // namespace leveldb

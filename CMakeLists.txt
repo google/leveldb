@@ -373,8 +373,6 @@ if(LEVELDB_BUILD_TESTS)
     leveldb_test("util/hash_test.cc")
     leveldb_test("util/logging_test.cc")
 
-    # TODO(costan): This test also uses
-    #               "util/env_{posix|windows}_test_helper.h"
     if (WIN32)
       leveldb_test("util/env_windows_test.cc")
     else (WIN32)

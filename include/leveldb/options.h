@@ -29,6 +29,34 @@ enum CompressionType {
   kSnappyCompression = 0x1
 };
 
+// Options to control the behavior of an Env.
+struct LEVELDB_EXPORT EnvOptions {
+  // Create an EnvOptions with default values for all fields.
+  EnvOptions();
+
+  // -------------------
+  // Parameters that affect performance
+
+  // The maximum number of files that can be memory mapped by the Env
+  // implementation.
+  //
+  // IMPORTANT: Not all implementations of Env, support memory mapped files.
+  //
+  // Default: 1000 for 64-bit machines, 0 for 32-bit.
+  int readonly_mmap_files_limit;
+
+  // Number of open files that can be used by the Env.
+  //
+  // You may need to increase this if any of your databases have a large working
+  // set (budget one open file per 2MB of working set).
+  //
+  // IMPORTANT: Not all implementations of Env, support imposing limits on the
+  // number of open files.
+  //
+  // Default: -1 (let the Env implementation decide appropriate limit by itself)
+  int max_open_files = -1;
+};
+
 // Options to control the behavior of a database (passed to DB::Open)
 struct LEVELDB_EXPORT Options {
   // Create an Options object with default values for all fields.

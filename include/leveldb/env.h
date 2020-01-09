@@ -21,6 +21,7 @@
 
 #include "leveldb/export.h"
 #include "leveldb/status.h"
+#include "leveldb/options.h"
 
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.
 #if defined(_WIN32)
@@ -64,6 +65,14 @@ class LEVELDB_EXPORT Env {
   //
   // The result of Default() belongs to leveldb and must never be deleted.
   static Env* Default();
+
+  // Instantiate a default environment suitable for the current operating
+  // system.  Sophisticated users may wish to provide their own Env
+  // implementation instead of relying on this default environment.
+  //
+  // IMPORTANT: A single instance of Env must be created per program and that
+  // instance must not be destroyed.
+  static Env* CreateWithOptions(const EnvOptions &env_options);
 
   // Create an object that sequentially reads the file with the specified name.
   // On success, stores a pointer to the new file in *result and returns OK.

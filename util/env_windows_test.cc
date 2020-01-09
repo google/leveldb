@@ -5,7 +5,6 @@
 #include "gtest/gtest.h"
 #include "leveldb/env.h"
 #include "port/port.h"
-#include "util/env_windows_test_helper.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -15,13 +14,17 @@ static const int kMMapLimit = 4;
 class EnvWindowsTest : public testing::Test {
  public:
   static void SetFileLimits(int mmap_limit) {
-    EnvWindowsTestHelper::SetReadOnlyMMapLimit(mmap_limit);
+    env_options_.readonly_mmap_files_limit = mmap_limit;
   }
 
-  EnvWindowsTest() : env_(Env::Default()) {}
+  static void SetUpTestSuite() { env_ = Env::CreateWithOptions(env_options_); }
 
-  Env* env_;
+  static EnvOptions env_options_;
+  static Env* env_;
 };
+
+EnvOptions EnvWindowsTest::env_options_;
+Env* EnvWindowsTest::env_ = nullptr;
 
 TEST_F(EnvWindowsTest, TestOpenOnRead) {
   // Write some test data to a single file that will be opened |n| times.

@@ -32,21 +32,11 @@
 #include "leveldb/status.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
-#include "util/env_posix_test_helper.h"
 #include "util/posix_logger.h"
 
 namespace leveldb {
 
 namespace {
-
-// Set by EnvPosixTestHelper::SetReadOnlyMMapLimit() and MaxOpenFiles().
-int g_open_read_only_file_limit = -1;
-
-// Up to 1000 mmap regions for 64-bit binaries; none for 32-bit.
-constexpr const int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;
-
-// Can be set using EnvPosixTestHelper::SetReadOnlyMMapLimit().
-int g_mmap_limit = kDefaultMmapLimit;
 
 // Common flags defined for all posix open operations
 #if defined(HAVE_O_CLOEXEC)
@@ -489,7 +479,8 @@ class PosixLockTable {
 
 class PosixEnv : public Env {
  public:
-  PosixEnv();
+  explicit PosixEnv(const EnvOptions& env_options);
+  PosixEnv() : PosixEnv(EnvOptions()) {}
   ~PosixEnv() override {
     static const char msg[] =
         "PosixEnv singleton destroyed. Unsupported behavior!\n";
@@ -749,34 +740,30 @@ class PosixEnv : public Env {
   Limiter fd_limiter_;    // Thread-safe.
 };
 
-// Return the maximum number of concurrent mmaps.
-int MaxMmaps() { return g_mmap_limit; }
-
 // Return the maximum number of read-only files to keep open.
-int MaxOpenFiles() {
-  if (g_open_read_only_file_limit >= 0) {
-    return g_open_read_only_file_limit;
+int MaxOpenFiles(const EnvOptions& env_options) {
+  if (env_options.max_open_files >= 0) {
+    return env_options.max_open_files;
   }
   struct ::rlimit rlim;
   if (::getrlimit(RLIMIT_NOFILE, &rlim)) {
     // getrlimit failed, fallback to hard-coded default.
-    g_open_read_only_file_limit = 50;
-  } else if (rlim.rlim_cur == RLIM_INFINITY) {
-    g_open_read_only_file_limit = std::numeric_limits<int>::max();
-  } else {
-    // Allow use of 20% of available file descriptors for read-only files.
-    g_open_read_only_file_limit = rlim.rlim_cur / 5;
+    return 50;
   }
-  return g_open_read_only_file_limit;
+  if (rlim.rlim_cur == RLIM_INFINITY) {
+    return std::numeric_limits<int>::max();
+  }
+  // Allow use of 20% of available file descriptors for read-only files.
+  return rlim.rlim_cur / 5;
 }
 
 }  // namespace
 
-PosixEnv::PosixEnv()
+PosixEnv::PosixEnv(const EnvOptions& env_options)
     : background_work_cv_(&background_work_mutex_),
       started_background_thread_(false),
-      mmap_limiter_(MaxMmaps()),
-      fd_limiter_(MaxOpenFiles()) {}
+      mmap_limiter_(env_options.readonly_mmap_files_limit),
+      fd_limiter_(MaxOpenFiles(env_options)) {}
 
 void PosixEnv::Schedule(
     void (*background_work_function)(void* background_work_arg),
@@ -875,19 +862,13 @@ using PosixDefaultEnv = SingletonEnv<PosixEnv>;
 
 }  // namespace
 
-void EnvPosixTestHelper::SetReadOnlyFDLimit(int limit) {
-  PosixDefaultEnv::AssertEnvNotInitialized();
-  g_open_read_only_file_limit = limit;
-}
-
-void EnvPosixTestHelper::SetReadOnlyMMapLimit(int limit) {
-  PosixDefaultEnv::AssertEnvNotInitialized();
-  g_mmap_limit = limit;
-}
-
 Env* Env::Default() {
   static PosixDefaultEnv env_container;
   return env_container.env();
+}
+
+Env* Env::CreateWithOptions(const EnvOptions& env_options) {
+  return new PosixEnv(env_options);
 }
 
 }  // namespace leveldb

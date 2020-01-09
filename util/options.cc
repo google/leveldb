@@ -9,6 +9,11 @@
 
 namespace leveldb {
 
+// Up to 1000 mmaps for 64-bit binaries; none for 32-bit.
+constexpr int kDefaultMmapLimit = (sizeof(void*) >= 8) ? 1000 : 0;
+
+EnvOptions::EnvOptions() : readonly_mmap_files_limit(kDefaultMmapLimit) {}
+
 Options::Options() : comparator(BytewiseComparator()), env(Env::Default()) {}
 
 }  // namespace leveldb

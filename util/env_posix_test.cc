@@ -16,7 +16,6 @@
 #include "gtest/gtest.h"
 #include "leveldb/env.h"
 #include "port/port.h"
-#include "util/env_posix_test_helper.h"
 #include "util/testutil.h"
 
 #if HAVE_O_CLOEXEC
@@ -172,14 +171,18 @@ static const int kMMapLimit = 4;
 class EnvPosixTest : public testing::Test {
  public:
   static void SetFileLimits(int read_only_file_limit, int mmap_limit) {
-    EnvPosixTestHelper::SetReadOnlyFDLimit(read_only_file_limit);
-    EnvPosixTestHelper::SetReadOnlyMMapLimit(mmap_limit);
+    env_options_.max_open_files = read_only_file_limit;
+    env_options_.readonly_mmap_files_limit = mmap_limit;
   }
 
-  EnvPosixTest() : env_(Env::Default()) {}
+  static void SetUpTestSuite() { env_ = Env::CreateWithOptions(env_options_); }
 
-  Env* env_;
+  static EnvOptions env_options_;
+  static Env* env_;
 };
+
+EnvOptions EnvPosixTest::env_options_;
+Env* EnvPosixTest::env_ = nullptr;
 
 TEST_F(EnvPosixTest, TestOpenOnRead) {
   // Write some test data to a single file that will be opened |n| times.
