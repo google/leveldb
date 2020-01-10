@@ -73,7 +73,7 @@ class CorruptionTest : public testing::Test {
   }
 
   void Check(int min_expected, int max_expected) {
-    int next_expected = 0;
+    uint64_t next_expected = 0;
     int missed = 0;
     int bad_keys = 0;
     int bad_values = 0;
@@ -109,7 +109,7 @@ class CorruptionTest : public testing::Test {
     ASSERT_GE(max_expected, correct);
   }
 
-  void Corrupt(FileType filetype, int offset, int bytes_to_corrupt) {
+  void Corrupt(FileType filetype, int rel_offset, int bytes_to_corrupt) {
     // Pick file to corrupt
     std::vector<std::string> filenames;
     ASSERT_LEVELDB_OK(env_.target()->GetChildren(dbname_, &filenames));
@@ -129,13 +129,17 @@ class CorruptionTest : public testing::Test {
     uint64_t file_size;
     ASSERT_LEVELDB_OK(env_.target()->GetFileSize(fname, &file_size));
 
-    if (offset < 0) {
+    uint64_t offset;
+    if (rel_offset < 0) {
       // Relative to end of file; make it absolute
-      if (-offset > file_size) {
+      offset = -rel_offset;
+      if (offset > file_size) {
         offset = 0;
       } else {
-        offset = file_size + offset;
+        offset = file_size - offset;
       }
+    } else {
+      offset = rel_offset;
     }
     if (offset > file_size) {
       offset = file_size;

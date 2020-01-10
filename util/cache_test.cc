@@ -158,11 +158,11 @@ TEST_F(CacheTest, UseExceedsCacheSize) {
   }
 
   // Check that all the entries can be found in the cache.
-  for (int i = 0; i < h.size(); i++) {
+  for (size_t i = 0; i < h.size(); i++) {
     ASSERT_EQ(2000 + i, Lookup(1000 + i));
   }
 
-  for (int i = 0; i < h.size(); i++) {
+  for (size_t i = 0; i < h.size(); i++) {
     cache_->Release(h[i]);
   }
 }

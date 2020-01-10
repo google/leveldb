@@ -264,6 +264,13 @@ if(BUILD_SHARED_LIBS)
   )
 endif(BUILD_SHARED_LIBS)
 
+check_cxx_compiler_flag(-Werror=sign-compare HAVE_CLANG_SIGN_COMPARE)
+if(HAVE_CLANG_SIGN_COMPARE)
+  target_compile_options(leveldb
+    PUBLIC
+      -Werror=sign-compare)
+endif(HAVE_CLANG_SIGN_COMPARE)
+
 if(HAVE_CLANG_THREAD_SAFETY)
   target_compile_options(leveldb
     PUBLIC
