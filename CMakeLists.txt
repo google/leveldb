@@ -264,6 +264,13 @@ if(BUILD_SHARED_LIBS)
   )
 endif(BUILD_SHARED_LIBS)
 
+check_cxx_compiler_flag(-Werror=conditional-uninitialized HAVE_CONDITIONAL_UNINITIALIZED)
+if(HAVE_CONDITIONAL_UNINITIALIZED)
+  target_compile_options(leveldb
+    PUBLIC
+      -Werror=conditional-uninitialized)
+endif(HAVE_CONDITIONAL_UNINITIALIZED)
+
 if(HAVE_CLANG_THREAD_SAFETY)
   target_compile_options(leveldb
     PUBLIC
