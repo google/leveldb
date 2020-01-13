@@ -5,6 +5,7 @@
 #include "leveldb/table_builder.h"
 
 #include <assert.h>
+
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 #include "leveldb/filter_policy.h"
@@ -18,6 +19,22 @@
 namespace leveldb {
 
 struct TableBuilder::Rep {
+  Rep(const Options& opt, WritableFile* f)
+      : options(opt),
+        index_block_options(opt),
+        file(f),
+        offset(0),
+        data_block(&options),
+        index_block(&index_block_options),
+        num_entries(0),
+        closed(false),
+        filter_block(opt.filter_policy == nullptr
+                         ? nullptr
+                         : new FilterBlockBuilder(opt.filter_policy)),
+        pending_index_entry(false) {
+    index_block_options.block_restart_interval = 1;
+  }
+
   Options options;
   Options index_block_options;
   WritableFile* file;
@@ -27,7 +44,7 @@ struct TableBuilder::Rep {
   BlockBuilder index_block;
   std::string last_key;
   int64_t num_entries;
-  bool closed;          // Either Finish() or Abandon() has been called.
+  bool closed;  // Either Finish() or Abandon() has been called.
   FilterBlockBuilder* filter_block;
 
   // We do not emit the index entry for a block until we have seen the
@@ -43,21 +60,6 @@ struct TableBuilder::Rep {
   BlockHandle pending_handle;  // Handle to add to index block
 
   std::string compressed_output;
-
-  Rep(const Options& opt, WritableFile* f)
-      : options(opt),
-        index_block_options(opt),
-        file(f),
-        offset(0),
-        data_block(&options),
-        index_block(&index_block_options),
-        num_entries(0),
-        closed(false),
-        filter_block(opt.filter_policy == nullptr ? nullptr
-                     : new FilterBlockBuilder(opt.filter_policy)),
-        pending_index_entry(false) {
-    index_block_options.block_restart_interval = 1;
-  }
 };
 
 TableBuilder::TableBuilder(const Options& options, WritableFile* file)
@@ -173,8 +175,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
 }
 
 void TableBuilder::WriteRawBlock(const Slice& block_contents,
-                                 CompressionType type,
-                                 BlockHandle* handle) {
+                                 CompressionType type, BlockHandle* handle) {
   Rep* r = rep_;
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
@@ -184,7 +185,7 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
     trailer[0] = type;
     uint32_t crc = crc32c::Value(block_contents.data(), block_contents.size());
     crc = crc32c::Extend(crc, trailer, 1);  // Extend crc to cover block type
-    EncodeFixed32(trailer+1, crc32c::Mask(crc));
+    EncodeFixed32(trailer + 1, crc32c::Mask(crc));
     r->status = r->file->Append(Slice(trailer, kBlockTrailerSize));
     if (r->status.ok()) {
       r->offset += block_contents.size() + kBlockTrailerSize;
@@ -192,9 +193,7 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
   }
 }
 
-Status TableBuilder::status() const {
-  return rep_->status;
-}
+Status TableBuilder::status() const { return rep_->status; }
 
 Status TableBuilder::Finish() {
   Rep* r = rep_;
@@ -259,12 +258,8 @@ void TableBuilder::Abandon() {
   r->closed = true;
 }
 
-uint64_t TableBuilder::NumEntries() const {
-  return rep_->num_entries;
-}
+uint64_t TableBuilder::NumEntries() const { return rep_->num_entries; }
 
-uint64_t TableBuilder::FileSize() const {
-  return rep_->offset;
-}
+uint64_t TableBuilder::FileSize() const { return rep_->offset; }
 
 }  // namespace leveldb

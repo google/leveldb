@@ -2,16 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include "util/logging.h"
+
 #include <limits>
 #include <string>
 
+#include "gtest/gtest.h"
 #include "leveldb/slice.h"
-#include "util/logging.h"
-#include "util/testharness.h"
 
 namespace leveldb {
-
-class Logging { };
 
 TEST(Logging, NumberToString) {
   ASSERT_EQ("0", NumberToString(0));
@@ -141,5 +140,6 @@ TEST(Logging, ConsumeDecimalNumberNoDigits) {
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

@@ -15,34 +15,29 @@ namespace {
 
 typedef Iterator* (*BlockFunction)(void*, const ReadOptions&, const Slice&);
 
-class TwoLevelIterator: public Iterator {
+class TwoLevelIterator : public Iterator {
  public:
-  TwoLevelIterator(
-    Iterator* index_iter,
-    BlockFunction block_function,
-    void* arg,
-    const ReadOptions& options);
+  TwoLevelIterator(Iterator* index_iter, BlockFunction block_function,
+                   void* arg, const ReadOptions& options);
 
-  virtual ~TwoLevelIterator();
+  ~TwoLevelIterator() override;
 
-  virtual void Seek(const Slice& target);
-  virtual void SeekToFirst();
-  virtual void SeekToLast();
-  virtual void Next();
-  virtual void Prev();
+  void Seek(const Slice& target) override;
+  void SeekToFirst() override;
+  void SeekToLast() override;
+  void Next() override;
+  void Prev() override;
 
-  virtual bool Valid() const {
-    return data_iter_.Valid();
-  }
-  virtual Slice key() const {
+  bool Valid() const override { return data_iter_.Valid(); }
+  Slice key() const override {
     assert(Valid());
     return data_iter_.key();
   }
-  virtual Slice value() const {
+  Slice value() const override {
     assert(Valid());
     return data_iter_.value();
   }
-  virtual Status status() const {
+  Status status() const override {
     // It'd be nice if status() returned a const Status& instead of a Status
     if (!index_iter_.status().ok()) {
       return index_iter_.status();
@@ -67,26 +62,22 @@ class TwoLevelIterator: public Iterator {
   const ReadOptions options_;
   Status status_;
   IteratorWrapper index_iter_;
-  IteratorWrapper data_iter_; // May be nullptr
+  IteratorWrapper data_iter_;  // May be nullptr
   // If data_iter_ is non-null, then "data_block_handle_" holds the
   // "index_value" passed to block_function_ to create the data_iter_.
   std::string data_block_handle_;
 };
 
-TwoLevelIterator::TwoLevelIterator(
-    Iterator* index_iter,
-    BlockFunction block_function,
-    void* arg,
-    const ReadOptions& options)
+TwoLevelIterator::TwoLevelIterator(Iterator* index_iter,
+                                   BlockFunction block_function, void* arg,
+                                   const ReadOptions& options)
     : block_function_(block_function),
       arg_(arg),
       options_(options),
       index_iter_(index_iter),
-      data_iter_(nullptr) {
-}
+      data_iter_(nullptr) {}
 
-TwoLevelIterator::~TwoLevelIterator() {
-}
+TwoLevelIterator::~TwoLevelIterator() = default;
 
 void TwoLevelIterator::Seek(const Slice& target) {
   index_iter_.Seek(target);
@@ -120,7 +111,6 @@ void TwoLevelIterator::Prev() {
   data_iter_.Prev();
   SkipEmptyDataBlocksBackward();
 }
-
 
 void TwoLevelIterator::SkipEmptyDataBlocksForward() {
   while (data_iter_.iter() == nullptr || !data_iter_.Valid()) {
@@ -158,7 +148,8 @@ void TwoLevelIterator::InitDataBlock() {
     SetDataIterator(nullptr);
   } else {
     Slice handle = index_iter_.value();
-    if (data_iter_.iter() != nullptr && handle.compare(data_block_handle_) == 0) {
+    if (data_iter_.iter() != nullptr &&
+        handle.compare(data_block_handle_) == 0) {
       // data_iter_ is already constructed with this iterator, so
       // no need to change anything
     } else {
@@ -171,11 +162,9 @@ void TwoLevelIterator::InitDataBlock() {
 
 }  // namespace
 
-Iterator* NewTwoLevelIterator(
-    Iterator* index_iter,
-    BlockFunction block_function,
-    void* arg,
-    const ReadOptions& options) {
+Iterator* NewTwoLevelIterator(Iterator* index_iter,
+                              BlockFunction block_function, void* arg,
+                              const ReadOptions& options) {
   return new TwoLevelIterator(index_iter, block_function, arg, options);
 }
 

@@ -26,13 +26,9 @@ class PosixLogger final : public Logger {
   // Creates a logger that writes to the given file.
   //
   // The PosixLogger instance takes ownership of the file handle.
-  explicit PosixLogger(std::FILE* fp) : fp_(fp) {
-    assert(fp != nullptr);
-  }
+  explicit PosixLogger(std::FILE* fp) : fp_(fp) { assert(fp != nullptr); }
 
-  ~PosixLogger() override {
-    std::fclose(fp_);
-  }
+  ~PosixLogger() override { std::fclose(fp_); }
 
   void Logv(const char* format, va_list arguments) override {
     // Record the time as close to the Logv() call as possible.
@@ -67,19 +63,14 @@ class PosixLogger final : public Logger {
 
       // Print the header into the buffer.
       int buffer_offset = snprintf(
-          buffer, buffer_size,
-          "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s",
-          now_components.tm_year + 1900,
-          now_components.tm_mon + 1,
-          now_components.tm_mday,
-          now_components.tm_hour,
-          now_components.tm_min,
-          now_components.tm_sec,
-          static_cast<int>(now_timeval.tv_usec),
+          buffer, buffer_size, "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
+          now_components.tm_year + 1900, now_components.tm_mon + 1,
+          now_components.tm_mday, now_components.tm_hour, now_components.tm_min,
+          now_components.tm_sec, static_cast<int>(now_timeval.tv_usec),
           thread_id.c_str());
 
       // The header can be at most 28 characters (10 date + 15 time +
-      // 3 spacing) plus the thread ID, which should fit comfortably into the
+      // 3 delimiters) plus the thread ID, which should fit comfortably into the
       // static buffer.
       assert(buffer_offset <= 28 + kMaxThreadIdSize);
       static_assert(28 + kMaxThreadIdSize < kStackBufferSize,
@@ -89,9 +80,9 @@ class PosixLogger final : public Logger {
       // Print the message into the buffer.
       std::va_list arguments_copy;
       va_copy(arguments_copy, arguments);
-      buffer_offset += std::vsnprintf(buffer + buffer_offset,
-                                      buffer_size - buffer_offset, format,
-                                      arguments_copy);
+      buffer_offset +=
+          std::vsnprintf(buffer + buffer_offset, buffer_size - buffer_offset,
+                         format, arguments_copy);
       va_end(arguments_copy);
 
       // The code below may append a newline at the end of the buffer, which

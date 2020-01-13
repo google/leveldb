@@ -166,7 +166,7 @@ So maybe even the sharding is not necessary on modern filesystems?
 
 ## Garbage collection of files
 
-`DeleteObsoleteFiles()` is called at the end of every compaction and at the end
+`RemoveObsoleteFiles()` is called at the end of every compaction and at the end
 of recovery. It finds the names of all files in the database. It deletes all log
 files that are not the current log file. It deletes all table files that are not
 referenced from some level and are not the output of an active compaction.

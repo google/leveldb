@@ -14,8 +14,7 @@
 
 namespace leveldb {
 
-Cache::~Cache() {
-}
+Cache::~Cache() {}
 
 namespace {
 
@@ -46,12 +45,12 @@ struct LRUHandle {
   LRUHandle* next_hash;
   LRUHandle* next;
   LRUHandle* prev;
-  size_t charge;      // TODO(opt): Only allow uint32_t?
+  size_t charge;  // TODO(opt): Only allow uint32_t?
   size_t key_length;
-  bool in_cache;      // Whether entry is in the cache.
-  uint32_t refs;      // References, including cache reference, if present.
-  uint32_t hash;      // Hash of key(); used for fast sharding and comparisons
-  char key_data[1];   // Beginning of key
+  bool in_cache;     // Whether entry is in the cache.
+  uint32_t refs;     // References, including cache reference, if present.
+  uint32_t hash;     // Hash of key(); used for fast sharding and comparisons
+  char key_data[1];  // Beginning of key
 
   Slice key() const {
     // next_ is only equal to this if the LRU handle is the list head of an
@@ -114,8 +113,7 @@ class HandleTable {
   // pointer to the trailing slot in the corresponding linked list.
   LRUHandle** FindPointer(const Slice& key, uint32_t hash) {
     LRUHandle** ptr = &list_[hash & (length_ - 1)];
-    while (*ptr != nullptr &&
-           ((*ptr)->hash != hash || key != (*ptr)->key())) {
+    while (*ptr != nullptr && ((*ptr)->hash != hash || key != (*ptr)->key())) {
       ptr = &(*ptr)->next_hash;
     }
     return ptr;
@@ -158,8 +156,8 @@ class LRUCache {
   void SetCapacity(size_t capacity) { capacity_ = capacity; }
 
   // Like Cache methods, but with an extra "hash" parameter.
-  Cache::Handle* Insert(const Slice& key, uint32_t hash,
-                        void* value, size_t charge,
+  Cache::Handle* Insert(const Slice& key, uint32_t hash, void* value,
+                        size_t charge,
                         void (*deleter)(const Slice& key, void* value));
   Cache::Handle* Lookup(const Slice& key, uint32_t hash);
   void Release(Cache::Handle* handle);
@@ -172,7 +170,7 @@ class LRUCache {
 
  private:
   void LRU_Remove(LRUHandle* e);
-  void LRU_Append(LRUHandle*list, LRUHandle* e);
+  void LRU_Append(LRUHandle* list, LRUHandle* e);
   void Ref(LRUHandle* e);
   void Unref(LRUHandle* e);
   bool FinishErase(LRUHandle* e) EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -196,8 +194,7 @@ class LRUCache {
   HandleTable table_ GUARDED_BY(mutex_);
 };
 
-LRUCache::LRUCache()
-    : usage_(0) {
+LRUCache::LRUCache() : capacity_(0), usage_(0) {
   // Make empty circular linked lists.
   lru_.next = &lru_;
   lru_.prev = &lru_;
@@ -207,7 +204,7 @@ LRUCache::LRUCache()
 
 LRUCache::~LRUCache() {
   assert(in_use_.next == &in_use_);  // Error if caller has an unreleased handle
-  for (LRUHandle* e = lru_.next; e != &lru_; ) {
+  for (LRUHandle* e = lru_.next; e != &lru_;) {
     LRUHandle* next = e->next;
     assert(e->in_cache);
     e->in_cache = false;
@@ -266,13 +263,14 @@ void LRUCache::Release(Cache::Handle* handle) {
   Unref(reinterpret_cast<LRUHandle*>(handle));
 }
 
-Cache::Handle* LRUCache::Insert(
-    const Slice& key, uint32_t hash, void* value, size_t charge,
-    void (*deleter)(const Slice& key, void* value)) {
+Cache::Handle* LRUCache::Insert(const Slice& key, uint32_t hash, void* value,
+                                size_t charge,
+                                void (*deleter)(const Slice& key,
+                                                void* value)) {
   MutexLock l(&mutex_);
 
-  LRUHandle* e = reinterpret_cast<LRUHandle*>(
-      malloc(sizeof(LRUHandle)-1 + key.size()));
+  LRUHandle* e =
+      reinterpret_cast<LRUHandle*>(malloc(sizeof(LRUHandle) - 1 + key.size()));
   e->value = value;
   e->deleter = deleter;
   e->charge = charge;
@@ -347,49 +345,46 @@ class ShardedLRUCache : public Cache {
     return Hash(s.data(), s.size(), 0);
   }
 
-  static uint32_t Shard(uint32_t hash) {
-    return hash >> (32 - kNumShardBits);
-  }
+  static uint32_t Shard(uint32_t hash) { return hash >> (32 - kNumShardBits); }
 
  public:
-  explicit ShardedLRUCache(size_t capacity)
-      : last_id_(0) {
+  explicit ShardedLRUCache(size_t capacity) : last_id_(0) {
     const size_t per_shard = (capacity + (kNumShards - 1)) / kNumShards;
     for (int s = 0; s < kNumShards; s++) {
       shard_[s].SetCapacity(per_shard);
     }
   }
-  virtual ~ShardedLRUCache() { }
-  virtual Handle* Insert(const Slice& key, void* value, size_t charge,
-                         void (*deleter)(const Slice& key, void* value)) {
+  ~ShardedLRUCache() override {}
+  Handle* Insert(const Slice& key, void* value, size_t charge,
+                 void (*deleter)(const Slice& key, void* value)) override {
     const uint32_t hash = HashSlice(key);
     return shard_[Shard(hash)].Insert(key, hash, value, charge, deleter);
   }
-  virtual Handle* Lookup(const Slice& key) {
+  Handle* Lookup(const Slice& key) override {
     const uint32_t hash = HashSlice(key);
     return shard_[Shard(hash)].Lookup(key, hash);
   }
-  virtual void Release(Handle* handle) {
+  void Release(Handle* handle) override {
     LRUHandle* h = reinterpret_cast<LRUHandle*>(handle);
     shard_[Shard(h->hash)].Release(handle);
   }
-  virtual void Erase(const Slice& key) {
+  void Erase(const Slice& key) override {
     const uint32_t hash = HashSlice(key);
     shard_[Shard(hash)].Erase(key, hash);
   }
-  virtual void* Value(Handle* handle) {
+  void* Value(Handle* handle) override {
     return reinterpret_cast<LRUHandle*>(handle)->value;
   }
-  virtual uint64_t NewId() {
+  uint64_t NewId() override {
     MutexLock l(&id_mutex_);
     return ++(last_id_);
   }
-  virtual void Prune() {
+  void Prune() override {
     for (int s = 0; s < kNumShards; s++) {
       shard_[s].Prune();
     }
   }
-  virtual size_t TotalCharge() const {
+  size_t TotalCharge() const override {
     size_t total = 0;
     for (int s = 0; s < kNumShards; s++) {
       total += shard_[s].TotalCharge();
@@ -400,8 +395,6 @@ class ShardedLRUCache : public Cache {
 
 }  // end anonymous namespace
 
-Cache* NewLRUCache(size_t capacity) {
-  return new ShardedLRUCache(capacity);
-}
+Cache* NewLRUCache(size_t capacity) { return new ShardedLRUCache(capacity); }
 
 }  // namespace leveldb

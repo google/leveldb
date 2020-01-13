@@ -44,8 +44,14 @@ class SnapshotList {
   }
 
   bool empty() const { return head_.next_ == &head_; }
-  SnapshotImpl* oldest() const { assert(!empty()); return head_.next_; }
-  SnapshotImpl* newest() const { assert(!empty()); return head_.prev_; }
+  SnapshotImpl* oldest() const {
+    assert(!empty());
+    return head_.next_;
+  }
+  SnapshotImpl* newest() const {
+    assert(!empty());
+    return head_.prev_;
+  }
 
   // Creates a SnapshotImpl and appends it to the end of the list.
   SnapshotImpl* New(SequenceNumber sequence_number) {
