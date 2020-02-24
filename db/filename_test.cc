@@ -4,14 +4,12 @@
 
 #include "db/filename.h"
 
+#include "gtest/gtest.h"
 #include "db/dbformat.h"
 #include "port/port.h"
 #include "util/logging.h"
-#include "util/testharness.h"
 
 namespace leveldb {
-
-class FileNameTest {};
 
 TEST(FileNameTest, Parse) {
   Slice db;
@@ -128,4 +126,7 @@ TEST(FileNameTest, Construction) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

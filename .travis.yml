@@ -70,6 +70,7 @@ install:
 before_script:
 - mkdir -p build && cd build
 - cmake .. -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+    -DCMAKE_INSTALL_PREFIX=$HOME/.local
 - cmake --build .
 - cd ..
 
@@ -78,3 +79,4 @@ script:
 - "if [ -f build/db_bench ] ; then build/db_bench ; fi"
 - "if [ -f build/db_bench_sqlite3 ] ; then build/db_bench_sqlite3 ; fi"
 - "if [ -f build/db_bench_tree_db ] ; then build/db_bench_tree_db ; fi"
+- cd build && cmake --build . --target install

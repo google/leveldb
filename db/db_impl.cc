@@ -206,7 +206,7 @@ Status DBImpl::NewDB() {
     // Make "CURRENT" file that points to the new manifest file.
     s = SetCurrentFile(env_, dbname_, 1);
   } else {
-    env_->DeleteFile(manifest);
+    env_->RemoveFile(manifest);
   }
   return s;
 }
@@ -220,7 +220,7 @@ void DBImpl::MaybeIgnoreError(Status* s) const {
   }
 }
 
-void DBImpl::DeleteObsoleteFiles() {
+void DBImpl::RemoveObsoleteFiles() {
   mutex_.AssertHeld();
 
   if (!bg_error_.ok()) {
@@ -282,7 +282,7 @@ void DBImpl::DeleteObsoleteFiles() {
   // are therefore safe to delete while allowing other threads to proceed.
   mutex_.Unlock();
   for (const std::string& filename : files_to_delete) {
-    env_->DeleteFile(dbname_ + "/" + filename);
+    env_->RemoveFile(dbname_ + "/" + filename);
   }
   mutex_.Lock();
 }
@@ -569,7 +569,7 @@ void DBImpl::CompactMemTable() {
     imm_->Unref();
     imm_ = nullptr;
     has_imm_.store(false, std::memory_order_release);
-    DeleteObsoleteFiles();
+    RemoveObsoleteFiles();
   } else {
     RecordBackgroundError(s);
   }
@@ -729,7 +729,7 @@ void DBImpl::BackgroundCompaction() {
     // Move file to next level
     assert(c->num_input_files(0) == 1);
     FileMetaData* f = c->input(0, 0);
-    c->edit()->DeleteFile(c->level(), f->number);
+    c->edit()->RemoveFile(c->level(), f->number);
     c->edit()->AddFile(c->level() + 1, f->number, f->file_size, f->smallest,
                        f->largest);
     status = versions_->LogAndApply(c->edit(), &mutex_);
@@ -749,7 +749,7 @@ void DBImpl::BackgroundCompaction() {
     }
     CleanupCompaction(compact);
     c->ReleaseInputs();
-    DeleteObsoleteFiles();
+    RemoveObsoleteFiles();
   }
   delete c;
 
@@ -1213,9 +1213,9 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   uint64_t last_sequence = versions_->LastSequence();
   Writer* last_writer = &w;
   if (status.ok() && updates != nullptr) {  // nullptr batch is for compactions
-    WriteBatch* updates = BuildBatchGroup(&last_writer);
-    WriteBatchInternal::SetSequence(updates, last_sequence + 1);
-    last_sequence += WriteBatchInternal::Count(updates);
+    WriteBatch* write_batch = BuildBatchGroup(&last_writer);
+    WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);
+    last_sequence += WriteBatchInternal::Count(write_batch);
 
     // Add to log and apply to memtable.  We can release the lock
     // during this phase since &w is currently responsible for logging
@@ -1223,7 +1223,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     // into mem_.
     {
       mutex_.Unlock();
-      status = log_->AddRecord(WriteBatchInternal::Contents(updates));
+      status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));
       bool sync_error = false;
       if (status.ok() && options.sync) {
         status = logfile_->Sync();
@@ -1232,7 +1232,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
         }
       }
       if (status.ok()) {
-        status = WriteBatchInternal::InsertInto(updates, mem_);
+        status = WriteBatchInternal::InsertInto(write_batch, mem_);
       }
       mutex_.Lock();
       if (sync_error) {
@@ -1242,7 +1242,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
         RecordBackgroundError(status);
       }
     }
-    if (updates == tmp_batch_) tmp_batch_->Clear();
+    if (write_batch == tmp_batch_) tmp_batch_->Clear();
 
     versions_->SetLastSequence(last_sequence);
   }
@@ -1506,7 +1506,7 @@ Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
     s = impl->versions_->LogAndApply(&edit, &impl->mutex_);
   }
   if (s.ok()) {
-    impl->DeleteObsoleteFiles();
+    impl->RemoveObsoleteFiles();
     impl->MaybeScheduleCompaction();
   }
   impl->mutex_.Unlock();
@@ -1539,15 +1539,15 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
     for (size_t i = 0; i < filenames.size(); i++) {
       if (ParseFileName(filenames[i], &number, &type) &&
           type != kDBLockFile) {  // Lock file will be deleted at end
-        Status del = env->DeleteFile(dbname + "/" + filenames[i]);
+        Status del = env->RemoveFile(dbname + "/" + filenames[i]);
         if (result.ok() && !del.ok()) {
           result = del;
         }
       }
     }
     env->UnlockFile(lock);  // Ignore error since state is already gone
-    env->DeleteFile(lockname);
-    env->DeleteDir(dbname);  // Ignore error in case dir contains other files
+    env->RemoveFile(lockname);
+    env->RemoveDir(dbname);  // Ignore error in case dir contains other files
   }
   return result;
 }

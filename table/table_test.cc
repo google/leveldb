@@ -7,6 +7,7 @@
 #include <map>
 #include <string>
 
+#include "gtest/gtest.h"
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
@@ -18,7 +19,6 @@
 #include "table/block_builder.h"
 #include "table/format.h"
 #include "util/random.h"
-#include "util/testharness.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -219,12 +219,12 @@ class TableConstructor : public Constructor {
 
     for (const auto& kvp : data) {
       builder.Add(kvp.first, kvp.second);
-      ASSERT_TRUE(builder.status().ok());
+      EXPECT_LEVELDB_OK(builder.status());
     }
     Status s = builder.Finish();
-    ASSERT_TRUE(s.ok()) << s.ToString();
+    EXPECT_LEVELDB_OK(s);
 
-    ASSERT_EQ(sink.contents().size(), builder.FileSize());
+    EXPECT_EQ(sink.contents().size(), builder.FileSize());
 
     // Open the table
     source_ = new StringSource(sink.contents());
@@ -340,7 +340,7 @@ class DBConstructor : public Constructor {
     for (const auto& kvp : data) {
       WriteBatch batch;
       batch.Put(kvp.first, kvp.second);
-      ASSERT_TRUE(db_->Write(WriteOptions(), &batch).ok());
+      EXPECT_TRUE(db_->Write(WriteOptions(), &batch).ok());
     }
     return Status::OK();
   }
@@ -352,7 +352,7 @@ class DBConstructor : public Constructor {
 
  private:
   void NewDB() {
-    std::string name = test::TmpDir() + "/table_testdb";
+    std::string name = testing::TempDir() + "table_testdb";
 
     Options options;
     options.comparator = comparator_;
@@ -403,7 +403,7 @@ static const TestArgs kTestArgList[] = {
 };
 static const int kNumTestArgs = sizeof(kTestArgList) / sizeof(kTestArgList[0]);
 
-class Harness {
+class Harness : public testing::Test {
  public:
   Harness() : constructor_(nullptr) {}
 
@@ -609,7 +609,7 @@ class Harness {
 };
 
 // Test empty table/block.
-TEST(Harness, Empty) {
+TEST_F(Harness, Empty) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 1);
@@ -620,7 +620,7 @@ TEST(Harness, Empty) {
 // Special test for a block with no restart entries.  The C++ leveldb
 // code never generates such blocks, but the Java version of leveldb
 // seems to.
-TEST(Harness, ZeroRestartPointsInBlock) {
+TEST_F(Harness, ZeroRestartPointsInBlock) {
   char data[sizeof(uint32_t)];
   memset(data, 0, sizeof(data));
   BlockContents contents;
@@ -639,7 +639,7 @@ TEST(Harness, ZeroRestartPointsInBlock) {
 }
 
 // Test the empty key
-TEST(Harness, SimpleEmptyKey) {
+TEST_F(Harness, SimpleEmptyKey) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 1);
@@ -648,7 +648,7 @@ TEST(Harness, SimpleEmptyKey) {
   }
 }
 
-TEST(Harness, SimpleSingle) {
+TEST_F(Harness, SimpleSingle) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 2);
@@ -657,7 +657,7 @@ TEST(Harness, SimpleSingle) {
   }
 }
 
-TEST(Harness, SimpleMulti) {
+TEST_F(Harness, SimpleMulti) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 3);
@@ -668,7 +668,7 @@ TEST(Harness, SimpleMulti) {
   }
 }
 
-TEST(Harness, SimpleSpecialKey) {
+TEST_F(Harness, SimpleSpecialKey) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 4);
@@ -677,7 +677,7 @@ TEST(Harness, SimpleSpecialKey) {
   }
 }
 
-TEST(Harness, Randomized) {
+TEST_F(Harness, Randomized) {
   for (int i = 0; i < kNumTestArgs; i++) {
     Init(kTestArgList[i]);
     Random rnd(test::RandomSeed() + 5);
@@ -697,7 +697,7 @@ TEST(Harness, Randomized) {
   }
 }
 
-TEST(Harness, RandomizedLongDB) {
+TEST_F(Harness, RandomizedLongDB) {
   Random rnd(test::RandomSeed());
   TestArgs args = {DB_TEST, false, 16};
   Init(args);
@@ -720,8 +720,6 @@ TEST(Harness, RandomizedLongDB) {
   }
   ASSERT_GT(files, 0);
 }
-
-class MemTableTest {};
 
 TEST(MemTableTest, Simple) {
   InternalKeyComparator cmp(BytewiseComparator());
@@ -756,8 +754,6 @@ static bool Between(uint64_t val, uint64_t low, uint64_t high) {
   }
   return result;
 }
-
-class TableTest {};
 
 TEST(TableTest, ApproximateOffsetOfPlain) {
   TableConstructor c(BytewiseComparator());
@@ -832,4 +828,7 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

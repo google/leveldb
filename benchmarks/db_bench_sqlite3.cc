@@ -69,6 +69,9 @@ static int FLAGS_num_pages = 4096;
 // benchmark will fail.
 static bool FLAGS_use_existing_db = false;
 
+// If true, the SQLite table has ROWIDs.
+static bool FLAGS_use_rowids = false;
+
 // If true, we allow batch writes to occur
 static bool FLAGS_transaction = true;
 
@@ -325,7 +328,7 @@ class Benchmark {
           std::string file_name(test_dir);
           file_name += "/";
           file_name += files[i];
-          Env::Default()->DeleteFile(file_name.c_str());
+          Env::Default()->RemoveFile(file_name.c_str());
         }
       }
     }
@@ -462,6 +465,7 @@ class Benchmark {
     std::string locking_stmt = "PRAGMA locking_mode = EXCLUSIVE";
     std::string create_stmt =
         "CREATE TABLE test (key blob, value blob, PRIMARY KEY(key))";
+    if (!FLAGS_use_rowids) create_stmt += " WITHOUT ROWID";
     std::string stmt_array[] = {locking_stmt, create_stmt};
     int stmt_array_length = sizeof(stmt_array) / sizeof(std::string);
     for (int i = 0; i < stmt_array_length; i++) {
@@ -678,6 +682,9 @@ int main(int argc, char** argv) {
     } else if (sscanf(argv[i], "--use_existing_db=%d%c", &n, &junk) == 1 &&
                (n == 0 || n == 1)) {
       FLAGS_use_existing_db = n;
+    } else if (sscanf(argv[i], "--use_rowids=%d%c", &n, &junk) == 1 &&
+               (n == 0 || n == 1)) {
+      FLAGS_use_rowids = n;
     } else if (sscanf(argv[i], "--num=%d%c", &n, &junk) == 1) {
       FLAGS_num = n;
     } else if (sscanf(argv[i], "--reads=%d%c", &n, &junk) == 1) {

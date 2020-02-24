@@ -301,7 +301,7 @@ class Benchmark {
           std::string file_name(test_dir);
           file_name += "/";
           file_name += files[i];
-          Env::Default()->DeleteFile(file_name.c_str());
+          Env::Default()->RemoveFile(file_name.c_str());
         }
       }
     }

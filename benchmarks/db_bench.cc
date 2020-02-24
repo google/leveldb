@@ -409,7 +409,7 @@ class Benchmark {
     g_env->GetChildren(FLAGS_db, &files);
     for (size_t i = 0; i < files.size(); i++) {
       if (Slice(files[i]).starts_with("heap-")) {
-        g_env->DeleteFile(std::string(FLAGS_db) + "/" + files[i]);
+        g_env->RemoveFile(std::string(FLAGS_db) + "/" + files[i]);
       }
     }
     if (!FLAGS_use_existing_db) {
@@ -907,7 +907,7 @@ class Benchmark {
     delete file;
     if (!ok) {
       fprintf(stderr, "heap profiling not supported\n");
-      g_env->DeleteFile(fname);
+      g_env->RemoveFile(fname);
     }
   }
 };
