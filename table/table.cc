@@ -54,29 +54,25 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
 
   // Read the index block
   BlockContents index_block_contents;
-  if (s.ok()) {
-    ReadOptions opt;
-    if (options.paranoid_checks) {
-      opt.verify_checksums = true;
-    }
-    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+  ReadOptions opt;
+  if (options.paranoid_checks) {
+    opt.verify_checksums = true;
   }
+  s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
 
-  if (s.ok()) {
-    // We've successfully read the footer and the index block: we're
-    // ready to serve requests.
-    Block* index_block = new Block(index_block_contents);
-    Rep* rep = new Table::Rep;
-    rep->options = options;
-    rep->file = file;
-    rep->metaindex_handle = footer.metaindex_handle();
-    rep->index_block = index_block;
-    rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
-    rep->filter_data = nullptr;
-    rep->filter = nullptr;
-    *table = new Table(rep);
-    (*table)->ReadMeta(footer);
-  }
+  // We've successfully read the footer and the index block: we're
+  // ready to serve requests.
+  Block* index_block = new Block(index_block_contents);
+  Rep* rep = new Table::Rep;
+  rep->options = options;
+  rep->file = file;
+  rep->metaindex_handle = footer.metaindex_handle();
+  rep->index_block = index_block;
+  rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
+  rep->filter_data = nullptr;
+  rep->filter = nullptr;
+  *table = new Table(rep);
+  (*table)->ReadMeta(footer);
 
   return s;
 }
