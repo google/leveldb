@@ -20,19 +20,23 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
   meta->file_size = 0;
   iter->SeekToFirst();
 
+  // 创建table name (xxx.ldb)
   std::string fname = TableFileName(dbname, meta->number);
   if (iter->Valid()) {
     WritableFile* file;
+    // 创建文件
     s = env->NewWritableFile(fname, &file);
     if (!s.ok()) {
       return s;
     }
-
     TableBuilder* builder = new TableBuilder(options, file);
+    // 最小健
     meta->smallest.DecodeFrom(iter->key());
     for (; iter->Valid(); iter->Next()) {
       Slice key = iter->key();
+      // 最大健
       meta->largest.DecodeFrom(key);
+      // 添加元素
       builder->Add(key, iter->value());
     }
 

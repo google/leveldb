@@ -55,14 +55,15 @@ class TwoLevelIterator : public Iterator {
   void SkipEmptyDataBlocksForward();
   void SkipEmptyDataBlocksBackward();
   void SetDataIterator(Iterator* data_iter);
+  // 根据 index iter 设置data iter位置
   void InitDataBlock();
 
   BlockFunction block_function_;
   void* arg_;
   const ReadOptions options_;
   Status status_;
-  IteratorWrapper index_iter_;
-  IteratorWrapper data_iter_;  // May be nullptr
+  IteratorWrapper index_iter_; // 指向index iter，索引
+  IteratorWrapper data_iter_;  // May be nullptr 指向data iter，数据
   // If data_iter_ is non-null, then "data_block_handle_" holds the
   // "index_value" passed to block_function_ to create the data_iter_.
   std::string data_block_handle_;
@@ -80,7 +81,9 @@ TwoLevelIterator::TwoLevelIterator(Iterator* index_iter,
 TwoLevelIterator::~TwoLevelIterator() = default;
 
 void TwoLevelIterator::Seek(const Slice& target) {
+  // 先在 index block 找到第一个>= target 的k:v, v是某个data_block的size&offset
   index_iter_.Seek(target);
+  // 根据v读取data_block，data_iter_指向该data_block内的k:v
   InitDataBlock();
   if (data_iter_.iter() != nullptr) data_iter_.Seek(target);
   SkipEmptyDataBlocksForward();
@@ -153,6 +156,7 @@ void TwoLevelIterator::InitDataBlock() {
       // data_iter_ is already constructed with this iterator, so
       // no need to change anything
     } else {
+      // 返回该data block对应的iterator
       Iterator* iter = (*block_function_)(arg_, options_, handle);
       data_block_handle_.assign(handle.data(), handle.size());
       SetDataIterator(iter);

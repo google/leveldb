@@ -21,6 +21,7 @@ struct ReadOptions;
 
 // BlockHandle is a pointer to the extent of a file that stores a data
 // block or a meta block.
+// 表示block 偏移和大小
 class BlockHandle {
  public:
   // Maximum encoding length of a BlockHandle
@@ -35,7 +36,7 @@ class BlockHandle {
   // The size of the stored block
   uint64_t size() const { return size_; }
   void set_size(uint64_t size) { size_ = size; }
-
+  // 序列化相关
   void EncodeTo(std::string* dst) const;
   Status DecodeFrom(Slice* input);
 
@@ -46,6 +47,7 @@ class BlockHandle {
 
 // Footer encapsulates the fixed information stored at the tail
 // end of every table file.
+// 记录了两份索引数据的偏移量和大小，即metaindex_handle_， index_handle_
 class Footer {
  public:
   // Encoded length of a Footer.  Note that the serialization of a

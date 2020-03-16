@@ -20,6 +20,24 @@ class RandomAccessFile;
 struct ReadOptions;
 class TableCache;
 
+// 数据格式
+// [data block list ...][filter block（过滤器支持多个）][meta ubdex block(过滤器索引)][index block(数据块索引)][footer]
+/*
+  <beginning_of_file>
+    [data block 1]
+    [data block 2]
+    ...
+    [data block N]
+    [meta block 1]
+    ...
+    [meta block K]
+    [filter index]
+    [metaindex block]
+    [index block]
+    [Footer]        (fixed size; starts at file_size - sizeof(Footer))
+  <end_of_file>
+  */
+
 // A Table is a sorted map from strings to strings.  Tables are
 // immutable and persistent.  A Table may be safely accessed from
 // multiple threads without external synchronization.

@@ -42,6 +42,7 @@ class WritableFile;
 // Return the smallest index i such that files[i]->largest >= key.
 // Return files.size() if there is no such file.
 // REQUIRES: "files" contains a sorted list of non-overlapping files.
+// 二分查找第一个最大健比key大的文件索引
 int FindFile(const InternalKeyComparator& icmp,
              const std::vector<FileMetaData*>& files, const Slice& key);
 
@@ -51,6 +52,7 @@ int FindFile(const InternalKeyComparator& icmp,
 // largest==nullptr represents a key largest than all keys in the DB.
 // REQUIRES: If disjoint_sorted_files, files[] contains disjoint ranges
 //           in sorted order.
+// 与某层level 文件是否有重叠
 bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
                            bool disjoint_sorted_files,
                            const std::vector<FileMetaData*>& files,
@@ -90,7 +92,7 @@ class Version {
   // under live iterators)
   void Ref();
   void Unref();
-
+  // 某一层范围内所有的FileMetaData返回
   void GetOverlappingInputs(
       int level,
       const InternalKey* begin,  // nullptr means before all keys
@@ -101,11 +103,13 @@ class Version {
   // some part of [*smallest_user_key,*largest_user_key].
   // smallest_user_key==nullptr represents a key smaller than all the DB's keys.
   // largest_user_key==nullptr represents a key largest than all the DB's keys.
+  // 与某level层的文件是否有重叠
   bool OverlapInLevel(int level, const Slice* smallest_user_key,
                       const Slice* largest_user_key);
 
   // Return the level at which we should place a new memtable compaction
   // result that covers the range [smallest_user_key,largest_user_key].
+  // 检测 memtable第一次到磁盘时放到哪一层
   int PickLevelForMemTableOutput(const Slice& smallest_user_key,
                                  const Slice& largest_user_key);
 
@@ -145,6 +149,7 @@ class Version {
   void ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
                           bool (*func)(void*, int, FileMetaData*));
 
+  // 链表相关变量
   VersionSet* vset_;  // VersionSet to which this Version belongs
   Version* next_;     // Next version in linked list
   Version* prev_;     // Previous version in linked list
@@ -164,6 +169,8 @@ class Version {
   int compaction_level_;
 };
 
+
+// 管理多个版本的version，全局唯一
 class VersionSet {
  public:
   VersionSet(const std::string& dbname, const Options* options,
@@ -277,6 +284,7 @@ class VersionSet {
 
   bool ReuseManifest(const std::string& dscname, const std::string& dscbase);
 
+  // 计算下次 major compact 时要处理的层
   void Finalize(Version* v);
 
   void GetRange(const std::vector<FileMetaData*>& inputs, InternalKey* smallest,
@@ -312,9 +320,11 @@ class VersionSet {
 
   // Per-level key at which the next compaction at that level should start.
   // Either an empty string, or a valid InternalKey.
+  // 记录了该层上次 compact 时文件的 largest key，初始值为空，也就是选择该层第一个文件。
   std::string compact_pointer_[config::kNumLevels];
 };
 
+// 用来记录筛选要合并的文件
 // A Compaction encapsulates information about a compaction.
 class Compaction {
  public:
@@ -369,6 +379,7 @@ class Compaction {
   VersionEdit edit_;
 
   // Each compaction reads inputs from "level_" and "level_+1"
+  // 记录了参与 compact 的两层文件
   std::vector<FileMetaData*> inputs_[2];  // The two sets of inputs
 
   // State used to check for number of overlapping grandparent files

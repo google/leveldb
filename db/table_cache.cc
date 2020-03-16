@@ -11,6 +11,7 @@
 
 namespace leveldb {
 
+// cache存储的值
 struct TableAndFile {
   RandomAccessFile* file;
   Table* table;
@@ -41,6 +42,7 @@ TableCache::~TableCache() { delete cache_; }
 Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
                              Cache::Handle** handle) {
   Status s;
+  // cache key是文件的number
   char buf[sizeof(file_number)];
   EncodeFixed64(buf, file_number);
   Slice key(buf, sizeof(buf));
@@ -66,6 +68,7 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
       // We do not cache error results so that if the error is transient,
       // or somebody repairs the file, we recover automatically.
     } else {
+      // 添加缓存
       TableAndFile* tf = new TableAndFile;
       tf->file = file;
       tf->table = table;

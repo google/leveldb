@@ -41,8 +41,10 @@ Status Writer::AddRecord(const Slice& slice) {
   Status s;
   bool begin = true;
   do {
+    // 本block剩余字节
     const int leftover = kBlockSize - block_offset_;
     assert(leftover >= 0);
+    // 如果剩余自己小于 头大小，将末尾填充0
     if (leftover < kHeaderSize) {
       // Switch to a new block
       if (leftover > 0) {
@@ -57,9 +59,11 @@ Status Writer::AddRecord(const Slice& slice) {
     assert(kBlockSize - block_offset_ - kHeaderSize >= 0);
 
     const size_t avail = kBlockSize - block_offset_ - kHeaderSize;
+    // 可以填写到本block的字节数
     const size_t fragment_length = (left < avail) ? left : avail;
 
     RecordType type;
+    // 是否能全放下？判断type
     const bool end = (left == fragment_length);
     if (begin && end) {
       type = kFullType;
@@ -96,8 +100,10 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
   EncodeFixed32(buf, crc);
 
   // Write the header and the payload
+  // 先写header
   Status s = dest_->Append(Slice(buf, kHeaderSize));
   if (s.ok()) {
+    // 再写内容
     s = dest_->Append(Slice(ptr, length));
     if (s.ok()) {
       s = dest_->Flush();

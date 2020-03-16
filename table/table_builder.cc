@@ -37,13 +37,15 @@ struct TableBuilder::Rep {
 
   Options options;
   Options index_block_options;
-  WritableFile* file;
-  uint64_t offset;
+  WritableFile* file; // 所有序列化后数据
+  uint64_t offset;    // 当前偏移
   Status status;
+  //data block&&index block都采用相同的格式，通过BlockBuilder完成
+  //不过block_restart_interval参数不同
   BlockBuilder data_block;
   BlockBuilder index_block;
-  std::string last_key;
-  int64_t num_entries;
+  std::string last_key; // 最后一个key
+  int64_t num_entries;  // 已经添加entry数量
   bool closed;  // Either Finish() or Abandon() has been called.
   FilterBlockBuilder* filter_block;
 
@@ -101,19 +103,25 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
 
   if (r->pending_index_entry) {
     assert(r->data_block.empty());
+    // 计算满足>r->last_key && <= key的第一个字符串，存储到r->last_key
+    // 例如(abcdefg, abcdxyz) -> *1st_arg = abcdf
     r->options.comparator->FindShortestSeparator(&r->last_key, key);
     std::string handle_encoding;
+     //pending_handle记录的是上个block写入前的offset及大小
     r->pending_handle.EncodeTo(&handle_encoding);
+    // 添加key到 index block
     r->index_block.Add(r->last_key, Slice(handle_encoding));
     r->pending_index_entry = false;
   }
 
   if (r->filter_block != nullptr) {
+    // 过滤器添加key
     r->filter_block->AddKey(key);
   }
 
   r->last_key.assign(key.data(), key.size());
   r->num_entries++;
+  // data block添加key value
   r->data_block.Add(key, value);
 
   const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
@@ -128,6 +136,9 @@ void TableBuilder::Flush() {
   if (!ok()) return;
   if (r->data_block.empty()) return;
   assert(!r->pending_index_entry);
+  // 写入r->data_block到r->file
+  // 更新pending_handle: size为r->data_block的大小，offset为写入data_block前的offset
+  // 因此pending_handle可以定位一个完整的data_block
   WriteBlock(&r->data_block, &r->pending_handle);
   if (ok()) {
     r->pending_index_entry = true;
@@ -145,6 +156,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
   //    crc: uint32
   assert(ok());
   Rep* r = rep_;
+  // 从block取出序列化后的数据
   Slice raw = block->Finish();
 
   Slice block_contents;
@@ -155,6 +167,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       block_contents = raw;
       break;
 
+    // 需要snappy压缩
     case kSnappyCompression: {
       std::string* compressed = &r->compressed_output;
       if (port::Snappy_Compress(raw.data(), raw.size(), compressed) &&
@@ -174,6 +187,8 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
   block->Reset();
 }
 
+// 数据格式|block_contents |compression_type |crc |
+// 输出本block信息到handle
 void TableBuilder::WriteRawBlock(const Slice& block_contents,
                                  CompressionType type, BlockHandle* handle) {
   Rep* r = rep_;
@@ -204,12 +219,15 @@ Status TableBuilder::Finish() {
   BlockHandle filter_block_handle, metaindex_block_handle, index_block_handle;
 
   // Write filter block
+  // 序列化 filter_block
   if (ok() && r->filter_block != nullptr) {
     WriteRawBlock(r->filter_block->Finish(), kNoCompression,
                   &filter_block_handle);
   }
 
   // Write metaindex block
+  // 序列化 metaindex block， 指向过滤器index
+  // // 写入 meta index block, 即 filter block’s index. key 为 filter 名字，value为 filter_block_handle 序列化后的值，这个 block 只有一条数据。 
   if (ok()) {
     BlockBuilder meta_index_block(&r->options);
     if (r->filter_block != nullptr) {
@@ -226,6 +244,7 @@ Status TableBuilder::Finish() {
   }
 
   // Write index block
+  // 序列化 index block， 
   if (ok()) {
     if (r->pending_index_entry) {
       r->options.comparator->FindShortSuccessor(&r->last_key);
@@ -238,6 +257,7 @@ Status TableBuilder::Finish() {
   }
 
   // Write footer
+  // 序列化 footer
   if (ok()) {
     Footer footer;
     footer.set_metaindex_handle(metaindex_block_handle);

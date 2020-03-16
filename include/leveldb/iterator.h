@@ -21,6 +21,12 @@
 
 namespace leveldb {
 
+// leveldb::Block::Iter用于 block 的读取，例如 sstable 里的 data-block index-block meta-index-block 等
+// leveldb::MemTableIterator用于 memtable 的读取
+// MergingIterator用于文件多路归并，记录每一个 sstable 的 iterator，非常像 stl 里的merge.
+// leveldb::Version::LevelFileNumIterator
+// leveldb::TwoLevelIterator顾名思义，是由两层的 iterator 实现的, 第一层 index_iter_ 指向sstable索引, 第二层 data_iter_ 指向sstable数据
+
 class LEVELDB_EXPORT Iterator {
  public:
   Iterator();

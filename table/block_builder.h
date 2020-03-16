@@ -15,6 +15,8 @@ namespace leveldb {
 
 struct Options;
 
+// 数据格式
+// |shared key len  |non-shared key len  | value len  |non-shared key  |value  |
 class BlockBuilder {
  public:
   explicit BlockBuilder(const Options* options);
@@ -36,13 +38,16 @@ class BlockBuilder {
 
   // Returns an estimate of the current (uncompressed) size of the block
   // we are building.
+  // 预估序列化后的数据大小
   size_t CurrentSizeEstimate() const;
 
   // Return true iff no entries have been added since the last Reset()
   bool empty() const { return buffer_.empty(); }
 
  private:
+  // 用到比较器 和 前缀优化数量限制
   const Options* options_;
+  // 所有
   std::string buffer_;              // Destination buffer
   std::vector<uint32_t> restarts_;  // Restart points
   int counter_;                     // Number of entries emitted since restart

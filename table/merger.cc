@@ -13,7 +13,7 @@ namespace leveldb {
 namespace {
 class MergingIterator : public Iterator {
  public:
-  MergingIterator(const Comparator* comparator, Iterator** children, int n)
+  MergingIterator(const Comparator* comparator, Iterator** children/*传入多个iter*/, int n)
       : comparator_(comparator),
         children_(new IteratorWrapper[n]),
         n_(n),
@@ -29,6 +29,7 @@ class MergingIterator : public Iterator {
   bool Valid() const override { return (current_ != nullptr); }
 
   void SeekToFirst() override {
+    // 
     for (int i = 0; i < n_; i++) {
       children_[i].SeekToFirst();
     }
@@ -44,6 +45,7 @@ class MergingIterator : public Iterator {
     direction_ = kReverse;
   }
 
+  // 所有的迭代器都进行seek
   void Seek(const Slice& target) override {
     for (int i = 0; i < n_; i++) {
       children_[i].Seek(target);
@@ -145,6 +147,7 @@ class MergingIterator : public Iterator {
   Direction direction_;
 };
 
+// 查找最小的一个放入current_
 void MergingIterator::FindSmallest() {
   IteratorWrapper* smallest = nullptr;
   for (int i = 0; i < n_; i++) {

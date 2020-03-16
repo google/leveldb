@@ -44,6 +44,7 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
 
   char footer_space[Footer::kEncodedLength];
   Slice footer_input;
+  // 读取文件末尾 footer
   Status s = file->Read(size - Footer::kEncodedLength, Footer::kEncodedLength,
                         &footer_input, footer_space);
   if (!s.ok()) return s;
@@ -53,12 +54,15 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
   if (!s.ok()) return s;
 
   // Read the index block
+  // 读取data block
   BlockContents index_block_contents;
-  ReadOptions opt;
-  if (options.paranoid_checks) {
-    opt.verify_checksums = true;
+  if (s.ok()) {
+    ReadOptions opt;
+    if (options.paranoid_checks) {
+      opt.verify_checksums = true;
+    }
+    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
   }
-  s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
 
   if (s.ok()) {
     // We've successfully read the footer and the index block: we're
@@ -73,6 +77,7 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
     rep->filter_data = nullptr;
     rep->filter = nullptr;
     *table = new Table(rep);
+    // 读取filter block
     (*table)->ReadMeta(footer);
   }
 
@@ -167,23 +172,29 @@ Iterator* Table::BlockReader(void* arg, const ReadOptions& options,
     BlockContents contents;
     if (block_cache != nullptr) {
       char cache_key_buffer[16];
+      // 缓存 key 使用 cache_id + offset 来唯一表示一个 Block
+      // cache_id每个table唯一
       EncodeFixed64(cache_key_buffer, table->rep_->cache_id);
       EncodeFixed64(cache_key_buffer + 8, handle.offset());
       Slice key(cache_key_buffer, sizeof(cache_key_buffer));
+      // 现在缓存中查找block
       cache_handle = block_cache->Lookup(key);
       if (cache_handle != nullptr) {
         block = reinterpret_cast<Block*>(block_cache->Value(cache_handle));
       } else {
+        // 缓存中没有的话就新建一个，添加到缓存中
         s = ReadBlock(table->rep_->file, options, handle, &contents);
         if (s.ok()) {
           block = new Block(contents);
           if (contents.cachable && options.fill_cache) {
+            // 缓存的是block 对象的地址
             cache_handle = block_cache->Insert(key, block, block->size(),
                                                &DeleteCachedBlock);
           }
         }
       }
     } else {
+      // 没有缓存就新建一个
       s = ReadBlock(table->rep_->file, options, handle, &contents);
       if (s.ok()) {
         block = new Block(contents);
@@ -194,6 +205,7 @@ Iterator* Table::BlockReader(void* arg, const ReadOptions& options,
   Iterator* iter;
   if (block != nullptr) {
     iter = block->NewIterator(table->rep_->options.comparator);
+    // 注册析构器
     if (cache_handle == nullptr) {
       iter->RegisterCleanup(&DeleteBlock, block, nullptr);
     } else {

@@ -17,6 +17,9 @@ namespace leveldb {
 class InternalKeyComparator;
 class MemTableIterator;
 
+
+// 存储格式
+// [internal key size][(internal key)user_key|sequence|type][value size][value]
 class MemTable {
  public:
   // MemTables are reference counted.  The initial reference count

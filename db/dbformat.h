@@ -66,6 +66,11 @@ typedef uint64_t SequenceNumber;
 // can be packed together into 64-bits.
 static const SequenceNumber kMaxSequenceNumber = ((0x1ull << 56) - 1);
 
+
+// userkey: 用户传入的 key，即用户key.
+// internal key: 增加了sequence type，用于支持同一 key 的多次操作，以及 snapshot，即内部key.
+// memtable key: 增加了 varint32 encode 后的 internal key长度
+
 struct ParsedInternalKey {
   Slice user_key;
   SequenceNumber sequence;
@@ -181,6 +186,7 @@ inline bool ParseInternalKey(const Slice& internal_key,
 }
 
 // A helper class useful for DBImpl::Get()
+// start_ [length] kstart_ [value][SequenceNumber][type]end_
 class LookupKey {
  public:
   // Initialize *this for looking up user_key at a snapshot with

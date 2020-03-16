@@ -17,6 +17,7 @@ class WritableFile;
 
 namespace log {
 
+// bin log文件
 class Writer {
  public:
   // Create a writer that will append data to "*dest".
@@ -39,12 +40,15 @@ class Writer {
  private:
   Status EmitPhysicalRecord(RecordType type, const char* ptr, size_t length);
 
+  // 系统文件对象封装
   WritableFile* dest_;
+  // 当前block 写入游标偏移
   int block_offset_;  // Current offset in block
 
   // crc32c values for all supported record types.  These are
   // pre-computed to reduce the overhead of computing the crc of the
   // record type stored in the header.
+  // 校验和
   uint32_t type_crc_[kMaxRecordType + 1];
 };
 

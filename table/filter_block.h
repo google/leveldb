@@ -28,6 +28,8 @@ class FilterPolicy;
 //
 // The sequence of calls to FilterBlockBuilder must match the regexp:
 //      (StartBlock AddKey*)* Finish
+// 数据格式
+// [filter data][filter data offset list ...][fileter data total size][base lg]
 class FilterBlockBuilder {
  public:
   explicit FilterBlockBuilder(const FilterPolicy*);
@@ -43,7 +45,9 @@ class FilterBlockBuilder {
   void GenerateFilter();
 
   const FilterPolicy* policy_;
-  std::string keys_;             // Flattened key contents
+  // 所有key数据平铺展开
+  std::string keys_;             // Flattened key contents 
+  // keys_中平铺展开各个key的偏移量
   std::vector<size_t> start_;    // Starting index in keys_ of each key
   std::string result_;           // Filter data computed so far
   std::vector<Slice> tmp_keys_;  // policy_->CreateFilter() argument
