@@ -151,7 +151,7 @@ TEST(SkipTest, InsertAndLookup) {
 // been concurrently added since the iterator started.
 class ConcurrentTest {
  private:
-  static const uint32_t K = 4;
+  static constexpr uint32_t K = 4;
 
   static uint64_t key(Key key) { return (key >> 40); }
   static uint64_t gen(Key key) { return (key >> 8) & 0xffffffffu; }
@@ -280,7 +280,6 @@ class ConcurrentTest {
     }
   }
 };
-const uint32_t ConcurrentTest::K;
 
 // Simple test that does single-threaded testing of the ConcurrentTest
 // scaffolding.
