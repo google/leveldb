@@ -34,7 +34,7 @@ TEST(FileNameTest, Parse) {
       {"LOG.old", 0, kInfoLogFile},
       {"18446744073709551615.log", 18446744073709551615ull, kLogFile},
   };
-  for (int i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
+  for (size_t i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
     std::string f = cases[i].fname;
     ASSERT_TRUE(ParseFileName(f, &number, &type)) << f;
     ASSERT_EQ(cases[i].type, type) << f;
@@ -64,7 +64,7 @@ TEST(FileNameTest, Parse) {
                                  "100",
                                  "100.",
                                  "100.lop"};
-  for (int i = 0; i < sizeof(errors) / sizeof(errors[0]); i++) {
+  for (size_t i = 0; i < sizeof(errors) / sizeof(errors[0]); i++) {
     std::string f = errors[i];
     ASSERT_TRUE(!ParseFileName(f, &number, &type)) << f;
   }

@@ -56,8 +56,8 @@ TEST(FormatTest, InternalKey_EncodeDecode) {
                           (1ull << 32) - 1,
                           1ull << 32,
                           (1ull << 32) + 1};
-  for (int k = 0; k < sizeof(keys) / sizeof(keys[0]); k++) {
-    for (int s = 0; s < sizeof(seq) / sizeof(seq[0]); s++) {
+  for (size_t k = 0; k < sizeof(keys) / sizeof(keys[0]); k++) {
+    for (size_t s = 0; s < sizeof(seq) / sizeof(seq[0]); s++) {
       TestKey(keys[k], seq[s], kTypeValue);
       TestKey("hello", 1, kTypeDeletion);
     }

@@ -104,9 +104,11 @@ class RandomGenerator {
   }
 
   Slice Generate(int len) {
-    if (pos_ + len > data_.size()) {
+    assert(len > 0);
+    assert(pos_ >= 0);
+    if (static_cast<size_t>(pos_) + len > data_.size()) {
       pos_ = 0;
-      assert(len < data_.size());
+      assert(static_cast<size_t>(len) < data_.size());
     }
     pos_ += len;
     return Slice(data_.data() + pos_ - len, len);
@@ -114,11 +116,11 @@ class RandomGenerator {
 };
 
 static Slice TrimSpace(Slice s) {
-  int start = 0;
+  size_t start = 0;
   while (start < s.size() && isspace(s[start])) {
     start++;
   }
-  int limit = s.size();
+  size_t limit = s.size();
   while (limit > start && isspace(s[limit - 1])) {
     limit--;
   }
@@ -296,7 +298,7 @@ class Benchmark {
     Env::Default()->GetTestDirectory(&test_dir);
     Env::Default()->GetChildren(test_dir.c_str(), &files);
     if (!FLAGS_use_existing_db) {
-      for (int i = 0; i < files.size(); i++) {
+      for (size_t i = 0; i < files.size(); i++) {
         if (Slice(files[i]).starts_with("dbbench_polyDB")) {
           std::string file_name(test_dir);
           file_name += "/";
