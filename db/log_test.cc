@@ -27,7 +27,7 @@ static std::string BigString(const std::string& partial_string, size_t n) {
 // Construct a string from a number
 static std::string NumberString(int n) {
   char buf[50];
-  snprintf(buf, sizeof(buf), "%d.", n);
+  std::snprintf(buf, sizeof(buf), "%d.", n);
   return std::string(buf);
 }
 

@@ -93,7 +93,7 @@ class FileState {
       if (avail > bytes_to_copy) {
         avail = bytes_to_copy;
       }
-      memcpy(dst, blocks_[block] + block_offset, avail);
+      std::memcpy(dst, blocks_[block] + block_offset, avail);
 
       bytes_to_copy -= avail;
       dst += avail;
@@ -126,7 +126,7 @@ class FileState {
       if (avail > src_len) {
         avail = src_len;
       }
-      memcpy(blocks_.back() + offset, src, avail);
+      std::memcpy(blocks_.back() + offset, src, avail);
       src_len -= avail;
       src += avail;
       size_ += avail;
@@ -215,7 +215,7 @@ class WritableFileImpl : public WritableFile {
 
 class NoOpLogger : public Logger {
  public:
-  void Logv(const char* format, va_list ap) override {}
+  void Logv(const char* format, std::va_list ap) override {}
 };
 
 class InMemoryEnv : public EnvWrapper {

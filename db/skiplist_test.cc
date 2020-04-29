@@ -346,7 +346,7 @@ static void RunConcurrent(int run) {
   const int kSize = 1000;
   for (int i = 0; i < N; i++) {
     if ((i % 100) == 0) {
-      fprintf(stderr, "Run %d of %d\n", i, N);
+      std::fprintf(stderr, "Run %d of %d\n", i, N);
     }
     TestState state(seed + 1);
     Env::Default()->Schedule(ConcurrentReader, &state);

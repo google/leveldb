@@ -158,7 +158,7 @@ static bool SaveError(char** errptr, const Status& s) {
 
 static char* CopyString(const std::string& str) {
   char* result = reinterpret_cast<char*>(malloc(sizeof(char) * str.size()));
-  memcpy(result, str.data(), sizeof(char) * str.size());
+  std::memcpy(result, str.data(), sizeof(char) * str.size());
   return result;
 }
 
@@ -548,7 +548,7 @@ char* leveldb_env_get_test_directory(leveldb_env_t* env) {
   }
 
   char* buffer = static_cast<char*>(malloc(result.size() + 1));
-  memcpy(buffer, result.data(), result.size());
+  std::memcpy(buffer, result.data(), result.size());
   buffer[result.size()] = '\0';
   return buffer;
 }

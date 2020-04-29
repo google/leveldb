@@ -372,7 +372,8 @@ class Repairer {
                     t.meta.largest);
     }
 
-    // fprintf(stderr, "NewDescriptor:\n%s\n", edit_.DebugString().c_str());
+    // std::fprintf(stderr,
+    //              "NewDescriptor:\n%s\n", edit_.DebugString().c_str());
     {
       log::Writer log(file);
       std::string record;

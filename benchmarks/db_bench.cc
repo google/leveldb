@@ -221,8 +221,8 @@ class Stats {
       double micros = now - last_op_finish_;
       hist_.Add(micros);
       if (micros > 20000) {
-        fprintf(stderr, "long op: %.1f micros%30s\r", micros, "");
-        fflush(stderr);
+        std::fprintf(stderr, "long op: %.1f micros%30s\r", micros, "");
+        std::fflush(stderr);
       }
       last_op_finish_ = now;
     }
@@ -243,8 +243,8 @@ class Stats {
         next_report_ += 50000;
       else
         next_report_ += 100000;
-      fprintf(stderr, "... finished %d ops%30s\r", done_, "");
-      fflush(stderr);
+      std::fprintf(stderr, "... finished %d ops%30s\r", done_, "");
+      std::fflush(stderr);
     }
   }
 
@@ -261,18 +261,20 @@ class Stats {
       // elapsed times.
       double elapsed = (finish_ - start_) * 1e-6;
       char rate[100];
-      snprintf(rate, sizeof(rate), "%6.1f MB/s",
-               (bytes_ / 1048576.0) / elapsed);
+      std::snprintf(rate, sizeof(rate), "%6.1f MB/s",
+                    (bytes_ / 1048576.0) / elapsed);
       extra = rate;
     }
     AppendWithSpace(&extra, message_);
 
-    fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n", name.ToString().c_str(),
-            seconds_ * 1e6 / done_, (extra.empty() ? "" : " "), extra.c_str());
+    std::fprintf(stdout, "%-12s : %11.3f micros/op;%s%s\n",
+                 name.ToString().c_str(), seconds_ * 1e6 / done_,
+                 (extra.empty() ? "" : " "), extra.c_str());
     if (FLAGS_histogram) {
-      fprintf(stdout, "Microseconds per op:\n%s\n", hist_.ToString().c_str());
+      std::fprintf(stdout, "Microseconds per op:\n%s\n",
+                   hist_.ToString().c_str());
     }
-    fflush(stdout);
+    std::fflush(stdout);
   }
 };
 
@@ -323,51 +325,55 @@ class Benchmark {
   void PrintHeader() {
     const int kKeySize = 16;
     PrintEnvironment();
-    fprintf(stdout, "Keys:       %d bytes each\n", kKeySize);
-    fprintf(stdout, "Values:     %d bytes each (%d bytes after compression)\n",
-            FLAGS_value_size,
-            static_cast<int>(FLAGS_value_size * FLAGS_compression_ratio + 0.5));
-    fprintf(stdout, "Entries:    %d\n", num_);
-    fprintf(stdout, "RawSize:    %.1f MB (estimated)\n",
-            ((static_cast<int64_t>(kKeySize + FLAGS_value_size) * num_) /
-             1048576.0));
-    fprintf(stdout, "FileSize:   %.1f MB (estimated)\n",
-            (((kKeySize + FLAGS_value_size * FLAGS_compression_ratio) * num_) /
-             1048576.0));
+    std::fprintf(stdout, "Keys:       %d bytes each\n", kKeySize);
+    std::fprintf(
+        stdout, "Values:     %d bytes each (%d bytes after compression)\n",
+        FLAGS_value_size,
+        static_cast<int>(FLAGS_value_size * FLAGS_compression_ratio + 0.5));
+    std::fprintf(stdout, "Entries:    %d\n", num_);
+    std::fprintf(stdout, "RawSize:    %.1f MB (estimated)\n",
+                 ((static_cast<int64_t>(kKeySize + FLAGS_value_size) * num_) /
+                  1048576.0));
+    std::fprintf(
+        stdout, "FileSize:   %.1f MB (estimated)\n",
+        (((kKeySize + FLAGS_value_size * FLAGS_compression_ratio) * num_) /
+         1048576.0));
     PrintWarnings();
-    fprintf(stdout, "------------------------------------------------\n");
+    std::fprintf(stdout, "------------------------------------------------\n");
   }
 
   void PrintWarnings() {
 #if defined(__GNUC__) && !defined(__OPTIMIZE__)
-    fprintf(
+    std::fprintf(
         stdout,
         "WARNING: Optimization is disabled: benchmarks unnecessarily slow\n");
 #endif
 #ifndef NDEBUG
-    fprintf(stdout,
-            "WARNING: Assertions are enabled; benchmarks unnecessarily slow\n");
+    std::fprintf(
+        stdout,
+        "WARNING: Assertions are enabled; benchmarks unnecessarily slow\n");
 #endif
 
     // See if snappy is working by attempting to compress a compressible string
     const char text[] = "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy";
     std::string compressed;
     if (!port::Snappy_Compress(text, sizeof(text), &compressed)) {
-      fprintf(stdout, "WARNING: Snappy compression is not enabled\n");
+      std::fprintf(stdout, "WARNING: Snappy compression is not enabled\n");
     } else if (compressed.size() >= sizeof(text)) {
-      fprintf(stdout, "WARNING: Snappy compression is not effective\n");
+      std::fprintf(stdout, "WARNING: Snappy compression is not effective\n");
     }
   }
 
   void PrintEnvironment() {
-    fprintf(stderr, "LevelDB:    version %d.%d\n", kMajorVersion,
-            kMinorVersion);
+    std::fprintf(stderr, "LevelDB:    version %d.%d\n", kMajorVersion,
+                 kMinorVersion);
 
 #if defined(__linux)
     time_t now = time(nullptr);
-    fprintf(stderr, "Date:       %s", ctime(&now));  // ctime() adds newline
+    std::fprintf(stderr, "Date:       %s",
+                 ctime(&now));  // ctime() adds newline
 
-    FILE* cpuinfo = fopen("/proc/cpuinfo", "r");
+    FILE* cpuinfo = std::fopen("/proc/cpuinfo", "r");
     if (cpuinfo != nullptr) {
       char line[1000];
       int num_cpus = 0;
@@ -387,9 +393,9 @@ class Benchmark {
           cache_size = val.ToString();
         }
       }
-      fclose(cpuinfo);
-      fprintf(stderr, "CPU:        %d * %s\n", num_cpus, cpu_type.c_str());
-      fprintf(stderr, "CPUCache:   %s\n", cache_size.c_str());
+      std::fclose(cpuinfo);
+      std::fprintf(stderr, "CPU:        %d * %s\n", num_cpus, cpu_type.c_str());
+      std::fprintf(stderr, "CPUCache:   %s\n", cache_size.c_str());
     }
 #endif
   }
@@ -516,14 +522,15 @@ class Benchmark {
         PrintStats("leveldb.sstables");
       } else {
         if (!name.empty()) {  // No error message for empty name
-          fprintf(stderr, "unknown benchmark '%s'\n", name.ToString().c_str());
+          std::fprintf(stderr, "unknown benchmark '%s'\n",
+                       name.ToString().c_str());
         }
       }
 
       if (fresh_db) {
         if (FLAGS_use_existing_db) {
-          fprintf(stdout, "%-12s : skipped (--use_existing_db is true)\n",
-                  name.ToString().c_str());
+          std::fprintf(stdout, "%-12s : skipped (--use_existing_db is true)\n",
+                       name.ToString().c_str());
           method = nullptr;
         } else {
           delete db_;
@@ -625,7 +632,7 @@ class Benchmark {
       bytes += size;
     }
     // Print so result is not dead
-    fprintf(stderr, "... crc=0x%x\r", static_cast<unsigned int>(crc));
+    std::fprintf(stderr, "... crc=0x%x\r", static_cast<unsigned int>(crc));
 
     thread->stats.AddBytes(bytes);
     thread->stats.AddMessage(label);
@@ -649,8 +656,8 @@ class Benchmark {
       thread->stats.AddMessage("(snappy failure)");
     } else {
       char buf[100];
-      snprintf(buf, sizeof(buf), "(output: %.1f%%)",
-               (produced * 100.0) / bytes);
+      std::snprintf(buf, sizeof(buf), "(output: %.1f%%)",
+                    (produced * 100.0) / bytes);
       thread->stats.AddMessage(buf);
       thread->stats.AddBytes(bytes);
     }
@@ -692,8 +699,8 @@ class Benchmark {
     options.reuse_logs = FLAGS_reuse_logs;
     Status s = DB::Open(options, FLAGS_db, &db_);
     if (!s.ok()) {
-      fprintf(stderr, "open error: %s\n", s.ToString().c_str());
-      exit(1);
+      std::fprintf(stderr, "open error: %s\n", s.ToString().c_str());
+      std::exit(1);
     }
   }
 
@@ -712,7 +719,7 @@ class Benchmark {
   void DoWrite(ThreadState* thread, bool seq) {
     if (num_ != FLAGS_num) {
       char msg[100];
-      snprintf(msg, sizeof(msg), "(%d ops)", num_);
+      std::snprintf(msg, sizeof(msg), "(%d ops)", num_);
       thread->stats.AddMessage(msg);
     }
 
@@ -725,15 +732,15 @@ class Benchmark {
       for (int j = 0; j < entries_per_batch_; j++) {
         const int k = seq ? i + j : (thread->rand.Next() % FLAGS_num);
         char key[100];
-        snprintf(key, sizeof(key), "%016d", k);
+        std::snprintf(key, sizeof(key), "%016d", k);
         batch.Put(key, gen.Generate(value_size_));
         bytes += value_size_ + strlen(key);
         thread->stats.FinishedSingleOp();
       }
       s = db_->Write(write_options_, &batch);
       if (!s.ok()) {
-        fprintf(stderr, "put error: %s\n", s.ToString().c_str());
-        exit(1);
+        std::fprintf(stderr, "put error: %s\n", s.ToString().c_str());
+        std::exit(1);
       }
     }
     thread->stats.AddBytes(bytes);
@@ -772,14 +779,14 @@ class Benchmark {
     for (int i = 0; i < reads_; i++) {
       char key[100];
       const int k = thread->rand.Next() % FLAGS_num;
-      snprintf(key, sizeof(key), "%016d", k);
+      std::snprintf(key, sizeof(key), "%016d", k);
       if (db_->Get(options, key, &value).ok()) {
         found++;
       }
       thread->stats.FinishedSingleOp();
     }
     char msg[100];
-    snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
+    std::snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
     thread->stats.AddMessage(msg);
   }
 
@@ -789,7 +796,7 @@ class Benchmark {
     for (int i = 0; i < reads_; i++) {
       char key[100];
       const int k = thread->rand.Next() % FLAGS_num;
-      snprintf(key, sizeof(key), "%016d.", k);
+      std::snprintf(key, sizeof(key), "%016d.", k);
       db_->Get(options, key, &value);
       thread->stats.FinishedSingleOp();
     }
@@ -802,7 +809,7 @@ class Benchmark {
     for (int i = 0; i < reads_; i++) {
       char key[100];
       const int k = thread->rand.Next() % range;
-      snprintf(key, sizeof(key), "%016d", k);
+      std::snprintf(key, sizeof(key), "%016d", k);
       db_->Get(options, key, &value);
       thread->stats.FinishedSingleOp();
     }
@@ -815,14 +822,14 @@ class Benchmark {
       Iterator* iter = db_->NewIterator(options);
       char key[100];
       const int k = thread->rand.Next() % FLAGS_num;
-      snprintf(key, sizeof(key), "%016d", k);
+      std::snprintf(key, sizeof(key), "%016d", k);
       iter->Seek(key);
       if (iter->Valid() && iter->key() == key) found++;
       delete iter;
       thread->stats.FinishedSingleOp();
     }
     char msg[100];
-    snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
+    std::snprintf(msg, sizeof(msg), "(%d of %d found)", found, num_);
     thread->stats.AddMessage(msg);
   }
 
@@ -835,14 +842,14 @@ class Benchmark {
       for (int j = 0; j < entries_per_batch_; j++) {
         const int k = seq ? i + j : (thread->rand.Next() % FLAGS_num);
         char key[100];
-        snprintf(key, sizeof(key), "%016d", k);
+        std::snprintf(key, sizeof(key), "%016d", k);
         batch.Delete(key);
         thread->stats.FinishedSingleOp();
       }
       s = db_->Write(write_options_, &batch);
       if (!s.ok()) {
-        fprintf(stderr, "del error: %s\n", s.ToString().c_str());
-        exit(1);
+        std::fprintf(stderr, "del error: %s\n", s.ToString().c_str());
+        std::exit(1);
       }
     }
   }
@@ -868,11 +875,11 @@ class Benchmark {
 
         const int k = thread->rand.Next() % FLAGS_num;
         char key[100];
-        snprintf(key, sizeof(key), "%016d", k);
+        std::snprintf(key, sizeof(key), "%016d", k);
         Status s = db_->Put(write_options_, key, gen.Generate(value_size_));
         if (!s.ok()) {
-          fprintf(stderr, "put error: %s\n", s.ToString().c_str());
-          exit(1);
+          std::fprintf(stderr, "put error: %s\n", s.ToString().c_str());
+          std::exit(1);
         }
       }
 
@@ -888,7 +895,7 @@ class Benchmark {
     if (!db_->GetProperty(key, &stats)) {
       stats = "(failed)";
     }
-    fprintf(stdout, "\n%s\n", stats.c_str());
+    std::fprintf(stdout, "\n%s\n", stats.c_str());
   }
 
   static void WriteToFile(void* arg, const char* buf, int n) {
@@ -897,17 +904,18 @@ class Benchmark {
 
   void HeapProfile() {
     char fname[100];
-    snprintf(fname, sizeof(fname), "%s/heap-%04d", FLAGS_db, ++heap_counter_);
+    std::snprintf(fname, sizeof(fname), "%s/heap-%04d", FLAGS_db,
+                  ++heap_counter_);
     WritableFile* file;
     Status s = g_env->NewWritableFile(fname, &file);
     if (!s.ok()) {
-      fprintf(stderr, "%s\n", s.ToString().c_str());
+      std::fprintf(stderr, "%s\n", s.ToString().c_str());
       return;
     }
     bool ok = port::GetHeapProfile(WriteToFile, file);
     delete file;
     if (!ok) {
-      fprintf(stderr, "heap profiling not supported\n");
+      std::fprintf(stderr, "heap profiling not supported\n");
       g_env->RemoveFile(fname);
     }
   }
@@ -962,8 +970,8 @@ int main(int argc, char** argv) {
     } else if (strncmp(argv[i], "--db=", 5) == 0) {
       FLAGS_db = argv[i] + 5;
     } else {
-      fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
-      exit(1);
+      std::fprintf(stderr, "Invalid flag '%s'\n", argv[i]);
+      std::exit(1);
     }
   }
 

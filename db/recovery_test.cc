@@ -160,7 +160,8 @@ class RecoveryTest : public testing::Test {
 
 TEST_F(RecoveryTest, ManifestReused) {
   if (!CanAppend()) {
-    fprintf(stderr, "skipping test because env does not support appending\n");
+    std::fprintf(stderr,
+                 "skipping test because env does not support appending\n");
     return;
   }
   ASSERT_LEVELDB_OK(Put("foo", "bar"));
@@ -176,7 +177,8 @@ TEST_F(RecoveryTest, ManifestReused) {
 
 TEST_F(RecoveryTest, LargeManifestCompacted) {
   if (!CanAppend()) {
-    fprintf(stderr, "skipping test because env does not support appending\n");
+    std::fprintf(stderr,
+                 "skipping test because env does not support appending\n");
     return;
   }
   ASSERT_LEVELDB_OK(Put("foo", "bar"));
@@ -216,7 +218,8 @@ TEST_F(RecoveryTest, NoLogFiles) {
 
 TEST_F(RecoveryTest, LogFileReuse) {
   if (!CanAppend()) {
-    fprintf(stderr, "skipping test because env does not support appending\n");
+    std::fprintf(stderr,
+                 "skipping test because env does not support appending\n");
     return;
   }
   for (int i = 0; i < 2; i++) {
@@ -249,7 +252,7 @@ TEST_F(RecoveryTest, MultipleMemTables) {
   const int kNum = 1000;
   for (int i = 0; i < kNum; i++) {
     char buf[100];
-    snprintf(buf, sizeof(buf), "%050d", i);
+    std::snprintf(buf, sizeof(buf), "%050d", i);
     ASSERT_LEVELDB_OK(Put(buf, buf));
   }
   ASSERT_EQ(0, NumTables());
@@ -268,7 +271,7 @@ TEST_F(RecoveryTest, MultipleMemTables) {
   ASSERT_NE(old_log_file, FirstLogFile()) << "must not reuse log";
   for (int i = 0; i < kNum; i++) {
     char buf[100];
-    snprintf(buf, sizeof(buf), "%050d", i);
+    std::snprintf(buf, sizeof(buf), "%050d", i);
     ASSERT_EQ(buf, Get(buf));
   }
 }

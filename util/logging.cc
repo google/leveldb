@@ -16,7 +16,7 @@ namespace leveldb {
 
 void AppendNumberTo(std::string* str, uint64_t num) {
   char buf[30];
-  snprintf(buf, sizeof(buf), "%llu", (unsigned long long)num);
+  std::snprintf(buf, sizeof(buf), "%llu", static_cast<unsigned long long>(num));
   str->append(buf);
 }
 
@@ -27,8 +27,8 @@ void AppendEscapedStringTo(std::string* str, const Slice& value) {
       str->push_back(c);
     } else {
       char buf[10];
-      snprintf(buf, sizeof(buf), "\\x%02x",
-               static_cast<unsigned int>(c) & 0xff);
+      std::snprintf(buf, sizeof(buf), "\\x%02x",
+                    static_cast<unsigned int>(c) & 0xff);
       str->append(buf);
     }
   }
