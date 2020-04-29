@@ -4,8 +4,8 @@
 
 #include "util/histogram.h"
 
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstdio>
 
 #include "port/port.h"
 

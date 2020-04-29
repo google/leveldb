@@ -4,8 +4,8 @@
 
 #include "db/filename.h"
 
-#include <ctype.h>
-#include <stdio.h>
+#include <cassert>
+#include <cstdio>
 
 #include "db/dbformat.h"
 #include "leveldb/env.h"

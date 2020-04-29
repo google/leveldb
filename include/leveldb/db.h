@@ -5,8 +5,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_DB_H_
 #define STORAGE_LEVELDB_INCLUDE_DB_H_
 
-#include <stdint.h>
-#include <stdio.h>
+#include <cstdint>
+#include <cstdio>
 
 #include "leveldb/export.h"
 #include "leveldb/iterator.h"

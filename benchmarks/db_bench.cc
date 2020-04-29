@@ -2,9 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <sys/types.h>
+
+#include <cstdio>
+#include <cstdlib>
 
 #include "leveldb/cache.h"
 #include "leveldb/db.h"

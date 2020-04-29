@@ -4,8 +4,7 @@
 
 #include "helpers/memenv/memenv.h"
 
-#include <string.h>
-
+#include <cstring>
 #include <limits>
 #include <map>
 #include <string>

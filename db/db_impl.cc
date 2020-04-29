@@ -4,11 +4,10 @@
 
 #include "db/db_impl.h"
 
-#include <stdint.h>
-#include <stdio.h>
-
 #include <algorithm>
 #include <atomic>
+#include <cstdint>
+#include <cstdio>
 #include <set>
 #include <string>
 #include <vector>

@@ -4,7 +4,7 @@
 
 #include "leveldb/status.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "port/port.h"
 

@@ -4,11 +4,9 @@
 
 #include "util/logging.h"
 
-#include <errno.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-
+#include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 #include <limits>
 
 #include "leveldb/env.h"

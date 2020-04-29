@@ -4,7 +4,7 @@
 
 #include "db/log_reader.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "leveldb/env.h"
 #include "util/coding.h"

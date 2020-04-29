@@ -3,8 +3,9 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <sqlite3.h>
-#include <stdio.h>
-#include <stdlib.h>
+
+#include <cstdio>
+#include <cstdlib>
 
 #include "util/histogram.h"
 #include "util/random.h"
