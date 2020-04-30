@@ -4,7 +4,7 @@
 
 language: cpp
 dist: bionic
-osx_image: xcode10.3
+osx_image: xcode11.3
 
 compiler:
 - gcc
@@ -16,6 +16,12 @@ os:
 env:
 - BUILD_TYPE=Debug
 - BUILD_TYPE=RelWithDebInfo
+
+jobs:
+  allow_failures:
+  # Homebrew's GCC is currently broken on XCode 11.
+  - compiler: gcc
+    os: osx
 
 addons:
   apt:
