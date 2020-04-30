@@ -149,7 +149,7 @@ void CheckCloseOnExecDoesNotLeakFDs(
   if (child_pid == kForkInChildProcessReturnValue) {
     ::execv(child_argv[0], child_argv);
     std::fprintf(stderr, "Error spawning child process: %s\n", strerror(errno));
-    std::std::exit(kTextCloseOnExecHelperExecFailedCode);
+    std::exit(kTextCloseOnExecHelperExecFailedCode);
   }
 
   int child_status = 0;
