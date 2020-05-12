@@ -4,6 +4,8 @@
 
 #include "leveldb/env.h"
 
+#include <cstdarg>
+
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.
 // See env.h for justification.
 #if defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
@@ -38,7 +40,7 @@ FileLock::~FileLock() = default;
 
 void Log(Logger* info_log, const char* format, ...) {
   if (info_log != nullptr) {
-    va_list ap;
+    std::va_list ap;
     va_start(ap, format);
     info_log->Logv(format, ap);
     va_end(ap);

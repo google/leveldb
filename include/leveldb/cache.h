@@ -18,7 +18,7 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_CACHE_H_
 #define STORAGE_LEVELDB_INCLUDE_CACHE_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "leveldb/export.h"
 #include "leveldb/slice.h"

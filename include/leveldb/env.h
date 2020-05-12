@@ -13,9 +13,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_ENV_H_
 #define STORAGE_LEVELDB_INCLUDE_ENV_H_
 
-#include <stdarg.h>
-#include <stdint.h>
-
+#include <cstdarg>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -301,7 +300,7 @@ class LEVELDB_EXPORT Logger {
   virtual ~Logger();
 
   // Write an entry to the log file with the specified format.
-  virtual void Logv(const char* format, va_list ap) = 0;
+  virtual void Logv(const char* format, std::va_list ap) = 0;
 };
 
 // Identifies a locked file.

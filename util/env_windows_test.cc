@@ -29,11 +29,11 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
   ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
   std::string test_file = test_dir + "/open_on_read.txt";
 
-  FILE* f = fopen(test_file.c_str(), "w");
+  FILE* f = std::fopen(test_file.c_str(), "w");
   ASSERT_TRUE(f != nullptr);
   const char kFileData[] = "abcdefghijklmnopqrstuvwxyz";
   fputs(kFileData, f);
-  fclose(f);
+  std::fclose(f);
 
   // Open test file some number above the sum of the two limits to force
   // leveldb::WindowsEnv to switch from mapping the file into memory

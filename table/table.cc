@@ -54,13 +54,11 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
 
   // Read the index block
   BlockContents index_block_contents;
-  if (s.ok()) {
-    ReadOptions opt;
-    if (options.paranoid_checks) {
-      opt.verify_checksums = true;
-    }
-    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+  ReadOptions opt;
+  if (options.paranoid_checks) {
+    opt.verify_checksums = true;
   }
+  s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
 
   if (s.ok()) {
     // We've successfully read the footer and the index block: we're

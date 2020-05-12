@@ -45,14 +45,14 @@ class BloomTest : public testing::Test {
   size_t FilterSize() const { return filter_.size(); }
 
   void DumpFilter() {
-    fprintf(stderr, "F(");
+    std::fprintf(stderr, "F(");
     for (size_t i = 0; i + 1 < filter_.size(); i++) {
       const unsigned int c = static_cast<unsigned int>(filter_[i]);
       for (int j = 0; j < 8; j++) {
-        fprintf(stderr, "%c", (c & (1 << j)) ? '1' : '.');
+        std::fprintf(stderr, "%c", (c & (1 << j)) ? '1' : '.');
       }
     }
-    fprintf(stderr, ")\n");
+    std::fprintf(stderr, ")\n");
   }
 
   bool Matches(const Slice& s) {
@@ -132,8 +132,9 @@ TEST_F(BloomTest, VaryingLengths) {
     // Check false positive rate
     double rate = FalsePositiveRate();
     if (kVerbose >= 1) {
-      fprintf(stderr, "False positives: %5.2f%% @ length = %6d ; bytes = %6d\n",
-              rate * 100.0, length, static_cast<int>(FilterSize()));
+      std::fprintf(stderr,
+                   "False positives: %5.2f%% @ length = %6d ; bytes = %6d\n",
+                   rate * 100.0, length, static_cast<int>(FilterSize()));
     }
     ASSERT_LE(rate, 0.02);  // Must not be over 2%
     if (rate > 0.0125)
@@ -142,8 +143,8 @@ TEST_F(BloomTest, VaryingLengths) {
       good_filters++;
   }
   if (kVerbose >= 1) {
-    fprintf(stderr, "Filters: %d good, %d mediocre\n", good_filters,
-            mediocre_filters);
+    std::fprintf(stderr, "Filters: %d good, %d mediocre\n", good_filters,
+                 mediocre_filters);
   }
   ASSERT_LE(mediocre_filters, good_filters / 5);
 }

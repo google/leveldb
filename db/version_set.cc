@@ -4,9 +4,8 @@
 
 #include "db/version_set.h"
 
-#include <stdio.h>
-
 #include <algorithm>
+#include <cstdio>
 
 #include "db/filename.h"
 #include "db/log_reader.h"
@@ -704,10 +703,10 @@ class VersionSet::Builder {
           const InternalKey& prev_end = v->files_[level][i - 1]->largest;
           const InternalKey& this_begin = v->files_[level][i]->smallest;
           if (vset_->icmp_.Compare(prev_end, this_begin) >= 0) {
-            fprintf(stderr, "overlapping ranges in same level %s vs. %s\n",
-                    prev_end.DebugString().c_str(),
-                    this_begin.DebugString().c_str());
-            abort();
+            std::fprintf(stderr, "overlapping ranges in same level %s vs. %s\n",
+                         prev_end.DebugString().c_str(),
+                         this_begin.DebugString().c_str());
+            std::abort();
           }
         }
       }
@@ -1101,11 +1100,12 @@ int VersionSet::NumLevelFiles(int level) const {
 const char* VersionSet::LevelSummary(LevelSummaryStorage* scratch) const {
   // Update code if kNumLevels changes
   static_assert(config::kNumLevels == 7, "");
-  snprintf(scratch->buffer, sizeof(scratch->buffer),
-           "files[ %d %d %d %d %d %d %d ]", int(current_->files_[0].size()),
-           int(current_->files_[1].size()), int(current_->files_[2].size()),
-           int(current_->files_[3].size()), int(current_->files_[4].size()),
-           int(current_->files_[5].size()), int(current_->files_[6].size()));
+  std::snprintf(
+      scratch->buffer, sizeof(scratch->buffer), "files[ %d %d %d %d %d %d %d ]",
+      int(current_->files_[0].size()), int(current_->files_[1].size()),
+      int(current_->files_[2].size()), int(current_->files_[3].size()),
+      int(current_->files_[4].size()), int(current_->files_[5].size()),
+      int(current_->files_[6].size()));
   return scratch->buffer;
 }
 
