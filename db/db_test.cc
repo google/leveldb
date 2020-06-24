@@ -7,6 +7,7 @@
 #include <atomic>
 #include <string>
 
+#include "gtest/gtest.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/version_set.h"
@@ -20,7 +21,6 @@
 #include "util/hash.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
-#include "util/testharness.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -226,7 +226,7 @@ class SpecialEnv : public EnvWrapper {
   }
 };
 
-class DBTest {
+class DBTest : public testing::Test {
  public:
   std::string dbname_;
   SpecialEnv* env_;
@@ -236,7 +236,7 @@ class DBTest {
 
   DBTest() : env_(new SpecialEnv(Env::Default())), option_config_(kDefault) {
     filter_policy_ = NewBloomFilterPolicy(10);
-    dbname_ = test::TmpDir() + "/db_test";
+    dbname_ = testing::TempDir() + "db_test";
     DestroyDB(dbname_, Options());
     db_ = nullptr;
     Reopen();
@@ -283,7 +283,9 @@ class DBTest {
 
   DBImpl* dbfull() { return reinterpret_cast<DBImpl*>(db_); }
 
-  void Reopen(Options* options = nullptr) { ASSERT_OK(TryReopen(options)); }
+  void Reopen(Options* options = nullptr) {
+    ASSERT_LEVELDB_OK(TryReopen(options));
+  }
 
   void Close() {
     delete db_;
@@ -294,7 +296,7 @@ class DBTest {
     delete db_;
     db_ = nullptr;
     DestroyDB(dbname_, Options());
-    ASSERT_OK(TryReopen(options));
+    ASSERT_LEVELDB_OK(TryReopen(options));
   }
 
   Status TryReopen(Options* options) {
@@ -348,11 +350,11 @@ class DBTest {
     // Check reverse iteration results are the reverse of forward results
     size_t matched = 0;
     for (iter->SeekToLast(); iter->Valid(); iter->Prev()) {
-      ASSERT_LT(matched, forward.size());
-      ASSERT_EQ(IterStatus(iter), forward[forward.size() - matched - 1]);
+      EXPECT_LT(matched, forward.size());
+      EXPECT_EQ(IterStatus(iter), forward[forward.size() - matched - 1]);
       matched++;
     }
-    ASSERT_EQ(matched, forward.size());
+    EXPECT_EQ(matched, forward.size());
 
     delete iter;
     return result;
@@ -402,7 +404,7 @@ class DBTest {
 
   int NumTableFilesAtLevel(int level) {
     std::string property;
-    ASSERT_TRUE(db_->GetProperty(
+    EXPECT_TRUE(db_->GetProperty(
         "leveldb.num-files-at-level" + NumberToString(level), &property));
     return std::stoi(property);
   }
@@ -422,7 +424,7 @@ class DBTest {
     for (int level = 0; level < config::kNumLevels; level++) {
       int f = NumTableFilesAtLevel(level);
       char buf[100];
-      snprintf(buf, sizeof(buf), "%s%d", (level ? "," : ""), f);
+      std::snprintf(buf, sizeof(buf), "%s%d", (level ? "," : ""), f);
       result += buf;
       if (f > 0) {
         last_non_zero_offset = result.size();
@@ -467,14 +469,14 @@ class DBTest {
   }
 
   void DumpFileCounts(const char* label) {
-    fprintf(stderr, "---\n%s:\n", label);
-    fprintf(
+    std::fprintf(stderr, "---\n%s:\n", label);
+    std::fprintf(
         stderr, "maxoverlap: %lld\n",
         static_cast<long long>(dbfull()->TEST_MaxNextLevelOverlappingBytes()));
     for (int level = 0; level < config::kNumLevels; level++) {
       int num = NumTableFilesAtLevel(level);
       if (num > 0) {
-        fprintf(stderr, "  level %3d : %d files\n", level, num);
+        std::fprintf(stderr, "  level %3d : %d files\n", level, num);
       }
     }
   }
@@ -497,12 +499,12 @@ class DBTest {
 
   bool DeleteAnSSTFile() {
     std::vector<std::string> filenames;
-    ASSERT_OK(env_->GetChildren(dbname_, &filenames));
+    EXPECT_LEVELDB_OK(env_->GetChildren(dbname_, &filenames));
     uint64_t number;
     FileType type;
     for (size_t i = 0; i < filenames.size(); i++) {
       if (ParseFileName(filenames[i], &number, &type) && type == kTableFile) {
-        ASSERT_OK(env_->DeleteFile(TableFileName(dbname_, number)));
+        EXPECT_LEVELDB_OK(env_->RemoveFile(TableFileName(dbname_, number)));
         return true;
       }
     }
@@ -512,7 +514,7 @@ class DBTest {
   // Returns number of files renamed.
   int RenameLDBToSST() {
     std::vector<std::string> filenames;
-    ASSERT_OK(env_->GetChildren(dbname_, &filenames));
+    EXPECT_LEVELDB_OK(env_->GetChildren(dbname_, &filenames));
     uint64_t number;
     FileType type;
     int files_renamed = 0;
@@ -520,7 +522,7 @@ class DBTest {
       if (ParseFileName(filenames[i], &number, &type) && type == kTableFile) {
         const std::string from = TableFileName(dbname_, number);
         const std::string to = SSTTableFileName(dbname_, number);
-        ASSERT_OK(env_->RenameFile(from, to));
+        EXPECT_LEVELDB_OK(env_->RenameFile(from, to));
         files_renamed++;
       }
     }
@@ -535,63 +537,63 @@ class DBTest {
   int option_config_;
 };
 
-TEST(DBTest, Empty) {
+TEST_F(DBTest, Empty) {
   do {
     ASSERT_TRUE(db_ != nullptr);
     ASSERT_EQ("NOT_FOUND", Get("foo"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, EmptyKey) {
+TEST_F(DBTest, EmptyKey) {
   do {
-    ASSERT_OK(Put("", "v1"));
+    ASSERT_LEVELDB_OK(Put("", "v1"));
     ASSERT_EQ("v1", Get(""));
-    ASSERT_OK(Put("", "v2"));
+    ASSERT_LEVELDB_OK(Put("", "v2"));
     ASSERT_EQ("v2", Get(""));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, EmptyValue) {
+TEST_F(DBTest, EmptyValue) {
   do {
-    ASSERT_OK(Put("key", "v1"));
+    ASSERT_LEVELDB_OK(Put("key", "v1"));
     ASSERT_EQ("v1", Get("key"));
-    ASSERT_OK(Put("key", ""));
+    ASSERT_LEVELDB_OK(Put("key", ""));
     ASSERT_EQ("", Get("key"));
-    ASSERT_OK(Put("key", "v2"));
+    ASSERT_LEVELDB_OK(Put("key", "v2"));
     ASSERT_EQ("v2", Get("key"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, ReadWrite) {
+TEST_F(DBTest, ReadWrite) {
   do {
-    ASSERT_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
     ASSERT_EQ("v1", Get("foo"));
-    ASSERT_OK(Put("bar", "v2"));
-    ASSERT_OK(Put("foo", "v3"));
+    ASSERT_LEVELDB_OK(Put("bar", "v2"));
+    ASSERT_LEVELDB_OK(Put("foo", "v3"));
     ASSERT_EQ("v3", Get("foo"));
     ASSERT_EQ("v2", Get("bar"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, PutDeleteGet) {
+TEST_F(DBTest, PutDeleteGet) {
   do {
-    ASSERT_OK(db_->Put(WriteOptions(), "foo", "v1"));
+    ASSERT_LEVELDB_OK(db_->Put(WriteOptions(), "foo", "v1"));
     ASSERT_EQ("v1", Get("foo"));
-    ASSERT_OK(db_->Put(WriteOptions(), "foo", "v2"));
+    ASSERT_LEVELDB_OK(db_->Put(WriteOptions(), "foo", "v2"));
     ASSERT_EQ("v2", Get("foo"));
-    ASSERT_OK(db_->Delete(WriteOptions(), "foo"));
+    ASSERT_LEVELDB_OK(db_->Delete(WriteOptions(), "foo"));
     ASSERT_EQ("NOT_FOUND", Get("foo"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetFromImmutableLayer) {
+TEST_F(DBTest, GetFromImmutableLayer) {
   do {
     Options options = CurrentOptions();
     options.env = env_;
     options.write_buffer_size = 100000;  // Small write buffer
     Reopen(&options);
 
-    ASSERT_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
     ASSERT_EQ("v1", Get("foo"));
 
     // Block sync calls.
@@ -604,17 +606,17 @@ TEST(DBTest, GetFromImmutableLayer) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetFromVersions) {
+TEST_F(DBTest, GetFromVersions) {
   do {
-    ASSERT_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
     dbfull()->TEST_CompactMemTable();
     ASSERT_EQ("v1", Get("foo"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetMemUsage) {
+TEST_F(DBTest, GetMemUsage) {
   do {
-    ASSERT_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
     std::string val;
     ASSERT_TRUE(db_->GetProperty("leveldb.approximate-memory-usage", &val));
     int mem_usage = std::stoi(val);
@@ -623,14 +625,14 @@ TEST(DBTest, GetMemUsage) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetSnapshot) {
+TEST_F(DBTest, GetSnapshot) {
   do {
     // Try with both a short key and a long key
     for (int i = 0; i < 2; i++) {
       std::string key = (i == 0) ? std::string("foo") : std::string(200, 'x');
-      ASSERT_OK(Put(key, "v1"));
+      ASSERT_LEVELDB_OK(Put(key, "v1"));
       const Snapshot* s1 = db_->GetSnapshot();
-      ASSERT_OK(Put(key, "v2"));
+      ASSERT_LEVELDB_OK(Put(key, "v2"));
       ASSERT_EQ("v2", Get(key));
       ASSERT_EQ("v1", Get(key, s1));
       dbfull()->TEST_CompactMemTable();
@@ -641,16 +643,16 @@ TEST(DBTest, GetSnapshot) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetIdenticalSnapshots) {
+TEST_F(DBTest, GetIdenticalSnapshots) {
   do {
     // Try with both a short key and a long key
     for (int i = 0; i < 2; i++) {
       std::string key = (i == 0) ? std::string("foo") : std::string(200, 'x');
-      ASSERT_OK(Put(key, "v1"));
+      ASSERT_LEVELDB_OK(Put(key, "v1"));
       const Snapshot* s1 = db_->GetSnapshot();
       const Snapshot* s2 = db_->GetSnapshot();
       const Snapshot* s3 = db_->GetSnapshot();
-      ASSERT_OK(Put(key, "v2"));
+      ASSERT_LEVELDB_OK(Put(key, "v2"));
       ASSERT_EQ("v2", Get(key));
       ASSERT_EQ("v1", Get(key, s1));
       ASSERT_EQ("v1", Get(key, s2));
@@ -666,13 +668,13 @@ TEST(DBTest, GetIdenticalSnapshots) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, IterateOverEmptySnapshot) {
+TEST_F(DBTest, IterateOverEmptySnapshot) {
   do {
     const Snapshot* snapshot = db_->GetSnapshot();
     ReadOptions read_options;
     read_options.snapshot = snapshot;
-    ASSERT_OK(Put("foo", "v1"));
-    ASSERT_OK(Put("foo", "v2"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("foo", "v2"));
 
     Iterator* iterator1 = db_->NewIterator(read_options);
     iterator1->SeekToFirst();
@@ -690,41 +692,41 @@ TEST(DBTest, IterateOverEmptySnapshot) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetLevel0Ordering) {
+TEST_F(DBTest, GetLevel0Ordering) {
   do {
     // Check that we process level-0 files in correct order.  The code
     // below generates two level-0 files where the earlier one comes
     // before the later one in the level-0 file list since the earlier
     // one has a smaller "smallest" key.
-    ASSERT_OK(Put("bar", "b"));
-    ASSERT_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("bar", "b"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
     dbfull()->TEST_CompactMemTable();
-    ASSERT_OK(Put("foo", "v2"));
+    ASSERT_LEVELDB_OK(Put("foo", "v2"));
     dbfull()->TEST_CompactMemTable();
     ASSERT_EQ("v2", Get("foo"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetOrderedByLevels) {
+TEST_F(DBTest, GetOrderedByLevels) {
   do {
-    ASSERT_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
     Compact("a", "z");
     ASSERT_EQ("v1", Get("foo"));
-    ASSERT_OK(Put("foo", "v2"));
+    ASSERT_LEVELDB_OK(Put("foo", "v2"));
     ASSERT_EQ("v2", Get("foo"));
     dbfull()->TEST_CompactMemTable();
     ASSERT_EQ("v2", Get("foo"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetPicksCorrectFile) {
+TEST_F(DBTest, GetPicksCorrectFile) {
   do {
     // Arrange to have multiple files in a non-level-0 level.
-    ASSERT_OK(Put("a", "va"));
+    ASSERT_LEVELDB_OK(Put("a", "va"));
     Compact("a", "b");
-    ASSERT_OK(Put("x", "vx"));
+    ASSERT_LEVELDB_OK(Put("x", "vx"));
     Compact("x", "y");
-    ASSERT_OK(Put("f", "vf"));
+    ASSERT_LEVELDB_OK(Put("f", "vf"));
     Compact("f", "g");
     ASSERT_EQ("va", Get("a"));
     ASSERT_EQ("vf", Get("f"));
@@ -732,7 +734,7 @@ TEST(DBTest, GetPicksCorrectFile) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, GetEncountersEmptyLevel) {
+TEST_F(DBTest, GetEncountersEmptyLevel) {
   do {
     // Arrange for the following to happen:
     //   * sstable A in level 0
@@ -770,7 +772,7 @@ TEST(DBTest, GetEncountersEmptyLevel) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, IterEmpty) {
+TEST_F(DBTest, IterEmpty) {
   Iterator* iter = db_->NewIterator(ReadOptions());
 
   iter->SeekToFirst();
@@ -785,8 +787,8 @@ TEST(DBTest, IterEmpty) {
   delete iter;
 }
 
-TEST(DBTest, IterSingle) {
-  ASSERT_OK(Put("a", "va"));
+TEST_F(DBTest, IterSingle) {
+  ASSERT_LEVELDB_OK(Put("a", "va"));
   Iterator* iter = db_->NewIterator(ReadOptions());
 
   iter->SeekToFirst();
@@ -823,10 +825,10 @@ TEST(DBTest, IterSingle) {
   delete iter;
 }
 
-TEST(DBTest, IterMulti) {
-  ASSERT_OK(Put("a", "va"));
-  ASSERT_OK(Put("b", "vb"));
-  ASSERT_OK(Put("c", "vc"));
+TEST_F(DBTest, IterMulti) {
+  ASSERT_LEVELDB_OK(Put("a", "va"));
+  ASSERT_LEVELDB_OK(Put("b", "vb"));
+  ASSERT_LEVELDB_OK(Put("c", "vc"));
   Iterator* iter = db_->NewIterator(ReadOptions());
 
   iter->SeekToFirst();
@@ -881,11 +883,11 @@ TEST(DBTest, IterMulti) {
   ASSERT_EQ(IterStatus(iter), "b->vb");
 
   // Make sure iter stays at snapshot
-  ASSERT_OK(Put("a", "va2"));
-  ASSERT_OK(Put("a2", "va3"));
-  ASSERT_OK(Put("b", "vb2"));
-  ASSERT_OK(Put("c", "vc2"));
-  ASSERT_OK(Delete("b"));
+  ASSERT_LEVELDB_OK(Put("a", "va2"));
+  ASSERT_LEVELDB_OK(Put("a2", "va3"));
+  ASSERT_LEVELDB_OK(Put("b", "vb2"));
+  ASSERT_LEVELDB_OK(Put("c", "vc2"));
+  ASSERT_LEVELDB_OK(Delete("b"));
   iter->SeekToFirst();
   ASSERT_EQ(IterStatus(iter), "a->va");
   iter->Next();
@@ -906,12 +908,12 @@ TEST(DBTest, IterMulti) {
   delete iter;
 }
 
-TEST(DBTest, IterSmallAndLargeMix) {
-  ASSERT_OK(Put("a", "va"));
-  ASSERT_OK(Put("b", std::string(100000, 'b')));
-  ASSERT_OK(Put("c", "vc"));
-  ASSERT_OK(Put("d", std::string(100000, 'd')));
-  ASSERT_OK(Put("e", std::string(100000, 'e')));
+TEST_F(DBTest, IterSmallAndLargeMix) {
+  ASSERT_LEVELDB_OK(Put("a", "va"));
+  ASSERT_LEVELDB_OK(Put("b", std::string(100000, 'b')));
+  ASSERT_LEVELDB_OK(Put("c", "vc"));
+  ASSERT_LEVELDB_OK(Put("d", std::string(100000, 'd')));
+  ASSERT_LEVELDB_OK(Put("e", std::string(100000, 'e')));
 
   Iterator* iter = db_->NewIterator(ReadOptions());
 
@@ -944,12 +946,12 @@ TEST(DBTest, IterSmallAndLargeMix) {
   delete iter;
 }
 
-TEST(DBTest, IterMultiWithDelete) {
+TEST_F(DBTest, IterMultiWithDelete) {
   do {
-    ASSERT_OK(Put("a", "va"));
-    ASSERT_OK(Put("b", "vb"));
-    ASSERT_OK(Put("c", "vc"));
-    ASSERT_OK(Delete("b"));
+    ASSERT_LEVELDB_OK(Put("a", "va"));
+    ASSERT_LEVELDB_OK(Put("b", "vb"));
+    ASSERT_LEVELDB_OK(Put("c", "vc"));
+    ASSERT_LEVELDB_OK(Delete("b"));
     ASSERT_EQ("NOT_FOUND", Get("b"));
 
     Iterator* iter = db_->NewIterator(ReadOptions());
@@ -961,35 +963,35 @@ TEST(DBTest, IterMultiWithDelete) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, Recover) {
+TEST_F(DBTest, Recover) {
   do {
-    ASSERT_OK(Put("foo", "v1"));
-    ASSERT_OK(Put("baz", "v5"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("baz", "v5"));
 
     Reopen();
     ASSERT_EQ("v1", Get("foo"));
 
     ASSERT_EQ("v1", Get("foo"));
     ASSERT_EQ("v5", Get("baz"));
-    ASSERT_OK(Put("bar", "v2"));
-    ASSERT_OK(Put("foo", "v3"));
+    ASSERT_LEVELDB_OK(Put("bar", "v2"));
+    ASSERT_LEVELDB_OK(Put("foo", "v3"));
 
     Reopen();
     ASSERT_EQ("v3", Get("foo"));
-    ASSERT_OK(Put("foo", "v4"));
+    ASSERT_LEVELDB_OK(Put("foo", "v4"));
     ASSERT_EQ("v4", Get("foo"));
     ASSERT_EQ("v2", Get("bar"));
     ASSERT_EQ("v5", Get("baz"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, RecoveryWithEmptyLog) {
+TEST_F(DBTest, RecoveryWithEmptyLog) {
   do {
-    ASSERT_OK(Put("foo", "v1"));
-    ASSERT_OK(Put("foo", "v2"));
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));
+    ASSERT_LEVELDB_OK(Put("foo", "v2"));
     Reopen();
     Reopen();
-    ASSERT_OK(Put("foo", "v3"));
+    ASSERT_LEVELDB_OK(Put("foo", "v3"));
     Reopen();
     ASSERT_EQ("v3", Get("foo"));
   } while (ChangeOptions());
@@ -997,7 +999,7 @@ TEST(DBTest, RecoveryWithEmptyLog) {
 
 // Check that writes done during a memtable compaction are recovered
 // if the database is shutdown during the memtable compaction.
-TEST(DBTest, RecoverDuringMemtableCompaction) {
+TEST_F(DBTest, RecoverDuringMemtableCompaction) {
   do {
     Options options = CurrentOptions();
     options.env = env_;
@@ -1005,10 +1007,12 @@ TEST(DBTest, RecoverDuringMemtableCompaction) {
     Reopen(&options);
 
     // Trigger a long memtable compaction and reopen the database during it
-    ASSERT_OK(Put("foo", "v1"));                         // Goes to 1st log file
-    ASSERT_OK(Put("big1", std::string(10000000, 'x')));  // Fills memtable
-    ASSERT_OK(Put("big2", std::string(1000, 'y')));      // Triggers compaction
-    ASSERT_OK(Put("bar", "v2"));                         // Goes to new log file
+    ASSERT_LEVELDB_OK(Put("foo", "v1"));  // Goes to 1st log file
+    ASSERT_LEVELDB_OK(
+        Put("big1", std::string(10000000, 'x')));  // Fills memtable
+    ASSERT_LEVELDB_OK(
+        Put("big2", std::string(1000, 'y')));  // Triggers compaction
+    ASSERT_LEVELDB_OK(Put("bar", "v2"));       // Goes to new log file
 
     Reopen(&options);
     ASSERT_EQ("v1", Get("foo"));
@@ -1020,11 +1024,11 @@ TEST(DBTest, RecoverDuringMemtableCompaction) {
 
 static std::string Key(int i) {
   char buf[100];
-  snprintf(buf, sizeof(buf), "key%06d", i);
+  std::snprintf(buf, sizeof(buf), "key%06d", i);
   return std::string(buf);
 }
 
-TEST(DBTest, MinorCompactionsHappen) {
+TEST_F(DBTest, MinorCompactionsHappen) {
   Options options = CurrentOptions();
   options.write_buffer_size = 10000;
   Reopen(&options);
@@ -1033,7 +1037,7 @@ TEST(DBTest, MinorCompactionsHappen) {
 
   int starting_num_tables = TotalTableFiles();
   for (int i = 0; i < N; i++) {
-    ASSERT_OK(Put(Key(i), Key(i) + std::string(1000, 'v')));
+    ASSERT_LEVELDB_OK(Put(Key(i), Key(i) + std::string(1000, 'v')));
   }
   int ending_num_tables = TotalTableFiles();
   ASSERT_GT(ending_num_tables, starting_num_tables);
@@ -1049,14 +1053,14 @@ TEST(DBTest, MinorCompactionsHappen) {
   }
 }
 
-TEST(DBTest, RecoverWithLargeLog) {
+TEST_F(DBTest, RecoverWithLargeLog) {
   {
     Options options = CurrentOptions();
     Reopen(&options);
-    ASSERT_OK(Put("big1", std::string(200000, '1')));
-    ASSERT_OK(Put("big2", std::string(200000, '2')));
-    ASSERT_OK(Put("small3", std::string(10, '3')));
-    ASSERT_OK(Put("small4", std::string(10, '4')));
+    ASSERT_LEVELDB_OK(Put("big1", std::string(200000, '1')));
+    ASSERT_LEVELDB_OK(Put("big2", std::string(200000, '2')));
+    ASSERT_LEVELDB_OK(Put("small3", std::string(10, '3')));
+    ASSERT_LEVELDB_OK(Put("small4", std::string(10, '4')));
     ASSERT_EQ(NumTableFilesAtLevel(0), 0);
   }
 
@@ -1073,7 +1077,7 @@ TEST(DBTest, RecoverWithLargeLog) {
   ASSERT_GT(NumTableFilesAtLevel(0), 1);
 }
 
-TEST(DBTest, CompactionsGenerateMultipleFiles) {
+TEST_F(DBTest, CompactionsGenerateMultipleFiles) {
   Options options = CurrentOptions();
   options.write_buffer_size = 100000000;  // Large write buffer
   Reopen(&options);
@@ -1085,7 +1089,7 @@ TEST(DBTest, CompactionsGenerateMultipleFiles) {
   std::vector<std::string> values;
   for (int i = 0; i < 80; i++) {
     values.push_back(RandomString(&rnd, 100000));
-    ASSERT_OK(Put(Key(i), values[i]));
+    ASSERT_LEVELDB_OK(Put(Key(i), values[i]));
   }
 
   // Reopening moves updates to level-0
@@ -1099,7 +1103,7 @@ TEST(DBTest, CompactionsGenerateMultipleFiles) {
   }
 }
 
-TEST(DBTest, RepeatedWritesToSameKey) {
+TEST_F(DBTest, RepeatedWritesToSameKey) {
   Options options = CurrentOptions();
   options.env = env_;
   options.write_buffer_size = 100000;  // Small write buffer
@@ -1114,11 +1118,11 @@ TEST(DBTest, RepeatedWritesToSameKey) {
   for (int i = 0; i < 5 * kMaxFiles; i++) {
     Put("key", value);
     ASSERT_LE(TotalTableFiles(), kMaxFiles);
-    fprintf(stderr, "after %d: %d files\n", i + 1, TotalTableFiles());
+    std::fprintf(stderr, "after %d: %d files\n", i + 1, TotalTableFiles());
   }
 }
 
-TEST(DBTest, SparseMerge) {
+TEST_F(DBTest, SparseMerge) {
   Options options = CurrentOptions();
   options.compression = kNoCompression;
   Reopen(&options);
@@ -1136,7 +1140,7 @@ TEST(DBTest, SparseMerge) {
   // Write approximately 100MB of "B" values
   for (int i = 0; i < 100000; i++) {
     char key[100];
-    snprintf(key, sizeof(key), "B%010d", i);
+    std::snprintf(key, sizeof(key), "B%010d", i);
     Put(key, value);
   }
   Put("C", "vc");
@@ -1161,14 +1165,14 @@ TEST(DBTest, SparseMerge) {
 static bool Between(uint64_t val, uint64_t low, uint64_t high) {
   bool result = (val >= low) && (val <= high);
   if (!result) {
-    fprintf(stderr, "Value %llu is not in range [%llu, %llu]\n",
-            (unsigned long long)(val), (unsigned long long)(low),
-            (unsigned long long)(high));
+    std::fprintf(stderr, "Value %llu is not in range [%llu, %llu]\n",
+                 (unsigned long long)(val), (unsigned long long)(low),
+                 (unsigned long long)(high));
   }
   return result;
 }
 
-TEST(DBTest, ApproximateSizes) {
+TEST_F(DBTest, ApproximateSizes) {
   do {
     Options options = CurrentOptions();
     options.write_buffer_size = 100000000;  // Large write buffer
@@ -1186,7 +1190,7 @@ TEST(DBTest, ApproximateSizes) {
     static const int S2 = 105000;  // Allow some expansion from metadata
     Random rnd(301);
     for (int i = 0; i < N; i++) {
-      ASSERT_OK(Put(Key(i), RandomString(&rnd, S1)));
+      ASSERT_LEVELDB_OK(Put(Key(i), RandomString(&rnd, S1)));
     }
 
     // 0 because GetApproximateSizes() does not account for memtable space
@@ -1227,7 +1231,7 @@ TEST(DBTest, ApproximateSizes) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
+TEST_F(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
   do {
     Options options = CurrentOptions();
     options.compression = kNoCompression;
@@ -1235,18 +1239,18 @@ TEST(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
 
     Random rnd(301);
     std::string big1 = RandomString(&rnd, 100000);
-    ASSERT_OK(Put(Key(0), RandomString(&rnd, 10000)));
-    ASSERT_OK(Put(Key(1), RandomString(&rnd, 10000)));
-    ASSERT_OK(Put(Key(2), big1));
-    ASSERT_OK(Put(Key(3), RandomString(&rnd, 10000)));
-    ASSERT_OK(Put(Key(4), big1));
-    ASSERT_OK(Put(Key(5), RandomString(&rnd, 10000)));
-    ASSERT_OK(Put(Key(6), RandomString(&rnd, 300000)));
-    ASSERT_OK(Put(Key(7), RandomString(&rnd, 10000)));
+    ASSERT_LEVELDB_OK(Put(Key(0), RandomString(&rnd, 10000)));
+    ASSERT_LEVELDB_OK(Put(Key(1), RandomString(&rnd, 10000)));
+    ASSERT_LEVELDB_OK(Put(Key(2), big1));
+    ASSERT_LEVELDB_OK(Put(Key(3), RandomString(&rnd, 10000)));
+    ASSERT_LEVELDB_OK(Put(Key(4), big1));
+    ASSERT_LEVELDB_OK(Put(Key(5), RandomString(&rnd, 10000)));
+    ASSERT_LEVELDB_OK(Put(Key(6), RandomString(&rnd, 300000)));
+    ASSERT_LEVELDB_OK(Put(Key(7), RandomString(&rnd, 10000)));
 
     if (options.reuse_logs) {
       // Need to force a memtable compaction since recovery does not do so.
-      ASSERT_OK(dbfull()->TEST_CompactMemTable());
+      ASSERT_LEVELDB_OK(dbfull()->TEST_CompactMemTable());
     }
 
     // Check sizes across recovery by reopening a few times
@@ -1270,7 +1274,7 @@ TEST(DBTest, ApproximateSizes_MixOfSmallAndLarge) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, IteratorPinsRef) {
+TEST_F(DBTest, IteratorPinsRef) {
   Put("foo", "hello");
 
   // Get iterator that will yield the current contents of the DB.
@@ -1279,7 +1283,8 @@ TEST(DBTest, IteratorPinsRef) {
   // Write to force compactions
   Put("foo", "newvalue1");
   for (int i = 0; i < 100; i++) {
-    ASSERT_OK(Put(Key(i), Key(i) + std::string(100000, 'v')));  // 100K values
+    ASSERT_LEVELDB_OK(
+        Put(Key(i), Key(i) + std::string(100000, 'v')));  // 100K values
   }
   Put("foo", "newvalue2");
 
@@ -1292,7 +1297,7 @@ TEST(DBTest, IteratorPinsRef) {
   delete iter;
 }
 
-TEST(DBTest, Snapshot) {
+TEST_F(DBTest, Snapshot) {
   do {
     Put("foo", "v1");
     const Snapshot* s1 = db_->GetSnapshot();
@@ -1321,7 +1326,7 @@ TEST(DBTest, Snapshot) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, HiddenValuesAreRemoved) {
+TEST_F(DBTest, HiddenValuesAreRemoved) {
   do {
     Random rnd(301);
     FillLevels("a", "z");
@@ -1333,7 +1338,7 @@ TEST(DBTest, HiddenValuesAreRemoved) {
     Put("foo", "tiny");
     Put("pastfoo2", "v2");  // Advance sequence number one more
 
-    ASSERT_OK(dbfull()->TEST_CompactMemTable());
+    ASSERT_LEVELDB_OK(dbfull()->TEST_CompactMemTable());
     ASSERT_GT(NumTableFilesAtLevel(0), 0);
 
     ASSERT_EQ(big, Get("foo", snapshot));
@@ -1352,9 +1357,9 @@ TEST(DBTest, HiddenValuesAreRemoved) {
   } while (ChangeOptions());
 }
 
-TEST(DBTest, DeletionMarkers1) {
+TEST_F(DBTest, DeletionMarkers1) {
   Put("foo", "v1");
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
+  ASSERT_LEVELDB_OK(dbfull()->TEST_CompactMemTable());
   const int last = config::kMaxMemCompactLevel;
   ASSERT_EQ(NumTableFilesAtLevel(last), 1);  // foo => v1 is now in last level
 
@@ -1368,7 +1373,7 @@ TEST(DBTest, DeletionMarkers1) {
   Delete("foo");
   Put("foo", "v2");
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2, DEL, v1 ]");
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());  // Moves to level last-2
+  ASSERT_LEVELDB_OK(dbfull()->TEST_CompactMemTable());  // Moves to level last-2
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2, DEL, v1 ]");
   Slice z("z");
   dbfull()->TEST_CompactRange(last - 2, nullptr, &z);
@@ -1381,9 +1386,9 @@ TEST(DBTest, DeletionMarkers1) {
   ASSERT_EQ(AllEntriesFor("foo"), "[ v2 ]");
 }
 
-TEST(DBTest, DeletionMarkers2) {
+TEST_F(DBTest, DeletionMarkers2) {
   Put("foo", "v1");
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());
+  ASSERT_LEVELDB_OK(dbfull()->TEST_CompactMemTable());
   const int last = config::kMaxMemCompactLevel;
   ASSERT_EQ(NumTableFilesAtLevel(last), 1);  // foo => v1 is now in last level
 
@@ -1396,7 +1401,7 @@ TEST(DBTest, DeletionMarkers2) {
 
   Delete("foo");
   ASSERT_EQ(AllEntriesFor("foo"), "[ DEL, v1 ]");
-  ASSERT_OK(dbfull()->TEST_CompactMemTable());  // Moves to level last-2
+  ASSERT_LEVELDB_OK(dbfull()->TEST_CompactMemTable());  // Moves to level last-2
   ASSERT_EQ(AllEntriesFor("foo"), "[ DEL, v1 ]");
   dbfull()->TEST_CompactRange(last - 2, nullptr, nullptr);
   // DEL kept: "last" file overlaps
@@ -1407,17 +1412,17 @@ TEST(DBTest, DeletionMarkers2) {
   ASSERT_EQ(AllEntriesFor("foo"), "[ ]");
 }
 
-TEST(DBTest, OverlapInLevel0) {
+TEST_F(DBTest, OverlapInLevel0) {
   do {
     ASSERT_EQ(config::kMaxMemCompactLevel, 2) << "Fix test to match config";
 
     // Fill levels 1 and 2 to disable the pushing of new memtables to levels >
     // 0.
-    ASSERT_OK(Put("100", "v100"));
-    ASSERT_OK(Put("999", "v999"));
+    ASSERT_LEVELDB_OK(Put("100", "v100"));
+    ASSERT_LEVELDB_OK(Put("999", "v999"));
     dbfull()->TEST_CompactMemTable();
-    ASSERT_OK(Delete("100"));
-    ASSERT_OK(Delete("999"));
+    ASSERT_LEVELDB_OK(Delete("100"));
+    ASSERT_LEVELDB_OK(Delete("999"));
     dbfull()->TEST_CompactMemTable();
     ASSERT_EQ("0,1,1", FilesPerLevel());
 
@@ -1425,12 +1430,12 @@ TEST(DBTest, OverlapInLevel0) {
     //  files[0]  200 .. 900
     //  files[1]  300 .. 500
     // Note that files are sorted by smallest key.
-    ASSERT_OK(Put("300", "v300"));
-    ASSERT_OK(Put("500", "v500"));
+    ASSERT_LEVELDB_OK(Put("300", "v300"));
+    ASSERT_LEVELDB_OK(Put("500", "v500"));
     dbfull()->TEST_CompactMemTable();
-    ASSERT_OK(Put("200", "v200"));
-    ASSERT_OK(Put("600", "v600"));
-    ASSERT_OK(Put("900", "v900"));
+    ASSERT_LEVELDB_OK(Put("200", "v200"));
+    ASSERT_LEVELDB_OK(Put("600", "v600"));
+    ASSERT_LEVELDB_OK(Put("900", "v900"));
     dbfull()->TEST_CompactMemTable();
     ASSERT_EQ("2,1,1", FilesPerLevel());
 
@@ -1442,23 +1447,23 @@ TEST(DBTest, OverlapInLevel0) {
     // Do a memtable compaction.  Before bug-fix, the compaction would
     // not detect the overlap with level-0 files and would incorrectly place
     // the deletion in a deeper level.
-    ASSERT_OK(Delete("600"));
+    ASSERT_LEVELDB_OK(Delete("600"));
     dbfull()->TEST_CompactMemTable();
     ASSERT_EQ("3", FilesPerLevel());
     ASSERT_EQ("NOT_FOUND", Get("600"));
   } while (ChangeOptions());
 }
 
-TEST(DBTest, L0_CompactionBug_Issue44_a) {
+TEST_F(DBTest, L0_CompactionBug_Issue44_a) {
   Reopen();
-  ASSERT_OK(Put("b", "v"));
+  ASSERT_LEVELDB_OK(Put("b", "v"));
   Reopen();
-  ASSERT_OK(Delete("b"));
-  ASSERT_OK(Delete("a"));
+  ASSERT_LEVELDB_OK(Delete("b"));
+  ASSERT_LEVELDB_OK(Delete("a"));
   Reopen();
-  ASSERT_OK(Delete("a"));
+  ASSERT_LEVELDB_OK(Delete("a"));
   Reopen();
-  ASSERT_OK(Put("a", "v"));
+  ASSERT_LEVELDB_OK(Put("a", "v"));
   Reopen();
   Reopen();
   ASSERT_EQ("(a->v)", Contents());
@@ -1466,7 +1471,7 @@ TEST(DBTest, L0_CompactionBug_Issue44_a) {
   ASSERT_EQ("(a->v)", Contents());
 }
 
-TEST(DBTest, L0_CompactionBug_Issue44_b) {
+TEST_F(DBTest, L0_CompactionBug_Issue44_b) {
   Reopen();
   Put("", "");
   Reopen();
@@ -1492,16 +1497,16 @@ TEST(DBTest, L0_CompactionBug_Issue44_b) {
   ASSERT_EQ("(->)(c->cv)", Contents());
 }
 
-TEST(DBTest, Fflush_Issue474) {
+TEST_F(DBTest, Fflush_Issue474) {
   static const int kNum = 100000;
   Random rnd(test::RandomSeed());
   for (int i = 0; i < kNum; i++) {
-    fflush(nullptr);
-    ASSERT_OK(Put(RandomKey(&rnd), RandomString(&rnd, 100)));
+    std::fflush(nullptr);
+    ASSERT_LEVELDB_OK(Put(RandomKey(&rnd), RandomString(&rnd, 100)));
   }
 }
 
-TEST(DBTest, ComparatorCheck) {
+TEST_F(DBTest, ComparatorCheck) {
   class NewComparator : public Comparator {
    public:
     const char* Name() const override { return "leveldb.NewComparator"; }
@@ -1524,7 +1529,7 @@ TEST(DBTest, ComparatorCheck) {
       << s.ToString();
 }
 
-TEST(DBTest, CustomComparator) {
+TEST_F(DBTest, CustomComparator) {
   class NumberComparator : public Comparator {
    public:
     const char* Name() const override { return "test.NumberComparator"; }
@@ -1542,11 +1547,11 @@ TEST(DBTest, CustomComparator) {
    private:
     static int ToNumber(const Slice& x) {
       // Check that there are no extra characters.
-      ASSERT_TRUE(x.size() >= 2 && x[0] == '[' && x[x.size() - 1] == ']')
+      EXPECT_TRUE(x.size() >= 2 && x[0] == '[' && x[x.size() - 1] == ']')
           << EscapeString(x);
       int val;
       char ignored;
-      ASSERT_TRUE(sscanf(x.ToString().c_str(), "[%i]%c", &val, &ignored) == 1)
+      EXPECT_TRUE(sscanf(x.ToString().c_str(), "[%i]%c", &val, &ignored) == 1)
           << EscapeString(x);
       return val;
     }
@@ -1558,8 +1563,8 @@ TEST(DBTest, CustomComparator) {
   new_options.filter_policy = nullptr;   // Cannot use bloom filters
   new_options.write_buffer_size = 1000;  // Compact more often
   DestroyAndReopen(&new_options);
-  ASSERT_OK(Put("[10]", "ten"));
-  ASSERT_OK(Put("[0x14]", "twenty"));
+  ASSERT_LEVELDB_OK(Put("[10]", "ten"));
+  ASSERT_LEVELDB_OK(Put("[0x14]", "twenty"));
   for (int i = 0; i < 2; i++) {
     ASSERT_EQ("ten", Get("[10]"));
     ASSERT_EQ("ten", Get("[0xa]"));
@@ -1573,14 +1578,14 @@ TEST(DBTest, CustomComparator) {
   for (int run = 0; run < 2; run++) {
     for (int i = 0; i < 1000; i++) {
       char buf[100];
-      snprintf(buf, sizeof(buf), "[%d]", i * 10);
-      ASSERT_OK(Put(buf, buf));
+      std::snprintf(buf, sizeof(buf), "[%d]", i * 10);
+      ASSERT_LEVELDB_OK(Put(buf, buf));
     }
     Compact("[0]", "[1000000]");
   }
 }
 
-TEST(DBTest, ManualCompaction) {
+TEST_F(DBTest, ManualCompaction) {
   ASSERT_EQ(config::kMaxMemCompactLevel, 2)
       << "Need to update this test to match kMaxMemCompactLevel";
 
@@ -1614,8 +1619,8 @@ TEST(DBTest, ManualCompaction) {
   ASSERT_EQ("0,0,1", FilesPerLevel());
 }
 
-TEST(DBTest, DBOpen_Options) {
-  std::string dbname = test::TmpDir() + "/db_options_test";
+TEST_F(DBTest, DBOpen_Options) {
+  std::string dbname = testing::TempDir() + "db_options_test";
   DestroyDB(dbname, Options());
 
   // Does not exist, and create_if_missing == false: error
@@ -1629,7 +1634,7 @@ TEST(DBTest, DBOpen_Options) {
   // Does not exist, and create_if_missing == true: OK
   opts.create_if_missing = true;
   s = DB::Open(opts, dbname, &db);
-  ASSERT_OK(s);
+  ASSERT_LEVELDB_OK(s);
   ASSERT_TRUE(db != nullptr);
 
   delete db;
@@ -1646,50 +1651,50 @@ TEST(DBTest, DBOpen_Options) {
   opts.create_if_missing = true;
   opts.error_if_exists = false;
   s = DB::Open(opts, dbname, &db);
-  ASSERT_OK(s);
+  ASSERT_LEVELDB_OK(s);
   ASSERT_TRUE(db != nullptr);
 
   delete db;
   db = nullptr;
 }
 
-TEST(DBTest, DestroyEmptyDir) {
-  std::string dbname = test::TmpDir() + "/db_empty_dir";
+TEST_F(DBTest, DestroyEmptyDir) {
+  std::string dbname = testing::TempDir() + "db_empty_dir";
   TestEnv env(Env::Default());
-  env.DeleteDir(dbname);
+  env.RemoveDir(dbname);
   ASSERT_TRUE(!env.FileExists(dbname));
 
   Options opts;
   opts.env = &env;
 
-  ASSERT_OK(env.CreateDir(dbname));
+  ASSERT_LEVELDB_OK(env.CreateDir(dbname));
   ASSERT_TRUE(env.FileExists(dbname));
   std::vector<std::string> children;
-  ASSERT_OK(env.GetChildren(dbname, &children));
+  ASSERT_LEVELDB_OK(env.GetChildren(dbname, &children));
   // The stock Env's do not filter out '.' and '..' special files.
   ASSERT_EQ(2, children.size());
-  ASSERT_OK(DestroyDB(dbname, opts));
+  ASSERT_LEVELDB_OK(DestroyDB(dbname, opts));
   ASSERT_TRUE(!env.FileExists(dbname));
 
   // Should also be destroyed if Env is filtering out dot files.
   env.SetIgnoreDotFiles(true);
-  ASSERT_OK(env.CreateDir(dbname));
+  ASSERT_LEVELDB_OK(env.CreateDir(dbname));
   ASSERT_TRUE(env.FileExists(dbname));
-  ASSERT_OK(env.GetChildren(dbname, &children));
+  ASSERT_LEVELDB_OK(env.GetChildren(dbname, &children));
   ASSERT_EQ(0, children.size());
-  ASSERT_OK(DestroyDB(dbname, opts));
+  ASSERT_LEVELDB_OK(DestroyDB(dbname, opts));
   ASSERT_TRUE(!env.FileExists(dbname));
 }
 
-TEST(DBTest, DestroyOpenDB) {
-  std::string dbname = test::TmpDir() + "/open_db_dir";
-  env_->DeleteDir(dbname);
+TEST_F(DBTest, DestroyOpenDB) {
+  std::string dbname = testing::TempDir() + "open_db_dir";
+  env_->RemoveDir(dbname);
   ASSERT_TRUE(!env_->FileExists(dbname));
 
   Options opts;
   opts.create_if_missing = true;
   DB* db = nullptr;
-  ASSERT_OK(DB::Open(opts, dbname, &db));
+  ASSERT_LEVELDB_OK(DB::Open(opts, dbname, &db));
   ASSERT_TRUE(db != nullptr);
 
   // Must fail to destroy an open db.
@@ -1701,23 +1706,23 @@ TEST(DBTest, DestroyOpenDB) {
   db = nullptr;
 
   // Should succeed destroying a closed db.
-  ASSERT_OK(DestroyDB(dbname, Options()));
+  ASSERT_LEVELDB_OK(DestroyDB(dbname, Options()));
   ASSERT_TRUE(!env_->FileExists(dbname));
 }
 
-TEST(DBTest, Locking) {
+TEST_F(DBTest, Locking) {
   DB* db2 = nullptr;
   Status s = DB::Open(CurrentOptions(), dbname_, &db2);
   ASSERT_TRUE(!s.ok()) << "Locking did not prevent re-opening db";
 }
 
 // Check that number of files does not grow when we are out of space
-TEST(DBTest, NoSpace) {
+TEST_F(DBTest, NoSpace) {
   Options options = CurrentOptions();
   options.env = env_;
   Reopen(&options);
 
-  ASSERT_OK(Put("foo", "v1"));
+  ASSERT_LEVELDB_OK(Put("foo", "v1"));
   ASSERT_EQ("v1", Get("foo"));
   Compact("a", "z");
   const int num_files = CountFiles();
@@ -1732,18 +1737,18 @@ TEST(DBTest, NoSpace) {
   ASSERT_LT(CountFiles(), num_files + 3);
 }
 
-TEST(DBTest, NonWritableFileSystem) {
+TEST_F(DBTest, NonWritableFileSystem) {
   Options options = CurrentOptions();
   options.write_buffer_size = 1000;
   options.env = env_;
   Reopen(&options);
-  ASSERT_OK(Put("foo", "v1"));
+  ASSERT_LEVELDB_OK(Put("foo", "v1"));
   // Force errors for new files.
   env_->non_writable_.store(true, std::memory_order_release);
   std::string big(100000, 'x');
   int errors = 0;
   for (int i = 0; i < 20; i++) {
-    fprintf(stderr, "iter %d; errors %d\n", i, errors);
+    std::fprintf(stderr, "iter %d; errors %d\n", i, errors);
     if (!Put("foo", big).ok()) {
       errors++;
       DelayMilliseconds(100);
@@ -1753,7 +1758,7 @@ TEST(DBTest, NonWritableFileSystem) {
   env_->non_writable_.store(false, std::memory_order_release);
 }
 
-TEST(DBTest, WriteSyncError) {
+TEST_F(DBTest, WriteSyncError) {
   // Check that log sync errors cause the DB to disallow future writes.
 
   // (a) Cause log sync calls to fail
@@ -1764,7 +1769,7 @@ TEST(DBTest, WriteSyncError) {
 
   // (b) Normal write should succeed
   WriteOptions w;
-  ASSERT_OK(db_->Put(w, "k1", "v1"));
+  ASSERT_LEVELDB_OK(db_->Put(w, "k1", "v1"));
   ASSERT_EQ("v1", Get("k1"));
 
   // (c) Do a sync write; should fail
@@ -1784,7 +1789,7 @@ TEST(DBTest, WriteSyncError) {
   ASSERT_EQ("NOT_FOUND", Get("k3"));
 }
 
-TEST(DBTest, ManifestWriteError) {
+TEST_F(DBTest, ManifestWriteError) {
   // Test for the following problem:
   // (a) Compaction produces file F
   // (b) Log record containing F is written to MANIFEST file, but Sync() fails
@@ -1803,7 +1808,7 @@ TEST(DBTest, ManifestWriteError) {
     options.create_if_missing = true;
     options.error_if_exists = false;
     DestroyAndReopen(&options);
-    ASSERT_OK(Put("foo", "bar"));
+    ASSERT_LEVELDB_OK(Put("foo", "bar"));
     ASSERT_EQ("bar", Get("foo"));
 
     // Memtable compaction (will succeed)
@@ -1824,8 +1829,8 @@ TEST(DBTest, ManifestWriteError) {
   }
 }
 
-TEST(DBTest, MissingSSTFile) {
-  ASSERT_OK(Put("foo", "bar"));
+TEST_F(DBTest, MissingSSTFile) {
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
   ASSERT_EQ("bar", Get("foo"));
 
   // Dump the memtable to disk.
@@ -1841,8 +1846,8 @@ TEST(DBTest, MissingSSTFile) {
   ASSERT_TRUE(s.ToString().find("issing") != std::string::npos) << s.ToString();
 }
 
-TEST(DBTest, StillReadSST) {
-  ASSERT_OK(Put("foo", "bar"));
+TEST_F(DBTest, StillReadSST) {
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
   ASSERT_EQ("bar", Get("foo"));
 
   // Dump the memtable to disk.
@@ -1857,18 +1862,18 @@ TEST(DBTest, StillReadSST) {
   ASSERT_EQ("bar", Get("foo"));
 }
 
-TEST(DBTest, FilesDeletedAfterCompaction) {
-  ASSERT_OK(Put("foo", "v2"));
+TEST_F(DBTest, FilesDeletedAfterCompaction) {
+  ASSERT_LEVELDB_OK(Put("foo", "v2"));
   Compact("a", "z");
   const int num_files = CountFiles();
   for (int i = 0; i < 10; i++) {
-    ASSERT_OK(Put("foo", "v2"));
+    ASSERT_LEVELDB_OK(Put("foo", "v2"));
     Compact("a", "z");
   }
   ASSERT_EQ(CountFiles(), num_files);
 }
 
-TEST(DBTest, BloomFilter) {
+TEST_F(DBTest, BloomFilter) {
   env_->count_random_reads_ = true;
   Options options = CurrentOptions();
   options.env = env_;
@@ -1879,11 +1884,11 @@ TEST(DBTest, BloomFilter) {
   // Populate multiple layers
   const int N = 10000;
   for (int i = 0; i < N; i++) {
-    ASSERT_OK(Put(Key(i), Key(i)));
+    ASSERT_LEVELDB_OK(Put(Key(i), Key(i)));
   }
   Compact("a", "z");
   for (int i = 0; i < N; i += 100) {
-    ASSERT_OK(Put(Key(i), Key(i)));
+    ASSERT_LEVELDB_OK(Put(Key(i), Key(i)));
   }
   dbfull()->TEST_CompactMemTable();
 
@@ -1896,7 +1901,7 @@ TEST(DBTest, BloomFilter) {
     ASSERT_EQ(Key(i), Get(Key(i)));
   }
   int reads = env_->random_read_counter_.Read();
-  fprintf(stderr, "%d present => %d reads\n", N, reads);
+  std::fprintf(stderr, "%d present => %d reads\n", N, reads);
   ASSERT_GE(reads, N);
   ASSERT_LE(reads, N + 2 * N / 100);
 
@@ -1906,7 +1911,7 @@ TEST(DBTest, BloomFilter) {
     ASSERT_EQ("NOT_FOUND", Get(Key(i) + ".missing"));
   }
   reads = env_->random_read_counter_.Read();
-  fprintf(stderr, "%d missing => %d reads\n", N, reads);
+  std::fprintf(stderr, "%d missing => %d reads\n", N, reads);
   ASSERT_LE(reads, 3 * N / 100);
 
   env_->delay_data_sync_.store(false, std::memory_order_release);
@@ -1939,7 +1944,7 @@ static void MTThreadBody(void* arg) {
   int id = t->id;
   DB* db = t->state->test->db_;
   int counter = 0;
-  fprintf(stderr, "... starting thread %d\n", id);
+  std::fprintf(stderr, "... starting thread %d\n", id);
   Random rnd(1000 + id);
   std::string value;
   char valbuf[1500];
@@ -1948,14 +1953,14 @@ static void MTThreadBody(void* arg) {
 
     int key = rnd.Uniform(kNumKeys);
     char keybuf[20];
-    snprintf(keybuf, sizeof(keybuf), "%016d", key);
+    std::snprintf(keybuf, sizeof(keybuf), "%016d", key);
 
     if (rnd.OneIn(2)) {
       // Write values of the form <key, my id, counter>.
       // We add some padding for force compactions.
-      snprintf(valbuf, sizeof(valbuf), "%d.%d.%-1000d", key, id,
-               static_cast<int>(counter));
-      ASSERT_OK(db->Put(WriteOptions(), Slice(keybuf), Slice(valbuf)));
+      std::snprintf(valbuf, sizeof(valbuf), "%d.%d.%-1000d", key, id,
+                    static_cast<int>(counter));
+      ASSERT_LEVELDB_OK(db->Put(WriteOptions(), Slice(keybuf), Slice(valbuf)));
     } else {
       // Read a value and verify that it matches the pattern written above.
       Status s = db->Get(ReadOptions(), Slice(keybuf), &value);
@@ -1963,7 +1968,7 @@ static void MTThreadBody(void* arg) {
         // Key has not yet been written
       } else {
         // Check that the writer thread counter is >= the counter in the value
-        ASSERT_OK(s);
+        ASSERT_LEVELDB_OK(s);
         int k, w, c;
         ASSERT_EQ(3, sscanf(value.c_str(), "%d.%d.%d", &k, &w, &c)) << value;
         ASSERT_EQ(k, key);
@@ -1975,12 +1980,12 @@ static void MTThreadBody(void* arg) {
     counter++;
   }
   t->state->thread_done[id].store(true, std::memory_order_release);
-  fprintf(stderr, "... stopping thread %d after %d ops\n", id, counter);
+  std::fprintf(stderr, "... stopping thread %d after %d ops\n", id, counter);
 }
 
 }  // namespace
 
-TEST(DBTest, MultiThreaded) {
+TEST_F(DBTest, MultiThreaded) {
   do {
     // Initialize state
     MTState mt;
@@ -2129,36 +2134,37 @@ static bool CompareIterators(int step, DB* model, DB* db,
        ok && miter->Valid() && dbiter->Valid(); miter->Next(), dbiter->Next()) {
     count++;
     if (miter->key().compare(dbiter->key()) != 0) {
-      fprintf(stderr, "step %d: Key mismatch: '%s' vs. '%s'\n", step,
-              EscapeString(miter->key()).c_str(),
-              EscapeString(dbiter->key()).c_str());
+      std::fprintf(stderr, "step %d: Key mismatch: '%s' vs. '%s'\n", step,
+                   EscapeString(miter->key()).c_str(),
+                   EscapeString(dbiter->key()).c_str());
       ok = false;
       break;
     }
 
     if (miter->value().compare(dbiter->value()) != 0) {
-      fprintf(stderr, "step %d: Value mismatch for key '%s': '%s' vs. '%s'\n",
-              step, EscapeString(miter->key()).c_str(),
-              EscapeString(miter->value()).c_str(),
-              EscapeString(miter->value()).c_str());
+      std::fprintf(stderr,
+                   "step %d: Value mismatch for key '%s': '%s' vs. '%s'\n",
+                   step, EscapeString(miter->key()).c_str(),
+                   EscapeString(miter->value()).c_str(),
+                   EscapeString(miter->value()).c_str());
       ok = false;
     }
   }
 
   if (ok) {
     if (miter->Valid() != dbiter->Valid()) {
-      fprintf(stderr, "step %d: Mismatch at end of iterators: %d vs. %d\n",
-              step, miter->Valid(), dbiter->Valid());
+      std::fprintf(stderr, "step %d: Mismatch at end of iterators: %d vs. %d\n",
+                   step, miter->Valid(), dbiter->Valid());
       ok = false;
     }
   }
-  fprintf(stderr, "%d entries compared: ok=%d\n", count, ok);
+  std::fprintf(stderr, "%d entries compared: ok=%d\n", count, ok);
   delete miter;
   delete dbiter;
   return ok;
 }
 
-TEST(DBTest, Randomized) {
+TEST_F(DBTest, Randomized) {
   Random rnd(test::RandomSeed());
   do {
     ModelDB model(CurrentOptions());
@@ -2168,7 +2174,7 @@ TEST(DBTest, Randomized) {
     std::string k, v;
     for (int step = 0; step < N; step++) {
       if (step % 100 == 0) {
-        fprintf(stderr, "Step %d of %d\n", step, N);
+        std::fprintf(stderr, "Step %d of %d\n", step, N);
       }
       // TODO(sanjay): Test Get() works
       int p = rnd.Uniform(100);
@@ -2176,13 +2182,13 @@ TEST(DBTest, Randomized) {
         k = RandomKey(&rnd);
         v = RandomString(
             &rnd, rnd.OneIn(20) ? 100 + rnd.Uniform(100) : rnd.Uniform(8));
-        ASSERT_OK(model.Put(WriteOptions(), k, v));
-        ASSERT_OK(db_->Put(WriteOptions(), k, v));
+        ASSERT_LEVELDB_OK(model.Put(WriteOptions(), k, v));
+        ASSERT_LEVELDB_OK(db_->Put(WriteOptions(), k, v));
 
       } else if (p < 90) {  // Delete
         k = RandomKey(&rnd);
-        ASSERT_OK(model.Delete(WriteOptions(), k));
-        ASSERT_OK(db_->Delete(WriteOptions(), k));
+        ASSERT_LEVELDB_OK(model.Delete(WriteOptions(), k));
+        ASSERT_LEVELDB_OK(db_->Delete(WriteOptions(), k));
 
       } else {  // Multi-element batch
         WriteBatch b;
@@ -2201,8 +2207,8 @@ TEST(DBTest, Randomized) {
             b.Delete(k);
           }
         }
-        ASSERT_OK(model.Write(WriteOptions(), &b));
-        ASSERT_OK(db_->Write(WriteOptions(), &b));
+        ASSERT_LEVELDB_OK(model.Write(WriteOptions(), &b));
+        ASSERT_LEVELDB_OK(db_->Write(WriteOptions(), &b));
       }
 
       if ((step % 100) == 0) {
@@ -2228,19 +2234,19 @@ TEST(DBTest, Randomized) {
 
 std::string MakeKey(unsigned int num) {
   char buf[30];
-  snprintf(buf, sizeof(buf), "%016u", num);
+  std::snprintf(buf, sizeof(buf), "%016u", num);
   return std::string(buf);
 }
 
 void BM_LogAndApply(int iters, int num_base_files) {
-  std::string dbname = test::TmpDir() + "/leveldb_test_benchmark";
+  std::string dbname = testing::TempDir() + "leveldb_test_benchmark";
   DestroyDB(dbname, Options());
 
   DB* db = nullptr;
   Options opts;
   opts.create_if_missing = true;
   Status s = DB::Open(opts, dbname, &db);
-  ASSERT_OK(s);
+  ASSERT_LEVELDB_OK(s);
   ASSERT_TRUE(db != nullptr);
 
   delete db;
@@ -2255,7 +2261,7 @@ void BM_LogAndApply(int iters, int num_base_files) {
   Options options;
   VersionSet vset(dbname, &options, nullptr, &cmp);
   bool save_manifest;
-  ASSERT_OK(vset.Recover(&save_manifest));
+  ASSERT_LEVELDB_OK(vset.Recover(&save_manifest));
   VersionEdit vbase;
   uint64_t fnum = 1;
   for (int i = 0; i < num_base_files; i++) {
@@ -2263,13 +2269,13 @@ void BM_LogAndApply(int iters, int num_base_files) {
     InternalKey limit(MakeKey(2 * fnum + 1), 1, kTypeDeletion);
     vbase.AddFile(2, fnum++, 1 /* file size */, start, limit);
   }
-  ASSERT_OK(vset.LogAndApply(&vbase, &mu));
+  ASSERT_LEVELDB_OK(vset.LogAndApply(&vbase, &mu));
 
   uint64_t start_micros = env->NowMicros();
 
   for (int i = 0; i < iters; i++) {
     VersionEdit vedit;
-    vedit.DeleteFile(2, fnum);
+    vedit.RemoveFile(2, fnum);
     InternalKey start(MakeKey(2 * fnum), 1, kTypeValue);
     InternalKey limit(MakeKey(2 * fnum + 1), 1, kTypeDeletion);
     vedit.AddFile(2, fnum++, 1 /* file size */, start, limit);
@@ -2278,10 +2284,10 @@ void BM_LogAndApply(int iters, int num_base_files) {
   uint64_t stop_micros = env->NowMicros();
   unsigned int us = stop_micros - start_micros;
   char buf[16];
-  snprintf(buf, sizeof(buf), "%d", num_base_files);
-  fprintf(stderr,
-          "BM_LogAndApply/%-6s   %8d iters : %9u us (%7.0f us / iter)\n", buf,
-          iters, us, ((float)us) / iters);
+  std::snprintf(buf, sizeof(buf), "%d", num_base_files);
+  std::fprintf(stderr,
+               "BM_LogAndApply/%-6s   %8d iters : %9u us (%7.0f us / iter)\n",
+               buf, iters, us, ((float)us) / iters);
 }
 
 }  // namespace leveldb
@@ -2295,5 +2301,6 @@ int main(int argc, char** argv) {
     return 0;
   }
 
-  return leveldb::test::RunAllTests();
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }

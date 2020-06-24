@@ -4,7 +4,7 @@
 
 #include "db/log_reader.h"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include "leveldb/env.h"
 #include "util/coding.h"
@@ -160,7 +160,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
 
       default: {
         char buf[40];
-        snprintf(buf, sizeof(buf), "unknown record type %u", record_type);
+        std::snprintf(buf, sizeof(buf), "unknown record type %u", record_type);
         ReportCorruption(
             (fragment.size() + (in_fragmented_record ? scratch->size() : 0)),
             buf);

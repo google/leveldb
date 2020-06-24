@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include "leveldb/status.h"
+
 #include <utility>
 
+#include "gtest/gtest.h"
 #include "leveldb/slice.h"
-#include "leveldb/status.h"
-#include "util/testharness.h"
 
 namespace leveldb {
 
@@ -37,4 +38,7 @@ TEST(Status, MoveConstructor) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
+int main(int argc, char** argv) {
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
+}

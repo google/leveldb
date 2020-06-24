@@ -4,6 +4,8 @@
 
 #include "util/testutil.h"
 
+#include <string>
+
 #include "util/random.h"
 
 namespace leveldb {

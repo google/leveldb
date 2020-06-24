@@ -4,13 +4,29 @@
 
 #include "leveldb/env.h"
 
+#include <cstdarg>
+
+// This workaround can be removed when leveldb::Env::DeleteFile is removed.
+// See env.h for justification.
+#if defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
+#undef DeleteFile
+#endif
+
 namespace leveldb {
+
+Env::Env() = default;
 
 Env::~Env() = default;
 
 Status Env::NewAppendableFile(const std::string& fname, WritableFile** result) {
   return Status::NotSupported("NewAppendableFile", fname);
 }
+
+Status Env::RemoveDir(const std::string& dirname) { return DeleteDir(dirname); }
+Status Env::DeleteDir(const std::string& dirname) { return RemoveDir(dirname); }
+
+Status Env::RemoveFile(const std::string& fname) { return DeleteFile(fname); }
+Status Env::DeleteFile(const std::string& fname) { return RemoveFile(fname); }
 
 SequentialFile::~SequentialFile() = default;
 
@@ -24,7 +40,7 @@ FileLock::~FileLock() = default;
 
 void Log(Logger* info_log, const char* format, ...) {
   if (info_log != nullptr) {
-    va_list ap;
+    std::va_list ap;
     va_start(ap, format);
     info_log->Logv(format, ap);
     va_end(ap);
@@ -47,7 +63,7 @@ static Status DoWriteStringToFile(Env* env, const Slice& data,
   }
   delete file;  // Will auto-close if we did not close above
   if (!s.ok()) {
-    env->DeleteFile(fname);
+    env->RemoveFile(fname);
   }
   return s;
 }

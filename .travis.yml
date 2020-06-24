@@ -3,8 +3,8 @@
 # This file can be validated on: http://lint.travis-ci.org/
 
 language: cpp
-dist: xenial
-osx_image: xcode10.2
+dist: bionic
+osx_image: xcode11.3
 
 compiler:
 - gcc
@@ -17,13 +17,20 @@ env:
 - BUILD_TYPE=Debug
 - BUILD_TYPE=RelWithDebInfo
 
+jobs:
+  allow_failures:
+  # Homebrew's GCC is currently broken on XCode 11.
+  - compiler: gcc
+    os: osx
+
 addons:
   apt:
     sources:
-    - llvm-toolchain-xenial-8
-    - ubuntu-toolchain-r-test
+    - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
-    - clang-8
+    - clang-10
     - cmake
     - gcc-9
     - g++-9
@@ -38,8 +45,8 @@ addons:
     - crc32c
     - gcc@9
     - gperftools
-    - kyotocabinet
-    - llvm@8
+    - kyoto-cabinet
+    - llvm@10
     - ninja
     - snappy
     - sqlite3
@@ -48,7 +55,7 @@ addons:
 install:
 # The following Homebrew packages aren't linked by default, and need to be
 # prepended to the path explicitly.
-- if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+- if [ "$TRAVIS_OS_NAME" = "osx" ]; then
     export PATH="$(brew --prefix llvm)/bin:$PATH";
   fi
 # /usr/bin/gcc points to an older compiler on both Linux and macOS.
@@ -58,8 +65,8 @@ install:
 # Homebrew's llvm package doesn't ship a versioned clang++ binary, so the values
 # below don't work on macOS. Fortunately, the path change above makes the
 # default values (clang and clang++) resolve to the correct compiler on macOS.
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then
-    if [ "$CXX" = "clang++" ]; then export CXX="clang++-8" CC="clang-8"; fi;
+- if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+    if [ "$CXX" = "clang++" ]; then export CXX="clang++-10" CC="clang-10"; fi;
   fi
 - echo ${CC}
 - echo ${CXX}
@@ -69,6 +76,7 @@ install:
 before_script:
 - mkdir -p build && cd build
 - cmake .. -G Ninja -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+    -DCMAKE_INSTALL_PREFIX=$HOME/.local
 - cmake --build .
 - cd ..
 
@@ -77,3 +85,4 @@ script:
 - "if [ -f build/db_bench ] ; then build/db_bench ; fi"
 - "if [ -f build/db_bench_sqlite3 ] ; then build/db_bench_sqlite3 ; fi"
 - "if [ -f build/db_bench_tree_db ] ; then build/db_bench_tree_db ; fi"
+- cd build && cmake --build . --target install

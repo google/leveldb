@@ -5,7 +5,7 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 #define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 
-#include <stddef.h>
+#include <cstddef>
 
 #include "leveldb/export.h"
 

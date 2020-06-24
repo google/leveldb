@@ -4,9 +4,8 @@
 
 #include "db/version_set.h"
 
-#include <stdio.h>
-
 #include <algorithm>
+#include <cstdio>
 
 #include "db/filename.h"
 #include "db/log_reader.h"
@@ -373,6 +372,10 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
           state->found = true;
           return false;
       }
+
+      // Not reached. Added to avoid false compilation warnings of
+      // "control reaches end of non-void function".
+      return false;
     }
   };
 
@@ -700,10 +703,10 @@ class VersionSet::Builder {
           const InternalKey& prev_end = v->files_[level][i - 1]->largest;
           const InternalKey& this_begin = v->files_[level][i]->smallest;
           if (vset_->icmp_.Compare(prev_end, this_begin) >= 0) {
-            fprintf(stderr, "overlapping ranges in same level %s vs. %s\n",
-                    prev_end.DebugString().c_str(),
-                    this_begin.DebugString().c_str());
-            abort();
+            std::fprintf(stderr, "overlapping ranges in same level %s vs. %s\n",
+                         prev_end.DebugString().c_str(),
+                         this_begin.DebugString().c_str());
+            std::abort();
           }
         }
       }
@@ -849,7 +852,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
       delete descriptor_file_;
       descriptor_log_ = nullptr;
       descriptor_file_ = nullptr;
-      env_->DeleteFile(new_manifest_file);
+      env_->RemoveFile(new_manifest_file);
     }
   }
 
@@ -1097,11 +1100,12 @@ int VersionSet::NumLevelFiles(int level) const {
 const char* VersionSet::LevelSummary(LevelSummaryStorage* scratch) const {
   // Update code if kNumLevels changes
   static_assert(config::kNumLevels == 7, "");
-  snprintf(scratch->buffer, sizeof(scratch->buffer),
-           "files[ %d %d %d %d %d %d %d ]", int(current_->files_[0].size()),
-           int(current_->files_[1].size()), int(current_->files_[2].size()),
-           int(current_->files_[3].size()), int(current_->files_[4].size()),
-           int(current_->files_[5].size()), int(current_->files_[6].size()));
+  std::snprintf(
+      scratch->buffer, sizeof(scratch->buffer), "files[ %d %d %d %d %d %d %d ]",
+      int(current_->files_[0].size()), int(current_->files_[1].size()),
+      int(current_->files_[2].size()), int(current_->files_[3].size()),
+      int(current_->files_[4].size()), int(current_->files_[5].size()),
+      int(current_->files_[6].size()));
   return scratch->buffer;
 }
 
@@ -1498,7 +1502,7 @@ bool Compaction::IsTrivialMove() const {
 void Compaction::AddInputDeletions(VersionEdit* edit) {
   for (int which = 0; which < 2; which++) {
     for (size_t i = 0; i < inputs_[which].size(); i++) {
-      edit->DeleteFile(level_ + which, inputs_[which][i]->number);
+      edit->RemoveFile(level_ + which, inputs_[which][i]->number);
     }
   }
 }

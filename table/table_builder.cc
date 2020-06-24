@@ -4,7 +4,7 @@
 
 #include "leveldb/table_builder.h"
 
-#include <assert.h>
+#include <cassert>
 
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"

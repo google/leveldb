@@ -30,7 +30,7 @@ class PosixLogger final : public Logger {
 
   ~PosixLogger() override { std::fclose(fp_); }
 
-  void Logv(const char* format, va_list arguments) override {
+  void Logv(const char* format, std::va_list arguments) override {
     // Record the time as close to the Logv() call as possible.
     struct ::timeval now_timeval;
     ::gettimeofday(&now_timeval, nullptr);
@@ -62,7 +62,7 @@ class PosixLogger final : public Logger {
           (iteration == 0) ? stack_buffer : new char[dynamic_buffer_size];
 
       // Print the header into the buffer.
-      int buffer_offset = snprintf(
+      int buffer_offset = std::snprintf(
           buffer, buffer_size, "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
           now_components.tm_year + 1900, now_components.tm_mon + 1,
           now_components.tm_mday, now_components.tm_hour, now_components.tm_min,
@@ -98,8 +98,8 @@ class PosixLogger final : public Logger {
         }
 
         // The dynamically-allocated buffer was incorrectly sized. This should
-        // not happen, assuming a correct implementation of (v)snprintf. Fail
-        // in tests, recover by truncating the log message in production.
+        // not happen, assuming a correct implementation of std::(v)snprintf.
+        // Fail in tests, recover by truncating the log message in production.
         assert(false);
         buffer_offset = buffer_size - 1;
       }
