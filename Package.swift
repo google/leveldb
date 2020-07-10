@@ -23,6 +23,7 @@ let package = Package(
       name: "leveldb",
       path: ".",
       exclude: [
+        "db/leveldbutil.cc",
         "util/env_windows.cc",
         "util/testutil.cc",
         "db/autocompact_test.cc",
@@ -54,6 +55,7 @@ let package = Package(
         "util/logging_test.cc",
         "util/no_destructor_test.cc",
         "util/status_test.cc",
+        "db/c_test.c",
       ],
       sources: [
         "db/",
