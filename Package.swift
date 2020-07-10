@@ -60,9 +60,9 @@ let package = Package(
         "port/",
         "table/",
         "util/",
-        "include/leveldb/",
+        "include/",
       ],
-      publicHeadersPath: "include/leveldb",
+      publicHeadersPath: "include",
       cSettings: [
         .define("LEVELDB_IS_BIG_ENDIAN", to: "0"),
         .define("LEVELDB_PLATFORM_POSIX", to: "1"),
