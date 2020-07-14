@@ -478,7 +478,7 @@ leveldb::Range ranges[2];
 ranges[0] = leveldb::Range("a", "c");
 ranges[1] = leveldb::Range("x", "z");
 uint64_t sizes[2];
-leveldb::Status s = db->GetApproximateSizes(ranges, 2, sizes);
+db->GetApproximateSizes(ranges, 2, sizes);
 ```
 
 The preceding call will set `sizes[0]` to the approximate number of bytes of
