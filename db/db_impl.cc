@@ -1473,6 +1473,11 @@ Status DB::Delete(const WriteOptions& opt, const Slice& key) {
   return Write(opt, &batch);
 }
 
+Status DB::Get(const ReadOptions& options, const Slice& key, 
+               std::string* value) {
+  return Get(options, key, value);
+}
+
 DB::~DB() = default;
 
 Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
