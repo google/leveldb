@@ -3,7 +3,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/version_edit.h"
-#include "util/testharness.h"
+
+#include "gtest/gtest.h"
 
 namespace leveldb {
 
@@ -17,8 +18,6 @@ static void TestEncodeDecode(const VersionEdit& edit) {
   ASSERT_EQ(encoded, encoded2);
 }
 
-class VersionEditTest { };
-
 TEST(VersionEditTest, EncodeDecode) {
   static const uint64_t kBig = 1ull << 50;
 
@@ -28,7 +27,7 @@ TEST(VersionEditTest, EncodeDecode) {
     edit.AddFile(3, kBig + 300 + i, kBig + 400 + i,
                  InternalKey("foo", kBig + 500 + i, kTypeValue),
                  InternalKey("zoo", kBig + 600 + i, kTypeDeletion));
-    edit.DeleteFile(4, kBig + 700 + i);
+    edit.RemoveFile(4, kBig + 700 + i);
     edit.SetCompactPointer(i, InternalKey("x", kBig + 900 + i, kTypeValue));
   }
 
@@ -42,5 +41,6 @@ TEST(VersionEditTest, EncodeDecode) {
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
+  testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
