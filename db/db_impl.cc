@@ -574,6 +574,10 @@ void DBImpl::CompactMemTable() {
   }
 }
 
+void DBImpl::SeperateKeys() {
+  int hotKeyCount = 100;
+}
+
 void DBImpl::CompactRange(const Slice* begin, const Slice* end) {
   int max_level_with_files = 1;
   {
