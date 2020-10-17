@@ -182,6 +182,8 @@ target_sources(leveldb
     "util/filter_policy.cc"
     "util/hash.cc"
     "util/hash.h"
+    "util/hyperloglog.cc"
+    "util/hyperloglog.h"
     "util/logging.cc"
     "util/logging.h"
     "util/mutexlock.h"
