@@ -228,10 +228,16 @@ Iterator* Version::NewConcatenatingIterator(const ReadOptions& options,
 
 void Version::AddIterators(const ReadOptions& options,
                            std::vector<Iterator*>* iters) {
-  // Merge all level zero files together since they may overlap
-  for (size_t i = 0; i < files_[0].size(); i++) {
-    iters->push_back(vset_->table_cache_->NewIterator(
-        options, files_[0][i]->number, files_[0][i]->file_size));
+  if (OverlapInLevel0()) {
+    // Merge all level zero files together since they overlap
+    for (size_t i = 0; i < files_[0].size(); i++) {
+      iters->push_back(vset_->table_cache_->NewIterator(
+          options, files_[0][i]->number, files_[0][i]->file_size));
+    }
+  } else {
+    if (!files_[0].empty()) {
+      iters->push_back(NewConcatenatingIterator(options, 0));
+    }
   }
 
   // For levels > 0, we can use a concatenating iterator that sequentially
@@ -725,6 +731,11 @@ class VersionSet::Builder {
                                     f->smallest) < 0);
       }
       f->refs++;
+      if (level == 0 && !files->empty() && !v->OverlapInLevel0()) {
+        if (vset_->icmp_.Compare(files->at(files->size() - 1)->largest, f->smallest) >= 0) {
+          v->SetOverlapInLevel0();
+        }
+      }
       files->push_back(f);
     }
   }
@@ -1218,13 +1229,12 @@ Iterator* VersionSet::MakeInputIterator(Compaction* c) {
 
   // Level-0 files have to be merged together.  For other levels,
   // we will make a concatenating iterator per level.
-  // TODO(opt): use concatenating iterator for level-0 if there is no overlap
   const int space = (c->level() == 0 ? c->inputs_[0].size() + 1 : 2);
   Iterator** list = new Iterator*[space];
   int num = 0;
   for (int which = 0; which < 2; which++) {
     if (!c->inputs_[which].empty()) {
-      if (c->level() + which == 0) {
+      if (c->level() + which == 0 && c->input_version_->OverlapInLevel0()) {
         const std::vector<FileMetaData*>& files = c->inputs_[which];
         for (size_t i = 0; i < files.size(); i++) {
           list[num++] = table_cache_->NewIterator(options, files[i]->number,
