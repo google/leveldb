@@ -7,6 +7,7 @@
 #include <atomic>
 #include <string>
 
+#include "testing/base/public/benchmark.h"
 #include "gtest/gtest.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
@@ -2238,7 +2239,9 @@ std::string MakeKey(unsigned int num) {
   return std::string(buf);
 }
 
-void BM_LogAndApply(int iters, int num_base_files) {
+static void BM_LogAndApply(benchmark::State& state) {
+  const int num_base_files = state.range(0);
+
   std::string dbname = testing::TempDir() + "leveldb_test_benchmark";
   DestroyDB(dbname, Options());
 
@@ -2273,7 +2276,7 @@ void BM_LogAndApply(int iters, int num_base_files) {
 
   uint64_t start_micros = env->NowMicros();
 
-  for (int i = 0; i < iters; i++) {
+  for (auto st : state) {
     VersionEdit vedit;
     vedit.RemoveFile(2, fnum);
     InternalKey start(MakeKey(2 * fnum), 1, kTypeValue);
@@ -2286,21 +2289,15 @@ void BM_LogAndApply(int iters, int num_base_files) {
   char buf[16];
   std::snprintf(buf, sizeof(buf), "%d", num_base_files);
   std::fprintf(stderr,
-               "BM_LogAndApply/%-6s   %8d iters : %9u us (%7.0f us / iter)\n",
-               buf, iters, us, ((float)us) / iters);
+               "BM_LogAndApply/%-6s   %8zu iters : %9u us (%7.0f us / iter)\n",
+               buf, state.iterations(), us, ((float)us) / state.iterations());
 }
 
+BENCHMARK(BM_LogAndApply)->Arg(1)->Arg(100)->Arg(10000)->Arg(100000);
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
-  if (argc > 1 && std::string(argv[1]) == "--benchmark") {
-    leveldb::BM_LogAndApply(1000, 1);
-    leveldb::BM_LogAndApply(1000, 100);
-    leveldb::BM_LogAndApply(1000, 10000);
-    leveldb::BM_LogAndApply(100, 100000);
-    return 0;
-  }
-
   testing::InitGoogleTest(&argc, argv);
+  RunSpecifiedBenchmarks();
   return RUN_ALL_TESTS();
 }
