@@ -7,8 +7,8 @@
 #include <atomic>
 #include <string>
 
-#include "testing/base/public/benchmark.h"
 #include "gtest/gtest.h"
+#include "third_party/benchmark/include/benchmark/benchmark.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/version_set.h"
@@ -2298,6 +2298,6 @@ BENCHMARK(BM_LogAndApply)->Arg(1)->Arg(100)->Arg(10000)->Arg(100000);
 
 int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
-  RunSpecifiedBenchmarks();
+  benchmark::RunSpecifiedBenchmarks();
   return RUN_ALL_TESTS();
 }
