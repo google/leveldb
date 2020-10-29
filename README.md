@@ -105,7 +105,7 @@ Contribution requirements:
 Before any pull request will be accepted the author must first sign a
 Contributor License Agreement (CLA) at https://cla.developers.google.com/.
 
-In order to keep the commit timeline linear
+In order to keep the commit timeline linear, 
 [squash](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History#Squashing-Commits)
 your changes down to a single commit and [rebase](https://git-scm.com/docs/git-rebase)
 on google/leveldb/master. This keeps the commit timeline linear and more easily sync'ed
@@ -121,7 +121,7 @@ be enough to get a ballpark performance estimate.
 ## Setup
 
 We use a database with a million entries.  Each entry has a 16 byte
-key, and a 100 byte value.  Values used by the benchmark compress to
+key, and a 100 byte value.  Values used by the benchmark are compressed to
 about half their original size.
 
     LevelDB:    version 1.1
@@ -224,7 +224,7 @@ length into some other byte array.
 and is used to report success and various kinds of errors.
 
 * **include/leveldb/env.h**:
-Abstraction of the OS environment.  A posix implementation of this interface is
+Abstraction of the OS environment.  A POSIX implementation of this interface is
 in util/env_posix.cc.
 
 * **include/leveldb/table.h, include/leveldb/table_builder.h**: Lower-level modules that most
