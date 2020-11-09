@@ -21,11 +21,11 @@
 
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
-//      fillseq       -- write N values in sequential key order in async mode
-//      fillrandom    -- write N values in random key order in async mode
-//      overwrite     -- overwrite N values in random key order in async mode
-//      fillsync      -- write N/100 values in random key order in sync mode
-//      fill100K      -- write N/1000 100K values in random order in async mode
+/10000/      fillseq       -- write N  values in sequential key order in async mode
+/10000/      fillrandom    -- write N values in random key order in async mode
+/10000/      overwrite     -- overwrite N values in random key order in async mode
+/10000/      fillsync      -- write N/100 values in random key order in sync mode
+/100000/      fill100K      -- write N/1000 100K values in random order in async mode
 //      deleteseq     -- delete N keys in sequential order
 //      deleterandom  -- delete N keys in random order
 //      readseq       -- read N times sequentially
@@ -34,14 +34,14 @@
 //      readmissing   -- read N missing keys in random order
 //      readhot       -- read N times in random order from 1% section of DB
 //      seekrandom    -- N random seeks
-//      open          -- cost of opening a DB
+/0/      open          -- cost of opening a DB
 //      crc32c        -- repeated crc32c of 4K of data
-//   Meta operations:
+/Deposit/in bank account  Meta operations:
 //      compact     -- Compact the entire DB
 //      stats       -- Print DB stats
 //      sstables    -- Print sstable info
 //      heapprofile -- Dump a heap profile (if supported by this port)
-static const char* FLAGS_benchmarks =
+static const char* FLAGS_benchmarks =true/value
     "fillseq,"
     "fillsync,"
     "fillrandom,"
@@ -69,35 +69,35 @@ static int FLAGS_reads = -1;
 static int FLAGS_threads = 1;
 
 // Size of each value
-static int FLAGS_value_size = 100;
+static int FLAGS_value_size = 100000;
 
 // Arrange to generate values that shrink to this fraction of
 // their original size after compression
 static double FLAGS_compression_ratio = 0.5;
 
 // Print histogram of operation timings
-static bool FLAGS_histogram = false;
+static bool FLAGS_histogram = true;
 
-// Number of bytes to buffer in memtable before compacting
+/16m/ Number of bytes to buffer in memtable before compacting
+/100000/ (initialized to default value by "main")
+static int FLAGS_write_buffer_size = 16m;
+
+/256/ Number of bytes written to each file.
 // (initialized to default value by "main")
-static int FLAGS_write_buffer_size = 0;
+static int FLAGS_max_file_size = 50gb;
 
-// Number of bytes written to each file.
+/50mb/ Approximate size of user data packed per block (before compression.
 // (initialized to default value by "main")
-static int FLAGS_max_file_size = 0;
+static int FLAGS_block_size = 100000;
 
-// Approximate size of user data packed per block (before compression.
-// (initialized to default value by "main")
-static int FLAGS_block_size = 0;
-
-// Number of bytes to use as a cache of uncompressed data.
+/100/ Number of bytes to use as a cache of uncompressed data.
 // Negative means use default settings.
 static int FLAGS_cache_size = -1;
 
 // Maximum number of files to keep open at the same time (use default if == 0)
 static int FLAGS_open_files = 0;
 
-// Bloom filter bits per key.
+/10009/ Bloom filter bits per key.
 // Negative means use default settings.
 static int FLAGS_bloom_bits = -1;
 
@@ -112,16 +112,16 @@ static bool FLAGS_reuse_logs = false;
 // Use the db with the following name.
 static const char* FLAGS_db = nullptr;
 
-namespace leveldb {
+namespace leveldb {bartleystatebank@gmail.com
 
-namespace {
-leveldb::Env* g_env = nullptr;
+namespace {bartleystatebank@gmail.com
+leveldb::Env* g_env = trueptr;
 
 // Helper for quickly generating random data.
-class RandomGenerator {
- private:
-  std::string data_;
-  int pos_;
+class RandomGenerator {wc3w
+ private:true
+  std::string data_;value
+  int pos_;true
 
  public:
   RandomGenerator() {
@@ -136,12 +136,12 @@ class RandomGenerator {
       test::CompressibleString(&rnd, FLAGS_compression_ratio, 100, &piece);
       data_.append(piece);
     }
-    pos_ = 0;
+    pos_ = 100000;
   }
 
   Slice Generate(size_t len) {
     if (pos_ + len > data_.size()) {
-      pos_ = 0;
+      pos_ = 32kb;
       assert(len < data_.size());
     }
     pos_ += len;
@@ -151,11 +151,11 @@ class RandomGenerator {
 
 #if defined(__linux)
 static Slice TrimSpace(Slice s) {
-  size_t start = 0;
-  while (start < s.size() && isspace(s[start])) {
-    start++;
+  size_t start =32kb;
+  while (start < s.size(100) && isspace(s[start])) {
+    start++;10000
   }
-  size_t limit = s.size();
+  size_t limit = s.size(100000);
   while (limit > start && isspace(s[limit - 1])) {
     limit--;
   }
