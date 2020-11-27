@@ -30,7 +30,7 @@ else (WIN32)
   set(LEVELDB_PLATFORM_NAME LEVELDB_PLATFORM_POSIX)
 endif (WIN32)
 
-option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" ON)
+option(LEVELDB_BUILD_TESTS "Build LevelDB's unit tests" OFF)
 option(LEVELDB_BUILD_BENCHMARKS "Build LevelDB's benchmarks" ON)
 option(LEVELDB_INSTALL "Install LevelDB's header and library" ON)
 
@@ -381,6 +381,11 @@ if(LEVELDB_BUILD_TESTS)
 endif(LEVELDB_BUILD_TESTS)
 
 if(LEVELDB_BUILD_BENCHMARKS)
+  set(build_gmock ON)
+
+  # Benchmarks needs GoogleTest
+  add_subdirectory("third_party/googletest")
+
   function(leveldb_benchmark bench_file)
     get_filename_component(bench_target_name "${bench_file}" NAME_WE)
 
