@@ -622,7 +622,10 @@ class WindowsEnv : public Env {
   }
 
   Status NewLogger(const std::string& filename, Logger** result) override {
-    std::FILE* fp = std::fopen(filename.c_str(), "w");
+    // Use 'N' fopen() mode to open a non-inheritable file handle on Windows.
+    // Without this option, open handles in child processes may prevent the
+    // database from getting deleted.
+    std::FILE* fp = std::fopen(filename.c_str(), "wN");
     if (fp == nullptr) {
       *result = nullptr;
       return WindowsError(filename, ::GetLastError());
