@@ -318,6 +318,20 @@ class InMemoryEnv : public EnvWrapper {
     file_map_.erase(fname);
   }
 
+  Status LinkFile(const std::string& src, const std::string& target) override {
+    MutexLock lock(&mutex_);
+    if (file_map_.find(src) == file_map_.end()) {
+      return Status::IOError(src, "File not found");
+    }
+    auto result = file_map_.insert({target, file_map_[src]});
+    if (!result.second) {
+      return Status::IOError(target, "Target exists");
+    }
+    file_map_[src]->Ref();
+
+    return Status::OK();
+  }
+
   Status RemoveFile(const std::string& fname) override {
     MutexLock lock(&mutex_);
     if (file_map_.find(fname) == file_map_.end()) {
@@ -331,6 +345,8 @@ class InMemoryEnv : public EnvWrapper {
   Status CreateDir(const std::string& dirname) override { return Status::OK(); }
 
   Status RemoveDir(const std::string& dirname) override { return Status::OK(); }
+
+  Status SyncDir(const std::string& dirname) override { return Status::OK(); }
 
   Status GetFileSize(const std::string& fname, uint64_t* file_size) override {
     MutexLock lock(&mutex_);

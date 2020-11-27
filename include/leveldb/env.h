@@ -118,6 +118,11 @@ class LEVELDB_EXPORT Env {
   // Original contents of *results are dropped.
   virtual Status GetChildren(const std::string& dir,
                              std::vector<std::string>* result) = 0;
+
+  // Hard Link file src to target.
+  virtual Status LinkFile(const std::string& src,
+                          const std::string& target) = 0;
+
   // Delete the named file.
   //
   // The default implementation calls DeleteFile, to support legacy Env
@@ -160,6 +165,9 @@ class LEVELDB_EXPORT Env {
   //
   // A future release will remove this method.
   virtual Status DeleteDir(const std::string& dirname);
+
+  // Synchronize the specified directory.
+  virtual Status SyncDir(const std::string& dirname) = 0;
 
   // Store the size of fname in *file_size.
   virtual Status GetFileSize(const std::string& fname, uint64_t* file_size) = 0;
@@ -365,11 +373,17 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   Status RemoveFile(const std::string& f) override {
     return target_->RemoveFile(f);
   }
+  Status LinkFile(const std::string& src, const std::string& target) override {
+    return target_->LinkFile(src, target);
+  }
   Status CreateDir(const std::string& d) override {
     return target_->CreateDir(d);
   }
   Status RemoveDir(const std::string& d) override {
     return target_->RemoveDir(d);
+  }
+  Status SyncDir(const std::string& d) override {
+    return target_->SyncDir(d);
   }
   Status GetFileSize(const std::string& f, uint64_t* s) override {
     return target_->GetFileSize(f, s);

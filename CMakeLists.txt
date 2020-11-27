@@ -123,6 +123,7 @@ target_sources(leveldb
     "db/builder.cc"
     "db/builder.h"
     "db/c.cc"
+    "db/db_build.cc"
     "db/db_impl.cc"
     "db/db_impl.h"
     "db/db_iter.cc"
@@ -165,6 +166,7 @@ target_sources(leveldb
     "table/iterator.cc"
     "table/merger.cc"
     "table/merger.h"
+    "table/sst_file_writer.cc"
     "table/table_builder.cc"
     "table/table.cc"
     "table/two_level_iterator.cc"
@@ -203,6 +205,7 @@ target_sources(leveldb
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/iterator.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/options.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/slice.h"
+    "${LEVELDB_PUBLIC_INCLUDE_DIR}/sst_file_writer.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/status.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/table_builder.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/table.h"
@@ -352,6 +355,7 @@ if(LEVELDB_BUILD_TESTS)
   if(NOT BUILD_SHARED_LIBS)
     leveldb_test("db/autocompact_test.cc")
     leveldb_test("db/corruption_test.cc")
+    leveldb_test("db/db_build_test.cc")
     leveldb_test("db/db_test.cc")
     leveldb_test("db/dbformat_test.cc")
     leveldb_test("db/filename_test.cc")

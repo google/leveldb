@@ -587,6 +587,16 @@ class PosixEnv : public Env {
     return Status::OK();
   }
 
+  Status LinkFile(const std::string& src, const std::string& target) override {
+    if (::link(src.c_str(), target.c_str()) != 0) {
+      if (errno == EXDEV) {
+        return Status::NotSupported("No cross FS links allowed");
+      }
+      return Status::IOError("while link file to " + target, src);
+    }
+    return Status::OK();
+  }
+
   Status RemoveFile(const std::string& filename) override {
     if (::unlink(filename.c_str()) != 0) {
       return PosixError(filename, errno);
@@ -604,6 +614,17 @@ class PosixEnv : public Env {
   Status RemoveDir(const std::string& dirname) override {
     if (::rmdir(dirname.c_str()) != 0) {
       return PosixError(dirname, errno);
+    }
+    return Status::OK();
+  }
+
+  Status SyncDir(const std::string& dirname) override {
+    int fd = ::open(dirname.c_str(), O_DIRECTORY | O_RDONLY);
+    if (fd == -1) {
+      return PosixError(dirname, errno);
+    }
+    if (fsync(fd) != 0) {
+      return Status::IOError("while sync directory", dirname);
     }
     return Status::OK();
   }

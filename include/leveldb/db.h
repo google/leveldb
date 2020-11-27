@@ -8,9 +8,12 @@
 #include <cstdint>
 #include <cstdio>
 
+#include <vector>
+
 #include "leveldb/export.h"
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
+#include "leveldb/sst_file_writer.h"
 
 namespace leveldb {
 
@@ -161,6 +164,11 @@ LEVELDB_EXPORT Status DestroyDB(const std::string& name,
 // on a database that contains important information.
 LEVELDB_EXPORT Status RepairDB(const std::string& dbname,
                                const Options& options);
+
+// Build a database from external SST files.
+LEVELDB_EXPORT Status
+BuildDBFromSstFiles(const Options& options, const std::string& name,
+                    const std::vector<ExternalSstFileInfo>& external_files);
 
 }  // namespace leveldb
 

@@ -501,6 +501,13 @@ class WindowsEnv : public Env {
     return Status::OK();
   }
 
+  Status LinkFile(const std::string& src, const std::string& target) override {
+    if (!::CreateHardLinkA(target.c_str(), src.c_str(), nullptr)) {
+      return WindowsError(src, ::GetLastError());
+    }
+    return Status::OK();
+  }
+
   Status RemoveFile(const std::string& filename) override {
     if (!::DeleteFileA(filename.c_str())) {
       return WindowsError(filename, ::GetLastError());
@@ -519,6 +526,10 @@ class WindowsEnv : public Env {
     if (!::RemoveDirectoryA(dirname.c_str())) {
       return WindowsError(dirname, ::GetLastError());
     }
+    return Status::OK();
+  }
+
+  Status SyncDir(const std::string& dirname) override {
     return Status::OK();
   }
 
