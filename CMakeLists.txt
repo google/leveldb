@@ -381,10 +381,12 @@ if(LEVELDB_BUILD_TESTS)
 endif(LEVELDB_BUILD_TESTS)
 
 if(LEVELDB_BUILD_BENCHMARKS)
-  set(build_gmock ON)
+  if(NOT LEVELDB_BUILD_TESTS)
+    set(build_gmock ON)
 
-  # Benchmarks needs GoogleTest
-  add_subdirectory("third_party/googletest")
+    # Benchmarks needs GoogleTest
+    add_subdirectory("third_party/googletest")
+  endif(NOT LEVELDB_BUILD_TESTS)
 
   function(leveldb_benchmark bench_file)
     get_filename_component(bench_target_name "${bench_file}" NAME_WE)
