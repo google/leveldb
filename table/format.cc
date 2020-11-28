@@ -56,7 +56,7 @@ Status Footer::DecodeFrom(Slice* input) {
   if (result.ok()) {
     // We skip over any leftover data (just padding for now) in "input"
     const char* end = magic_ptr + 8;
-    *input = Slice(end, input->data() + input->size() - end);
+    *input = Slice(input->data(), input->size() - 8);
   }
   return result;
 }
