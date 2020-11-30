@@ -438,7 +438,7 @@ class CustomFilterPolicy : public leveldb::FilterPolicy {
     for (int i = 0; i < n; i++) {
       trimmed[i] = RemoveTrailingSpaces(keys[i]);
     }
-    return builtin_policy_->CreateFilter(&trimmed[i], n, dst);
+    return builtin_policy_->CreateFilter(trimmed.data(), n, dst);
   }
 };
 ```
