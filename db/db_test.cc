@@ -5,6 +5,7 @@
 #include "leveldb/db.h"
 
 #include <atomic>
+#include <cinttypes>
 #include <string>
 
 #include "gtest/gtest.h"
@@ -2289,7 +2290,8 @@ static void BM_LogAndApply(benchmark::State& state) {
   char buf[16];
   std::snprintf(buf, sizeof(buf), "%d", num_base_files);
   std::fprintf(stderr,
-               "BM_LogAndApply/%-6s   %8zu iters : %9u us (%7.0f us / iter)\n",
+               "BM_LogAndApply/%-6s   %8" PRIu64
+               " iters : %9u us (%7.0f us / iter)\n",
                buf, state.iterations(), us, ((float)us) / state.iterations());
 }
 
