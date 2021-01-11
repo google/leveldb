@@ -130,7 +130,7 @@ class CountComparator : public Comparator {
  public:
   CountComparator(const Comparator* wrapped) : wrapped_(wrapped) {}
   ~CountComparator() override {}
-  int Compare(const Slice& a, const Slice& b) const {
+  int Compare(const Slice& a, const Slice& b) const override{
     count_.fetch_add(1, std::memory_order_relaxed);
     return wrapped_->Compare(a, b);
   }
@@ -149,7 +149,7 @@ class CountComparator : public Comparator {
   void reset() { count_.store(0, std::memory_order_relaxed); }
 
  private:
-  mutable std::atomic<size_t> count_ = 0;
+  mutable std::atomic<size_t> count_ = {0};
   const Comparator* const wrapped_;
 };
 
