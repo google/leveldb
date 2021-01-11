@@ -965,6 +965,26 @@ TEST_F(DBTest, IterMultiWithDelete) {
   } while (ChangeOptions());
 }
 
+TEST_F(DBTest, IterMultiWithDeleteAndCompaction) {
+  do {
+    ASSERT_LEVELDB_OK(Put("b", "vb"));
+    ASSERT_LEVELDB_OK(Put("c", "vc"));
+    ASSERT_LEVELDB_OK(Put("a", "va"));
+    dbfull()->TEST_CompactMemTable();
+    ASSERT_LEVELDB_OK(Delete("b"));
+    ASSERT_EQ("NOT_FOUND", Get("b"));
+
+    Iterator* iter = db_->NewIterator(ReadOptions());
+    iter->Seek("c");
+    ASSERT_EQ(IterStatus(iter), "c->vc");
+    iter->Prev();
+    ASSERT_EQ(IterStatus(iter), "a->va");
+    iter->Seek("b");
+    ASSERT_EQ(IterStatus(iter), "c->vc");
+    delete iter;
+  } while (ChangeOptions());
+}
+
 TEST_F(DBTest, Recover) {
   do {
     ASSERT_LEVELDB_OK(Put("foo", "v1"));
@@ -2132,6 +2152,9 @@ static bool CompareIterators(int step, DB* model, DB* db,
   Iterator* dbiter = db->NewIterator(options);
   bool ok = true;
   int count = 0;
+  std::vector<std::string> seek_keys;
+  // Compare equality of all elements using Next(). Save some of the keys for
+  // comparing Seek equality.
   for (miter->SeekToFirst(), dbiter->SeekToFirst();
        ok && miter->Valid() && dbiter->Valid(); miter->Next(), dbiter->Next()) {
     count++;
@@ -2150,6 +2173,11 @@ static bool CompareIterators(int step, DB* model, DB* db,
                    EscapeString(miter->value()).c_str(),
                    EscapeString(miter->value()).c_str());
       ok = false;
+      break;
+    }
+
+    if (count % 10 == 0) {
+      seek_keys.push_back(miter->key().ToString());
     }
   }
 
@@ -2160,6 +2188,39 @@ static bool CompareIterators(int step, DB* model, DB* db,
       ok = false;
     }
   }
+
+  if (ok) {
+    // Validate iterator equality when performing seeks.
+    for (auto kiter = seek_keys.begin(); ok && kiter != seek_keys.end();
+         ++kiter) {
+      miter->Seek(*kiter);
+      dbiter->Seek(*kiter);
+      if (!miter->Valid() || !dbiter->Valid()) {
+        std::fprintf(stderr, "step %d: Seek iterators invalid: %d vs. %d\n",
+                     step, miter->Valid(), dbiter->Valid());
+        ok = false;
+      }
+      if (miter->key().compare(dbiter->key()) != 0) {
+        std::fprintf(stderr, "step %d: Seek key mismatch: '%s' vs. '%s'\n",
+                     step, EscapeString(miter->key()).c_str(),
+                     EscapeString(dbiter->key()).c_str());
+        ok = false;
+        break;
+      }
+
+      if (miter->value().compare(dbiter->value()) != 0) {
+        std::fprintf(
+            stderr,
+            "step %d: Seek value mismatch for key '%s': '%s' vs. '%s'\n", step,
+            EscapeString(miter->key()).c_str(),
+            EscapeString(miter->value()).c_str(),
+            EscapeString(miter->value()).c_str());
+        ok = false;
+        break;
+      }
+    }
+  }
+
   std::fprintf(stderr, "%d entries compared: ok=%d\n", count, ok);
   delete miter;
   delete dbiter;

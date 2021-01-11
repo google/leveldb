@@ -166,6 +166,24 @@ class Block::Iter : public Iterator {
     // with a key < target
     uint32_t left = 0;
     uint32_t right = num_restarts_ - 1;
+    int current_key_compare = 0;
+
+    if (Valid()) {
+      // If we're already scanning, use the current position as a starting
+      // point. This is beneficial if the key we're seeking to is ahead of the
+      // current position.
+      current_key_compare = Compare(key_, target);
+      if (current_key_compare < 0) {
+        // key_ is smaller than target
+        left = restart_index_;
+      } else if (current_key_compare > 0) {
+        right = restart_index_;
+      } else {
+        // We're seeking to the key we're already at.
+        return;
+      }
+    }
+
     while (left < right) {
       uint32_t mid = (left + right + 1) / 2;
       uint32_t region_offset = GetRestartPoint(mid);
@@ -189,8 +207,15 @@ class Block::Iter : public Iterator {
       }
     }
 
+    // We might be able to use our current position within the restart block.
+    // This is true if we determined the key we desire is in the current block
+    // and is after than the current key.
+    assert(current_key_compare == 0 || Valid());
+    bool skip_seek = left == restart_index_ && current_key_compare < 0;
+    if (!skip_seek) {
+      SeekToRestartPoint(left);
+    }
     // Linear search (within restart block) for first key >= target
-    SeekToRestartPoint(left);
     while (true) {
       if (!ParseNextKey()) {
         return;
