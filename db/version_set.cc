@@ -898,6 +898,7 @@ Status VersionSet::Recover(bool* save_manifest) {
   uint64_t log_number = 0;
   uint64_t prev_log_number = 0;
   Builder builder(this, current_);
+  int read_records = 0;
 
   {
     LogReporter reporter;
@@ -907,6 +908,7 @@ Status VersionSet::Recover(bool* save_manifest) {
     Slice record;
     std::string scratch;
     while (reader.ReadRecord(&record, &scratch) && s.ok()) {
+      ++read_records;
       VersionEdit edit;
       s = edit.DecodeFrom(record);
       if (s.ok()) {
@@ -981,6 +983,10 @@ Status VersionSet::Recover(bool* save_manifest) {
     } else {
       *save_manifest = true;
     }
+  } else {
+    std::string error = s.ToString();
+    Log(options_->info_log, "Error recovering version set with %d records: %s",
+        read_records, error.c_str());
   }
 
   return s;
