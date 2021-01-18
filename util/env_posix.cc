@@ -491,10 +491,15 @@ class PosixEnv : public Env {
  public:
   PosixEnv();
   ~PosixEnv() override {
-    static const char msg[] =
-        "PosixEnv singleton destroyed. Unsupported behavior!\n";
-    std::fwrite(msg, 1, sizeof(msg), stderr);
-    std::abort();
+    if (background_thread_.joinable()) {
+      background_work_mutex_.Lock();
+
+      stop_background_thread_ = true;
+      background_work_cv_.Signal();
+
+      background_work_mutex_.Unlock();
+      background_thread_.join();
+    }
   }
 
   Status NewSequentialFile(const std::string& filename,
@@ -740,6 +745,7 @@ class PosixEnv : public Env {
   port::Mutex background_work_mutex_;
   port::CondVar background_work_cv_ GUARDED_BY(background_work_mutex_);
   bool started_background_thread_ GUARDED_BY(background_work_mutex_);
+  bool stop_background_thread_ GUARDED_BY(background_work_mutex_);
 
   std::queue<BackgroundWorkItem> background_work_queue_
       GUARDED_BY(background_work_mutex_);
@@ -747,6 +753,8 @@ class PosixEnv : public Env {
   PosixLockTable locks_;  // Thread-safe.
   Limiter mmap_limiter_;  // Thread-safe.
   Limiter fd_limiter_;    // Thread-safe.
+  
+  std::thread background_thread_;
 };
 
 // Return the maximum number of concurrent mmaps.
@@ -775,6 +783,7 @@ int MaxOpenFiles() {
 PosixEnv::PosixEnv()
     : background_work_cv_(&background_work_mutex_),
       started_background_thread_(false),
+      stop_background_thread_(false),
       mmap_limiter_(MaxMmaps()),
       fd_limiter_(MaxOpenFiles()) {}
 
@@ -786,8 +795,7 @@ void PosixEnv::Schedule(
   // Start the background thread, if we haven't done so already.
   if (!started_background_thread_) {
     started_background_thread_ = true;
-    std::thread background_thread(PosixEnv::BackgroundThreadEntryPoint, this);
-    background_thread.detach();
+    background_thread_ = std::thread(PosixEnv::BackgroundThreadEntryPoint, this);
   }
 
   // If the queue is empty, the background thread may be waiting for work.
@@ -806,6 +814,11 @@ void PosixEnv::BackgroundThreadMain() {
     // Wait until there is work to be done.
     while (background_work_queue_.empty()) {
       background_work_cv_.Wait();
+      
+      if (stop_background_thread_) {
+        background_work_mutex_.Unlock();
+        break;
+      }
     }
 
     assert(!background_work_queue_.empty());

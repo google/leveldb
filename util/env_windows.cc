@@ -364,10 +364,15 @@ class WindowsEnv : public Env {
  public:
   WindowsEnv();
   ~WindowsEnv() override {
-    static const char msg[] =
-        "WindowsEnv singleton destroyed. Unsupported behavior!\n";
-    std::fwrite(msg, 1, sizeof(msg), stderr);
-    std::abort();
+    if (background_thread_.joinable()) {
+      background_work_mutex_.Lock();
+
+      stop_background_thread_ = true;
+      background_work_cv_.Signal();
+
+      background_work_mutex_.Unlock();
+      background_thread_.join();
+    }
   }
 
   Status NewSequentialFile(const std::string& filename,
@@ -673,11 +678,13 @@ class WindowsEnv : public Env {
   port::Mutex background_work_mutex_;
   port::CondVar background_work_cv_ GUARDED_BY(background_work_mutex_);
   bool started_background_thread_ GUARDED_BY(background_work_mutex_);
+  bool stop_background_thread_ GUARDED_BY(background_work_mutex_);
 
   std::queue<BackgroundWorkItem> background_work_queue_
       GUARDED_BY(background_work_mutex_);
 
   Limiter mmap_limiter_;  // Thread-safe.
+  std::thread background_thread_;
 };
 
 // Return the maximum number of concurrent mmaps.
@@ -686,6 +693,7 @@ int MaxMmaps() { return g_mmap_limit; }
 WindowsEnv::WindowsEnv()
     : background_work_cv_(&background_work_mutex_),
       started_background_thread_(false),
+      stop_background_thread_(false),
       mmap_limiter_(MaxMmaps()) {}
 
 void WindowsEnv::Schedule(
@@ -696,8 +704,7 @@ void WindowsEnv::Schedule(
   // Start the background thread, if we haven't done so already.
   if (!started_background_thread_) {
     started_background_thread_ = true;
-    std::thread background_thread(WindowsEnv::BackgroundThreadEntryPoint, this);
-    background_thread.detach();
+    background_thread_ = std::thread(WindowsEnv::BackgroundThreadEntryPoint, this);
   }
 
   // If the queue is empty, the background thread may be waiting for work.
@@ -716,6 +723,11 @@ void WindowsEnv::BackgroundThreadMain() {
     // Wait until there is work to be done.
     while (background_work_queue_.empty()) {
       background_work_cv_.Wait();
+
+      if (stop_background_thread_) {
+        background_work_mutex_.Unlock();
+        break;
+      }
     }
 
     assert(!background_work_queue_.empty());
