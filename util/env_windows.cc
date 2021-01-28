@@ -726,7 +726,7 @@ void WindowsEnv::BackgroundThreadMain() {
 
       if (stop_background_thread_) {
         background_work_mutex_.Unlock();
-        break;
+        return;
       }
     }
 
