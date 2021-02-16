@@ -9,7 +9,7 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "third_party/benchmark/include/benchmark/benchmark.h"
+#include "benchmark/benchmark.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
 #include "db/version_set.h"
