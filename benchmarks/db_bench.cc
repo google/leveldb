@@ -679,7 +679,7 @@ class Benchmark {
     }
     arg[0].thread->stats.Report(name);
     if (FLAGS_comparisons) {
-      fprintf(stdout, "Comparisons: %ld\n", count_comparator_.comparisons());
+      fprintf(stdout, "Comparisons: %zu\n", count_comparator_.comparisons());
       count_comparator_.reset();
       fflush(stdout);
     }
