@@ -7,6 +7,7 @@
 #include <cstdio>
 
 #include "leveldb/env.h"
+
 #include "util/coding.h"
 #include "util/crc32c.h"
 
@@ -35,7 +36,7 @@ bool Reader::SkipToInitialBlock() {
   uint64_t block_start_location = initial_offset_ - offset_in_block;
 
   // Don't search a block if we'd be in the trailer
-  if (offset_in_block > kBlockSize - 6) {
+  if (offset_in_block >= kBlockSize - 6) {
     block_start_location += kBlockSize;
   }
 
