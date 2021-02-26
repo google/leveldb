@@ -1,0 +1,2340 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="leveldb"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;CMake Files\port\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="install/strip">
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 install/strip"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="install">
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 install"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="test">
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="db_bench">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/db_bench" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 db_bench"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="db_bench/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/db_bench" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 db_bench/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="env_posix_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/env_posix_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 env_posix_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="env_posix_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/env_posix_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 env_posix_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="list_install_components">
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 list_install_components"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="hash_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/hash_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 hash_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="hash_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/hash_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 hash_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="db_bench_sqlite3">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/db_bench_sqlite3" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 db_bench_sqlite3"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="db_bench_sqlite3/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/db_bench_sqlite3" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 db_bench_sqlite3/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="cache_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/cache_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 cache_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="cache_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/cache_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 cache_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="bloom_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/bloom_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 bloom_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="bloom_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/bloom_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 bloom_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="arena_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/arena_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 arena_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="arena_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/arena_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 arena_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="logging_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/logging_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 logging_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="logging_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/logging_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 logging_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="table_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/table_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 table_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="table_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/table_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 table_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="memenv_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/memenv_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 memenv_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="memenv_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/memenv_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 memenv_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="write_batch_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/write_batch_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 write_batch_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="write_batch_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/write_batch_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 write_batch_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="skiplist_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/skiplist_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 skiplist_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="skiplist_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/skiplist_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 skiplist_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="issue200_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/issue200_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 issue200_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="issue200_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/issue200_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 issue200_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="filename_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/filename_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 filename_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="filename_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/filename_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 filename_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="recovery_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/recovery_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 recovery_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="recovery_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/recovery_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 recovery_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="version_edit_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/version_edit_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 version_edit_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="version_edit_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/version_edit_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 version_edit_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="log_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/log_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 log_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="log_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/log_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 log_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="dbformat_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/dbformat_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 dbformat_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="dbformat_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/dbformat_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 dbformat_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="issue178_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/issue178_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 issue178_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="issue178_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/issue178_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 issue178_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="env_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/env_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 env_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="env_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/env_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 env_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="db_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/db_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 db_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="db_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/db_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 db_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="corruption_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/corruption_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 corruption_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="corruption_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/corruption_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 corruption_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="coding_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/coding_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 coding_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="coding_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/coding_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 coding_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="no_destructor_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/no_destructor_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 no_destructor_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="no_destructor_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/no_destructor_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 no_destructor_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="autocompact_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/autocompact_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 autocompact_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="autocompact_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/autocompact_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 autocompact_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="filter_block_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/filter_block_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 filter_block_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="filter_block_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/filter_block_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 filter_block_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="version_set_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/version_set_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 version_set_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="version_set_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/version_set_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 version_set_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="issue320_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/issue320_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 issue320_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="issue320_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/issue320_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 issue320_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="status_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/status_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 status_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="status_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/status_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 status_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="fault_injection_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/fault_injection_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 fault_injection_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="fault_injection_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/fault_injection_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 fault_injection_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="c_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/c_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 c_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="c_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/c_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 c_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="install/local">
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 install/local"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="crc32c_test">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/crc32c_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 crc32c_test"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="crc32c_test/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/crc32c_test" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 crc32c_test/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="leveldbutil">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/leveldbutil" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 leveldbutil"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="leveldbutil/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/leveldbutil" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="1"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 leveldbutil/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="leveldb">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/libleveldb.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_COMPILE_LIBRARY"/>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 leveldb"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="leveldb/fast">
+				<Option output="/Users/kutori/leveldb/cmake-build-debug/libleveldb.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/Users/kutori/leveldb/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add option="-DLEVELDB_COMPILE_LIBRARY"/>
+					<Add option="-DLEVELDB_PLATFORM_POSIX=1"/>
+					<Add directory="/Users/kutori/leveldb/cmake-build-debug/include"/>
+					<Add directory="/Users/kutori/leveldb"/>
+					<Add directory="/Users/kutori/leveldb/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/bin/../include/c++/v1"/>
+					<Add directory="/usr/local/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/lib/clang/11.0.0/include"/>
+					<Add directory="/Library/Developer/CommandLineTools/usr/include"/>
+					<Add directory="/System/Library/Frameworks"/>
+					<Add directory="/Library/Frameworks"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 leveldb/fast"/>
+					<CompileFile command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j8 -f &quot;/Users/kutori/leveldb/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/Users/kutori/leveldb/cmake-build-debug/include/port/port_config.h">
+			<Option target="db_bench"/>
+			<Option target="env_posix_test"/>
+			<Option target="hash_test"/>
+			<Option target="db_bench_sqlite3"/>
+			<Option target="cache_test"/>
+			<Option target="bloom_test"/>
+			<Option target="arena_test"/>
+			<Option target="logging_test"/>
+			<Option target="table_test"/>
+			<Option target="memenv_test"/>
+			<Option target="write_batch_test"/>
+			<Option target="skiplist_test"/>
+			<Option target="issue200_test"/>
+			<Option target="filename_test"/>
+			<Option target="recovery_test"/>
+			<Option target="version_edit_test"/>
+			<Option target="log_test"/>
+			<Option target="dbformat_test"/>
+			<Option target="issue178_test"/>
+			<Option target="env_test"/>
+			<Option target="db_test"/>
+			<Option target="corruption_test"/>
+			<Option target="coding_test"/>
+			<Option target="no_destructor_test"/>
+			<Option target="autocompact_test"/>
+			<Option target="filter_block_test"/>
+			<Option target="version_set_test"/>
+			<Option target="issue320_test"/>
+			<Option target="status_test"/>
+			<Option target="fault_injection_test"/>
+			<Option target="c_test"/>
+			<Option target="crc32c_test"/>
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/autocompact_test.cc">
+			<Option target="autocompact_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/builder.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/builder.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/c.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/c_test.c">
+			<Option target="c_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/corruption_test.cc">
+			<Option target="corruption_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/db_bench.cc">
+			<Option target="db_bench"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/db_impl.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/db_impl.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/db_iter.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/db_iter.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/db_test.cc">
+			<Option target="db_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/dbformat.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/dbformat.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/dbformat_test.cc">
+			<Option target="dbformat_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/dumpfile.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/fault_injection_test.cc">
+			<Option target="fault_injection_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/filename.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/filename.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/filename_test.cc">
+			<Option target="filename_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/leveldbutil.cc">
+			<Option target="leveldbutil"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/log_format.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/log_reader.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/log_reader.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/log_test.cc">
+			<Option target="log_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/log_writer.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/log_writer.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/memtable.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/memtable.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/recovery_test.cc">
+			<Option target="recovery_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/repair.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/skiplist.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/skiplist_test.cc">
+			<Option target="skiplist_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/snapshot.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/table_cache.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/table_cache.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/version_edit.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/version_edit.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/version_edit_test.cc">
+			<Option target="version_edit_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/version_set.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/version_set.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/version_set_test.cc">
+			<Option target="version_set_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/write_batch.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/write_batch_internal.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/db/write_batch_test.cc">
+			<Option target="write_batch_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/doc/bench/db_bench_sqlite3.cc">
+			<Option target="db_bench_sqlite3"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/helpers/memenv/memenv.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/helpers/memenv/memenv.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/helpers/memenv/memenv_test.cc">
+			<Option target="memenv_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/c.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/cache.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/comparator.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/db.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/dumpfile.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/env.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/export.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/filter_policy.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/iterator.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/options.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/slice.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/status.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/table.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/table_builder.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/include/leveldb/write_batch.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/issues/issue178_test.cc">
+			<Option target="issue178_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/issues/issue200_test.cc">
+			<Option target="issue200_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/issues/issue320_test.cc">
+			<Option target="issue320_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/port/port.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/port/port_stdcxx.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/port/thread_annotations.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/block.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/block.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/block_builder.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/block_builder.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/filter_block.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/filter_block.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/filter_block_test.cc">
+			<Option target="filter_block_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/format.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/format.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/iterator.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/iterator_wrapper.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/merger.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/merger.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/table.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/table_builder.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/table_test.cc">
+			<Option target="table_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/two_level_iterator.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/table/two_level_iterator.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/arena.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/arena.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/arena_test.cc">
+			<Option target="arena_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/bloom.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/bloom_test.cc">
+			<Option target="bloom_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/cache.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/cache_test.cc">
+			<Option target="cache_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/coding.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/coding.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/coding_test.cc">
+			<Option target="coding_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/comparator.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/crc32c.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/crc32c.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/crc32c_test.cc">
+			<Option target="crc32c_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/env.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/env_posix.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/env_posix_test.cc">
+			<Option target="env_posix_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/env_test.cc">
+			<Option target="env_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/filter_policy.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/hash.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/hash.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/hash_test.cc">
+			<Option target="hash_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/histogram.cc">
+			<Option target="db_bench"/>
+			<Option target="db_bench_sqlite3"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/histogram.h">
+			<Option target="db_bench"/>
+			<Option target="db_bench_sqlite3"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/logging.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/logging.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/logging_test.cc">
+			<Option target="logging_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/mutexlock.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/no_destructor.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/no_destructor_test.cc">
+			<Option target="no_destructor_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/options.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/posix_logger.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/random.h">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/status.cc">
+			<Option target="leveldb"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/status_test.cc">
+			<Option target="status_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/testharness.cc">
+			<Option target="db_bench"/>
+			<Option target="env_posix_test"/>
+			<Option target="hash_test"/>
+			<Option target="db_bench_sqlite3"/>
+			<Option target="cache_test"/>
+			<Option target="bloom_test"/>
+			<Option target="arena_test"/>
+			<Option target="logging_test"/>
+			<Option target="table_test"/>
+			<Option target="memenv_test"/>
+			<Option target="write_batch_test"/>
+			<Option target="skiplist_test"/>
+			<Option target="issue200_test"/>
+			<Option target="filename_test"/>
+			<Option target="recovery_test"/>
+			<Option target="version_edit_test"/>
+			<Option target="log_test"/>
+			<Option target="dbformat_test"/>
+			<Option target="issue178_test"/>
+			<Option target="env_test"/>
+			<Option target="db_test"/>
+			<Option target="corruption_test"/>
+			<Option target="coding_test"/>
+			<Option target="no_destructor_test"/>
+			<Option target="autocompact_test"/>
+			<Option target="filter_block_test"/>
+			<Option target="version_set_test"/>
+			<Option target="issue320_test"/>
+			<Option target="status_test"/>
+			<Option target="fault_injection_test"/>
+			<Option target="c_test"/>
+			<Option target="crc32c_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/testharness.h">
+			<Option target="db_bench"/>
+			<Option target="env_posix_test"/>
+			<Option target="hash_test"/>
+			<Option target="db_bench_sqlite3"/>
+			<Option target="cache_test"/>
+			<Option target="bloom_test"/>
+			<Option target="arena_test"/>
+			<Option target="logging_test"/>
+			<Option target="table_test"/>
+			<Option target="memenv_test"/>
+			<Option target="write_batch_test"/>
+			<Option target="skiplist_test"/>
+			<Option target="issue200_test"/>
+			<Option target="filename_test"/>
+			<Option target="recovery_test"/>
+			<Option target="version_edit_test"/>
+			<Option target="log_test"/>
+			<Option target="dbformat_test"/>
+			<Option target="issue178_test"/>
+			<Option target="env_test"/>
+			<Option target="db_test"/>
+			<Option target="corruption_test"/>
+			<Option target="coding_test"/>
+			<Option target="no_destructor_test"/>
+			<Option target="autocompact_test"/>
+			<Option target="filter_block_test"/>
+			<Option target="version_set_test"/>
+			<Option target="issue320_test"/>
+			<Option target="status_test"/>
+			<Option target="fault_injection_test"/>
+			<Option target="c_test"/>
+			<Option target="crc32c_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/testutil.cc">
+			<Option target="db_bench"/>
+			<Option target="env_posix_test"/>
+			<Option target="hash_test"/>
+			<Option target="db_bench_sqlite3"/>
+			<Option target="cache_test"/>
+			<Option target="bloom_test"/>
+			<Option target="arena_test"/>
+			<Option target="logging_test"/>
+			<Option target="table_test"/>
+			<Option target="memenv_test"/>
+			<Option target="write_batch_test"/>
+			<Option target="skiplist_test"/>
+			<Option target="issue200_test"/>
+			<Option target="filename_test"/>
+			<Option target="recovery_test"/>
+			<Option target="version_edit_test"/>
+			<Option target="log_test"/>
+			<Option target="dbformat_test"/>
+			<Option target="issue178_test"/>
+			<Option target="env_test"/>
+			<Option target="db_test"/>
+			<Option target="corruption_test"/>
+			<Option target="coding_test"/>
+			<Option target="no_destructor_test"/>
+			<Option target="autocompact_test"/>
+			<Option target="filter_block_test"/>
+			<Option target="version_set_test"/>
+			<Option target="issue320_test"/>
+			<Option target="status_test"/>
+			<Option target="fault_injection_test"/>
+			<Option target="c_test"/>
+			<Option target="crc32c_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/util/testutil.h">
+			<Option target="db_bench"/>
+			<Option target="env_posix_test"/>
+			<Option target="hash_test"/>
+			<Option target="db_bench_sqlite3"/>
+			<Option target="cache_test"/>
+			<Option target="bloom_test"/>
+			<Option target="arena_test"/>
+			<Option target="logging_test"/>
+			<Option target="table_test"/>
+			<Option target="memenv_test"/>
+			<Option target="write_batch_test"/>
+			<Option target="skiplist_test"/>
+			<Option target="issue200_test"/>
+			<Option target="filename_test"/>
+			<Option target="recovery_test"/>
+			<Option target="version_edit_test"/>
+			<Option target="log_test"/>
+			<Option target="dbformat_test"/>
+			<Option target="issue178_test"/>
+			<Option target="env_test"/>
+			<Option target="db_test"/>
+			<Option target="corruption_test"/>
+			<Option target="coding_test"/>
+			<Option target="no_destructor_test"/>
+			<Option target="autocompact_test"/>
+			<Option target="filter_block_test"/>
+			<Option target="version_set_test"/>
+			<Option target="issue320_test"/>
+			<Option target="status_test"/>
+			<Option target="fault_injection_test"/>
+			<Option target="c_test"/>
+			<Option target="crc32c_test"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+		<Unit filename="/Users/kutori/leveldb/port/port_config.h.in">
+			<Option virtualFolder="CMake Files\port\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>

@@ -1,0 +1,1 @@
+/Library/Developer/CommandLineTools/usr/bin/c++  -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.14.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/db_bench.dir/util/histogram.cc.o CMakeFiles/db_bench.dir/util/testharness.cc.o CMakeFiles/db_bench.dir/util/testutil.cc.o CMakeFiles/db_bench.dir/db/db_bench.cc.o  -o db_bench  libleveldb.a 

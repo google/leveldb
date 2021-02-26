@@ -1,0 +1,55 @@
+/Applications/CLion.app/Contents/bin/cmake/mac/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /Users/kutori/leveldb
+-- The C compiler identification is AppleClang 11.0.0.11000033
+-- The CXX compiler identification is AppleClang 11.0.0.11000033
+-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc
+-- Check for working C compiler: /Library/Developer/CommandLineTools/usr/bin/cc - works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++
+-- Check for working CXX compiler: /Library/Developer/CommandLineTools/usr/bin/c++ - works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Check if the system is big endian
+-- Searching 16 bit integer
+-- Looking for sys/types.h
+-- Looking for sys/types.h - found
+-- Looking for stdint.h
+-- Looking for stdint.h - found
+-- Looking for stddef.h
+-- Looking for stddef.h - found
+-- Check size of unsigned short
+-- Check size of unsigned short - done
+-- Searching 16 bit integer - Using unsigned short
+-- Check if the system is big endian - little endian
+-- Looking for unistd.h
+-- Looking for unistd.h - found
+-- Looking for crc32c_value in crc32c
+-- Looking for crc32c_value in crc32c - not found
+-- Looking for snappy_compress in snappy
+-- Looking for snappy_compress in snappy - not found
+-- Looking for malloc in tcmalloc
+-- Looking for malloc in tcmalloc - not found
+-- Looking for fdatasync
+-- Looking for fdatasync - not found
+-- Looking for F_FULLFSYNC
+-- Looking for F_FULLFSYNC - found
+-- Performing Test HAVE_CLANG_THREAD_SAFETY
+-- Performing Test HAVE_CLANG_THREAD_SAFETY - Success
+-- Performing Test HAVE_CXX17_HAS_INCLUDE
+-- Performing Test HAVE_CXX17_HAS_INCLUDE - Success
+-- Looking for pthread.h
+-- Looking for pthread.h - found
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE  
+-- Looking for sqlite3_open in sqlite3
+-- Looking for sqlite3_open in sqlite3 - found
+-- Performing Test HAVE_KYOTOCABINET
+-- Performing Test HAVE_KYOTOCABINET - Failed
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /Users/kutori/leveldb/cmake-build-debug

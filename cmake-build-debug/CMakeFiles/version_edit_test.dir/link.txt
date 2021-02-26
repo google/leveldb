@@ -1,0 +1,1 @@
+/Library/Developer/CommandLineTools/usr/bin/c++  -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX10.14.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/version_edit_test.dir/util/testharness.cc.o CMakeFiles/version_edit_test.dir/util/testutil.cc.o CMakeFiles/version_edit_test.dir/db/version_edit_test.cc.o  -o version_edit_test  libleveldb.a 
