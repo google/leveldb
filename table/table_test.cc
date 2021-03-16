@@ -481,17 +481,14 @@ class Harness : public testing::Test {
 
   void TestRandomAccess(Random* rnd, const std::vector<std::string>& keys,
                         const KVMap& data) {
-    static const bool kVerbose = false;
     Iterator* iter = constructor_->NewIterator();
     ASSERT_TRUE(!iter->Valid());
     KVMap::const_iterator model_iter = data.begin();
-    if (kVerbose) std::fprintf(stderr, "---\n");
     for (int i = 0; i < 200; i++) {
       const int toss = rnd->Uniform(5);
       switch (toss) {
         case 0: {
           if (iter->Valid()) {
-            if (kVerbose) std::fprintf(stderr, "Next\n");
             iter->Next();
             ++model_iter;
             ASSERT_EQ(ToString(data, model_iter), ToString(iter));
@@ -500,7 +497,6 @@ class Harness : public testing::Test {
         }
 
         case 1: {
-          if (kVerbose) std::fprintf(stderr, "SeekToFirst\n");
           iter->SeekToFirst();
           model_iter = data.begin();
           ASSERT_EQ(ToString(data, model_iter), ToString(iter));
@@ -510,8 +506,6 @@ class Harness : public testing::Test {
         case 2: {
           std::string key = PickRandomKey(rnd, keys);
           model_iter = data.lower_bound(key);
-          if (kVerbose)
-            std::fprintf(stderr, "Seek '%s'\n", EscapeString(key).c_str());
           iter->Seek(Slice(key));
           ASSERT_EQ(ToString(data, model_iter), ToString(iter));
           break;
@@ -519,7 +513,6 @@ class Harness : public testing::Test {
 
         case 3: {
           if (iter->Valid()) {
-            if (kVerbose) std::fprintf(stderr, "Prev\n");
             iter->Prev();
             if (model_iter == data.begin()) {
               model_iter = data.end();  // Wrap around to invalid value
@@ -532,7 +525,6 @@ class Harness : public testing::Test {
         }
 
         case 4: {
-          if (kVerbose) std::fprintf(stderr, "SeekToLast\n");
           iter->SeekToLast();
           if (keys.empty()) {
             model_iter = data.end();
