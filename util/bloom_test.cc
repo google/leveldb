@@ -39,6 +39,7 @@ class BloomTest : public testing::Test {
     policy_->CreateFilter(&key_slices[0], static_cast<int>(key_slices.size()),
                           &filter_);
     keys_.clear();
+    if (kVerbose >= 2) DumpFilter();
   }
 
   size_t FilterSize() const { return filter_.size(); }
