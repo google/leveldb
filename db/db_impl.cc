@@ -63,18 +63,11 @@ struct DBImpl::CompactionState {
 
   explicit CompactionState(Compaction* c)
       : compaction(c),
-        smallest_snapshot(0),
         outfile(nullptr),
         builder(nullptr),
         total_bytes(0) {}
 
   Compaction* const compaction;
-
-  // Sequence numbers < smallest_snapshot are not significant since we
-  // will never have to service a snapshot below smallest_snapshot.
-  // Therefore if we have seen a sequence number S <= smallest_snapshot,
-  // we can drop all entries for the same key with sequence numbers < S.
-  SequenceNumber smallest_snapshot;
 
   std::vector<Output> outputs;
 
@@ -901,11 +894,11 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   assert(versions_->NumLevelFiles(compact->compaction->level()) > 0);
   assert(compact->builder == nullptr);
   assert(compact->outfile == nullptr);
-  if (snapshots_.empty()) {
-    compact->smallest_snapshot = versions_->LastSequence();
-  } else {
-    compact->smallest_snapshot = snapshots_.oldest()->sequence_number();
-  }
+  SequenceNumber last_sequence = versions_->LastSequence();
+  std::vector<SequenceNumber> seq_list;
+  snapshots_.GetSequenceNumberList(&seq_list);
+  seq_list.push_back(kMaxSequenceNumber);
+  std::vector<SequenceNumber>::reverse_iterator seq_iter = seq_list.rbegin();
 
   Iterator* input = versions_->MakeInputIterator(compact->compaction);
 
@@ -917,7 +910,6 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
   ParsedInternalKey ikey;
   std::string current_user_key;
   bool has_current_user_key = false;
-  SequenceNumber last_sequence_for_key = kMaxSequenceNumber;
   while (input->Valid() && !shutting_down_.load(std::memory_order_acquire)) {
     // Prioritize immutable compaction work
     if (has_imm_.load(std::memory_order_relaxed)) {
@@ -947,7 +939,6 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
       // Do not hide error keys
       current_user_key.clear();
       has_current_user_key = false;
-      last_sequence_for_key = kMaxSequenceNumber;
     } else {
       if (!has_current_user_key ||
           user_comparator()->Compare(ikey.user_key, Slice(current_user_key)) !=
@@ -955,26 +946,35 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         // First occurrence of this user key
         current_user_key.assign(ikey.user_key.data(), ikey.user_key.size());
         has_current_user_key = true;
-        last_sequence_for_key = kMaxSequenceNumber;
+        seq_iter = seq_list.rbegin();
       }
-
-      if (last_sequence_for_key <= compact->smallest_snapshot) {
+      //      For each snapshot, there may exists multiple entries for the same
+      //      key which sequence number less or equal to it, what we really need
+      //      is the closest one. A vector of snapshots (MaxSequenceNumber will
+      //      be appended to the end) is used to help determine if an entry
+      //      should be dropped. When a user key occurs first time, snapshots
+      //      reverse iterator points to rbegin(). If we found current key's
+      //      sequence number <= iterator, then it's the closest one to previous
+      //      snapshot.
+      if (seq_iter != seq_list.rend() && ikey.sequence <= *seq_iter) {
+        seq_iter++;
+        if (seq_iter == seq_list.rend() && ikey.type == kTypeDeletion &&
+            compact->compaction->IsBaseLevelForKey(ikey.user_key)) {
+          // For this user key:
+          // (1) its sequence number is the most recent of all the user keys
+          //     that belong to the smallest snapshot (if snapshot exists)
+          // (2) there is no data in higher levels
+          // (3) data in lower levels will have larger sequence numbers
+          // (4) data in layers that are being compacted here and have
+          //     smaller sequence numbers will be dropped in the next
+          //     few iterations of this loop (by rule (A) below).
+          // Therefore this deletion marker is obsolete and can be dropped.
+          drop = true;
+        }
+      } else {
         // Hidden by an newer entry for same user key
         drop = true;  // (A)
-      } else if (ikey.type == kTypeDeletion &&
-                 ikey.sequence <= compact->smallest_snapshot &&
-                 compact->compaction->IsBaseLevelForKey(ikey.user_key)) {
-        // For this user key:
-        // (1) there is no data in higher levels
-        // (2) data in lower levels will have larger sequence numbers
-        // (3) data in layers that are being compacted here and have
-        //     smaller sequence numbers will be dropped in the next
-        //     few iterations of this loop (by rule (A) above).
-        // Therefore this deletion marker is obsolete and can be dropped.
-        drop = true;
       }
-
-      last_sequence_for_key = ikey.sequence;
     }
 #if 0
     Log(options_.info_log,

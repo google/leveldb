@@ -1348,7 +1348,7 @@ TEST_F(DBTest, Snapshot) {
   } while (ChangeOptions());
 }
 
-TEST_F(DBTest, HiddenValuesAreRemoved) {
+TEST_F(DBTest, HiddenValuesAreRemoved1) {
   do {
     Random rnd(301);
     FillLevels("a", "z");
@@ -1374,6 +1374,55 @@ TEST_F(DBTest, HiddenValuesAreRemoved) {
     ASSERT_GE(NumTableFilesAtLevel(1), 1);
     dbfull()->TEST_CompactRange(1, nullptr, &x);
     ASSERT_EQ(AllEntriesFor("foo"), "[ tiny ]");
+
+    ASSERT_TRUE(Between(Size("", "pastfoo"), 0, 1000));
+  } while (ChangeOptions());
+}
+
+TEST_F(DBTest, HiddenValuesAreRemoved2) {
+  do {
+    Random rnd(301);
+    FillLevels("a", "z");
+
+    std::string big = RandomString(&rnd, 50000);
+    Put("foo", big);
+    Put("foo", big);
+    Put("pastfoo", "v");
+    const Snapshot* snapshot1 = db_->GetSnapshot();
+    Put("foo", big);
+    Put("foo", big);
+    Put("foo", "tiny");
+    const Snapshot* snapshot2 = db_->GetSnapshot();
+    Put("foo", "tiny2");
+    Put("pastfoo2", "v2");  // Advance sequence number one more
+
+    ASSERT_LEVELDB_OK(dbfull()->TEST_CompactMemTable());
+    ASSERT_EQ(big, Get("foo", snapshot1));
+    ASSERT_EQ("tiny", Get("foo", snapshot2));
+    ASSERT_EQ("tiny2", Get("foo"));
+    ASSERT_TRUE(Between(Size("", "pastfoo"), 50000 * 4, 50000 * 4 + 10000));
+
+    Slice x("x");
+
+    dbfull()->TEST_CompactRange(0, nullptr, &x);
+    ASSERT_EQ(big, Get("foo", snapshot1));
+    ASSERT_EQ("tiny", Get("foo", snapshot2));
+    ASSERT_EQ("tiny2", Get("foo"));
+    ASSERT_TRUE(Between(Size("", "pastfoo"), 50000, 60000));
+    ASSERT_EQ(AllEntriesFor("foo"), "[ tiny2, tiny, " + big + " ]");
+
+    db_->ReleaseSnapshot(snapshot2);
+    dbfull()->TEST_CompactRange(1, nullptr, &x);
+    ASSERT_EQ(big, Get("foo", snapshot1));
+    ASSERT_EQ("tiny2", Get("foo"));
+    ASSERT_EQ(AllEntriesFor("foo"), "[ tiny2, " + big + " ]");
+    ASSERT_EQ(NumTableFilesAtLevel(0), 0);
+    ASSERT_EQ(NumTableFilesAtLevel(1), 0);
+
+    db_->ReleaseSnapshot(snapshot1);
+    dbfull()->TEST_CompactRange(2, nullptr, &x);
+    ASSERT_EQ("tiny2", Get("foo"));
+    ASSERT_EQ(AllEntriesFor("foo"), "[ tiny2 ]");
 
     ASSERT_TRUE(Between(Size("", "pastfoo"), 0, 1000));
   } while (ChangeOptions());
