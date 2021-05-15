@@ -805,6 +805,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
     // No reason to unlock *mu here since we only hit this path in the
     // first call to LogAndApply (when opening the database).
     assert(descriptor_file_ == nullptr);
+    manifest_file_number_ = NewFileNumber();
     new_manifest_file = DescriptorFileName(dbname_, manifest_file_number_);
     edit->SetNextFile(next_file_number_);
     s = env_->NewWritableFile(new_manifest_file, &descriptor_file_);
@@ -971,8 +972,7 @@ Status VersionSet::Recover(bool* save_manifest) {
     // Install recovered version
     Finalize(v);
     AppendVersion(v);
-    manifest_file_number_ = next_file;
-    next_file_number_ = next_file + 1;
+    next_file_number_ = next_file;
     last_sequence_ = last_sequence;
     log_number_ = log_number;
     prev_log_number_ = prev_log_number;
