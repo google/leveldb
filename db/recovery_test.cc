@@ -112,6 +112,8 @@ class RecoveryTest : public testing::Test {
 
   uint64_t FirstLogFile() { return GetFiles(kLogFile)[0]; }
 
+  uint64_t ManifestFile() { return GetFiles(kDescriptorFile)[0]; }
+
   std::vector<uint64_t> GetFiles(FileType t) {
     std::vector<std::string> filenames;
     EXPECT_LEVELDB_OK(env_->GetChildren(dbname_, &filenames));
@@ -320,6 +322,31 @@ TEST_F(RecoveryTest, MultipleLogFiles) {
   ASSERT_EQ("bar2", Get("foo"));
   ASSERT_EQ("world", Get("hello"));
   ASSERT_EQ("there", Get("hi"));
+}
+
+TEST_F(RecoveryTest, MultipleLogFilesNotReuseManifest) {
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
+  Close();
+  ASSERT_EQ(1, NumLogs());
+
+  // Make a bunch of uncompacted log files.
+  uint64_t old_log = FirstLogFile();
+  MakeLogFile(old_log + 1, 1000, "hello", "world");
+  MakeLogFile(old_log + 2, 1001, "hi", "there");
+  MakeLogFile(old_log + 3, 1002, "foo", "bar2");
+
+  // Recover create new manifest and check that all log files were processed.
+  // and check that the new manifest file number should be larger than log files.
+  Options opts;
+  opts.reuse_logs = false;
+  Open(&opts);
+  ASSERT_EQ("bar2", Get("foo"));
+  ASSERT_EQ("world", Get("hello"));
+  ASSERT_EQ("there", Get("hi"));
+  ASSERT_GT(ManifestFile(), old_log);
+  ASSERT_GT(ManifestFile(), old_log + 1);
+  ASSERT_GT(ManifestFile(), old_log + 2);
+  ASSERT_GT(ManifestFile(), old_log + 3);
 }
 
 TEST_F(RecoveryTest, ManifestMissing) {
