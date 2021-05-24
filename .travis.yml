@@ -4,7 +4,7 @@
 
 language: cpp
 dist: bionic
-osx_image: xcode12.2
+osx_image: xcode12.5
 
 compiler:
 - gcc
@@ -26,14 +26,14 @@ jobs:
 addons:
   apt:
     sources:
-    - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-10 main'
+    - sourceline: 'deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-12 main'
       key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
-    - clang-10
+    - clang-12
     - cmake
-    - gcc-10
-    - g++-10
+    - gcc-11
+    - g++-11
     - libgoogle-perftools-dev
     - libkyotocabinet-dev
     - libsnappy-dev
@@ -43,10 +43,10 @@ addons:
     packages:
     - cmake
     - crc32c
-    - gcc@10
+    - gcc@11
     - gperftools
     - kyoto-cabinet
-    - llvm@10
+    - llvm@12
     - ninja
     - snappy
     - sqlite3
@@ -59,14 +59,14 @@ install:
     export PATH="$(brew --prefix llvm)/bin:$PATH";
   fi
 # /usr/bin/gcc points to an older compiler on both Linux and macOS.
-- if [ "$CXX" = "g++" ]; then export CXX="g++-10" CC="gcc-10"; fi
+- if [ "$CXX" = "g++" ]; then export CXX="g++-11" CC="gcc-11"; fi
 # /usr/bin/clang points to an older compiler on both Linux and macOS.
 #
 # Homebrew's llvm package doesn't ship a versioned clang++ binary, so the values
 # below don't work on macOS. Fortunately, the path change above makes the
 # default values (clang and clang++) resolve to the correct compiler on macOS.
 - if [ "$TRAVIS_OS_NAME" = "linux" ]; then
-    if [ "$CXX" = "clang++" ]; then export CXX="clang++-10" CC="clang-10"; fi;
+    if [ "$CXX" = "clang++" ]; then export CXX="clang++-12" CC="clang-12"; fi;
   fi
 - echo ${CC}
 - echo ${CXX}
