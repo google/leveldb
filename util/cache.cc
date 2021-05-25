@@ -54,7 +54,7 @@ struct LRUHandle {
   char key_data[1];  // Beginning of key
 
   Slice key() const {
-    // next_ is only equal to this if the LRU handle is the list head of an
+    // next is only equal to this if the LRU handle is the list head of an
     // empty list. List heads never have meaningful keys.
     assert(next != this);
 
