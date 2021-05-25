@@ -89,8 +89,8 @@ edits within the batch are applied in order. Note that we called Delete before
 Put so that if key1 is identical to key2, we do not end up erroneously dropping
 the value entirely.
 
-Apart from its atomicity benefits, `WriteBatch` may also be used to speed up
-bulk updates by placing lots of individual mutations into the same batch.
+Apart from its atomicity benefits, `WriteBatch` may also be used to *speed up
+bulk updates* by placing lots of individual mutations into the same batch.
 
 ## Synchronous Writes
 
