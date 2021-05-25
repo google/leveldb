@@ -34,6 +34,7 @@ void VersionEdit::Clear() {
   has_prev_log_number_ = false;
   has_next_file_number_ = false;
   has_last_sequence_ = false;
+  compact_pointers_.clear();
   deleted_files_.clear();
   new_files_.clear();
 }
