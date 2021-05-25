@@ -296,7 +296,10 @@ if(LEVELDB_BUILD_TESTS)
   set(build_gmock ON)
 
   # This project is tested using GoogleTest.
+  set(BUILD_SHARED_LIBS_SAVED "${BUILD_SHARED_LIBS}")
+  set(BUILD_SHARED_LIBS OFF)
   add_subdirectory("third_party/googletest")
+  set(BUILD_SHARED_LIBS "${BUILD_SHARED_LIBS_SAVED}")
 
   # This project uses Google benchmark for benchmarking.
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
