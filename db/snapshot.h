@@ -5,6 +5,8 @@
 #ifndef STORAGE_LEVELDB_DB_SNAPSHOT_H_
 #define STORAGE_LEVELDB_DB_SNAPSHOT_H_
 
+#include <vector>
+
 #include "db/dbformat.h"
 #include "leveldb/db.h"
 
@@ -51,6 +53,16 @@ class SnapshotList {
   SnapshotImpl* newest() const {
     assert(!empty());
     return head_.prev_;
+  }
+
+  void GetSequenceNumberList(std::vector<SequenceNumber> *list_) {
+    assert(list_->empty());
+    if (empty()) return;
+    SnapshotImpl* cur = head_.next_;  // get oldest;
+    while (cur != &head_) {
+      list_->push_back(cur->sequence_number());
+      cur = cur->next_;
+    }
   }
 
   // Creates a SnapshotImpl and appends it to the end of the list.
