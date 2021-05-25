@@ -353,6 +353,10 @@ class Compaction {
   // before processing "internal_key".
   bool ShouldStopBefore(const Slice& internal_key);
 
+  // Reset overlapped bytes with grandparents. Should be called if we start
+  // building a new output for other reasons(eg. file size limitation).
+  void RestartOverlappedBytes() { overlapped_bytes_ = 0; }
+
   // Release the input version for the compaction, once the compaction
   // is successful.
   void ReleaseInputs();
