@@ -1314,6 +1314,8 @@ WriteBatch* DBImpl::BuildBatchGroup(Writer** last_writer) {
         WriteBatchInternal::Append(result, first->batch);
       }
       WriteBatchInternal::Append(result, w->batch);
+    } else {
+      break;
     }
     *last_writer = w;
   }
