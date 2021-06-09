@@ -289,27 +289,25 @@ target_link_libraries(leveldbutil leveldb)
 if(LEVELDB_BUILD_TESTS)
   enable_testing()
 
-  # Prevent overriding the parent project's compiler/linker settings on Windows.
-  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  set(install_gtest OFF)
-  set(install_gmock OFF)
-  set(build_gmock ON)
+  find_package(GTest)
+  if(NOT GTest_FOUND)
+    # Prevent overriding the parent project's compiler/linker settings on Windows.
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(install_gtest OFF)
+    set(install_gmock OFF)
+    set(build_gmock ON)
 
-  # This project is tested using GoogleTest.
-  add_subdirectory("third_party/googletest")
+    # This project is tested using GoogleTest.
+    add_subdirectory("third_party/googletest")
 
-  # This project uses Google benchmark for benchmarking.
-  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-  set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
-  add_subdirectory("third_party/benchmark")
-
-  # GoogleTest triggers a missing field initializers warning.
-  if(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
-    set_property(TARGET gtest
-        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
-    set_property(TARGET gmock
-        APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
-  endif(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+    # GoogleTest triggers a missing field initializers warning.
+    if(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+      set_property(TARGET gtest
+          APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+      set_property(TARGET gmock
+          APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
+    endif(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+  endif()
 
   function(leveldb_test test_file)
     get_filename_component(test_target_name "${test_file}" NAME_WE)
@@ -386,6 +384,14 @@ if(LEVELDB_BUILD_TESTS)
 endif(LEVELDB_BUILD_TESTS)
 
 if(LEVELDB_BUILD_BENCHMARKS)
+  find_package(benchmark)
+  if (NOT benchmark_FOUND)
+    # This project uses Google benchmark for benchmarking.
+    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+    set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
+    add_subdirectory("third_party/benchmark")
+  endif()
+
   function(leveldb_benchmark bench_file)
     get_filename_component(bench_target_name "${bench_file}" NAME_WE)
 
