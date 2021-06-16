@@ -276,6 +276,9 @@ endif(HAVE_SNAPPY)
 if(HAVE_TCMALLOC)
   target_link_libraries(leveldb tcmalloc)
 endif(HAVE_TCMALLOC)
+if(WIN32)
+  target_link_libraries(leveldb shlwapi)
+endif(WIN32)
 
 # Needed by port_stdcxx.h
 find_package(Threads REQUIRED)
