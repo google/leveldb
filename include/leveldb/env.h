@@ -64,6 +64,14 @@ class LEVELDB_EXPORT Env {
   // The result of Default() belongs to leveldb and must never be deleted.
   static Env* Default();
 
+  // Return a default environment suitable for the current operating
+  // system.  Sophisticated users may wish to provide their own Env
+  // implementation instead of relying on this default environment.
+  //
+  // The result of DefaultNotStatic() doesn't belongs to leveldb
+  // and must be deleted by owner
+  static Env* DefaultNotStatic();
+
   // Create an object that sequentially reads the file with the specified name.
   // On success, stores a pointer to the new file in *result and returns OK.
   // On failure stores nullptr in *result and returns non-OK.  If the file does

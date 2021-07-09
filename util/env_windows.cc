@@ -805,4 +805,8 @@ Env* Env::Default() {
   return env_container.env();
 }
 
+Env* Env::DefaultNotStatic() {
+  return new WindowsEnv();
+}
+
 }  // namespace leveldb
