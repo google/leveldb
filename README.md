@@ -110,7 +110,7 @@ In order to keep the commit timeline linear
 your changes down to a single commit and [rebase](https://git-scm.com/docs/git-rebase)
 on google/leveldb/master. This keeps the commit timeline linear and more easily sync'ed
 with the internal repository at Google. More information at GitHub's
-[About Git rebase](https://help.github.com/articles/about-git-rebase/) page.
+[About Git rebase](https://docs.github.com/en/get-started/using-git/about-git-rebase) page.
 
 # Performance
 
