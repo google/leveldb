@@ -6,7 +6,9 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <sys/mman.h>
+#ifndef __Fuchsia__
 #include <sys/resource.h>
+#endif
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -757,6 +759,10 @@ int MaxOpenFiles() {
   if (g_open_read_only_file_limit >= 0) {
     return g_open_read_only_file_limit;
   }
+#ifdef __Fuchsia__
+  // Fuchsia doesn't implement getrlimit.
+  g_open_read_only_file_limit = 50;
+#else
   struct ::rlimit rlim;
   if (::getrlimit(RLIMIT_NOFILE, &rlim)) {
     // getrlimit failed, fallback to hard-coded default.
@@ -767,6 +773,7 @@ int MaxOpenFiles() {
     // Allow use of 20% of available file descriptors for read-only files.
     g_open_read_only_file_limit = rlim.rlim_cur / 5;
   }
+#endif
   return g_open_read_only_file_limit;
 }
 
