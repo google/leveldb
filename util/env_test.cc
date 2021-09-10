@@ -188,7 +188,7 @@ TEST_F(EnvTest, ReopenWritableFile) {
   std::string test_dir;
   ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
   std::string test_file_name = test_dir + "/reopen_writable_file.txt";
-  env_->DeleteFile(test_file_name);
+  env_->RemoveFile(test_file_name);
 
   WritableFile* writable_file;
   ASSERT_LEVELDB_OK(env_->NewWritableFile(test_file_name, &writable_file));
@@ -205,14 +205,14 @@ TEST_F(EnvTest, ReopenWritableFile) {
 
   ASSERT_LEVELDB_OK(ReadFileToString(env_, test_file_name, &data));
   ASSERT_EQ(std::string("42"), data);
-  env_->DeleteFile(test_file_name);
+  env_->RemoveFile(test_file_name);
 }
 
 TEST_F(EnvTest, ReopenAppendableFile) {
   std::string test_dir;
   ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
   std::string test_file_name = test_dir + "/reopen_appendable_file.txt";
-  env_->DeleteFile(test_file_name);
+  env_->RemoveFile(test_file_name);
 
   WritableFile* appendable_file;
   ASSERT_LEVELDB_OK(env_->NewAppendableFile(test_file_name, &appendable_file));
@@ -229,7 +229,7 @@ TEST_F(EnvTest, ReopenAppendableFile) {
 
   ASSERT_LEVELDB_OK(ReadFileToString(env_, test_file_name, &data));
   ASSERT_EQ(std::string("hello world!42"), data);
-  env_->DeleteFile(test_file_name);
+  env_->RemoveFile(test_file_name);
 }
 
 }  // namespace leveldb

@@ -30,7 +30,7 @@ class AutoCompactTest : public testing::Test {
 
   std::string Key(int i) {
     char buf[100];
-    snprintf(buf, sizeof(buf), "key%06d", i);
+    std::snprintf(buf, sizeof(buf), "key%06d", i);
     return std::string(buf);
   }
 
@@ -89,8 +89,8 @@ void AutoCompactTest::DoReads(int n) {
     // Wait a little bit to allow any triggered compactions to complete.
     Env::Default()->SleepForMicroseconds(1000000);
     uint64_t size = Size(Key(0), Key(n));
-    fprintf(stderr, "iter %3d => %7.3f MB [other %7.3f MB]\n", read + 1,
-            size / 1048576.0, Size(Key(n), Key(kCount)) / 1048576.0);
+    std::fprintf(stderr, "iter %3d => %7.3f MB [other %7.3f MB]\n", read + 1,
+                 size / 1048576.0, Size(Key(n), Key(kCount)) / 1048576.0);
     if (size <= initial_size / 10) {
       break;
     }

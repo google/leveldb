@@ -18,7 +18,7 @@ namespace test {
 MATCHER(IsOK, "") { return arg.ok(); }
 
 // Macros for testing the results of functions that return leveldb::Status or
-// util::StatusOr<T> (for any type T).
+// absl::StatusOr<T> (for any type T).
 #define EXPECT_LEVELDB_OK(expression) \
   EXPECT_THAT(expression, leveldb::test::IsOK())
 #define ASSERT_LEVELDB_OK(expression) \

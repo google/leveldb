@@ -18,7 +18,7 @@ const int kNumKeys = 1100000;
 
 std::string Key1(int i) {
   char buf[100];
-  snprintf(buf, sizeof(buf), "my_key_%d", i);
+  std::snprintf(buf, sizeof(buf), "my_key_%d", i);
   return buf;
 }
 

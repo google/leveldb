@@ -83,12 +83,12 @@ TEST_F(MemEnvTest, Basics) {
   ASSERT_TRUE(!rand_file);
 
   // Check that deleting works.
-  ASSERT_TRUE(!env_->DeleteFile("/dir/non_existent").ok());
-  ASSERT_LEVELDB_OK(env_->DeleteFile("/dir/g"));
+  ASSERT_TRUE(!env_->RemoveFile("/dir/non_existent").ok());
+  ASSERT_LEVELDB_OK(env_->RemoveFile("/dir/g"));
   ASSERT_TRUE(!env_->FileExists("/dir/g"));
   ASSERT_LEVELDB_OK(env_->GetChildren("/dir", &children));
   ASSERT_EQ(0, children.size());
-  ASSERT_LEVELDB_OK(env_->DeleteDir("/dir"));
+  ASSERT_LEVELDB_OK(env_->RemoveDir("/dir"));
 }
 
 TEST_F(MemEnvTest, ReadWrite) {

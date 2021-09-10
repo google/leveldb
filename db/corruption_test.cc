@@ -58,7 +58,7 @@ class CorruptionTest : public testing::Test {
     std::string key_space, value_space;
     WriteBatch batch;
     for (int i = 0; i < n; i++) {
-      // if ((i % 100) == 0) fprintf(stderr, "@ %d of %d\n", i, n);
+      // if ((i % 100) == 0) std::fprintf(stderr, "@ %d of %d\n", i, n);
       Slice key = Key(i, &key_space);
       batch.Clear();
       batch.Put(key, Value(i, &value_space));
@@ -102,9 +102,10 @@ class CorruptionTest : public testing::Test {
     }
     delete iter;
 
-    fprintf(stderr,
-            "expected=%d..%d; got=%d; bad_keys=%d; bad_values=%d; missed=%d\n",
-            min_expected, max_expected, correct, bad_keys, bad_values, missed);
+    std::fprintf(
+        stderr,
+        "expected=%d..%d; got=%d; bad_keys=%d; bad_values=%d; missed=%d\n",
+        min_expected, max_expected, correct, bad_keys, bad_values, missed);
     ASSERT_LE(min_expected, correct);
     ASSERT_GE(max_expected, correct);
   }
@@ -169,7 +170,7 @@ class CorruptionTest : public testing::Test {
   // Return the ith key
   Slice Key(int i, std::string* storage) {
     char buf[100];
-    snprintf(buf, sizeof(buf), "%016d", i);
+    std::snprintf(buf, sizeof(buf), "%016d", i);
     storage->assign(buf, strlen(buf));
     return Slice(*storage);
   }

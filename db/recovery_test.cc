@@ -18,7 +18,7 @@ namespace leveldb {
 class RecoveryTest : public testing::Test {
  public:
   RecoveryTest() : env_(Env::Default()), db_(nullptr) {
-    dbname_ = testing::TempDir() + "/recovery_test";
+    dbname_ = testing::TempDir() + "recovery_test";
     DestroyDB(dbname_, Options());
     Open();
   }
@@ -95,19 +95,19 @@ class RecoveryTest : public testing::Test {
 
   std::string LogName(uint64_t number) { return LogFileName(dbname_, number); }
 
-  size_t DeleteLogFiles() {
+  size_t RemoveLogFiles() {
     // Linux allows unlinking open files, but Windows does not.
     // Closing the db allows for file deletion.
     Close();
     std::vector<uint64_t> logs = GetFiles(kLogFile);
     for (size_t i = 0; i < logs.size(); i++) {
-      EXPECT_LEVELDB_OK(env_->DeleteFile(LogName(logs[i]))) << LogName(logs[i]);
+      EXPECT_LEVELDB_OK(env_->RemoveFile(LogName(logs[i]))) << LogName(logs[i]);
     }
     return logs.size();
   }
 
-  void DeleteManifestFile() {
-    ASSERT_LEVELDB_OK(env_->DeleteFile(ManifestFileName()));
+  void RemoveManifestFile() {
+    ASSERT_LEVELDB_OK(env_->RemoveFile(ManifestFileName()));
   }
 
   uint64_t FirstLogFile() { return GetFiles(kLogFile)[0]; }
@@ -160,7 +160,8 @@ class RecoveryTest : public testing::Test {
 
 TEST_F(RecoveryTest, ManifestReused) {
   if (!CanAppend()) {
-    fprintf(stderr, "skipping test because env does not support appending\n");
+    std::fprintf(stderr,
+                 "skipping test because env does not support appending\n");
     return;
   }
   ASSERT_LEVELDB_OK(Put("foo", "bar"));
@@ -176,7 +177,8 @@ TEST_F(RecoveryTest, ManifestReused) {
 
 TEST_F(RecoveryTest, LargeManifestCompacted) {
   if (!CanAppend()) {
-    fprintf(stderr, "skipping test because env does not support appending\n");
+    std::fprintf(stderr,
+                 "skipping test because env does not support appending\n");
     return;
   }
   ASSERT_LEVELDB_OK(Put("foo", "bar"));
@@ -207,7 +209,7 @@ TEST_F(RecoveryTest, LargeManifestCompacted) {
 
 TEST_F(RecoveryTest, NoLogFiles) {
   ASSERT_LEVELDB_OK(Put("foo", "bar"));
-  ASSERT_EQ(1, DeleteLogFiles());
+  ASSERT_EQ(1, RemoveLogFiles());
   Open();
   ASSERT_EQ("NOT_FOUND", Get("foo"));
   Open();
@@ -216,7 +218,8 @@ TEST_F(RecoveryTest, NoLogFiles) {
 
 TEST_F(RecoveryTest, LogFileReuse) {
   if (!CanAppend()) {
-    fprintf(stderr, "skipping test because env does not support appending\n");
+    std::fprintf(stderr,
+                 "skipping test because env does not support appending\n");
     return;
   }
   for (int i = 0; i < 2; i++) {
@@ -249,7 +252,7 @@ TEST_F(RecoveryTest, MultipleMemTables) {
   const int kNum = 1000;
   for (int i = 0; i < kNum; i++) {
     char buf[100];
-    snprintf(buf, sizeof(buf), "%050d", i);
+    std::snprintf(buf, sizeof(buf), "%050d", i);
     ASSERT_LEVELDB_OK(Put(buf, buf));
   }
   ASSERT_EQ(0, NumTables());
@@ -268,7 +271,7 @@ TEST_F(RecoveryTest, MultipleMemTables) {
   ASSERT_NE(old_log_file, FirstLogFile()) << "must not reuse log";
   for (int i = 0; i < kNum; i++) {
     char buf[100];
-    snprintf(buf, sizeof(buf), "%050d", i);
+    std::snprintf(buf, sizeof(buf), "%050d", i);
     ASSERT_EQ(buf, Get(buf));
   }
 }
@@ -322,7 +325,7 @@ TEST_F(RecoveryTest, MultipleLogFiles) {
 TEST_F(RecoveryTest, ManifestMissing) {
   ASSERT_LEVELDB_OK(Put("foo", "bar"));
   Close();
-  DeleteManifestFile();
+  RemoveManifestFile();
 
   Status status = OpenWithStatus();
   ASSERT_TRUE(status.IsCorruption());

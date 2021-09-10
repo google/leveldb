@@ -6,8 +6,8 @@
 
 #include "util/crc32c.h"
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 #include "port/port.h"
 #include "util/coding.h"

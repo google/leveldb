@@ -72,7 +72,7 @@ Status Truncate(const std::string& filename, uint64_t length) {
       if (s.ok()) {
         s = env->RenameFile(tmp_name, filename);
       } else {
-        env->DeleteFile(tmp_name);
+        env->RemoveFile(tmp_name);
       }
     }
   }
@@ -133,12 +133,12 @@ class FaultInjectionTestEnv : public EnvWrapper {
                          WritableFile** result) override;
   Status NewAppendableFile(const std::string& fname,
                            WritableFile** result) override;
-  Status DeleteFile(const std::string& f) override;
+  Status RemoveFile(const std::string& f) override;
   Status RenameFile(const std::string& s, const std::string& t) override;
 
   void WritableFileClosed(const FileState& state);
   Status DropUnsyncedFileData();
-  Status DeleteFilesCreatedAfterLastDirSync();
+  Status RemoveFilesCreatedAfterLastDirSync();
   void DirWasSynced();
   bool IsFileCreatedSinceLastDirSync(const std::string& filename);
   void ResetState();
@@ -298,8 +298,8 @@ void FaultInjectionTestEnv::UntrackFile(const std::string& f) {
   new_files_since_last_dir_sync_.erase(f);
 }
 
-Status FaultInjectionTestEnv::DeleteFile(const std::string& f) {
-  Status s = EnvWrapper::DeleteFile(f);
+Status FaultInjectionTestEnv::RemoveFile(const std::string& f) {
+  Status s = EnvWrapper::RemoveFile(f);
   EXPECT_LEVELDB_OK(s);
   if (s.ok()) {
     UntrackFile(f);
@@ -335,17 +335,17 @@ void FaultInjectionTestEnv::ResetState() {
   SetFilesystemActive(true);
 }
 
-Status FaultInjectionTestEnv::DeleteFilesCreatedAfterLastDirSync() {
-  // Because DeleteFile access this container make a copy to avoid deadlock
+Status FaultInjectionTestEnv::RemoveFilesCreatedAfterLastDirSync() {
+  // Because RemoveFile access this container make a copy to avoid deadlock
   mutex_.Lock();
   std::set<std::string> new_files(new_files_since_last_dir_sync_.begin(),
                                   new_files_since_last_dir_sync_.end());
   mutex_.Unlock();
   Status status;
   for (const auto& new_file : new_files) {
-    Status delete_status = DeleteFile(new_file);
-    if (!delete_status.ok() && status.ok()) {
-      status = std::move(delete_status);
+    Status remove_status = RemoveFile(new_file);
+    if (!remove_status.ok() && status.ok()) {
+      status = std::move(remove_status);
     }
   }
   return status;
@@ -427,7 +427,7 @@ class FaultInjectionTest : public testing::Test {
           EXPECT_EQ(value_space, val);
         }
       } else if (s.ok()) {
-        fprintf(stderr, "Expected an error at %d, but was OK\n", i);
+        std::fprintf(stderr, "Expected an error at %d, but was OK\n", i);
         s = Status::IOError(dbname_, "Expected value error:");
       } else {
         s = Status::OK();  // An expected error
@@ -439,7 +439,7 @@ class FaultInjectionTest : public testing::Test {
   // Return the ith key
   Slice Key(int i, std::string* storage) const {
     char buf[100];
-    snprintf(buf, sizeof(buf), "%016d", i);
+    std::snprintf(buf, sizeof(buf), "%016d", i);
     storage->assign(buf, strlen(buf));
     return Slice(*storage);
   }
@@ -477,7 +477,7 @@ class FaultInjectionTest : public testing::Test {
         ASSERT_LEVELDB_OK(env_->DropUnsyncedFileData());
         break;
       case RESET_DELETE_UNSYNCED_FILES:
-        ASSERT_LEVELDB_OK(env_->DeleteFilesCreatedAfterLastDirSync());
+        ASSERT_LEVELDB_OK(env_->RemoveFilesCreatedAfterLastDirSync());
         break;
       default:
         assert(false);
