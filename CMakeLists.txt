@@ -99,6 +99,10 @@ set(LEVELDB_PUBLIC_INCLUDE_DIR "include/leveldb")
 set(LEVELDB_PORT_CONFIG_DIR "include/port")
 
 configure_file(
+  "version_config.h.in"
+  "${PROJECT_SOURCE_DIR}/${LEVELDB_PUBLIC_INCLUDE_DIR}/version_config.h"
+)
+configure_file(
   "port/port_config.h.in"
   "${PROJECT_BINARY_DIR}/${LEVELDB_PORT_CONFIG_DIR}/port_config.h"
 )
@@ -206,6 +210,7 @@ target_sources(leveldb
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/status.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/table_builder.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/table.h"
+    "${LEVELDB_PUBLIC_INCLUDE_DIR}/version_config.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/write_batch.h"
 )
 

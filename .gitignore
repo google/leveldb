@@ -6,3 +6,5 @@
 # Build directory.
 build/
 out/
+
+version_config.h
