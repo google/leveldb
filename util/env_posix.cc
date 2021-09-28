@@ -35,6 +35,7 @@
 #include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/env_posix_test_helper.h"
+#include "util/no_destructor.h"
 #include "util/posix_logger.h"
 
 namespace leveldb {
@@ -826,38 +827,17 @@ void PosixEnv::BackgroundThreadMain() {
 }
 
 namespace {
-
-// Wraps an Env instance whose destructor is never created.
-//
-// Intended usage:
-//   using PlatformSingletonEnv = SingletonEnv<PlatformEnv>;
-//   void ConfigurePosixEnv(int param) {
-//     PlatformSingletonEnv::AssertEnvNotInitialized();
-//     // set global configuration flags.
-//   }
-//   Env* Env::Default() {
-//     static PlatformSingletonEnv default_env;
-//     return default_env.env();
-//   }
 template <typename EnvType>
-class SingletonEnv {
+class SingletonEnv : public NoDestructor<EnvType> {
  public:
-  SingletonEnv() {
+  template <typename... ConstructorArgTypes>
+  SingletonEnv(ConstructorArgTypes&&... constructor_args)
+      : NoDestructor<EnvType>(
+            std::forward<ConstructorArgTypes>(constructor_args)...) {
 #if !defined(NDEBUG)
     env_initialized_.store(true, std::memory_order::memory_order_relaxed);
 #endif  // !defined(NDEBUG)
-    static_assert(sizeof(env_storage_) >= sizeof(EnvType),
-                  "env_storage_ will not fit the Env");
-    static_assert(alignof(decltype(env_storage_)) >= alignof(EnvType),
-                  "env_storage_ does not meet the Env's alignment needs");
-    new (&env_storage_) EnvType();
   }
-  ~SingletonEnv() = default;
-
-  SingletonEnv(const SingletonEnv&) = delete;
-  SingletonEnv& operator=(const SingletonEnv&) = delete;
-
-  Env* env() { return reinterpret_cast<Env*>(&env_storage_); }
 
   static void AssertEnvNotInitialized() {
 #if !defined(NDEBUG)
@@ -865,9 +845,6 @@ class SingletonEnv {
 #endif  // !defined(NDEBUG)
   }
 
- private:
-  typename std::aligned_storage<sizeof(EnvType), alignof(EnvType)>::type
-      env_storage_;
 #if !defined(NDEBUG)
   static std::atomic<bool> env_initialized_;
 #endif  // !defined(NDEBUG)
@@ -879,7 +856,6 @@ std::atomic<bool> SingletonEnv<EnvType>::env_initialized_;
 #endif  // !defined(NDEBUG)
 
 using PosixDefaultEnv = SingletonEnv<PosixEnv>;
-
 }  // namespace
 
 void EnvPosixTestHelper::SetReadOnlyFDLimit(int limit) {
@@ -894,7 +870,7 @@ void EnvPosixTestHelper::SetReadOnlyMMapLimit(int limit) {
 
 Env* Env::Default() {
   static PosixDefaultEnv env_container;
-  return env_container.env();
+  return env_container.get();
 }
 
 }  // namespace leveldb
