@@ -6,6 +6,14 @@ cmake_minimum_required(VERSION 3.9)
 # Keep the version below in sync with the one in db.h
 project(leveldb VERSION 1.23.0 LANGUAGES C CXX)
 
+if(BUILD_SHARED_LIBS)
+  option(BUILD_SHARED_LEVELDB "Build shared leveldb library (DLL)." ON)
+  set(target_type SHARED)
+else()
+  option(BUILD_SHARED_LEVELDB "Build shared leveldb library (DLL)." OFF)
+  set(target_type STATIC)
+endif()
+
 # C standard can be overridden when this is used as a sub-project.
 if(NOT CMAKE_C_STANDARD)
   # This project can use C11, but will gracefully decay down to C89.
@@ -27,6 +35,7 @@ if (WIN32)
   # TODO(cmumford): Make UNICODE configurable for Windows.
   add_definitions(-D_UNICODE -DUNICODE)
 else (WIN32)
+  add_compile_options( -fPIC )
   set(LEVELDB_PLATFORM_NAME LEVELDB_PLATFORM_POSIX)
 endif (WIN32)
 
@@ -108,15 +117,15 @@ include_directories(
   "."
 )
 
-if(BUILD_SHARED_LIBS)
+if(BUILD_SHARED_LEVELDB)
   # Only export LEVELDB_EXPORT symbols from the shared library.
   add_compile_options(-fvisibility=hidden)
-endif(BUILD_SHARED_LIBS)
+endif()
 
 # Must be included before CMAKE_INSTALL_INCLUDEDIR is used.
 include(GNUInstallDirs)
 
-add_library(leveldb "")
+add_library(leveldb ${target_type} "")
 target_sources(leveldb
   PRIVATE
     "${PROJECT_BINARY_DIR}/${LEVELDB_PORT_CONFIG_DIR}/port_config.h"
@@ -253,13 +262,13 @@ if (NOT HAVE_CXX17_HAS_INCLUDE)
   )
 endif(NOT HAVE_CXX17_HAS_INCLUDE)
 
-if(BUILD_SHARED_LIBS)
+if(BUILD_SHARED_LEVELDB)
   target_compile_definitions(leveldb
     PUBLIC
       # Used by include/export.h.
       LEVELDB_SHARED_LIBRARY
   )
-endif(BUILD_SHARED_LIBS)
+endif()
 
 if(HAVE_CLANG_THREAD_SAFETY)
   target_compile_options(leveldb
@@ -349,7 +358,7 @@ if(LEVELDB_BUILD_TESTS)
   leveldb_test("util/status_test.cc")
   leveldb_test("util/no_destructor_test.cc")
 
-  if(NOT BUILD_SHARED_LIBS)
+  if(NOT BUILD_SHARED_LEVELDB)
     leveldb_test("db/autocompact_test.cc")
     leveldb_test("db/corruption_test.cc")
     leveldb_test("db/db_test.cc")
@@ -382,7 +391,7 @@ if(LEVELDB_BUILD_TESTS)
     else (WIN32)
       leveldb_test("util/env_posix_test.cc")
     endif (WIN32)
-  endif(NOT BUILD_SHARED_LIBS)
+  endif()
 endif(LEVELDB_BUILD_TESTS)
 
 if(LEVELDB_BUILD_BENCHMARKS)
@@ -413,9 +422,9 @@ if(LEVELDB_BUILD_BENCHMARKS)
     endif(NOT HAVE_CXX17_HAS_INCLUDE)
   endfunction(leveldb_benchmark)
 
-  if(NOT BUILD_SHARED_LIBS)
+  if(NOT BUILD_SHARED_LEVELDB)
     leveldb_benchmark("benchmarks/db_bench.cc")
-  endif(NOT BUILD_SHARED_LIBS)
+  endif()
 
   check_library_exists(sqlite3 sqlite3_open "" HAVE_SQLITE3)
   if(HAVE_SQLITE3)
