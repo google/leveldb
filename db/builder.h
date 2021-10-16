@@ -6,7 +6,7 @@
 #define STORAGE_LEVELDB_DB_BUILDER_H_
 
 #include "leveldb/status.h"
-
+// 意味着在leveldb这个namespace里面，这些声明就不用写leveldb::Options了？
 namespace leveldb {
 
 struct Options;
@@ -22,6 +22,7 @@ class VersionEdit;
 // *meta will be filled with metadata about the generated table.
 // If no data is present in *iter, meta->file_size will be set to
 // zero, and no Table file will be produced.
+// const在外表示，引用不能变？
 Status BuildTable(const std::string& dbname, Env* env, const Options& options,
                   TableCache* table_cache, Iterator* iter, FileMetaData* meta);
 

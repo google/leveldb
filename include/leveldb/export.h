@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+// 这个名字，为什么不是STORAGE_LEVELDB_INCLUDE_LEVELDB_EXPORT_H_
+// 这个文件看不懂
 #ifndef STORAGE_LEVELDB_INCLUDE_EXPORT_H_
 #define STORAGE_LEVELDB_INCLUDE_EXPORT_H_
 

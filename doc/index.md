@@ -1,17 +1,11 @@
 leveldb
 =======
 
-_Jeff Dean, Sanjay Ghemawat_
-
-The leveldb library provides a persistent key value store. Keys and values are
-arbitrary byte arrays.  The keys are ordered within the key value store
-according to a user-specified comparator function.
+key,value是任意的字节数组。
 
 ## Opening A Database
 
-A leveldb database has a name which corresponds to a file system directory. All
-of the contents of database are stored in this directory. The following example
-shows how to open a database, creating it if necessary:
+如何开启一个数据库。
 
 ```c++
 #include <cassert>
