@@ -4,7 +4,6 @@
 
 #include <dirent.h>
 #include <fcntl.h>
-#include <pthread.h>
 #include <sys/mman.h>
 #ifndef __Fuchsia__
 #include <sys/resource.h>
