@@ -694,7 +694,7 @@ TEST_F(DBTest, IterateOverEmptySnapshot) {
   } while (ChangeOptions());
 }
 
-TEST_F(DBTest, GetLevel0Ordering) {
+TEST_F(DBTest, GetLevel2Ordering) {
   do {
     // Check that we process level-2 files in correct order.  The code
     // below generates two level-2 files where the earlier one comes
