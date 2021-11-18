@@ -286,6 +286,12 @@ add_executable(leveldbutil
 )
 target_link_libraries(leveldbutil leveldb)
 
+add_executable(leveldbrestore
+  "db/leveldbrestore.cc"
+)
+target_link_libraries(leveldbrestore leveldb)
+
+
 if(LEVELDB_BUILD_TESTS)
   enable_testing()
 
