@@ -85,20 +85,31 @@ Version::~Version() {
 }
 
 int FindFile(const InternalKeyComparator& icmp,
-             const std::vector<FileMetaData*>& files, const Slice& key) {
+             const std::vector<FileMetaData*>& files, const Slice& key,
+             bool use_user_comparator) {
   uint32_t left = 0;
   uint32_t right = files.size();
+
+  const Comparator* user_cmp = icmp.user_comparator();
   while (left < right) {
     uint32_t mid = (left + right) / 2;
     const FileMetaData* f = files[mid];
-    if (icmp.InternalKeyComparator::Compare(f->largest.Encode(), key) < 0) {
-      // Key at "mid.largest" is < "target".  Therefore all
-      // files at or before "mid" are uninteresting.
-      left = mid + 1;
+    if (use_user_comparator) {
+      if (user_cmp->Compare(f->largest.user_key(), key) < 0) {
+        left = mid + 1;
+      } else {
+        right = mid;
+      }
     } else {
-      // Key at "mid.largest" is >= "target".  Therefore all files
-      // after "mid" are uninteresting.
-      right = mid;
+      if (icmp.InternalKeyComparator::Compare(f->largest.Encode(), key) < 0) {
+        // Key at "mid.largest" is < "target".  Therefore all
+        // files at or before "mid" are uninteresting.
+        left = mid + 1;
+      } else {
+        // Key at "mid.largest" is >= "target".  Therefore all files
+        // after "mid" are uninteresting.
+        right = mid;
+      }
     }
   }
   return right;
@@ -1486,9 +1497,6 @@ Compaction::Compaction(const Options* options, int level)
       grandparent_index_(0),
       seen_key_(false),
       overlapped_bytes_(0) {
-  for (int i = 0; i < config::kNumLevels; i++) {
-    level_ptrs_[i] = 0;
-  }
 }
 
 Compaction::~Compaction() {
@@ -1520,17 +1528,10 @@ bool Compaction::IsBaseLevelForKey(const Slice& user_key) {
   const Comparator* user_cmp = input_version_->vset_->icmp_.user_comparator();
   for (int lvl = level_ + 2; lvl < config::kNumLevels; lvl++) {
     const std::vector<FileMetaData*>& files = input_version_->files_[lvl];
-    while (level_ptrs_[lvl] < files.size()) {
-      FileMetaData* f = files[level_ptrs_[lvl]];
-      if (user_cmp->Compare(user_key, f->largest.user_key()) <= 0) {
-        // We've advanced far enough
-        if (user_cmp->Compare(user_key, f->smallest.user_key()) >= 0) {
-          // Key falls in this file's range, so definitely not base level
-          return false;
-        }
-        break;
-      }
-      level_ptrs_[lvl]++;
+    int num = FindFile(input_version_->vset_->icmp_, files, user_key, true);
+    if (num < files.size()) {
+      if (user_cmp->Compare(user_key, files[num]->smallest.user_key()) >= 0)
+        return false;
     }
   }
   return true;
