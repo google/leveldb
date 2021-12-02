@@ -696,9 +696,9 @@ TEST_F(DBTest, IterateOverEmptySnapshot) {
 
 TEST_F(DBTest, GetLevel0Ordering) {
   do {
-    // Check that we process level-2 files in correct order.  The code
-    // below generates two level-2 files where the earlier one comes
-    // before the later one in the level-2 file list since the earlier
+    // Check that we process level-0 files in correct order.  The code
+    // below generates two level-0 files where the earlier one comes
+    // before the later one in the level-0 file list since the earlier
     // one has a smaller "smallest" key.
     ASSERT_LEVELDB_OK(Put("bar", "b"));
     ASSERT_LEVELDB_OK(Put("foo", "v1"));
