@@ -73,7 +73,8 @@ Status PosixError(const std::string& context, int error_number) {
 class Limiter {
  public:
   // Limit maximum number of resources to |max_acquires|.
-  Limiter(int max_acquires) : acquires_allowed_(max_acquires) {}
+  Limiter(int max_acquires) 
+      : acquires_allowed_(max_acquires), max_acquires_(max_acquires) {}
 
   Limiter(const Limiter&) = delete;
   Limiter operator=(const Limiter&) = delete;
@@ -91,8 +92,13 @@ class Limiter {
   }
 
   // Release a resource acquired by a previous call to Acquire() that returned
-  // true.
-  void Release() { acquires_allowed_.fetch_add(1, std::memory_order_relaxed); }
+  // true.Ignore redundant calls.
+  void Release() {
+    int old_acquires_allowed =
+      acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
+    if(old_acquires_allowed > max_acquires_)
+      acquires_allowed_.fetch_sub(1, std::memory_order_relaxed);
+  }
 
  private:
   // The number of available resources.
@@ -100,6 +106,8 @@ class Limiter {
   // This is a counter and is not tied to the invariants of any other class, so
   // it can be operated on safely using std::memory_order_relaxed.
   std::atomic<int> acquires_allowed_;
+
+  const int max_acquires_;
 };
 
 // Implements sequential read access in a file using read().
