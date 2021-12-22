@@ -114,7 +114,14 @@ class ScopedHandle {
 class Limiter {
  public:
   // Limit maximum number of resources to |max_acquires|.
-  Limiter(int max_acquires) : acquires_allowed_(max_acquires) {}
+  Limiter(int max_acquires)
+      :
+#if !defined(NDEBUG)
+        max_acquires_(max_acquires),
+#endif  // !defined(NDEBUG)
+        acquires_allowed_(max_acquires) {
+    assert(max_acquires >= 0);
+  }
 
   Limiter(const Limiter&) = delete;
   Limiter operator=(const Limiter&) = delete;
@@ -133,9 +140,22 @@ class Limiter {
 
   // Release a resource acquired by a previous call to Acquire() that returned
   // true.
-  void Release() { acquires_allowed_.fetch_add(1, std::memory_order_relaxed); }
+  void Release() {
+    int old_acquires_allowed =
+        acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
+
+    // Silence compiler warnings about unused arguments when NDEBUG is defined.
+    (void)old_acquires_allowed;
+    // If the check below fails, Release() was called more times than acquire.
+    assert(old_acquires_allowed < max_acquires_);
+  }
 
  private:
+#if !defined(NDEBUG)
+  // Catches an excessive number of Release() calls.
+  const int max_acquires_;
+#endif  // !defined(NDEBUG)
+
   // The number of available resources.
   //
   // This is a counter and is not tied to the invariants of any other class, so
