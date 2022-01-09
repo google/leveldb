@@ -22,6 +22,10 @@ class Env;
 class TableCache {
  public:
   TableCache(const std::string& dbname, const Options& options, int entries);
+
+  TableCache(const TableCache&) = delete;
+  TableCache& operator=(const TableCache&) = delete;
+
   ~TableCache();
 
   // Return an iterator for the specified file number (the corresponding
