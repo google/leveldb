@@ -36,8 +36,6 @@
 
 namespace leveldb {
 
-class Arena;
-
 template <typename Key, class Comparator>
 class SkipList {
  private:
