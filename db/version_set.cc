@@ -1303,7 +1303,7 @@ Compaction* VersionSet::PickCompaction() {
   return c;
 }
 
-// Finds the largest key in a vector of files. Returns true if files it not
+// Finds the largest key in a vector of files. Returns true if files is not
 // empty.
 bool FindLargestKey(const InternalKeyComparator& icmp,
                     const std::vector<FileMetaData*>& files,
