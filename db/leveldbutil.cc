@@ -2,7 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include <stdio.h>
+#include <cstdio>
+
 #include "leveldb/dumpfile.h"
 #include "leveldb/env.h"
 #include "leveldb/status.h"
@@ -12,13 +13,13 @@ namespace {
 
 class StdoutPrinter : public WritableFile {
  public:
-  virtual Status Append(const Slice& data) {
+  Status Append(const Slice& data) override {
     fwrite(data.data(), 1, data.size(), stdout);
     return Status::OK();
   }
-  virtual Status Close() { return Status::OK(); }
-  virtual Status Flush() { return Status::OK(); }
-  virtual Status Sync() { return Status::OK(); }
+  Status Close() override { return Status::OK(); }
+  Status Flush() override { return Status::OK(); }
+  Status Sync() override { return Status::OK(); }
 };
 
 bool HandleDumpCommand(Env* env, char** files, int num) {
@@ -27,7 +28,7 @@ bool HandleDumpCommand(Env* env, char** files, int num) {
   for (int i = 0; i < num; i++) {
     Status s = DumpFile(env, files[i], &printer);
     if (!s.ok()) {
-      fprintf(stderr, "%s\n", s.ToString().c_str());
+      std::fprintf(stderr, "%s\n", s.ToString().c_str());
       ok = false;
     }
   }
@@ -38,11 +39,10 @@ bool HandleDumpCommand(Env* env, char** files, int num) {
 }  // namespace leveldb
 
 static void Usage() {
-  fprintf(
+  std::fprintf(
       stderr,
       "Usage: leveldbutil command...\n"
-      "   dump files...         -- dump contents of specified files\n"
-      );
+      "   dump files...         -- dump contents of specified files\n");
 }
 
 int main(int argc, char** argv) {
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
   } else {
     std::string command = argv[1];
     if (command == "dump") {
-      ok = leveldb::HandleDumpCommand(env, argv+2, argc-2);
+      ok = leveldb::HandleDumpCommand(env, argv + 2, argc - 2);
     } else {
       Usage();
       ok = false;

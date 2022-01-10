@@ -5,8 +5,9 @@
 #include "leveldb/cache.h"
 
 #include <vector>
+
+#include "gtest/gtest.h"
 #include "util/coding.h"
-#include "util/testharness.h"
 
 namespace leveldb {
 
@@ -23,32 +24,26 @@ static int DecodeKey(const Slice& k) {
 static void* EncodeValue(uintptr_t v) { return reinterpret_cast<void*>(v); }
 static int DecodeValue(void* v) { return reinterpret_cast<uintptr_t>(v); }
 
-class CacheTest {
+class CacheTest : public testing::Test {
  public:
-  static CacheTest* current_;
-
   static void Deleter(const Slice& key, void* v) {
     current_->deleted_keys_.push_back(DecodeKey(key));
     current_->deleted_values_.push_back(DecodeValue(v));
   }
 
-  static const int kCacheSize = 1000;
+  static constexpr int kCacheSize = 1000;
   std::vector<int> deleted_keys_;
   std::vector<int> deleted_values_;
   Cache* cache_;
 
-  CacheTest() : cache_(NewLRUCache(kCacheSize)) {
-    current_ = this;
-  }
+  CacheTest() : cache_(NewLRUCache(kCacheSize)) { current_ = this; }
 
-  ~CacheTest() {
-    delete cache_;
-  }
+  ~CacheTest() { delete cache_; }
 
   int Lookup(int key) {
     Cache::Handle* handle = cache_->Lookup(EncodeKey(key));
-    const int r = (handle == NULL) ? -1 : DecodeValue(cache_->Value(handle));
-    if (handle != NULL) {
+    const int r = (handle == nullptr) ? -1 : DecodeValue(cache_->Value(handle));
+    if (handle != nullptr) {
       cache_->Release(handle);
     }
     return r;
@@ -64,55 +59,54 @@ class CacheTest {
                           &CacheTest::Deleter);
   }
 
-  void Erase(int key) {
-    cache_->Erase(EncodeKey(key));
-  }
+  void Erase(int key) { cache_->Erase(EncodeKey(key)); }
+  static CacheTest* current_;
 };
 CacheTest* CacheTest::current_;
 
-TEST(CacheTest, HitAndMiss) {
+TEST_F(CacheTest, HitAndMiss) {
   ASSERT_EQ(-1, Lookup(100));
 
   Insert(100, 101);
   ASSERT_EQ(101, Lookup(100));
-  ASSERT_EQ(-1,  Lookup(200));
-  ASSERT_EQ(-1,  Lookup(300));
+  ASSERT_EQ(-1, Lookup(200));
+  ASSERT_EQ(-1, Lookup(300));
 
   Insert(200, 201);
   ASSERT_EQ(101, Lookup(100));
   ASSERT_EQ(201, Lookup(200));
-  ASSERT_EQ(-1,  Lookup(300));
+  ASSERT_EQ(-1, Lookup(300));
 
   Insert(100, 102);
   ASSERT_EQ(102, Lookup(100));
   ASSERT_EQ(201, Lookup(200));
-  ASSERT_EQ(-1,  Lookup(300));
+  ASSERT_EQ(-1, Lookup(300));
 
   ASSERT_EQ(1, deleted_keys_.size());
   ASSERT_EQ(100, deleted_keys_[0]);
   ASSERT_EQ(101, deleted_values_[0]);
 }
 
-TEST(CacheTest, Erase) {
+TEST_F(CacheTest, Erase) {
   Erase(200);
   ASSERT_EQ(0, deleted_keys_.size());
 
   Insert(100, 101);
   Insert(200, 201);
   Erase(100);
-  ASSERT_EQ(-1,  Lookup(100));
+  ASSERT_EQ(-1, Lookup(100));
   ASSERT_EQ(201, Lookup(200));
   ASSERT_EQ(1, deleted_keys_.size());
   ASSERT_EQ(100, deleted_keys_[0]);
   ASSERT_EQ(101, deleted_values_[0]);
 
   Erase(100);
-  ASSERT_EQ(-1,  Lookup(100));
+  ASSERT_EQ(-1, Lookup(100));
   ASSERT_EQ(201, Lookup(200));
   ASSERT_EQ(1, deleted_keys_.size());
 }
 
-TEST(CacheTest, EntriesArePinned) {
+TEST_F(CacheTest, EntriesArePinned) {
   Insert(100, 101);
   Cache::Handle* h1 = cache_->Lookup(EncodeKey(100));
   ASSERT_EQ(101, DecodeValue(cache_->Value(h1)));
@@ -137,7 +131,7 @@ TEST(CacheTest, EntriesArePinned) {
   ASSERT_EQ(102, deleted_values_[1]);
 }
 
-TEST(CacheTest, EvictionPolicy) {
+TEST_F(CacheTest, EvictionPolicy) {
   Insert(100, 101);
   Insert(200, 201);
   Insert(300, 301);
@@ -146,8 +140,8 @@ TEST(CacheTest, EvictionPolicy) {
   // Frequently used entry must be kept around,
   // as must things that are still in use.
   for (int i = 0; i < kCacheSize + 100; i++) {
-    Insert(1000+i, 2000+i);
-    ASSERT_EQ(2000+i, Lookup(1000+i));
+    Insert(1000 + i, 2000 + i);
+    ASSERT_EQ(2000 + i, Lookup(1000 + i));
     ASSERT_EQ(101, Lookup(100));
   }
   ASSERT_EQ(101, Lookup(100));
@@ -156,16 +150,16 @@ TEST(CacheTest, EvictionPolicy) {
   cache_->Release(h);
 }
 
-TEST(CacheTest, UseExceedsCacheSize) {
+TEST_F(CacheTest, UseExceedsCacheSize) {
   // Overfill the cache, keeping handles on all inserted entries.
   std::vector<Cache::Handle*> h;
   for (int i = 0; i < kCacheSize + 100; i++) {
-    h.push_back(InsertAndReturnHandle(1000+i, 2000+i));
+    h.push_back(InsertAndReturnHandle(1000 + i, 2000 + i));
   }
 
   // Check that all the entries can be found in the cache.
   for (int i = 0; i < h.size(); i++) {
-    ASSERT_EQ(2000+i, Lookup(1000+i));
+    ASSERT_EQ(2000 + i, Lookup(1000 + i));
   }
 
   for (int i = 0; i < h.size(); i++) {
@@ -173,7 +167,7 @@ TEST(CacheTest, UseExceedsCacheSize) {
   }
 }
 
-TEST(CacheTest, HeavyEntries) {
+TEST_F(CacheTest, HeavyEntries) {
   // Add a bunch of light and heavy entries and then count the combined
   // size of items still in the cache, which must be approximately the
   // same as the total capacity.
@@ -181,9 +175,9 @@ TEST(CacheTest, HeavyEntries) {
   const int kHeavy = 10;
   int added = 0;
   int index = 0;
-  while (added < 2*kCacheSize) {
+  while (added < 2 * kCacheSize) {
     const int weight = (index & 1) ? kLight : kHeavy;
-    Insert(index, 1000+index, weight);
+    Insert(index, 1000 + index, weight);
     added += weight;
     index++;
   }
@@ -194,19 +188,19 @@ TEST(CacheTest, HeavyEntries) {
     int r = Lookup(i);
     if (r >= 0) {
       cached_weight += weight;
-      ASSERT_EQ(1000+i, r);
+      ASSERT_EQ(1000 + i, r);
     }
   }
-  ASSERT_LE(cached_weight, kCacheSize + kCacheSize/10);
+  ASSERT_LE(cached_weight, kCacheSize + kCacheSize / 10);
 }
 
-TEST(CacheTest, NewId) {
+TEST_F(CacheTest, NewId) {
   uint64_t a = cache_->NewId();
   uint64_t b = cache_->NewId();
   ASSERT_NE(a, b);
 }
 
-TEST(CacheTest, Prune) {
+TEST_F(CacheTest, Prune) {
   Insert(1, 100);
   Insert(2, 200);
 
@@ -219,8 +213,12 @@ TEST(CacheTest, Prune) {
   ASSERT_EQ(-1, Lookup(2));
 }
 
-}  // namespace leveldb
+TEST_F(CacheTest, ZeroSizeCache) {
+  delete cache_;
+  cache_ = NewLRUCache(0);
 
-int main(int argc, char** argv) {
-  return leveldb::test::RunAllTests();
+  Insert(1, 100);
+  ASSERT_EQ(-1, Lookup(1));
 }
+
+}  // namespace leveldb
