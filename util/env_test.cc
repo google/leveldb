@@ -14,8 +14,6 @@
 
 namespace leveldb {
 
-static const int kDelayMicros = 100000;
-
 class EnvTest : public testing::Test {
  public:
   EnvTest() : env_(Env::Default()) {}
