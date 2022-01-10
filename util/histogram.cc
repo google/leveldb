@@ -4,8 +4,8 @@
 
 #include "util/histogram.h"
 
-#include <math.h>
-#include <stdio.h>
+#include <cmath>
+#include <cstdio>
 
 #include "port/port.h"
 
@@ -241,11 +241,11 @@ double Histogram::StandardDeviation() const {
 std::string Histogram::ToString() const {
   std::string r;
   char buf[200];
-  snprintf(buf, sizeof(buf), "Count: %.0f  Average: %.4f  StdDev: %.2f\n", num_,
-           Average(), StandardDeviation());
+  std::snprintf(buf, sizeof(buf), "Count: %.0f  Average: %.4f  StdDev: %.2f\n",
+                num_, Average(), StandardDeviation());
   r.append(buf);
-  snprintf(buf, sizeof(buf), "Min: %.4f  Median: %.4f  Max: %.4f\n",
-           (num_ == 0.0 ? 0.0 : min_), Median(), max_);
+  std::snprintf(buf, sizeof(buf), "Min: %.4f  Median: %.4f  Max: %.4f\n",
+                (num_ == 0.0 ? 0.0 : min_), Median(), max_);
   r.append(buf);
   r.append("------------------------------------------------------\n");
   const double mult = 100.0 / num_;
@@ -253,12 +253,12 @@ std::string Histogram::ToString() const {
   for (int b = 0; b < kNumBuckets; b++) {
     if (buckets_[b] <= 0.0) continue;
     sum += buckets_[b];
-    snprintf(buf, sizeof(buf), "[ %7.0f, %7.0f ) %7.0f %7.3f%% %7.3f%% ",
-             ((b == 0) ? 0.0 : kBucketLimit[b - 1]),  // left
-             kBucketLimit[b],                         // right
-             buckets_[b],                             // count
-             mult * buckets_[b],                      // percentage
-             mult * sum);                             // cumulative percentage
+    std::snprintf(buf, sizeof(buf), "[ %7.0f, %7.0f ) %7.0f %7.3f%% %7.3f%% ",
+                  ((b == 0) ? 0.0 : kBucketLimit[b - 1]),  // left
+                  kBucketLimit[b],                         // right
+                  buckets_[b],                             // count
+                  mult * buckets_[b],                      // percentage
+                  mult * sum);  // cumulative percentage
     r.append(buf);
 
     // Add hash marks based on percentage; 20 marks for 100%.

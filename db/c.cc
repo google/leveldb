@@ -4,6 +4,8 @@
 
 #include "leveldb/c.h"
 
+#include <string.h>
+
 #include <cstdint>
 #include <cstdlib>
 
@@ -119,7 +121,7 @@ struct leveldb_filterpolicy_t : public FilterPolicy {
     size_t len;
     char* filter = (*create_)(state_, &key_pointers[0], &key_sizes[0], n, &len);
     dst->append(filter, len);
-    free(filter);
+    std::free(filter);
   }
 
   bool KeyMayMatch(const Slice& key, const Slice& filter) const override {
@@ -150,15 +152,16 @@ static bool SaveError(char** errptr, const Status& s) {
     *errptr = strdup(s.ToString().c_str());
   } else {
     // TODO(sanjay): Merge with existing error?
-    free(*errptr);
+    std::free(*errptr);
     *errptr = strdup(s.ToString().c_str());
   }
   return true;
 }
 
 static char* CopyString(const std::string& str) {
-  char* result = reinterpret_cast<char*>(malloc(sizeof(char) * str.size()));
-  memcpy(result, str.data(), sizeof(char) * str.size());
+  char* result =
+      reinterpret_cast<char*>(std::malloc(sizeof(char) * str.size()));
+  std::memcpy(result, str.data(), sizeof(char) * str.size());
   return result;
 }
 
@@ -547,13 +550,13 @@ char* leveldb_env_get_test_directory(leveldb_env_t* env) {
     return nullptr;
   }
 
-  char* buffer = static_cast<char*>(malloc(result.size() + 1));
-  memcpy(buffer, result.data(), result.size());
+  char* buffer = static_cast<char*>(std::malloc(result.size() + 1));
+  std::memcpy(buffer, result.data(), result.size());
   buffer[result.size()] = '\0';
   return buffer;
 }
 
-void leveldb_free(void* ptr) { free(ptr); }
+void leveldb_free(void* ptr) { std::free(ptr); }
 
 int leveldb_major_version() { return kMajorVersion; }
 

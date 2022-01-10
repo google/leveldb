@@ -27,7 +27,7 @@ class WindowsLogger final : public Logger {
 
   ~WindowsLogger() override { std::fclose(fp_); }
 
-  void Logv(const char* format, va_list arguments) override {
+  void Logv(const char* format, std::va_list arguments) override {
     // Record the time as close to the Logv() call as possible.
     SYSTEMTIME now_components;
     ::GetLocalTime(&now_components);
@@ -56,7 +56,7 @@ class WindowsLogger final : public Logger {
           (iteration == 0) ? stack_buffer : new char[dynamic_buffer_size];
 
       // Print the header into the buffer.
-      int buffer_offset = snprintf(
+      int buffer_offset = std::snprintf(
           buffer, buffer_size, "%04d/%02d/%02d-%02d:%02d:%02d.%06d %s ",
           now_components.wYear, now_components.wMonth, now_components.wDay,
           now_components.wHour, now_components.wMinute, now_components.wSecond,
@@ -92,8 +92,8 @@ class WindowsLogger final : public Logger {
         }
 
         // The dynamically-allocated buffer was incorrectly sized. This should
-        // not happen, assuming a correct implementation of (v)snprintf. Fail
-        // in tests, recover by truncating the log message in production.
+        // not happen, assuming a correct implementation of std::(v)snprintf.
+        // Fail in tests, recover by truncating the log message in production.
         assert(false);
         buffer_offset = buffer_size - 1;
       }

@@ -2,11 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include "gtest/gtest.h"
 #include "leveldb/filter_policy.h"
-
 #include "util/coding.h"
 #include "util/logging.h"
-#include "util/testharness.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -18,7 +17,7 @@ static Slice Key(int i, char* buffer) {
   return Slice(buffer, sizeof(uint32_t));
 }
 
-class BloomTest {
+class BloomTest : public testing::Test {
  public:
   BloomTest() : policy_(NewBloomFilterPolicy(10)) {}
 
@@ -46,14 +45,14 @@ class BloomTest {
   size_t FilterSize() const { return filter_.size(); }
 
   void DumpFilter() {
-    fprintf(stderr, "F(");
+    std::fprintf(stderr, "F(");
     for (size_t i = 0; i + 1 < filter_.size(); i++) {
       const unsigned int c = static_cast<unsigned int>(filter_[i]);
       for (int j = 0; j < 8; j++) {
-        fprintf(stderr, "%c", (c & (1 << j)) ? '1' : '.');
+        std::fprintf(stderr, "%c", (c & (1 << j)) ? '1' : '.');
       }
     }
-    fprintf(stderr, ")\n");
+    std::fprintf(stderr, ")\n");
   }
 
   bool Matches(const Slice& s) {
@@ -80,12 +79,12 @@ class BloomTest {
   std::vector<std::string> keys_;
 };
 
-TEST(BloomTest, EmptyFilter) {
+TEST_F(BloomTest, EmptyFilter) {
   ASSERT_TRUE(!Matches("hello"));
   ASSERT_TRUE(!Matches("world"));
 }
 
-TEST(BloomTest, Small) {
+TEST_F(BloomTest, Small) {
   Add("hello");
   Add("world");
   ASSERT_TRUE(Matches("hello"));
@@ -107,7 +106,7 @@ static int NextLength(int length) {
   return length;
 }
 
-TEST(BloomTest, VaryingLengths) {
+TEST_F(BloomTest, VaryingLengths) {
   char buffer[sizeof(int)];
 
   // Count number of filters that significantly exceed the false positive rate
@@ -133,8 +132,9 @@ TEST(BloomTest, VaryingLengths) {
     // Check false positive rate
     double rate = FalsePositiveRate();
     if (kVerbose >= 1) {
-      fprintf(stderr, "False positives: %5.2f%% @ length = %6d ; bytes = %6d\n",
-              rate * 100.0, length, static_cast<int>(FilterSize()));
+      std::fprintf(stderr,
+                   "False positives: %5.2f%% @ length = %6d ; bytes = %6d\n",
+                   rate * 100.0, length, static_cast<int>(FilterSize()));
     }
     ASSERT_LE(rate, 0.02);  // Must not be over 2%
     if (rate > 0.0125)
@@ -143,8 +143,8 @@ TEST(BloomTest, VaryingLengths) {
       good_filters++;
   }
   if (kVerbose >= 1) {
-    fprintf(stderr, "Filters: %d good, %d mediocre\n", good_filters,
-            mediocre_filters);
+    std::fprintf(stderr, "Filters: %d good, %d mediocre\n", good_filters,
+                 mediocre_filters);
   }
   ASSERT_LE(mediocre_filters, good_filters / 5);
 }
@@ -152,5 +152,3 @@ TEST(BloomTest, VaryingLengths) {
 // Different bits-per-byte
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

@@ -21,9 +21,9 @@ static void DumpInternalIter(Iterator* iter) {
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     ParsedInternalKey k;
     if (!ParseInternalKey(iter->key(), &k)) {
-      fprintf(stderr, "Corrupt '%s'\n", EscapeString(iter->key()).c_str());
+      std::fprintf(stderr, "Corrupt '%s'\n", EscapeString(iter->key()).c_str());
     } else {
-      fprintf(stderr, "@ '%s'\n", k.DebugString().c_str());
+      std::fprintf(stderr, "@ '%s'\n", k.DebugString().c_str());
     }
   }
 }

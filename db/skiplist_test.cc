@@ -7,13 +7,14 @@
 #include <atomic>
 #include <set>
 
+#include "gtest/gtest.h"
 #include "leveldb/env.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/arena.h"
 #include "util/hash.h"
 #include "util/random.h"
-#include "util/testharness.h"
+#include "util/testutil.h"
 
 namespace leveldb {
 
@@ -30,8 +31,6 @@ struct Comparator {
     }
   }
 };
-
-class SkipTest {};
 
 TEST(SkipTest, Empty) {
   Arena arena;
@@ -152,7 +151,7 @@ TEST(SkipTest, InsertAndLookup) {
 // been concurrently added since the iterator started.
 class ConcurrentTest {
  private:
-  static const uint32_t K = 4;
+  static constexpr uint32_t K = 4;
 
   static uint64_t key(Key key) { return (key >> 40); }
   static uint64_t gen(Key key) { return (key >> 8) & 0xffffffffu; }
@@ -281,7 +280,9 @@ class ConcurrentTest {
     }
   }
 };
-const uint32_t ConcurrentTest::K;
+
+// Needed when building in C++11 mode.
+constexpr uint32_t ConcurrentTest::K;
 
 // Simple test that does single-threaded testing of the ConcurrentTest
 // scaffolding.
@@ -345,7 +346,7 @@ static void RunConcurrent(int run) {
   const int kSize = 1000;
   for (int i = 0; i < N; i++) {
     if ((i % 100) == 0) {
-      fprintf(stderr, "Run %d of %d\n", i, N);
+      std::fprintf(stderr, "Run %d of %d\n", i, N);
     }
     TestState state(seed + 1);
     Env::Default()->Schedule(ConcurrentReader, &state);
@@ -365,5 +366,3 @@ TEST(SkipTest, Concurrent4) { RunConcurrent(4); }
 TEST(SkipTest, Concurrent5) { RunConcurrent(5); }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

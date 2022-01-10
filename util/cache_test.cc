@@ -5,8 +5,9 @@
 #include "leveldb/cache.h"
 
 #include <vector>
+
+#include "gtest/gtest.h"
 #include "util/coding.h"
-#include "util/testharness.h"
 
 namespace leveldb {
 
@@ -23,14 +24,14 @@ static int DecodeKey(const Slice& k) {
 static void* EncodeValue(uintptr_t v) { return reinterpret_cast<void*>(v); }
 static int DecodeValue(void* v) { return reinterpret_cast<uintptr_t>(v); }
 
-class CacheTest {
+class CacheTest : public testing::Test {
  public:
   static void Deleter(const Slice& key, void* v) {
     current_->deleted_keys_.push_back(DecodeKey(key));
     current_->deleted_values_.push_back(DecodeValue(v));
   }
 
-  static const int kCacheSize = 1000;
+  static constexpr int kCacheSize = 1000;
   std::vector<int> deleted_keys_;
   std::vector<int> deleted_values_;
   Cache* cache_;
@@ -59,12 +60,11 @@ class CacheTest {
   }
 
   void Erase(int key) { cache_->Erase(EncodeKey(key)); }
-
   static CacheTest* current_;
 };
 CacheTest* CacheTest::current_;
 
-TEST(CacheTest, HitAndMiss) {
+TEST_F(CacheTest, HitAndMiss) {
   ASSERT_EQ(-1, Lookup(100));
 
   Insert(100, 101);
@@ -87,7 +87,7 @@ TEST(CacheTest, HitAndMiss) {
   ASSERT_EQ(101, deleted_values_[0]);
 }
 
-TEST(CacheTest, Erase) {
+TEST_F(CacheTest, Erase) {
   Erase(200);
   ASSERT_EQ(0, deleted_keys_.size());
 
@@ -106,7 +106,7 @@ TEST(CacheTest, Erase) {
   ASSERT_EQ(1, deleted_keys_.size());
 }
 
-TEST(CacheTest, EntriesArePinned) {
+TEST_F(CacheTest, EntriesArePinned) {
   Insert(100, 101);
   Cache::Handle* h1 = cache_->Lookup(EncodeKey(100));
   ASSERT_EQ(101, DecodeValue(cache_->Value(h1)));
@@ -131,7 +131,7 @@ TEST(CacheTest, EntriesArePinned) {
   ASSERT_EQ(102, deleted_values_[1]);
 }
 
-TEST(CacheTest, EvictionPolicy) {
+TEST_F(CacheTest, EvictionPolicy) {
   Insert(100, 101);
   Insert(200, 201);
   Insert(300, 301);
@@ -150,7 +150,7 @@ TEST(CacheTest, EvictionPolicy) {
   cache_->Release(h);
 }
 
-TEST(CacheTest, UseExceedsCacheSize) {
+TEST_F(CacheTest, UseExceedsCacheSize) {
   // Overfill the cache, keeping handles on all inserted entries.
   std::vector<Cache::Handle*> h;
   for (int i = 0; i < kCacheSize + 100; i++) {
@@ -167,7 +167,7 @@ TEST(CacheTest, UseExceedsCacheSize) {
   }
 }
 
-TEST(CacheTest, HeavyEntries) {
+TEST_F(CacheTest, HeavyEntries) {
   // Add a bunch of light and heavy entries and then count the combined
   // size of items still in the cache, which must be approximately the
   // same as the total capacity.
@@ -194,13 +194,13 @@ TEST(CacheTest, HeavyEntries) {
   ASSERT_LE(cached_weight, kCacheSize + kCacheSize / 10);
 }
 
-TEST(CacheTest, NewId) {
+TEST_F(CacheTest, NewId) {
   uint64_t a = cache_->NewId();
   uint64_t b = cache_->NewId();
   ASSERT_NE(a, b);
 }
 
-TEST(CacheTest, Prune) {
+TEST_F(CacheTest, Prune) {
   Insert(1, 100);
   Insert(2, 200);
 
@@ -213,7 +213,7 @@ TEST(CacheTest, Prune) {
   ASSERT_EQ(-1, Lookup(2));
 }
 
-TEST(CacheTest, ZeroSizeCache) {
+TEST_F(CacheTest, ZeroSizeCache) {
   delete cache_;
   cache_ = NewLRUCache(0);
 
@@ -222,5 +222,3 @@ TEST(CacheTest, ZeroSizeCache) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

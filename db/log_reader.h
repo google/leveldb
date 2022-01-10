@@ -5,7 +5,7 @@
 #ifndef STORAGE_LEVELDB_DB_LOG_READER_H_
 #define STORAGE_LEVELDB_DB_LOG_READER_H_
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "db/log_format.h"
 #include "leveldb/slice.h"
@@ -24,7 +24,7 @@ class Reader {
    public:
     virtual ~Reporter();
 
-    // Some corruption was detected.  "size" is the approximate number
+    // Some corruption was detected.  "bytes" is the approximate number
     // of bytes dropped due to the corruption.
     virtual void Corruption(size_t bytes, const Status& status) = 0;
   };

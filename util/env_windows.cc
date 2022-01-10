@@ -33,10 +33,6 @@
 #include "util/mutexlock.h"
 #include "util/windows_logger.h"
 
-#if defined(DeleteFile)
-#undef DeleteFile
-#endif  // defined(DeleteFile)
-
 namespace leveldb {
 
 namespace {
@@ -118,7 +114,14 @@ class ScopedHandle {
 class Limiter {
  public:
   // Limit maximum number of resources to |max_acquires|.
-  Limiter(int max_acquires) : acquires_allowed_(max_acquires) {}
+  Limiter(int max_acquires)
+      :
+#if !defined(NDEBUG)
+        max_acquires_(max_acquires),
+#endif  // !defined(NDEBUG)
+        acquires_allowed_(max_acquires) {
+    assert(max_acquires >= 0);
+  }
 
   Limiter(const Limiter&) = delete;
   Limiter operator=(const Limiter&) = delete;
@@ -137,9 +140,22 @@ class Limiter {
 
   // Release a resource acquired by a previous call to Acquire() that returned
   // true.
-  void Release() { acquires_allowed_.fetch_add(1, std::memory_order_relaxed); }
+  void Release() {
+    int old_acquires_allowed =
+        acquires_allowed_.fetch_add(1, std::memory_order_relaxed);
+
+    // Silence compiler warnings about unused arguments when NDEBUG is defined.
+    (void)old_acquires_allowed;
+    // If the check below fails, Release() was called more times than acquire.
+    assert(old_acquires_allowed < max_acquires_);
+  }
 
  private:
+#if !defined(NDEBUG)
+  // Catches an excessive number of Release() calls.
+  const int max_acquires_;
+#endif  // !defined(NDEBUG)
+
   // The number of available resources.
   //
   // This is a counter and is not tied to the invariants of any other class, so
@@ -505,7 +521,7 @@ class WindowsEnv : public Env {
     return Status::OK();
   }
 
-  Status DeleteFile(const std::string& filename) override {
+  Status RemoveFile(const std::string& filename) override {
     if (!::DeleteFileA(filename.c_str())) {
       return WindowsError(filename, ::GetLastError());
     }
@@ -519,7 +535,7 @@ class WindowsEnv : public Env {
     return Status::OK();
   }
 
-  Status DeleteDir(const std::string& dirname) override {
+  Status RemoveDir(const std::string& dirname) override {
     if (!::RemoveDirectoryA(dirname.c_str())) {
       return WindowsError(dirname, ::GetLastError());
     }
@@ -626,7 +642,7 @@ class WindowsEnv : public Env {
   }
 
   Status NewLogger(const std::string& filename, Logger** result) override {
-    std::FILE* fp = std::fopen(filename.c_str(), "w");
+    std::FILE* fp = std::fopen(filename.c_str(), "wN");
     if (fp == nullptr) {
       *result = nullptr;
       return WindowsError(filename, ::GetLastError());
@@ -665,7 +681,7 @@ class WindowsEnv : public Env {
   // Instances are constructed on the thread calling Schedule() and used on the
   // background thread.
   //
-  // This structure is thread-safe beacuse it is immutable.
+  // This structure is thread-safe because it is immutable.
   struct BackgroundWorkItem {
     explicit BackgroundWorkItem(void (*function)(void* arg), void* arg)
         : function(function), arg(arg) {}
@@ -749,7 +765,7 @@ class SingletonEnv {
  public:
   SingletonEnv() {
 #if !defined(NDEBUG)
-    env_initialized_.store(true, std::memory_order::memory_order_relaxed);
+    env_initialized_.store(true, std::memory_order_relaxed);
 #endif  // !defined(NDEBUG)
     static_assert(sizeof(env_storage_) >= sizeof(EnvType),
                   "env_storage_ will not fit the Env");
@@ -766,7 +782,7 @@ class SingletonEnv {
 
   static void AssertEnvNotInitialized() {
 #if !defined(NDEBUG)
-    assert(!env_initialized_.load(std::memory_order::memory_order_relaxed));
+    assert(!env_initialized_.load(std::memory_order_relaxed));
 #endif  // !defined(NDEBUG)
   }
 

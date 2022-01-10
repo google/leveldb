@@ -232,7 +232,7 @@ std::string VersionEdit::DebugString() const {
     r.append(compact_pointers_[i].second.DebugString());
   }
   for (const auto& deleted_files_kvp : deleted_files_) {
-    r.append("\n  DeleteFile: ");
+    r.append("\n  RemoveFile: ");
     AppendNumberTo(&r, deleted_files_kvp.first);
     r.append(" ");
     AppendNumberTo(&r, deleted_files_kvp.second);

@@ -4,12 +4,10 @@
 
 #include "util/arena.h"
 
+#include "gtest/gtest.h"
 #include "util/random.h"
-#include "util/testharness.h"
 
 namespace leveldb {
-
-class ArenaTest {};
 
 TEST(ArenaTest, Empty) { Arena arena; }
 
@@ -61,5 +59,3 @@ TEST(ArenaTest, Simple) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

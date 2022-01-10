@@ -40,15 +40,15 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_C_H_
 #define STORAGE_LEVELDB_INCLUDE_C_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #include "leveldb/export.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Exported types */
 

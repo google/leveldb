@@ -3,12 +3,11 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "util/crc32c.h"
-#include "util/testharness.h"
+
+#include "gtest/gtest.h"
 
 namespace leveldb {
 namespace crc32c {
-
-class CRC {};
 
 TEST(CRC, StandardResults) {
   // From rfc3720 section B.4.
@@ -55,5 +54,3 @@ TEST(CRC, Mask) {
 
 }  // namespace crc32c
 }  // namespace leveldb
-
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

@@ -7,8 +7,7 @@
 #ifndef STORAGE_LEVELDB_DB_TABLE_CACHE_H_
 #define STORAGE_LEVELDB_DB_TABLE_CACHE_H_
 
-#include <stdint.h>
-
+#include <cstdint>
 #include <string>
 
 #include "db/dbformat.h"
@@ -23,6 +22,10 @@ class Env;
 class TableCache {
  public:
   TableCache(const std::string& dbname, const Options& options, int entries);
+
+  TableCache(const TableCache&) = delete;
+  TableCache& operator=(const TableCache&) = delete;
+
   ~TableCache();
 
   // Return an iterator for the specified file number (the corresponding

@@ -3,8 +3,9 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/dbformat.h"
+
+#include "gtest/gtest.h"
 #include "util/logging.h"
-#include "util/testharness.h"
 
 namespace leveldb {
 
@@ -40,8 +41,6 @@ static void TestKey(const std::string& key, uint64_t seq, ValueType vt) {
 
   ASSERT_TRUE(!ParseInternalKey(Slice("bar"), &decoded));
 }
-
-class FormatTest {};
 
 TEST(FormatTest, InternalKey_EncodeDecode) {
   const char* keys[] = {"", "k", "hello", "longggggggggggggggggggggg"};
@@ -127,5 +126,3 @@ TEST(FormatTest, InternalKeyDebugString) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

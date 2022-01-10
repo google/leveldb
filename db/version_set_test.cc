@@ -3,13 +3,14 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/version_set.h"
+
+#include "gtest/gtest.h"
 #include "util/logging.h"
-#include "util/testharness.h"
 #include "util/testutil.h"
 
 namespace leveldb {
 
-class FindFileTest {
+class FindFileTest : public testing::Test {
  public:
   FindFileTest() : disjoint_sorted_files_(true) {}
 
@@ -50,7 +51,7 @@ class FindFileTest {
   std::vector<FileMetaData*> files_;
 };
 
-TEST(FindFileTest, Empty) {
+TEST_F(FindFileTest, Empty) {
   ASSERT_EQ(0, Find("foo"));
   ASSERT_TRUE(!Overlaps("a", "z"));
   ASSERT_TRUE(!Overlaps(nullptr, "z"));
@@ -58,7 +59,7 @@ TEST(FindFileTest, Empty) {
   ASSERT_TRUE(!Overlaps(nullptr, nullptr));
 }
 
-TEST(FindFileTest, Single) {
+TEST_F(FindFileTest, Single) {
   Add("p", "q");
   ASSERT_EQ(0, Find("a"));
   ASSERT_EQ(0, Find("p"));
@@ -88,7 +89,7 @@ TEST(FindFileTest, Single) {
   ASSERT_TRUE(Overlaps(nullptr, nullptr));
 }
 
-TEST(FindFileTest, Multiple) {
+TEST_F(FindFileTest, Multiple) {
   Add("150", "200");
   Add("200", "250");
   Add("300", "350");
@@ -126,7 +127,7 @@ TEST(FindFileTest, Multiple) {
   ASSERT_TRUE(Overlaps("450", "500"));
 }
 
-TEST(FindFileTest, MultipleNullBoundaries) {
+TEST_F(FindFileTest, MultipleNullBoundaries) {
   Add("150", "200");
   Add("200", "250");
   Add("300", "350");
@@ -146,7 +147,7 @@ TEST(FindFileTest, MultipleNullBoundaries) {
   ASSERT_TRUE(Overlaps("450", nullptr));
 }
 
-TEST(FindFileTest, OverlapSequenceChecks) {
+TEST_F(FindFileTest, OverlapSequenceChecks) {
   Add("200", "200", 5000, 3000);
   ASSERT_TRUE(!Overlaps("199", "199"));
   ASSERT_TRUE(!Overlaps("201", "300"));
@@ -155,7 +156,7 @@ TEST(FindFileTest, OverlapSequenceChecks) {
   ASSERT_TRUE(Overlaps("200", "210"));
 }
 
-TEST(FindFileTest, OverlappingFiles) {
+TEST_F(FindFileTest, OverlappingFiles) {
   Add("150", "600");
   Add("400", "500");
   disjoint_sorted_files_ = false;
@@ -177,7 +178,7 @@ void AddBoundaryInputs(const InternalKeyComparator& icmp,
                        const std::vector<FileMetaData*>& level_files,
                        std::vector<FileMetaData*>* compaction_files);
 
-class AddBoundaryInputsTest {
+class AddBoundaryInputsTest : public testing::Test {
  public:
   std::vector<FileMetaData*> level_files_;
   std::vector<FileMetaData*> compaction_files_;
@@ -204,13 +205,13 @@ class AddBoundaryInputsTest {
   }
 };
 
-TEST(AddBoundaryInputsTest, TestEmptyFileSets) {
+TEST_F(AddBoundaryInputsTest, TestEmptyFileSets) {
   AddBoundaryInputs(icmp_, level_files_, &compaction_files_);
   ASSERT_TRUE(compaction_files_.empty());
   ASSERT_TRUE(level_files_.empty());
 }
 
-TEST(AddBoundaryInputsTest, TestEmptyLevelFiles) {
+TEST_F(AddBoundaryInputsTest, TestEmptyLevelFiles) {
   FileMetaData* f1 =
       CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
                          InternalKey(InternalKey("100", 1, kTypeValue)));
@@ -222,7 +223,7 @@ TEST(AddBoundaryInputsTest, TestEmptyLevelFiles) {
   ASSERT_TRUE(level_files_.empty());
 }
 
-TEST(AddBoundaryInputsTest, TestEmptyCompactionFiles) {
+TEST_F(AddBoundaryInputsTest, TestEmptyCompactionFiles) {
   FileMetaData* f1 =
       CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
                          InternalKey(InternalKey("100", 1, kTypeValue)));
@@ -234,7 +235,7 @@ TEST(AddBoundaryInputsTest, TestEmptyCompactionFiles) {
   ASSERT_EQ(f1, level_files_[0]);
 }
 
-TEST(AddBoundaryInputsTest, TestNoBoundaryFiles) {
+TEST_F(AddBoundaryInputsTest, TestNoBoundaryFiles) {
   FileMetaData* f1 =
       CreateFileMetaData(1, InternalKey("100", 2, kTypeValue),
                          InternalKey(InternalKey("100", 1, kTypeValue)));
@@ -255,7 +256,7 @@ TEST(AddBoundaryInputsTest, TestNoBoundaryFiles) {
   ASSERT_EQ(2, compaction_files_.size());
 }
 
-TEST(AddBoundaryInputsTest, TestOneBoundaryFiles) {
+TEST_F(AddBoundaryInputsTest, TestOneBoundaryFiles) {
   FileMetaData* f1 =
       CreateFileMetaData(1, InternalKey("100", 3, kTypeValue),
                          InternalKey(InternalKey("100", 2, kTypeValue)));
@@ -277,7 +278,7 @@ TEST(AddBoundaryInputsTest, TestOneBoundaryFiles) {
   ASSERT_EQ(f2, compaction_files_[1]);
 }
 
-TEST(AddBoundaryInputsTest, TestTwoBoundaryFiles) {
+TEST_F(AddBoundaryInputsTest, TestTwoBoundaryFiles) {
   FileMetaData* f1 =
       CreateFileMetaData(1, InternalKey("100", 6, kTypeValue),
                          InternalKey(InternalKey("100", 5, kTypeValue)));
@@ -300,7 +301,7 @@ TEST(AddBoundaryInputsTest, TestTwoBoundaryFiles) {
   ASSERT_EQ(f2, compaction_files_[2]);
 }
 
-TEST(AddBoundaryInputsTest, TestDisjoinFilePointers) {
+TEST_F(AddBoundaryInputsTest, TestDisjoinFilePointers) {
   FileMetaData* f1 =
       CreateFileMetaData(1, InternalKey("100", 6, kTypeValue),
                          InternalKey(InternalKey("100", 5, kTypeValue)));
@@ -328,5 +329,3 @@ TEST(AddBoundaryInputsTest, TestDisjoinFilePointers) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }
