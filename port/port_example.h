@@ -55,7 +55,7 @@ class CondVar {
   void Signal();
 
   // Wake up all waiting threads.
-  void SignallAll();
+  void SignalAll();
 };
 
 // ------------------ Compression -------------------
