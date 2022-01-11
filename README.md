@@ -99,6 +99,12 @@ Contribution requirements:
    clang-format -i --style=file <file>
    ```
 
+We are unlikely to accept contributions to the build configuration files, such
+as `CMakeLists.txt`. We are focused on maintaining a build configuration that
+allows us to test that the project works in a few supported configurations
+inside Google. We are not currently interested in supporting other requirements,
+such as different operating systems, compilers, or build systems.
+
 ## Submitting a Pull Request
 
 Before any pull request will be accepted the author must first sign a
