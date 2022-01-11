@@ -4,33 +4,43 @@
 
 #include "leveldb/env.h"
 
+#include <cstdarg>
+
+// This workaround can be removed when leveldb::Env::DeleteFile is removed.
+// See env.h for justification.
+#if defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
+#undef DeleteFile
+#endif
+
 namespace leveldb {
 
-Env::~Env() {
-}
+Env::Env() = default;
+
+Env::~Env() = default;
 
 Status Env::NewAppendableFile(const std::string& fname, WritableFile** result) {
   return Status::NotSupported("NewAppendableFile", fname);
 }
 
-SequentialFile::~SequentialFile() {
-}
+Status Env::RemoveDir(const std::string& dirname) { return DeleteDir(dirname); }
+Status Env::DeleteDir(const std::string& dirname) { return RemoveDir(dirname); }
 
-RandomAccessFile::~RandomAccessFile() {
-}
+Status Env::RemoveFile(const std::string& fname) { return DeleteFile(fname); }
+Status Env::DeleteFile(const std::string& fname) { return RemoveFile(fname); }
 
-WritableFile::~WritableFile() {
-}
+SequentialFile::~SequentialFile() = default;
 
-Logger::~Logger() {
-}
+RandomAccessFile::~RandomAccessFile() = default;
 
-FileLock::~FileLock() {
-}
+WritableFile::~WritableFile() = default;
+
+Logger::~Logger() = default;
+
+FileLock::~FileLock() = default;
 
 void Log(Logger* info_log, const char* format, ...) {
   if (info_log != nullptr) {
-    va_list ap;
+    std::va_list ap;
     va_start(ap, format);
     info_log->Logv(format, ap);
     va_end(ap);
@@ -38,8 +48,7 @@ void Log(Logger* info_log, const char* format, ...) {
 }
 
 static Status DoWriteStringToFile(Env* env, const Slice& data,
-                                  const std::string& fname,
-                                  bool should_sync) {
+                                  const std::string& fname, bool should_sync) {
   WritableFile* file;
   Status s = env->NewWritableFile(fname, &file);
   if (!s.ok()) {
@@ -54,7 +63,7 @@ static Status DoWriteStringToFile(Env* env, const Slice& data,
   }
   delete file;  // Will auto-close if we did not close above
   if (!s.ok()) {
-    env->DeleteFile(fname);
+    env->RemoveFile(fname);
   }
   return s;
 }
@@ -94,7 +103,6 @@ Status ReadFileToString(Env* env, const std::string& fname, std::string* data) {
   return s;
 }
 
-EnvWrapper::~EnvWrapper() {
-}
+EnvWrapper::~EnvWrapper() {}
 
 }  // namespace leveldb

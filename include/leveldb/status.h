@@ -13,7 +13,9 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_STATUS_H_
 #define STORAGE_LEVELDB_INCLUDE_STATUS_H_
 
+#include <algorithm>
 #include <string>
+
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 
@@ -22,12 +24,14 @@ namespace leveldb {
 class LEVELDB_EXPORT Status {
  public:
   // Create a success status.
-  Status() : state_(nullptr) { }
+  Status() noexcept : state_(nullptr) {}
   ~Status() { delete[] state_; }
 
-  // Copy the specified status.
-  Status(const Status& s);
-  void operator=(const Status& s);
+  Status(const Status& rhs);
+  Status& operator=(const Status& rhs);
+
+  Status(Status&& rhs) noexcept : state_(rhs.state_) { rhs.state_ = nullptr; }
+  Status& operator=(Status&& rhs) noexcept;
 
   // Return a success status.
   static Status OK() { return Status(); }
@@ -72,13 +76,6 @@ class LEVELDB_EXPORT Status {
   std::string ToString() const;
 
  private:
-  // OK status has a null state_.  Otherwise, state_ is a new[] array
-  // of the following form:
-  //    state_[0..3] == length of message
-  //    state_[4]    == code
-  //    state_[5..]  == message
-  const char* state_;
-
   enum Code {
     kOk = 0,
     kNotFound = 1,
@@ -94,18 +91,30 @@ class LEVELDB_EXPORT Status {
 
   Status(Code code, const Slice& msg, const Slice& msg2);
   static const char* CopyState(const char* s);
+
+  // OK status has a null state_.  Otherwise, state_ is a new[] array
+  // of the following form:
+  //    state_[0..3] == length of message
+  //    state_[4]    == code
+  //    state_[5..]  == message
+  const char* state_;
 };
 
-inline Status::Status(const Status& s) {
-  state_ = (s.state_ == nullptr) ? nullptr : CopyState(s.state_);
+inline Status::Status(const Status& rhs) {
+  state_ = (rhs.state_ == nullptr) ? nullptr : CopyState(rhs.state_);
 }
-inline void Status::operator=(const Status& s) {
-  // The following condition catches both aliasing (when this == &s),
-  // and the common case where both s and *this are ok.
-  if (state_ != s.state_) {
+inline Status& Status::operator=(const Status& rhs) {
+  // The following condition catches both aliasing (when this == &rhs),
+  // and the common case where both rhs and *this are ok.
+  if (state_ != rhs.state_) {
     delete[] state_;
-    state_ = (s.state_ == nullptr) ? nullptr : CopyState(s.state_);
+    state_ = (rhs.state_ == nullptr) ? nullptr : CopyState(rhs.state_);
   }
+  return *this;
+}
+inline Status& Status::operator=(Status&& rhs) noexcept {
+  std::swap(state_, rhs.state_);
+  return *this;
 }
 
 }  // namespace leveldb

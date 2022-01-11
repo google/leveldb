@@ -4,8 +4,8 @@
 
 #include "db/builder.h"
 
-#include "db/filename.h"
 #include "db/dbformat.h"
+#include "db/filename.h"
 #include "db/table_cache.h"
 #include "db/version_edit.h"
 #include "leveldb/db.h"
@@ -14,12 +14,8 @@
 
 namespace leveldb {
 
-Status BuildTable(const std::string& dbname,
-                  Env* env,
-                  const Options& options,
-                  TableCache* table_cache,
-                  Iterator* iter,
-                  FileMetaData* meta) {
+Status BuildTable(const std::string& dbname, Env* env, const Options& options,
+                  TableCache* table_cache, Iterator* iter, FileMetaData* meta) {
   Status s;
   meta->file_size = 0;
   iter->SeekToFirst();
@@ -34,10 +30,13 @@ Status BuildTable(const std::string& dbname,
 
     TableBuilder* builder = new TableBuilder(options, file);
     meta->smallest.DecodeFrom(iter->key());
+    Slice key;
     for (; iter->Valid(); iter->Next()) {
-      Slice key = iter->key();
-      meta->largest.DecodeFrom(key);
+      key = iter->key();
       builder->Add(key, iter->value());
+    }
+    if (!key.empty()) {
+      meta->largest.DecodeFrom(key);
     }
 
     // Finish and check for builder errors
@@ -60,8 +59,7 @@ Status BuildTable(const std::string& dbname,
 
     if (s.ok()) {
       // Verify that the table is usable
-      Iterator* it = table_cache->NewIterator(ReadOptions(),
-                                              meta->number,
+      Iterator* it = table_cache->NewIterator(ReadOptions(), meta->number,
                                               meta->file_size);
       s = it->status();
       delete it;
@@ -76,7 +74,7 @@ Status BuildTable(const std::string& dbname,
   if (s.ok() && meta->file_size > 0) {
     // Keep it
   } else {
-    env->DeleteFile(fname);
+    env->RemoveFile(fname);
   }
   return s;
 }

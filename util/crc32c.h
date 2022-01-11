@@ -5,8 +5,8 @@
 #ifndef STORAGE_LEVELDB_UTIL_CRC32C_H_
 #define STORAGE_LEVELDB_UTIL_CRC32C_H_
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstddef>
+#include <cstdint>
 
 namespace leveldb {
 namespace crc32c {
@@ -17,9 +17,7 @@ namespace crc32c {
 uint32_t Extend(uint32_t init_crc, const char* data, size_t n);
 
 // Return the crc32c of data[0,n-1]
-inline uint32_t Value(const char* data, size_t n) {
-  return Extend(0, data, n);
-}
+inline uint32_t Value(const char* data, size_t n) { return Extend(0, data, n); }
 
 static const uint32_t kMaskDelta = 0xa282ead8ul;
 

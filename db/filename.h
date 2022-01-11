@@ -7,8 +7,9 @@
 #ifndef STORAGE_LEVELDB_DB_FILENAME_H_
 #define STORAGE_LEVELDB_DB_FILENAME_H_
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
+
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
 #include "port/port.h"
@@ -69,8 +70,7 @@ std::string OldInfoLogFileName(const std::string& dbname);
 // If filename is a leveldb file, store the type of the file in *type.
 // The number encoded in the filename is stored in *number.  If the
 // filename was successfully parsed, returns true.  Else return false.
-bool ParseFileName(const std::string& filename,
-                   uint64_t* number,
+bool ParseFileName(const std::string& filename, uint64_t* number,
                    FileType* type);
 
 // Make the CURRENT file point to the descriptor file with the

@@ -13,7 +13,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_
 #define STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_
 
-#include <stdint.h>
+#include <cstdint>
+
 #include "leveldb/export.h"
 #include "leveldb/options.h"
 #include "leveldb/status.h"
@@ -32,7 +33,7 @@ class LEVELDB_EXPORT TableBuilder {
   TableBuilder(const Options& options, WritableFile* file);
 
   TableBuilder(const TableBuilder&) = delete;
-  void operator=(const TableBuilder&) = delete;
+  TableBuilder& operator=(const TableBuilder&) = delete;
 
   // REQUIRES: Either Finish() or Abandon() has been called.
   ~TableBuilder();

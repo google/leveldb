@@ -77,17 +77,28 @@ class LEVELDB_EXPORT Iterator {
   //
   // Note that unlike all of the preceding methods, this method is
   // not abstract and therefore clients should not override it.
-  typedef void (*CleanupFunction)(void* arg1, void* arg2);
+  using CleanupFunction = void (*)(void* arg1, void* arg2);
   void RegisterCleanup(CleanupFunction function, void* arg1, void* arg2);
 
  private:
-  struct Cleanup {
+  // Cleanup functions are stored in a single-linked list.
+  // The list's head node is inlined in the iterator.
+  struct CleanupNode {
+    // True if the node is not used. Only head nodes might be unused.
+    bool IsEmpty() const { return function == nullptr; }
+    // Invokes the cleanup function.
+    void Run() {
+      assert(function != nullptr);
+      (*function)(arg1, arg2);
+    }
+
+    // The head node is used if the function pointer is not null.
     CleanupFunction function;
     void* arg1;
     void* arg2;
-    Cleanup* next;
+    CleanupNode* next;
   };
-  Cleanup cleanup_;
+  CleanupNode cleanup_head_;
 };
 
 // Return an empty iterator (yields nothing).

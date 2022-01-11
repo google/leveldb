@@ -18,7 +18,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_CACHE_H_
 #define STORAGE_LEVELDB_INCLUDE_CACHE_H_
 
-#include <stdint.h>
+#include <cstdint>
+
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 
@@ -42,7 +43,7 @@ class LEVELDB_EXPORT Cache {
   virtual ~Cache();
 
   // Opaque handle to an entry stored in the cache.
-  struct Handle { };
+  struct Handle {};
 
   // Insert a mapping from key->value into the cache and assign it
   // the specified charge against the total cache capacity.
@@ -95,14 +96,6 @@ class LEVELDB_EXPORT Cache {
   // Return an estimate of the combined charges of all elements stored in the
   // cache.
   virtual size_t TotalCharge() const = 0;
-
- private:
-  void LRU_Remove(Handle* e);
-  void LRU_Append(Handle* e);
-  void Unref(Handle* e);
-
-  struct Rep;
-  Rep* rep_;
 };
 
 }  // namespace leveldb

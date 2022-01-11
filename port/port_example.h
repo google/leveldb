@@ -18,10 +18,6 @@ namespace port {
 // TODO(jorlow): Many of these belong more in the environment class rather than
 //               here. We should try moving them and see if it affects perf.
 
-// The following boolean constant must be true on a little-endian machine
-// and false otherwise.
-static const bool kLittleEndian = true /* or some other expression */;
-
 // ------------------ Threading -------------------
 
 // A Mutex represents an exclusive lock.
@@ -59,46 +55,7 @@ class CondVar {
   void Signal();
 
   // Wake up all waiting threads.
-  void SignallAll();
-};
-
-// Thread-safe initialization.
-// Used as follows:
-//      static port::OnceType init_control = LEVELDB_ONCE_INIT;
-//      static void Initializer() { ... do something ...; }
-//      ...
-//      port::InitOnce(&init_control, &Initializer);
-typedef intptr_t OnceType;
-#define LEVELDB_ONCE_INIT 0
-void InitOnce(port::OnceType*, void (*initializer)());
-
-// A type that holds a pointer that can be read or written atomically
-// (i.e., without word-tearing.)
-class AtomicPointer {
- private:
-  intptr_t rep_;
- public:
-  // Initialize to arbitrary value
-  AtomicPointer();
-
-  // Initialize to hold v
-  explicit AtomicPointer(void* v) : rep_(v) { }
-
-  // Read and return the stored pointer with the guarantee that no
-  // later memory access (read or write) by this thread can be
-  // reordered ahead of this read.
-  void* Acquire_Load() const;
-
-  // Set v as the stored pointer with the guarantee that no earlier
-  // memory access (read or write) by this thread can be reordered
-  // after this store.
-  void Release_Store(void* v);
-
-  // Read the stored pointer with no ordering guarantees.
-  void* NoBarrier_Load() const;
-
-  // Set va as the stored pointer with no ordering guarantees.
-  void NoBarrier_Store(void* v);
+  void SignalAll();
 };
 
 // ------------------ Compression -------------------

@@ -4,7 +4,8 @@
 
 #include "db/log_reader.h"
 
-#include <stdio.h>
+#include <cstdio>
+
 #include "leveldb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
@@ -12,8 +13,7 @@
 namespace leveldb {
 namespace log {
 
-Reader::Reporter::~Reporter() {
-}
+Reader::Reporter::~Reporter() = default;
 
 Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
                uint64_t initial_offset)
@@ -26,12 +26,9 @@ Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
       last_record_offset_(0),
       end_of_buffer_offset_(0),
       initial_offset_(initial_offset),
-      resyncing_(initial_offset > 0) {
-}
+      resyncing_(initial_offset > 0) {}
 
-Reader::~Reader() {
-  delete[] backing_store_;
-}
+Reader::~Reader() { delete[] backing_store_; }
 
 bool Reader::SkipToInitialBlock() {
   const size_t offset_in_block = initial_offset_ % kBlockSize;
@@ -163,7 +160,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
 
       default: {
         char buf[40];
-        snprintf(buf, sizeof(buf), "unknown record type %u", record_type);
+        std::snprintf(buf, sizeof(buf), "unknown record type %u", record_type);
         ReportCorruption(
             (fragment.size() + (in_fragmented_record ? scratch->size() : 0)),
             buf);
@@ -176,9 +173,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   return false;
 }
 
-uint64_t Reader::LastRecordOffset() {
-  return last_record_offset_;
-}
+uint64_t Reader::LastRecordOffset() { return last_record_offset_; }
 
 void Reader::ReportCorruption(uint64_t bytes, const char* reason) {
   ReportDrop(bytes, Status::Corruption(reason));
