@@ -29,6 +29,10 @@
 #include <snappy.h>
 #endif  // HAVE_SNAPPY
 
+#if HAVE_LZ4
+#include <lz4.h>
+#endif  // HAVE_LZ4
+
 #include <cassert>
 #include <condition_variable>  // NOLINT
 #include <cstddef>
@@ -143,6 +147,61 @@ inline uint32_t AcceleratedCRC32C(uint32_t crc, const char* buf, size_t size) {
   (void)size;
   return 0;
 #endif  // HAVE_CRC32C
+}
+
+inline bool Lz4_Compress(const char* input, size_t length,
+                         std::string* output) {
+#if HAVE_LZ4
+  // std::fprintf(stdout, "Lz4_Compress start\n");
+  int src_size = (int)(length);
+
+  // LZ4 provides a function that will tell you the maximum size of compressed
+  // output based on input data via LZ4_compressBound().
+  const int max_dst_size = LZ4_compressBound(src_size);
+  output->resize(max_dst_size);
+  int compressed_data_size =
+      LZ4_compress_default(input, &(*output)[0], src_size, max_dst_size);
+  // std::fprintf(stdout, "Lz4_Compress
+  // max_dst_size:%d,compressed_data_size:%d,output:%s\n",max_dst_size,compressed_data_size,(*output).c_str());
+  // Check return_value to determine what happened.
+  if (compressed_data_size <= 0) return false;
+  if (compressed_data_size > 0) {
+    output->resize(compressed_data_size);
+    return true;
+  }
+#else
+  // Silence compiler warnings about unused arguments.
+  (void)input;
+  (void)length;
+  (void)output;
+  return 0;
+#endif  // HAVE_LZ4
+}
+
+inline bool Lz4_UnCompress(const char* input, size_t length, char* output,
+                           size_t rawsize) {
+#if HAVE_LZ4
+  // std::fprintf(stdout, "Lz4_UnCompress start\n");
+  // The LZ4_decompress_safe function needs to know where the compressed data
+  // is, how many bytes long it is, where the regen_buffer memory location is,
+  // and how large regen_buffer (uncompressed) output will be. Again, save the
+  // return_value.
+  const int decompressed_size =
+      LZ4_decompress_safe(input, output, length, rawsize);
+
+  // Check return_value to determine what happened.
+  if (decompressed_size <= 0) return false;
+  if (decompressed_size > 0) {
+    // std::fprintf(stdout, "Lz4_UnCompress end\n");
+    return true;
+  }
+#else
+  // Silence compiler warnings about unused arguments.
+  (void)input;
+  (void)length;
+  (void)output;
+  return false;
+#endif  // HAVE_LZ4
 }
 
 }  // namespace port

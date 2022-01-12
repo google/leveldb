@@ -168,17 +168,33 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       }
       break;
     }
+
+    case kLz4Compression: {
+      std::string* compressed = &r->compressed_output;
+      if (port::Lz4_Compress(raw.data(), raw.size(), compressed) &&
+          compressed->size() < raw.size() - (raw.size() / 8u)) {
+        block_contents = *compressed;
+      } else {
+        // Snappy not supported, or compressed less than 12.5%, so just
+        // store uncompressed form
+        block_contents = raw;
+        type = kNoCompression;
+      }
+      break;
+    }
   }
-  WriteRawBlock(block_contents, type, handle);
+  WriteRawBlock(block_contents, type, handle, raw.size());
   r->compressed_output.clear();
   block->Reset();
 }
 
 void TableBuilder::WriteRawBlock(const Slice& block_contents,
-                                 CompressionType type, BlockHandle* handle) {
+                                 CompressionType type, BlockHandle* handle,
+                                 size_t rawsize) {
   Rep* r = rep_;
   handle->set_offset(r->offset);
   handle->set_size(block_contents.size());
+  handle->set_rawsize(rawsize);
   r->status = r->file->Append(block_contents);
   if (r->status.ok()) {
     char trailer[kBlockTrailerSize];
