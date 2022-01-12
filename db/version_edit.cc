@@ -4,8 +4,9 @@
 
 #include "db/version_edit.h"
 
-#include "db/version_set.h"
-#include "util/coding.h"
+#include "leveldb/status.h"
+
+#include "util/logging.h"
 
 namespace leveldb {
 

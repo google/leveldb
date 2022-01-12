@@ -31,10 +31,6 @@
 
 #include <cassert>
 #include <condition_variable>  // NOLINT
-#include <cstddef>
-#include <cstdint>
-#include <mutex>  // NOLINT
-#include <string>
 
 #include "port/thread_annotations.h"
 

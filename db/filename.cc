@@ -4,11 +4,8 @@
 
 #include "db/filename.h"
 
-#include <cassert>
-#include <cstdio>
-
-#include "db/dbformat.h"
 #include "leveldb/env.h"
+
 #include "util/logging.h"
 
 namespace leveldb {

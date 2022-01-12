@@ -14,11 +14,8 @@
 #define STORAGE_LEVELDB_INCLUDE_ENV_H_
 
 #include <cstdarg>
-#include <cstdint>
-#include <string>
 #include <vector>
 
-#include "leveldb/export.h"
 #include "leveldb/status.h"
 
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.

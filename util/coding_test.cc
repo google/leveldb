@@ -4,9 +4,9 @@
 
 #include "util/coding.h"
 
-#include <vector>
+#include <gtest/gtest_pred_impl.h>
 
-#include "gtest/gtest.h"
+#include "leveldb/slice.h"
 
 namespace leveldb {
 

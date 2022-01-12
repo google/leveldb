@@ -5,18 +5,19 @@
 #ifndef STORAGE_LEVELDB_DB_DB_IMPL_H_
 #define STORAGE_LEVELDB_DB_DB_IMPL_H_
 
-#include <atomic>
-#include <deque>
-#include <set>
-#include <string>
-
-#include "db/dbformat.h"
 #include "db/log_writer.h"
 #include "db/snapshot.h"
-#include "leveldb/db.h"
+#include <atomic>
+#include <deque>
+#include <map>
+#include <set>
+#include <vector>
+
 #include "leveldb/env.h"
-#include "port/port.h"
-#include "port/thread_annotations.h"
+#include "leveldb/options.h"
+#include "leveldb/status.h"
+
+#include "port/port_stdcxx.h"
 
 namespace leveldb {
 

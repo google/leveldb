@@ -2,18 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "helpers/memenv/memenv.h"
-
 #include <cstring>
-#include <limits>
 #include <map>
-#include <string>
-#include <vector>
 
 #include "leveldb/env.h"
-#include "leveldb/status.h"
-#include "port/port.h"
-#include "port/thread_annotations.h"
+
 #include "util/mutexlock.h"
 
 namespace leveldb {

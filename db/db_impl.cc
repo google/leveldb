@@ -4,17 +4,8 @@
 
 #include "db/db_impl.h"
 
-#include <algorithm>
-#include <atomic>
-#include <cstdint>
-#include <cstdio>
-#include <set>
-#include <string>
-#include <vector>
-
 #include "db/builder.h"
 #include "db/db_iter.h"
-#include "db/dbformat.h"
 #include "db/filename.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -22,16 +13,13 @@
 #include "db/table_cache.h"
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
-#include "leveldb/db.h"
+#include <algorithm>
+
 #include "leveldb/env.h"
-#include "leveldb/status.h"
-#include "leveldb/table.h"
+#include "leveldb/iterator.h"
 #include "leveldb/table_builder.h"
-#include "port/port.h"
-#include "table/block.h"
+
 #include "table/merger.h"
-#include "table/two_level_iterator.h"
-#include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
 

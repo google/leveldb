@@ -8,13 +8,9 @@
 #ifndef STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_
 #define STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_
 
-#include <sys/time.h>
-
-#include <cassert>
 #include <cstdarg>
-#include <cstdio>
-#include <ctime>
 #include <sstream>
+#include <sys/time.h>
 #include <thread>
 
 #include "leveldb/env.h"

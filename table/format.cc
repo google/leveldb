@@ -5,8 +5,9 @@
 #include "table/format.h"
 
 #include "leveldb/env.h"
-#include "port/port.h"
-#include "table/block.h"
+#include "leveldb/options.h"
+
+#include "port/port_stdcxx.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
 

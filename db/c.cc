@@ -4,10 +4,7 @@
 
 #include "leveldb/c.h"
 
-#include <string.h>
-
-#include <cstdint>
-#include <cstdlib>
+#include <cstring>
 
 #include "leveldb/cache.h"
 #include "leveldb/comparator.h"
@@ -16,7 +13,6 @@
 #include "leveldb/filter_policy.h"
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
-#include "leveldb/status.h"
 #include "leveldb/write_batch.h"
 
 using leveldb::Cache;
