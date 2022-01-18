@@ -4,8 +4,6 @@
 
 #include "db/filename.h"
 
-#include "leveldb/slice.h"
-
 #include "gtest/gtest.h"
 
 namespace leveldb {

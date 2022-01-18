@@ -2,9 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "leveldb/slice.h"
+#include "util/testutil.h"
+
+#include <string>
 
 #include "util/random.h"
+#include "leveldb/slice.h"
 
 namespace leveldb {
 namespace test {

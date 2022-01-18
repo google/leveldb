@@ -5,10 +5,12 @@
 #ifndef STORAGE_LEVELDB_DB_MEMTABLE_H_
 #define STORAGE_LEVELDB_DB_MEMTABLE_H_
 
+#include <string>
+
 #include "db/dbformat.h"
 #include "db/skiplist.h"
-
 #include "leveldb/iterator.h"
+#include "util/arena.h"
 
 namespace leveldb {
 

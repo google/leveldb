@@ -27,6 +27,9 @@
 //
 // ... prev vs. next pointer ordering ...
 
+#include <atomic>
+#include <cassert>
+
 #include "util/arena.h"
 #include "util/random.h"
 

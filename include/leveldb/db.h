@@ -5,10 +5,10 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_DB_H_
 #define STORAGE_LEVELDB_INCLUDE_DB_H_
 
-#include "leveldb/iterator.h"
+#include <cstdint>
 
-#include "slice.h"
-#include "status.h"
+#include "leveldb/export.h"
+#include "leveldb/iterator.h"
 
 namespace leveldb {
 

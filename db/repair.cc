@@ -26,6 +26,7 @@
 
 #include "db/builder.h"
 #include "db/db_impl.h"
+#include "db/dbformat.h"
 #include "db/filename.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -33,12 +34,10 @@
 #include "db/table_cache.h"
 #include "db/version_edit.h"
 #include "db/write_batch_internal.h"
-
-#include "leveldb/env.h"
-#include "leveldb/iterator.h"
-#include "leveldb/table_builder.h"
-
 #include "util/logging.h"
+#include "leveldb/comparator.h"
+#include "leveldb/env.h"
+#include "leveldb/table_builder.h"
 
 namespace leveldb {
 

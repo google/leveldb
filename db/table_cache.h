@@ -7,12 +7,12 @@
 #ifndef STORAGE_LEVELDB_DB_TABLE_CACHE_H_
 #define STORAGE_LEVELDB_DB_TABLE_CACHE_H_
 
+#include <cstdint>
 #include <string>
 
 #include "leveldb/cache.h"
-#include "leveldb/iterator.h"
-#include "leveldb/options.h"
 #include "leveldb/table.h"
+#include "leveldb/options.h"
 
 namespace leveldb {
 

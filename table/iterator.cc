@@ -4,8 +4,6 @@
 
 #include "leveldb/iterator.h"
 
-#include "leveldb/status.h"
-
 namespace leveldb {
 
 Iterator::Iterator() {

@@ -10,8 +10,6 @@
 #include "leveldb/export.h"
 #include "leveldb/iterator.h"
 
-#include "status.h"
-
 namespace leveldb {
 
 class Block;

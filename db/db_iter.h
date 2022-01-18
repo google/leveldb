@@ -5,8 +5,9 @@
 #ifndef STORAGE_LEVELDB_DB_DB_ITER_H_
 #define STORAGE_LEVELDB_DB_DB_ITER_H_
 
-#include "db/dbformat.h"
+#include <cstdint>
 
+#include "db/dbformat.h"
 #include "leveldb/iterator.h"
 
 namespace leveldb {

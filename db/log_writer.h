@@ -5,10 +5,10 @@
 #ifndef STORAGE_LEVELDB_DB_LOG_WRITER_H_
 #define STORAGE_LEVELDB_DB_LOG_WRITER_H_
 
-#include "db/log_format.h"
 #include <cstdint>
-#include <cstddef>
 
+#include "db/log_format.h"
+#include "leveldb/slice.h"
 #include "leveldb/status.h"
 
 namespace leveldb {

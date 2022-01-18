@@ -5,6 +5,7 @@
 #ifndef STORAGE_LEVELDB_UTIL_NO_DESTRUCTOR_H_
 #define STORAGE_LEVELDB_UTIL_NO_DESTRUCTOR_H_
 
+#include <type_traits>
 #include <utility>
 
 namespace leveldb {

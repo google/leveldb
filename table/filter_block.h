@@ -9,6 +9,9 @@
 #ifndef STORAGE_LEVELDB_TABLE_FILTER_BLOCK_H_
 #define STORAGE_LEVELDB_TABLE_FILTER_BLOCK_H_
 
+#include <cstddef>
+#include <cstdint>
+#include <string>
 #include <vector>
 
 #include "leveldb/slice.h"

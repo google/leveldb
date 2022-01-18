@@ -8,9 +8,7 @@
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 #include "leveldb/filter_policy.h"
-#include "leveldb/iterator.h"
 #include "leveldb/options.h"
-
 #include "table/block.h"
 #include "table/filter_block.h"
 #include "table/format.h"

@@ -4,13 +4,11 @@
 
 #include "table/filter_block.h"
 
+#include "gtest/gtest.h"
 #include "leveldb/filter_policy.h"
-
 #include "util/coding.h"
 #include "util/hash.h"
 #include "util/logging.h"
-
-#include "gtest/gtest.h"
 
 namespace leveldb {
 

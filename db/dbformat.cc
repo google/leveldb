@@ -4,9 +4,9 @@
 
 #include "db/dbformat.h"
 
-#include <cstring>
 #include <sstream>
 
+#include "util/coding.h"
 #include "util/logging.h"
 
 namespace leveldb {

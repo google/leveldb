@@ -4,7 +4,12 @@
 //
 // A portable implementation of crc32c.
 
-#include "port/port_stdcxx.h"
+#include "util/crc32c.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "port/port.h"
 #include "util/coding.h"
 
 namespace leveldb {

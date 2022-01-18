@@ -28,9 +28,11 @@
 
 #include "table/block_builder.h"
 
-#include "leveldb/options.h"
-#include "leveldb/slice.h"
+#include <algorithm>
+#include <cassert>
 
+#include "leveldb/comparator.h"
+#include "leveldb/options.h"
 #include "util/coding.h"
 
 namespace leveldb {

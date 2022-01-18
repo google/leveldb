@@ -9,6 +9,7 @@
 
 #include "leveldb/env.h"
 #include "leveldb/export.h"
+#include "leveldb/status.h"
 
 namespace leveldb {
 

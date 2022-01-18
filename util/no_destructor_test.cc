@@ -4,6 +4,9 @@
 
 #include "util/no_destructor.h"
 
+#include <cstdint>
+#include <cstdlib>
+
 #include "gtest/gtest.h"
 
 namespace leveldb {

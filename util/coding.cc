@@ -4,8 +4,6 @@
 
 #include "util/coding.h"
 
-#include "leveldb/slice.h"
-
 namespace leveldb {
 
 void PutFixed32(std::string* dst, uint32_t value) {

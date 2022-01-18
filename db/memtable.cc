@@ -3,11 +3,10 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/memtable.h"
-
-#include <cstring>
-
+#include "db/dbformat.h"
+#include "leveldb/comparator.h"
 #include "leveldb/iterator.h"
-#include "leveldb/status.h"
+#include "util/coding.h"
 
 namespace leveldb {
 

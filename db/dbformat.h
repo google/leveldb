@@ -5,10 +5,13 @@
 #ifndef STORAGE_LEVELDB_DB_DBFORMAT_H_
 #define STORAGE_LEVELDB_DB_DBFORMAT_H_
 
+#include <cstddef>
+#include <cstdint>
+#include <string>
+
 #include "leveldb/comparator.h"
 #include "leveldb/filter_policy.h"
 #include "leveldb/slice.h"
-
 #include "util/coding.h"
 
 namespace leveldb {

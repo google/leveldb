@@ -5,12 +5,8 @@
 #include "db/table_cache.h"
 
 #include "db/filename.h"
-
 #include "leveldb/env.h"
-#include "leveldb/iterator.h"
-#include "leveldb/options.h"
 #include "leveldb/table.h"
-
 #include "util/coding.h"
 
 namespace leveldb {

@@ -6,7 +6,7 @@
 #define STORAGE_LEVELDB_TABLE_ITERATOR_WRAPPER_H_
 
 #include "leveldb/iterator.h"
-#include "leveldb/status.h"
+#include "leveldb/slice.h"
 
 namespace leveldb {
 

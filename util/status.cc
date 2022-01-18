@@ -4,7 +4,7 @@
 
 #include "leveldb/status.h"
 
-#include <cstring>
+#include <cstdio>
 
 namespace leveldb {
 
