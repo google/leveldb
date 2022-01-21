@@ -17,7 +17,7 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // Grouping of constants.  We may want to make some of these
 // parameters set via options.
@@ -219,6 +219,6 @@ inline LookupKey::~LookupKey() {
   if (start_ != space_) delete[] start_;
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_DB_DBFORMAT_H_

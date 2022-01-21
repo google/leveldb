@@ -8,7 +8,7 @@
 #include "leveldb/iterator.h"
 #include "leveldb/slice.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // A internal wrapper class with an interface similar to Iterator that
 // caches the valid() and key() results for an underlying iterator.
@@ -87,6 +87,6 @@ class IteratorWrapper {
   Slice key_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_TABLE_ITERATOR_WRAPPER_H_

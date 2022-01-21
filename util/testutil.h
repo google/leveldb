@@ -12,7 +12,7 @@
 #include "leveldb/slice.h"
 #include "util/random.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace test {
 
 MATCHER(IsOK, "") { return arg.ok(); }
@@ -77,6 +77,6 @@ class ErrorEnv : public EnvWrapper {
 };
 
 }  // namespace test
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_TESTUTIL_H_

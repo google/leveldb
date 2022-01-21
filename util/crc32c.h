@@ -8,7 +8,9 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace leveldb {
+#include "leveldb/leveldb_namespace.h"
+
+namespace LEVELDB_NAMESPACE {
 namespace crc32c {
 
 // Return the crc32c of concat(A, data[0,n-1]) where init_crc is the
@@ -38,6 +40,6 @@ inline uint32_t Unmask(uint32_t masked_crc) {
 }
 
 }  // namespace crc32c
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_CRC32C_H_

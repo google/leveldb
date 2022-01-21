@@ -10,7 +10,7 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 void BlockHandle::EncodeTo(std::string* dst) const {
   // Sanity check that all fields have been set
@@ -138,4 +138,4 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   return Status::OK();
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -11,7 +11,7 @@
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class SequentialFile;
 
@@ -107,6 +107,6 @@ class Reader {
 };
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_DB_LOG_READER_H_

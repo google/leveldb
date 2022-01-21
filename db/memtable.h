@@ -12,7 +12,7 @@
 #include "leveldb/db.h"
 #include "util/arena.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class InternalKeyComparator;
 class MemTableIterator;
@@ -82,6 +82,6 @@ class MemTable {
   Table table_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_DB_MEMTABLE_H_

@@ -19,8 +19,9 @@
 #include <string>
 
 #include "leveldb/export.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class Slice;
 
@@ -67,6 +68,6 @@ class LEVELDB_EXPORT FilterPolicy {
 // trailing spaces in keys.
 LEVELDB_EXPORT const FilterPolicy* NewBloomFilterPolicy(int bits_per_key);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_

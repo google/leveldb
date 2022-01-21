@@ -11,7 +11,7 @@
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class WritableFile;
 
@@ -49,6 +49,6 @@ class Writer {
 };
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_DB_LOG_WRITER_H_

@@ -8,7 +8,7 @@
 #include "util/logging.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kVerbose = 1;
 
@@ -151,4 +151,4 @@ TEST_F(BloomTest, VaryingLengths) {
 
 // Different bits-per-byte
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

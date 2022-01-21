@@ -12,7 +12,7 @@
 #undef DeleteFile
 #endif
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 Env::Env() = default;
 
@@ -105,4 +105,4 @@ Status ReadFileToString(Env* env, const std::string& fname, std::string* data) {
 
 EnvWrapper::~EnvWrapper() {}
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

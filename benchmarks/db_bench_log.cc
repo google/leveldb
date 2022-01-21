@@ -17,7 +17,7 @@
 #include "util/mutexlock.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 
@@ -87,6 +87,6 @@ BENCHMARK(BM_LogAndApply)->Arg(1)->Arg(100)->Arg(10000)->Arg(100000);
 
 }  // namespace
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 BENCHMARK_MAIN();

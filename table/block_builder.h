@@ -10,7 +10,7 @@
 
 #include "leveldb/slice.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 struct Options;
 
@@ -49,6 +49,6 @@ class BlockBuilder {
   std::string last_key_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_TABLE_BLOCK_BUILDER_H_

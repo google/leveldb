@@ -12,7 +12,7 @@
 
 #include "port/thread_annotations.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace port {
 
 // TODO(jorlow): Many of these belong more in the environment class rather than
@@ -95,6 +95,6 @@ bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg);
 uint32_t AcceleratedCRC32C(uint32_t crc, const char* buf, size_t size);
 
 }  // namespace port
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_EXAMPLE_H_

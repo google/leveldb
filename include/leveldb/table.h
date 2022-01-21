@@ -9,8 +9,9 @@
 
 #include "leveldb/export.h"
 #include "leveldb/iterator.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class Block;
 class BlockHandle;
@@ -79,6 +80,6 @@ class LEVELDB_EXPORT Table {
   Rep* const rep_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_TABLE_H_

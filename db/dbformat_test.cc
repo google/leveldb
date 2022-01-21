@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static std::string IKey(const std::string& user_key, uint64_t seq,
                         ValueType vt) {
@@ -125,4 +125,4 @@ TEST(FormatTest, InternalKeyDebugString) {
   ASSERT_EQ("(bad)", invalid_key.DebugString());
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

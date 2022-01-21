@@ -8,8 +8,9 @@
 #include <string>
 
 #include "leveldb/export.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class Slice;
 
@@ -59,6 +60,6 @@ class LEVELDB_EXPORT Comparator {
 // must not be deleted.
 LEVELDB_EXPORT const Comparator* BytewiseComparator();
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_COMPARATOR_H_

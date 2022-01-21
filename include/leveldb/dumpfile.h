@@ -10,8 +10,9 @@
 #include "leveldb/env.h"
 #include "leveldb/export.h"
 #include "leveldb/status.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // Dump the contents of the file named by fname in text format to
 // *dst.  Makes a sequence of dst->Append() calls; each call is passed
@@ -23,6 +24,6 @@ namespace leveldb {
 LEVELDB_EXPORT Status DumpFile(Env* env, const std::string& fname,
                                WritableFile* dst);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_DUMPFILE_H_

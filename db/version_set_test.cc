@@ -8,7 +8,7 @@
 #include "util/logging.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class FindFileTest : public testing::Test {
  public:
@@ -328,4 +328,4 @@ TEST_F(AddBoundaryInputsTest, TestDisjoinFilePointers) {
   ASSERT_EQ(f3, compaction_files_[2]);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -11,8 +11,9 @@
 #include "leveldb/export.h"
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // Update CMakeLists.txt if you change these
 static const int kMajorVersion = 1;
@@ -162,6 +163,6 @@ LEVELDB_EXPORT Status DestroyDB(const std::string& name,
 LEVELDB_EXPORT Status RepairDB(const std::string& dbname,
                                const Options& options);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_DB_H_

@@ -38,7 +38,7 @@
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 
@@ -448,4 +448,4 @@ Status RepairDB(const std::string& dbname, const Options& options) {
   return repairer.Run();
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

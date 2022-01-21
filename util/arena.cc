@@ -4,7 +4,7 @@
 
 #include "util/arena.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kBlockSize = 4096;
 
@@ -63,4 +63,4 @@ char* Arena::AllocateNewBlock(size_t block_bytes) {
   return result;
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

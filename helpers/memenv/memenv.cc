@@ -16,7 +16,7 @@
 #include "port/thread_annotations.h"
 #include "util/mutexlock.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 
@@ -387,4 +387,4 @@ class InMemoryEnv : public EnvWrapper {
 
 Env* NewMemEnv(Env* base_env) { return new InMemoryEnv(base_env); }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

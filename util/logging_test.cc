@@ -10,7 +10,7 @@
 #include "gtest/gtest.h"
 #include "leveldb/slice.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 TEST(Logging, NumberToString) {
   ASSERT_EQ("0", NumberToString(0));
@@ -137,4 +137,4 @@ TEST(Logging, ConsumeDecimalNumberNoDigits) {
   ConsumeDecimalNumberNoDigitsTest(std::string("\377123", 4));
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

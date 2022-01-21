@@ -21,8 +21,9 @@
 #include <string>
 
 #include "leveldb/export.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class LEVELDB_EXPORT Slice {
  public:
@@ -109,6 +110,6 @@ inline int Slice::compare(const Slice& b) const {
   return r;
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_SLICE_H_

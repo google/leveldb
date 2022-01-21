@@ -18,8 +18,9 @@
 #include "leveldb/export.h"
 #include "leveldb/options.h"
 #include "leveldb/status.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class BlockBuilder;
 class BlockHandle;
@@ -88,6 +89,6 @@ class LEVELDB_EXPORT TableBuilder {
   Rep* rep_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_

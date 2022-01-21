@@ -8,7 +8,7 @@
 
 #include "gtest/gtest.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 TEST(Coding, Fixed32) {
   std::string s;
@@ -190,4 +190,4 @@ TEST(Coding, Strings) {
   ASSERT_EQ("", input.ToString());
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

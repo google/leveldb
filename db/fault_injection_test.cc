@@ -25,7 +25,7 @@
 #include "util/mutexlock.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kValueSize = 1000;
 static const int kMaxNumValues = 2000;
@@ -547,4 +547,4 @@ TEST_F(FaultInjectionTest, FaultTestWithLogReuse) {
   DoTest();
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

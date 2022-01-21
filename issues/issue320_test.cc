@@ -14,7 +14,7 @@
 #include "leveldb/write_batch.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 
@@ -123,4 +123,4 @@ TEST(Issue320, Test) {
   DestroyDB(dbpath, options);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

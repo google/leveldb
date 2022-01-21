@@ -16,7 +16,7 @@
 #include "util/logging.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kValueSize = 1000;
 
@@ -359,4 +359,4 @@ TEST_F(CorruptionTest, UnrelatedKeys) {
   ASSERT_EQ(Value(1000, &tmp2).ToString(), v);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -18,8 +18,9 @@
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class LEVELDB_EXPORT Iterator {
  public:
@@ -107,6 +108,6 @@ LEVELDB_EXPORT Iterator* NewEmptyIterator();
 // Return an empty iterator with the specified status.
 LEVELDB_EXPORT Iterator* NewErrorIterator(const Status& status);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_ITERATOR_H_

@@ -17,7 +17,7 @@
 #include "leveldb/slice.h"
 #include "util/hash.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class FilterPolicy;
 
@@ -63,6 +63,6 @@ class FilterBlockReader {
   size_t base_lg_;      // Encoding parameter (see kFilterBaseLg in .cc file)
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_TABLE_FILTER_BLOCK_H_

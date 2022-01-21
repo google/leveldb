@@ -8,7 +8,7 @@
 #include "leveldb/env.h"
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace {
 
 class StdoutPrinter : public WritableFile {
@@ -36,7 +36,7 @@ bool HandleDumpCommand(Env* env, char** files, int num) {
 }
 
 }  // namespace
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 static void Usage() {
   std::fprintf(

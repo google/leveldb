@@ -112,7 +112,7 @@ inline static void WalCheckpoint(sqlite3* db_) {
   }
 }
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // Helper for quickly generating random data.
 namespace {
@@ -669,7 +669,7 @@ class Benchmark {
   }
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 int main(int argc, char** argv) {
   std::string default_db_path;

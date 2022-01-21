@@ -10,10 +10,12 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace leveldb {
+#include "leveldb/leveldb_namespace.h"
+
+namespace LEVELDB_NAMESPACE {
 
 uint32_t Hash(const char* data, size_t n, uint32_t seed);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_HASH_H_

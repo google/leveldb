@@ -7,7 +7,7 @@
 
 #include "leveldb/iterator.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 struct ReadOptions;
 
@@ -26,6 +26,6 @@ Iterator* NewTwoLevelIterator(
                                 const Slice& index_value),
     void* arg, const ReadOptions& options);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_TABLE_TWO_LEVEL_ITERATOR_H_

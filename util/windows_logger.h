@@ -16,7 +16,7 @@
 
 #include "leveldb/env.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class WindowsLogger final : public Logger {
  public:
@@ -119,6 +119,6 @@ class WindowsLogger final : public Logger {
   std::FILE* const fp_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_WINDOWS_LOGGER_H_

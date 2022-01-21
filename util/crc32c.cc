@@ -12,7 +12,7 @@
 #include "port/port.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace crc32c {
 
 namespace {
@@ -377,4 +377,4 @@ uint32_t Extend(uint32_t crc, const char* data, size_t n) {
 }
 
 }  // namespace crc32c
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -10,7 +10,7 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace log {
 
 static void InitTypeCrc(uint32_t* type_crc) {
@@ -108,4 +108,4 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
 }
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -12,7 +12,7 @@
 #include "leveldb/status.h"
 #include "leveldb/table_builder.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class Block;
 class RandomAccessFile;
@@ -94,6 +94,6 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
 inline BlockHandle::BlockHandle()
     : offset_(~static_cast<uint64_t>(0)), size_(~static_cast<uint64_t>(0)) {}
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_TABLE_FORMAT_H_

@@ -15,7 +15,7 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 inline uint32_t Block::NumRestarts() const {
   assert(size_ >= sizeof(uint32_t));
@@ -289,4 +289,4 @@ Iterator* Block::NewIterator(const Comparator* comparator) {
   }
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

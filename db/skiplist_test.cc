@@ -16,7 +16,7 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 typedef uint64_t Key;
 
@@ -365,4 +365,4 @@ TEST(SkipTest, Concurrent3) { RunConcurrent(3); }
 TEST(SkipTest, Concurrent4) { RunConcurrent(4); }
 TEST(SkipTest, Concurrent5) { RunConcurrent(5); }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

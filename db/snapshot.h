@@ -8,7 +8,7 @@
 #include "db/dbformat.h"
 #include "leveldb/db.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class SnapshotList;
 
@@ -90,6 +90,6 @@ class SnapshotList {
   SnapshotImpl head_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_DB_SNAPSHOT_H_

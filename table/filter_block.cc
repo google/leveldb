@@ -7,7 +7,7 @@
 #include "leveldb/filter_policy.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // See doc/table_format.md for an explanation of the filter block format.
 
@@ -103,4 +103,4 @@ bool FilterBlockReader::KeyMayMatch(uint64_t block_offset, const Slice& key) {
   return true;  // Errors are treated as potential matches
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

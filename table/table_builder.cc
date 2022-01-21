@@ -16,7 +16,7 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 struct TableBuilder::Rep {
   Rep(const Options& opt, WritableFile* f)
@@ -262,4 +262,4 @@ uint64_t TableBuilder::NumEntries() const { return rep_->num_entries; }
 
 uint64_t TableBuilder::FileSize() const { return rep_->offset; }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

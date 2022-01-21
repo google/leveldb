@@ -35,7 +35,7 @@
 #include "leveldb/options.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 BlockBuilder::BlockBuilder(const Options* options)
     : options_(options), restarts_(), counter_(0), finished_(false) {
@@ -104,4 +104,4 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
   counter_++;
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

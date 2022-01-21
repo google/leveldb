@@ -20,6 +20,7 @@
 
 #include "leveldb/export.h"
 #include "leveldb/status.h"
+#include "leveldb/leveldb_namespace.h"
 
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.
 #if defined(_WIN32)
@@ -39,7 +40,7 @@
 #endif  // defined(DeleteFile)
 #endif  // defined(_WIN32)
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class FileLock;
 class Logger;
@@ -402,7 +403,7 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   Env* target_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.
 // Redefine DeleteFile if it was undefined earlier.

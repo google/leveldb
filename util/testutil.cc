@@ -8,7 +8,7 @@
 
 #include "util/random.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace test {
 
 Slice RandomString(Random* rnd, int len, std::string* dst) {
@@ -48,4 +48,4 @@ Slice CompressibleString(Random* rnd, double compressed_fraction, size_t len,
 }
 
 }  // namespace test
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -33,7 +33,7 @@
 #include "util/mutexlock.h"
 #include "util/windows_logger.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 
@@ -813,4 +813,4 @@ Env* Env::Default() {
   return env_container.env();
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -164,7 +164,7 @@ void CheckCloseOnExecDoesNotLeakFDs(
 
 #endif  // HAVE_O_CLOEXEC
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kReadOnlyFileLimit = 4;
 static const int kMMapLimit = 4;
@@ -329,7 +329,7 @@ TEST_F(EnvPosixTest, TestCloseOnExecLogger) {
 
 #endif  // HAVE_O_CLOEXEC
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 int main(int argc, char** argv) {
 #if HAVE_O_CLOEXEC

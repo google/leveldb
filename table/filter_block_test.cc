@@ -11,7 +11,7 @@
 #include "util/logging.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // For testing: emit an array with one hash value per key
 class TestHashFilter : public FilterPolicy {
@@ -119,4 +119,4 @@ TEST_F(FilterBlockTest, MultiChunk) {
   ASSERT_TRUE(!reader.KeyMayMatch(9000, "bar"));
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

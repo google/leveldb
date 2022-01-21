@@ -13,7 +13,7 @@
 #include "util/logging.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class RecoveryTest : public testing::Test {
  public:
@@ -331,4 +331,4 @@ TEST_F(RecoveryTest, ManifestMissing) {
   ASSERT_TRUE(status.IsCorruption());
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

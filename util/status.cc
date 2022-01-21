@@ -8,7 +8,7 @@
 
 #include "port/port.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 const char* Status::CopyState(const char* state) {
   uint32_t size;
@@ -74,4 +74,4 @@ std::string Status::ToString() const {
   }
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

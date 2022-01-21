@@ -14,7 +14,7 @@
 #include "util/mutexlock.h"
 #include "util/random.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 #if 0
 static void DumpInternalIter(Iterator* iter) {
@@ -315,4 +315,4 @@ Iterator* NewDBIterator(DBImpl* db, const Comparator* user_key_comparator,
   return new DBIter(db, user_key_comparator, internal_iter, sequence, seed);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

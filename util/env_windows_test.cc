@@ -8,7 +8,7 @@
 #include "util/env_windows_test_helper.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kMMapLimit = 4;
 
@@ -55,7 +55,7 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
   ASSERT_LEVELDB_OK(env_->RemoveFile(test_file));
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 int main(int argc, char** argv) {
   // All tests currently run with the same read-only file limits.

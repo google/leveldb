@@ -13,7 +13,7 @@
 #include "leveldb/env.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class MemEnvTest : public testing::Test {
  public:
@@ -256,4 +256,4 @@ TEST_F(MemEnvTest, DBTest) {
   delete db;
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

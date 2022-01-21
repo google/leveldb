@@ -19,7 +19,7 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static size_t TargetFileSize(const Options* options) {
   return options->max_file_size;
@@ -1566,4 +1566,4 @@ void Compaction::ReleaseInputs() {
   }
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

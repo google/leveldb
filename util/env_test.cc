@@ -12,7 +12,7 @@
 #include "util/mutexlock.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class EnvTest : public testing::Test {
  public:
@@ -230,4 +230,4 @@ TEST_F(EnvTest, ReopenAppendableFile) {
   env_->RemoveFile(test_file_name);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

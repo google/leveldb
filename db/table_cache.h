@@ -15,7 +15,7 @@
 #include "leveldb/table.h"
 #include "port/port.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class Env;
 
@@ -56,6 +56,6 @@ class TableCache {
   Cache* cache_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_DB_TABLE_CACHE_H_

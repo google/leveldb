@@ -19,7 +19,7 @@
 
 #include "leveldb/env.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class PosixLogger final : public Logger {
  public:
@@ -125,6 +125,6 @@ class PosixLogger final : public Logger {
   std::FILE* const fp_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_

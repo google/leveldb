@@ -5,7 +5,7 @@
 #ifndef STORAGE_LEVELDB_UTIL_ENV_WINDOWS_TEST_HELPER_H_
 #define STORAGE_LEVELDB_UTIL_ENV_WINDOWS_TEST_HELPER_H_
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class EnvWindowsTest;
 
@@ -20,6 +20,6 @@ class EnvWindowsTestHelper {
   static void SetReadOnlyMMapLimit(int limit);
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_ENV_WINDOWS_TEST_HELPER_H_
