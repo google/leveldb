@@ -4,7 +4,6 @@
 
 #include "db/dbformat.h"
 
-#include <cstdio>
 #include <sstream>
 
 #include "port/port.h"

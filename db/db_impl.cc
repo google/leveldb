@@ -28,10 +28,7 @@
 #include "leveldb/table.h"
 #include "leveldb/table_builder.h"
 #include "port/port.h"
-#include "table/block.h"
 #include "table/merger.h"
-#include "table/two_level_iterator.h"
-#include "util/coding.h"
 #include "util/logging.h"
 #include "util/mutexlock.h"
 

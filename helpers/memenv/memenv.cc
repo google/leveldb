@@ -7,7 +7,6 @@
 #include <cstring>
 #include <limits>
 #include <map>
-#include <string>
 #include <vector>
 
 #include "leveldb/env.h"

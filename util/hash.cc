@@ -3,9 +3,6 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "util/hash.h"
-
-#include <cstring>
-
 #include "util/coding.h"
 
 // The FALLTHROUGH_INTENDED macro can be used to annotate implicit fall-through

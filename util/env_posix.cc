@@ -9,24 +9,21 @@
 #include <sys/resource.h>
 #endif
 #include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <atomic>
 #include <cerrno>
-#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <limits>
 #include <queue>
 #include <set>
 #include <string>
 #include <thread>
 #include <type_traits>
-#include <utility>
 
 #include "leveldb/env.h"
 #include "leveldb/slice.h"

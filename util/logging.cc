@@ -4,12 +4,10 @@
 
 #include "util/logging.h"
 
-#include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
 #include <limits>
 
-#include "leveldb/env.h"
 #include "leveldb/slice.h"
 
 namespace leveldb {

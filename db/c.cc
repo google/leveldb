@@ -4,7 +4,7 @@
 
 #include "leveldb/c.h"
 
-#include <string.h>
+#include <cstring>
 
 #include <cstdint>
 #include <cstdlib>
