@@ -12,7 +12,7 @@
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 void AppendNumberTo(std::string* str, uint64_t num) {
   char buf[30];
@@ -79,4 +79,4 @@ bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
   return digits_consumed != 0;
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -9,7 +9,7 @@
 #include "leveldb/env.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static std::string PrintContents(WriteBatch* b) {
   InternalKeyComparator cmp(BytewiseComparator());
@@ -129,4 +129,4 @@ TEST(WriteBatchTest, ApproximateSize) {
   ASSERT_LT(two_keys_size, post_delete_size);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

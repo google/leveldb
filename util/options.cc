@@ -7,8 +7,8 @@
 #include "leveldb/comparator.h"
 #include "leveldb/env.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 Options::Options() : comparator(BytewiseComparator()), env(Env::Default()) {}
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

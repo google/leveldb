@@ -18,7 +18,7 @@
 #include "port/port.h"
 #include "port/thread_annotations.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class MemTable;
 class TableCache;
@@ -212,6 +212,6 @@ Options SanitizeOptions(const std::string& db,
                         const InternalFilterPolicy* ipolicy,
                         const Options& src);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_DB_DB_IMPL_H_

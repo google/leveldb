@@ -10,7 +10,7 @@
 #include "leveldb/db.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 TEST(Issue200, Test) {
   // Get rid of any state from an old run.
@@ -51,4 +51,4 @@ TEST(Issue200, Test) {
   DestroyDB(dbpath, options);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

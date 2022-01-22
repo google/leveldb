@@ -5,7 +5,7 @@
 #ifndef STORAGE_LEVELDB_TABLE_MERGER_H_
 #define STORAGE_LEVELDB_TABLE_MERGER_H_
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class Comparator;
 class Iterator;
@@ -21,6 +21,6 @@ class Iterator;
 Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children,
                              int n);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_TABLE_MERGER_H_

@@ -9,7 +9,7 @@
 #include "gtest/gtest.h"
 #include "util/coding.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // Conversions between numeric keys/values and the types expected by Cache.
 static std::string EncodeKey(int k) {
@@ -221,4 +221,4 @@ TEST_F(CacheTest, ZeroSizeCache) {
   ASSERT_EQ(-1, Lookup(1));
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

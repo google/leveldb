@@ -8,7 +8,9 @@
 #ifndef STORAGE_LEVELDB_DB_LOG_FORMAT_H_
 #define STORAGE_LEVELDB_DB_LOG_FORMAT_H_
 
-namespace leveldb {
+#include "leveldb/leveldb_namespace.h"
+
+namespace LEVELDB_NAMESPACE {
 namespace log {
 
 enum RecordType {
@@ -30,6 +32,6 @@ static const int kBlockSize = 32768;
 static const int kHeaderSize = 4 + 2 + 1;
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_DB_LOG_FORMAT_H_

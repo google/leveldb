@@ -16,7 +16,7 @@
 #include "util/logging.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kValueSize = 1000;
 
@@ -51,7 +51,7 @@ class CorruptionTest : public testing::Test {
   void RepairDB() {
     delete db_;
     db_ = nullptr;
-    ASSERT_LEVELDB_OK(::leveldb::RepairDB(dbname_, options_));
+    ASSERT_LEVELDB_OK(::LEVELDB_NAMESPACE::RepairDB(dbname_, options_));
   }
 
   void Build(int n) {
@@ -359,4 +359,4 @@ TEST_F(CorruptionTest, UnrelatedKeys) {
   ASSERT_EQ(Value(1000, &tmp2).ToString(), v);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

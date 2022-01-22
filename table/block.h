@@ -10,7 +10,7 @@
 
 #include "leveldb/iterator.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 struct BlockContents;
 class Comparator;
@@ -39,6 +39,6 @@ class Block {
   bool owned_;               // Block owns data_[]
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_TABLE_BLOCK_H_

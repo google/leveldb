@@ -6,13 +6,13 @@
 
 #include <cstdarg>
 
-// This workaround can be removed when leveldb::Env::DeleteFile is removed.
+// This workaround can be removed when LEVELDB_NAMESPACE::Env::DeleteFile is removed.
 // See env.h for justification.
 #if defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
 #undef DeleteFile
 #endif
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 Env::Env() = default;
 
@@ -105,4 +105,4 @@ Status ReadFileToString(Env* env, const std::string& fname, std::string* data) {
 
 EnvWrapper::~EnvWrapper() {}
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

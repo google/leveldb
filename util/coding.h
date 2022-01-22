@@ -17,7 +17,7 @@
 #include "leveldb/slice.h"
 #include "port/port.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // Standard Put... routines append to a string
 void PutFixed32(std::string* dst, uint32_t value);
@@ -117,6 +117,6 @@ inline const char* GetVarint32Ptr(const char* p, const char* limit,
   return GetVarint32PtrFallback(p, limit, value);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_CODING_H_

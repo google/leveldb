@@ -21,7 +21,7 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // Return reverse of "key".
 // Used to test non-lexicographic comparators.
@@ -826,4 +826,4 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -25,8 +25,9 @@
 
 #include "leveldb/export.h"
 #include "leveldb/status.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class Slice;
 
@@ -78,6 +79,6 @@ class LEVELDB_EXPORT WriteBatch {
   std::string rep_;  // See comment in write_batch.cc for the format of rep_
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_

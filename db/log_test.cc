@@ -10,7 +10,7 @@
 #include "util/crc32c.h"
 #include "util/random.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace log {
 
 // Construct a string of the specified length made out of the supplied
@@ -555,4 +555,4 @@ TEST_F(LogTest, ReadEnd) { CheckOffsetPastEndReturnsNoRecords(0); }
 TEST_F(LogTest, ReadPastEnd) { CheckOffsetPastEndReturnsNoRecords(5); }
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

@@ -8,7 +8,7 @@
 #include "leveldb/db.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class AutoCompactTest : public testing::Test {
  public:
@@ -107,4 +107,4 @@ TEST_F(AutoCompactTest, ReadAll) { DoReads(kCount); }
 
 TEST_F(AutoCompactTest, ReadHalf) { DoReads(kCount / 2); }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

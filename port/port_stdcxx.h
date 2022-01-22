@@ -38,7 +38,7 @@
 
 #include "port/thread_annotations.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace port {
 
 class CondVar;
@@ -146,6 +146,6 @@ inline uint32_t AcceleratedCRC32C(uint32_t crc, const char* buf, size_t size) {
 }
 
 }  // namespace port
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_PORT_PORT_STDCXX_H_

@@ -36,7 +36,7 @@
 #include "util/env_posix_test_helper.h"
 #include "util/posix_logger.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 
@@ -923,4 +923,4 @@ Env* Env::Default() {
   return env_container.env();
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

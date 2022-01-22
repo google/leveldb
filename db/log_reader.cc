@@ -10,7 +10,7 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace log {
 
 Reader::Reporter::~Reporter() = default;
@@ -271,4 +271,4 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
 }
 
 }  // namespace log
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

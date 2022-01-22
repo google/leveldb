@@ -9,7 +9,7 @@
 #include "table/format.h"
 #include "table/iterator_wrapper.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 
@@ -168,4 +168,4 @@ Iterator* NewTwoLevelIterator(Iterator* index_iter,
   return new TwoLevelIterator(index_iter, block_function, arg, options);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

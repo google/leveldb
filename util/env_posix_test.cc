@@ -164,7 +164,7 @@ void CheckCloseOnExecDoesNotLeakFDs(
 
 #endif  // HAVE_O_CLOEXEC
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kReadOnlyFileLimit = 4;
 static const int kMMapLimit = 4;
@@ -194,9 +194,9 @@ TEST_F(EnvPosixTest, TestOpenOnRead) {
   std::fclose(f);
 
   // Open test file some number above the sum of the two limits to force
-  // open-on-read behavior of POSIX Env leveldb::RandomAccessFile.
+  // open-on-read behavior of POSIX Env LEVELDB_NAMESPACE::RandomAccessFile.
   const int kNumFiles = kReadOnlyFileLimit + kMMapLimit + 5;
-  leveldb::RandomAccessFile* files[kNumFiles] = {0};
+  LEVELDB_NAMESPACE::RandomAccessFile* files[kNumFiles] = {0};
   for (int i = 0; i < kNumFiles; i++) {
     ASSERT_LEVELDB_OK(env_->NewRandomAccessFile(test_file, &files[i]));
   }
@@ -223,7 +223,7 @@ TEST_F(EnvPosixTest, TestCloseOnExecSequentialFile) {
   std::string file_path = test_dir + "/close_on_exec_sequential.txt";
   ASSERT_LEVELDB_OK(WriteStringToFile(env_, "0123456789", file_path));
 
-  leveldb::SequentialFile* file = nullptr;
+  LEVELDB_NAMESPACE::SequentialFile* file = nullptr;
   ASSERT_LEVELDB_OK(env_->NewSequentialFile(file_path, &file));
   CheckCloseOnExecDoesNotLeakFDs(open_fds);
   delete file;
@@ -243,12 +243,12 @@ TEST_F(EnvPosixTest, TestCloseOnExecRandomAccessFile) {
   // Exhaust the RandomAccessFile mmap limit. This way, the test
   // RandomAccessFile instance below is backed by a file descriptor, not by an
   // mmap region.
-  leveldb::RandomAccessFile* mmapped_files[kMMapLimit];
+  LEVELDB_NAMESPACE::RandomAccessFile* mmapped_files[kMMapLimit];
   for (int i = 0; i < kMMapLimit; i++) {
     ASSERT_LEVELDB_OK(env_->NewRandomAccessFile(file_path, &mmapped_files[i]));
   }
 
-  leveldb::RandomAccessFile* file = nullptr;
+  LEVELDB_NAMESPACE::RandomAccessFile* file = nullptr;
   ASSERT_LEVELDB_OK(env_->NewRandomAccessFile(file_path, &file));
   CheckCloseOnExecDoesNotLeakFDs(open_fds);
   delete file;
@@ -268,7 +268,7 @@ TEST_F(EnvPosixTest, TestCloseOnExecWritableFile) {
   std::string file_path = test_dir + "/close_on_exec_writable.txt";
   ASSERT_LEVELDB_OK(WriteStringToFile(env_, "0123456789", file_path));
 
-  leveldb::WritableFile* file = nullptr;
+  LEVELDB_NAMESPACE::WritableFile* file = nullptr;
   ASSERT_LEVELDB_OK(env_->NewWritableFile(file_path, &file));
   CheckCloseOnExecDoesNotLeakFDs(open_fds);
   delete file;
@@ -285,7 +285,7 @@ TEST_F(EnvPosixTest, TestCloseOnExecAppendableFile) {
   std::string file_path = test_dir + "/close_on_exec_appendable.txt";
   ASSERT_LEVELDB_OK(WriteStringToFile(env_, "0123456789", file_path));
 
-  leveldb::WritableFile* file = nullptr;
+  LEVELDB_NAMESPACE::WritableFile* file = nullptr;
   ASSERT_LEVELDB_OK(env_->NewAppendableFile(file_path, &file));
   CheckCloseOnExecDoesNotLeakFDs(open_fds);
   delete file;
@@ -302,7 +302,7 @@ TEST_F(EnvPosixTest, TestCloseOnExecLockFile) {
   std::string file_path = test_dir + "/close_on_exec_lock.txt";
   ASSERT_LEVELDB_OK(WriteStringToFile(env_, "0123456789", file_path));
 
-  leveldb::FileLock* lock = nullptr;
+  LEVELDB_NAMESPACE::FileLock* lock = nullptr;
   ASSERT_LEVELDB_OK(env_->LockFile(file_path, &lock));
   CheckCloseOnExecDoesNotLeakFDs(open_fds);
   ASSERT_LEVELDB_OK(env_->UnlockFile(lock));
@@ -319,7 +319,7 @@ TEST_F(EnvPosixTest, TestCloseOnExecLogger) {
   std::string file_path = test_dir + "/close_on_exec_logger.txt";
   ASSERT_LEVELDB_OK(WriteStringToFile(env_, "0123456789", file_path));
 
-  leveldb::Logger* file = nullptr;
+  LEVELDB_NAMESPACE::Logger* file = nullptr;
   ASSERT_LEVELDB_OK(env_->NewLogger(file_path, &file));
   CheckCloseOnExecDoesNotLeakFDs(open_fds);
   delete file;
@@ -329,7 +329,7 @@ TEST_F(EnvPosixTest, TestCloseOnExecLogger) {
 
 #endif  // HAVE_O_CLOEXEC
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 int main(int argc, char** argv) {
 #if HAVE_O_CLOEXEC
@@ -345,8 +345,8 @@ int main(int argc, char** argv) {
 #endif  // HAVE_O_CLOEXEC
 
   // All tests currently run with the same read-only file limits.
-  leveldb::EnvPosixTest::SetFileLimits(leveldb::kReadOnlyFileLimit,
-                                       leveldb::kMMapLimit);
+  LEVELDB_NAMESPACE::EnvPosixTest::SetFileLimits(LEVELDB_NAMESPACE::kReadOnlyFileLimit,
+                                       LEVELDB_NAMESPACE::kMMapLimit);
 
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

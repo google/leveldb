@@ -19,7 +19,7 @@
 #include "leveldb/write_batch.h"
 #include "util/logging.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 
@@ -229,4 +229,4 @@ Status DumpFile(Env* env, const std::string& fname, WritableFile* dst) {
   return Status::InvalidArgument(fname + ": not a dump-able file type");
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

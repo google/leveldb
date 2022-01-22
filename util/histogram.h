@@ -7,7 +7,9 @@
 
 #include <string>
 
-namespace leveldb {
+#include "leveldb/leveldb_namespace.h"
+
+namespace LEVELDB_NAMESPACE {
 
 class Histogram {
  public:
@@ -39,6 +41,6 @@ class Histogram {
   double buckets_[kNumBuckets];
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_HISTOGRAM_H_

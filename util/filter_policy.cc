@@ -4,8 +4,8 @@
 
 #include "leveldb/filter_policy.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 FilterPolicy::~FilterPolicy() {}
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

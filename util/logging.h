@@ -14,7 +14,9 @@
 
 #include "port/port.h"
 
-namespace leveldb {
+#include "leveldb/leveldb_namespace.h"
+
+namespace LEVELDB_NAMESPACE {
 
 class Slice;
 class WritableFile;
@@ -39,6 +41,6 @@ std::string EscapeString(const Slice& value);
 // unspecified state.
 bool ConsumeDecimalNumber(Slice* in, uint64_t* val);
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_LOGGING_H_

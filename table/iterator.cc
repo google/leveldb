@@ -4,7 +4,7 @@
 
 #include "leveldb/iterator.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 Iterator::Iterator() {
   cleanup_head_.function = nullptr;
@@ -73,4 +73,4 @@ Iterator* NewErrorIterator(const Status& status) {
   return new EmptyIterator(status);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

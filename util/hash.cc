@@ -17,7 +17,7 @@
   } while (0)
 #endif
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 uint32_t Hash(const char* data, size_t n, uint32_t seed) {
   // Similar to murmur hash
@@ -52,4 +52,4 @@ uint32_t Hash(const char* data, size_t n, uint32_t seed) {
   return h;
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

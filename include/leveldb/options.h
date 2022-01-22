@@ -8,8 +8,9 @@
 #include <cstddef>
 
 #include "leveldb/export.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class Cache;
 class Comparator;
@@ -182,6 +183,6 @@ struct LEVELDB_EXPORT WriteOptions {
   bool sync = false;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_OPTIONS_H_

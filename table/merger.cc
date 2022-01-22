@@ -8,7 +8,7 @@
 #include "leveldb/iterator.h"
 #include "table/iterator_wrapper.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 namespace {
 class MergingIterator : public Iterator {
@@ -188,4 +188,4 @@ Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children,
   }
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

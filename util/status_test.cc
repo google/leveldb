@@ -9,7 +9,7 @@
 #include "gtest/gtest.h"
 #include "leveldb/slice.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 TEST(Status, MoveConstructor) {
   {
@@ -36,4 +36,4 @@ TEST(Status, MoveConstructor) {
   }
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

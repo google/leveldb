@@ -8,7 +8,7 @@
 #include "util/env_windows_test_helper.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static const int kMMapLimit = 4;
 
@@ -36,10 +36,10 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
   std::fclose(f);
 
   // Open test file some number above the sum of the two limits to force
-  // leveldb::WindowsEnv to switch from mapping the file into memory
+  // LEVELDB_NAMESPACE::WindowsEnv to switch from mapping the file into memory
   // to basic file reading.
   const int kNumFiles = kMMapLimit + 5;
-  leveldb::RandomAccessFile* files[kNumFiles] = {0};
+  LEVELDB_NAMESPACE::RandomAccessFile* files[kNumFiles] = {0};
   for (int i = 0; i < kNumFiles; i++) {
     ASSERT_LEVELDB_OK(env_->NewRandomAccessFile(test_file, &files[i]));
   }
@@ -55,11 +55,11 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
   ASSERT_LEVELDB_OK(env_->RemoveFile(test_file));
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 int main(int argc, char** argv) {
   // All tests currently run with the same read-only file limits.
-  leveldb::EnvWindowsTest::SetFileLimits(leveldb::kMMapLimit);
+  LEVELDB_NAMESPACE::EnvWindowsTest::SetFileLimits(LEVELDB_NAMESPACE::kMMapLimit);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

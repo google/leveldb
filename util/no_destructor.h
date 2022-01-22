@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 // Wraps an instance whose destructor is never called.
 //
@@ -41,6 +41,6 @@ class NoDestructor {
                                 alignof(InstanceType)>::type instance_storage_;
 };
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_UTIL_NO_DESTRUCTOR_H_

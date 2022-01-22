@@ -18,8 +18,9 @@
 
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
+#include "leveldb/leveldb_namespace.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 class LEVELDB_EXPORT Status {
  public:
@@ -117,6 +118,6 @@ inline Status& Status::operator=(Status&& rhs) noexcept {
   return *this;
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 #endif  // STORAGE_LEVELDB_INCLUDE_STATUS_H_

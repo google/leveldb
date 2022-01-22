@@ -6,7 +6,7 @@
 
 #include "gtest/gtest.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 TEST(HASH, SignedUnsignedIssue) {
   const uint8_t data1[1] = {0x62};
@@ -38,4 +38,4 @@ TEST(HASH, SignedUnsignedIssue) {
       0xf333dabb);
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

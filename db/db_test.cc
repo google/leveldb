@@ -24,7 +24,7 @@
 #include "util/mutexlock.h"
 #include "util/testutil.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 static std::string RandomString(Random* rnd, int len) {
   std::string r;
@@ -2294,4 +2294,4 @@ TEST_F(DBTest, Randomized) {
   } while (ChangeOptions());
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

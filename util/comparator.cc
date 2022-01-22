@@ -13,7 +13,7 @@
 #include "util/logging.h"
 #include "util/no_destructor.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 
 Comparator::~Comparator() = default;
 
@@ -72,4 +72,4 @@ const Comparator* BytewiseComparator() {
   return singleton.get();
 }
 
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE

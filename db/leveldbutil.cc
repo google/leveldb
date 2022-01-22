@@ -8,7 +8,7 @@
 #include "leveldb/env.h"
 #include "leveldb/status.h"
 
-namespace leveldb {
+namespace LEVELDB_NAMESPACE {
 namespace {
 
 class StdoutPrinter : public WritableFile {
@@ -36,7 +36,7 @@ bool HandleDumpCommand(Env* env, char** files, int num) {
 }
 
 }  // namespace
-}  // namespace leveldb
+}  // namespace LEVELDB_NAMESPACE
 
 static void Usage() {
   std::fprintf(
@@ -46,7 +46,7 @@ static void Usage() {
 }
 
 int main(int argc, char** argv) {
-  leveldb::Env* env = leveldb::Env::Default();
+  LEVELDB_NAMESPACE::Env* env = LEVELDB_NAMESPACE::Env::Default();
   bool ok = true;
   if (argc < 2) {
     Usage();
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
   } else {
     std::string command = argv[1];
     if (command == "dump") {
-      ok = leveldb::HandleDumpCommand(env, argv + 2, argc - 2);
+      ok = LEVELDB_NAMESPACE::HandleDumpCommand(env, argv + 2, argc - 2);
     } else {
       Usage();
       ok = false;
