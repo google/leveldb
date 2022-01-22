@@ -22,7 +22,7 @@
 #include "leveldb/status.h"
 #include "leveldb/leveldb_namespace.h"
 
-// This workaround can be removed when leveldb::Env::DeleteFile is removed.
+// This workaround can be removed when LEVELDB_NAMESPACE::Env::DeleteFile is removed.
 #if defined(_WIN32)
 // On Windows, the method name DeleteFile (below) introduces the risk of
 // triggering undefined behavior by exposing the compiler to different
@@ -405,7 +405,7 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
 
 }  // namespace LEVELDB_NAMESPACE
 
-// This workaround can be removed when leveldb::Env::DeleteFile is removed.
+// This workaround can be removed when LEVELDB_NAMESPACE::Env::DeleteFile is removed.
 // Redefine DeleteFile if it was undefined earlier.
 #if defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
 #if defined(UNICODE)

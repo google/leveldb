@@ -51,7 +51,7 @@ class CorruptionTest : public testing::Test {
   void RepairDB() {
     delete db_;
     db_ = nullptr;
-    ASSERT_LEVELDB_OK(::leveldb::RepairDB(dbname_, options_));
+    ASSERT_LEVELDB_OK(::LEVELDB_NAMESPACE::RepairDB(dbname_, options_));
   }
 
   void Build(int n) {

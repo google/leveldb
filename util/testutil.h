@@ -17,12 +17,12 @@ namespace test {
 
 MATCHER(IsOK, "") { return arg.ok(); }
 
-// Macros for testing the results of functions that return leveldb::Status or
+// Macros for testing the results of functions that return LEVELDB_NAMESPACE::Status or
 // absl::StatusOr<T> (for any type T).
 #define EXPECT_LEVELDB_OK(expression) \
-  EXPECT_THAT(expression, leveldb::test::IsOK())
+  EXPECT_THAT(expression, LEVELDB_NAMESPACE::test::IsOK())
 #define ASSERT_LEVELDB_OK(expression) \
-  ASSERT_THAT(expression, leveldb::test::IsOK())
+  ASSERT_THAT(expression, LEVELDB_NAMESPACE::test::IsOK())
 
 // Returns the random seed used at the start of the current test run.
 inline int RandomSeed() {

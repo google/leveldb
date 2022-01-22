@@ -19,30 +19,30 @@
 #include "leveldb/status.h"
 #include "leveldb/write_batch.h"
 
-using leveldb::Cache;
-using leveldb::Comparator;
-using leveldb::CompressionType;
-using leveldb::DB;
-using leveldb::Env;
-using leveldb::FileLock;
-using leveldb::FilterPolicy;
-using leveldb::Iterator;
-using leveldb::kMajorVersion;
-using leveldb::kMinorVersion;
-using leveldb::Logger;
-using leveldb::NewBloomFilterPolicy;
-using leveldb::NewLRUCache;
-using leveldb::Options;
-using leveldb::RandomAccessFile;
-using leveldb::Range;
-using leveldb::ReadOptions;
-using leveldb::SequentialFile;
-using leveldb::Slice;
-using leveldb::Snapshot;
-using leveldb::Status;
-using leveldb::WritableFile;
-using leveldb::WriteBatch;
-using leveldb::WriteOptions;
+using LEVELDB_NAMESPACE::Cache;
+using LEVELDB_NAMESPACE::Comparator;
+using LEVELDB_NAMESPACE::CompressionType;
+using LEVELDB_NAMESPACE::DB;
+using LEVELDB_NAMESPACE::Env;
+using LEVELDB_NAMESPACE::FileLock;
+using LEVELDB_NAMESPACE::FilterPolicy;
+using LEVELDB_NAMESPACE::Iterator;
+using LEVELDB_NAMESPACE::kMajorVersion;
+using LEVELDB_NAMESPACE::kMinorVersion;
+using LEVELDB_NAMESPACE::Logger;
+using LEVELDB_NAMESPACE::NewBloomFilterPolicy;
+using LEVELDB_NAMESPACE::NewLRUCache;
+using LEVELDB_NAMESPACE::Options;
+using LEVELDB_NAMESPACE::RandomAccessFile;
+using LEVELDB_NAMESPACE::Range;
+using LEVELDB_NAMESPACE::ReadOptions;
+using LEVELDB_NAMESPACE::SequentialFile;
+using LEVELDB_NAMESPACE::Slice;
+using LEVELDB_NAMESPACE::Snapshot;
+using LEVELDB_NAMESPACE::Status;
+using LEVELDB_NAMESPACE::WritableFile;
+using LEVELDB_NAMESPACE::WriteBatch;
+using LEVELDB_NAMESPACE::WriteOptions;
 
 extern "C" {
 

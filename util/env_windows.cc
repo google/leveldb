@@ -172,7 +172,7 @@ class WindowsSequentialFile : public SequentialFile {
   Status Read(size_t n, Slice* result, char* scratch) override {
     DWORD bytes_read;
     // DWORD is 32-bit, but size_t could technically be larger. However leveldb
-    // files are limited to leveldb::Options::max_file_size which is clamped to
+    // files are limited to LEVELDB_NAMESPACE::Options::max_file_size which is clamped to
     // 1<<30 or 1 GiB.
     assert(n <= std::numeric_limits<DWORD>::max());
     if (!::ReadFile(handle_.get(), scratch, static_cast<DWORD>(n), &bytes_read,
