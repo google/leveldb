@@ -53,22 +53,22 @@ class LEVELDB_EXPORT Status {
     return Status(kIOError, msg, msg2);
   }
 
-  // Returns true iff the status indicates success.
+  // Returns true if the status indicates success.
   bool ok() const { return (state_ == nullptr); }
 
-  // Returns true iff the status indicates a NotFound error.
+  // Returns true if the status indicates a NotFound error.
   bool IsNotFound() const { return code() == kNotFound; }
 
-  // Returns true iff the status indicates a Corruption error.
+  // Returns true if the status indicates a Corruption error.
   bool IsCorruption() const { return code() == kCorruption; }
 
-  // Returns true iff the status indicates an IOError.
+  // Returns true if the status indicates an IOError.
   bool IsIOError() const { return code() == kIOError; }
 
-  // Returns true iff the status indicates a NotSupportedError.
+  // Returns true if the status indicates a NotSupportedError.
   bool IsNotSupportedError() const { return code() == kNotSupported; }
 
-  // Returns true iff the status indicates an InvalidArgument.
+  // Returns true if the status indicates an InvalidArgument.
   bool IsInvalidArgument() const { return code() == kInvalidArgument; }
 
   // Return a string representation of this status suitable for printing.
