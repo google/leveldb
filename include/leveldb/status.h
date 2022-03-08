@@ -77,12 +77,12 @@ class LEVELDB_EXPORT Status {
 
  private:
   enum Code {
-    kOk = 0,
-    kNotFound = 1,
-    kCorruption = 2,
-    kNotSupported = 3,
-    kInvalidArgument = 4,
-    kIOError = 5
+    kOk = 0,                    // 正常
+    kNotFound = 1,              // kNotFound表示没有找到相关项
+    kCorruption = 2,            // kCorruption代表数据异常崩溃
+    kNotSupported = 3,          // kNotSupported表示不支持
+    kInvalidArgument = 4,       // kInvalidArgument表示非法参数
+    kIOError = 5                // kIOError表示I/O操作错误
   };
 
   Code code() const {
@@ -93,10 +93,11 @@ class LEVELDB_EXPORT Status {
   static const char* CopyState(const char* s);
 
   // OK status has a null state_.  Otherwise, state_ is a new[] array
+  // 当状态为OK时，state_为NULL，说明当前操作一切正常, 否则，state为一个char数组
   // of the following form:
-  //    state_[0..3] == length of message
-  //    state_[4]    == code
-  //    state_[5..]  == message
+  //    state_[0..3] == length of message state[0...3] == msg的长度，
+  //    state_[4]    == code state[4] =code
+  //    state_[5..]  == message，state[5...] = msg。
   const char* state_;
 };
 
