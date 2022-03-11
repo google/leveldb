@@ -1,3 +1,11 @@
+/*
+ * @Author: yangxuan
+ * @Date: 2022-03-08 09:01:34
+ * @LastEditTime: 2022-03-09 08:52:20
+ * @LastEditors: yangxuan
+ * @Description: 迭代器,LevelDB中的任何集合类型对象的迭代器均基于这一纯虚类进行实现
+ * @FilePath: /leveldb/include/leveldb/iterator.h
+ */
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -11,6 +19,9 @@
 // external synchronization, but if any of the threads may call a
 // non-const method, all threads accessing the same Iterator must use
 // external synchronization.
+//迭代器不仅支持直接对集合中的首元素和末尾元素进行访问，如SeekToFirst和SeekToLast，
+// 还可以根据实际的key进行元素的定位，如Seek(target)。
+// 此外，一般的迭代器支持正向迭代，而LevelDB中的迭代器对象不仅支持正向迭代Next()，还支持反向迭代Prev()
 
 #ifndef STORAGE_LEVELDB_INCLUDE_ITERATOR_H_
 #define STORAGE_LEVELDB_INCLUDE_ITERATOR_H_
@@ -32,6 +43,7 @@ class LEVELDB_EXPORT Iterator {
 
   // An iterator is either positioned at a key/value pair, or
   // not valid.  This method returns true iff the iterator is valid.
+  // 判断迭代器是否指向一个数据或者非法
   virtual bool Valid() const = 0;
 
   // Position at the first key in the source.  The iterator is Valid()
@@ -45,6 +57,7 @@ class LEVELDB_EXPORT Iterator {
   // Position at the first key in the source that is at or past target.
   // The iterator is Valid() after this call iff the source contains
   // an entry that comes at or past target.
+  // 迭代器指向集合中 key 为 target 的元素.
   virtual void Seek(const Slice& target) = 0;
 
   // Moves to the next entry in the source.  After this call, Valid() is
@@ -57,7 +70,7 @@ class LEVELDB_EXPORT Iterator {
   // REQUIRES: Valid()
   virtual void Prev() = 0;
 
-  // Return the key for the current entry.  The underlying storage for
+  // Return the key for the current(当前) entry.  The underlying storage for
   // the returned slice is valid only until the next modification of
   // the iterator.
   // REQUIRES: Valid()
@@ -82,7 +95,12 @@ class LEVELDB_EXPORT Iterator {
 
  private:
   // Cleanup functions are stored in a single-linked list.
+  // Cleanup 函数被存储在一个单链表中，参考 cleanup_head_
   // The list's head node is inlined in the iterator.
+  // 该结构体主要由相应的函数指针与两个参数构成，并且Cleanup中包含一个next指针，
+  // 从而可以定义一条Cleanup链表。而Iterator中唯一的非虚函数RegisterCleanup
+  // 则用于注册相对应的回收函数，并将之保存到cleanup_这一变量中。
+  // 最终Iterator析构函数会遍历cleanup_中所有的节点，并调用相对应的函数，实现迭代器相关资源的释放与清除。
   struct CleanupNode {
     // True if the node is not used. Only head nodes might be unused.
     bool IsEmpty() const { return function == nullptr; }
