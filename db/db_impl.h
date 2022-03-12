@@ -35,7 +35,7 @@ class DBImpl : public DB {
 
   ~DBImpl() override;
 
-  // Implementations of the DB interface
+  // Implementations of the DB interface.
   Status Put(const WriteOptions&, const Slice& key,
              const Slice& value) override;
   Status Delete(const WriteOptions&, const Slice& key) override;
@@ -49,9 +49,9 @@ class DBImpl : public DB {
   void GetApproximateSizes(const Range* range, int n, uint64_t* sizes) override;
   void CompactRange(const Slice* begin, const Slice* end) override;
 
-  // Extra methods (for testing) that are not in the public DB interface
+  // Extra methods (for testing) that are not in the public DB interface.
 
-  // Compact any files in the named level that overlap [*begin,*end]
+  // Compact any files in the named level that overlap [*begin,*end].
   void TEST_CompactRange(int level, const Slice* begin, const Slice* end);
 
   // Force current memtable contents to be compacted.
@@ -76,7 +76,7 @@ class DBImpl : public DB {
   struct CompactionState;
   struct Writer;
 
-  // Information for a manual compaction
+  // Information for a manual compaction.
   struct ManualCompaction {
     int level;
     bool done;
@@ -155,7 +155,7 @@ class DBImpl : public DB {
     return internal_comparator_.user_comparator();
   }
 
-  // Constant after construction
+  // Constant after construction.
   Env* const env_;
   const InternalKeyComparator internal_comparator_;
   const InternalFilterPolicy internal_filter_policy_;
@@ -164,13 +164,13 @@ class DBImpl : public DB {
   const bool owns_cache_;
   const std::string dbname_;
 
-  // table_cache_ provides its own synchronization
+  // table_cache_ provides its own synchronization.
   TableCache* const table_cache_;
 
   // Lock over the persistent DB state.  Non-null iff successfully acquired.
   FileLock* db_lock_;
 
-  // State below is protected by mutex_
+  // State below is protected by 'mutex_'.
   port::Mutex mutex_;
   std::atomic<bool> shutting_down_;
   port::CondVar background_work_finished_signal_ GUARDED_BY(mutex_);

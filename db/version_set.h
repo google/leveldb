@@ -150,7 +150,7 @@ class Version {
   Version* prev_;     // Previous version in linked list
   int refs_;          // Number of live refs to this version
 
-  // List of files per level
+  // List of files per level.
   std::vector<FileMetaData*> files_[config::kNumLevels];
 
   // Next file to compact based on seek stats.
@@ -187,10 +187,10 @@ class VersionSet {
   // Return the current version.
   Version* current() const { return current_; }
 
-  // Return the current manifest file number
+  // Return the current manifest file number.
   uint64_t ManifestFileNumber() const { return manifest_file_number_; }
 
-  // Allocate and return a new file number
+  // Allocate and return a new file number.
   uint64_t NewFileNumber() { return next_file_number_++; }
 
   // Arrange to reuse "file_number" unless a newer file number has

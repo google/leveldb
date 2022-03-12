@@ -29,13 +29,13 @@ enum CompressionType {
   kSnappyCompression = 0x1
 };
 
-// Options to control the behavior of a database (passed to DB::Open)
+// Options to control the behavior of a database (passed to DB::Open).
 struct LEVELDB_EXPORT Options {
   // Create an Options object with default values for all fields.
   Options();
 
   // -------------------
-  // Parameters that affect behavior
+  // Parameters that affect behavior.
 
   // Comparator used to define the order of keys in the table.
   // Default: a comparator that uses lexicographic byte-wise ordering
@@ -69,7 +69,7 @@ struct LEVELDB_EXPORT Options {
   Logger* info_log = nullptr;
 
   // -------------------
-  // Parameters that affect performance
+  // Parameters that affect performance.
 
   // Amount of data to build up in memory (backed by an unsorted log
   // on disk) before converting to a sorted on-disk file.
@@ -142,7 +142,7 @@ struct LEVELDB_EXPORT Options {
   const FilterPolicy* filter_policy = nullptr;
 };
 
-// Options that control read operations
+// Options that control read operations.
 struct LEVELDB_EXPORT ReadOptions {
   ReadOptions() = default;
 
@@ -161,7 +161,7 @@ struct LEVELDB_EXPORT ReadOptions {
   const Snapshot* snapshot = nullptr;
 };
 
-// Options that control write operations
+// Options that control write operations.
 struct LEVELDB_EXPORT WriteOptions {
   WriteOptions() = default;
 

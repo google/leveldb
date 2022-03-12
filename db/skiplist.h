@@ -57,7 +57,7 @@ class SkipList {
   // Returns true iff an entry that compares equal to key is in the list.
   bool Contains(const Key& key) const;
 
-  // Iteration over the contents of a skip list
+  // Iteration over the contents of a skip list.
   class Iterator {
    public:
     // Initialize an iterator over the specified list.
@@ -79,7 +79,7 @@ class SkipList {
     // REQUIRES: Valid()
     void Prev();
 
-    // Advance to the first entry with a key >= target
+    // Advance to the first entry with a key >= target.
     void Seek(const Key& target);
 
     // Position at the first entry in list.
@@ -238,7 +238,7 @@ inline void SkipList<Key, Comparator>::Iterator::SeekToLast() {
 
 template <typename Key, class Comparator>
 int SkipList<Key, Comparator>::RandomHeight() {
-  // Increase height with probability 1 in kBranching
+  // Increase height with probability 1 in kBranching.
   static const unsigned int kBranching = 4;
   int height = 1;
   while (height < kMaxHeight && rnd_.OneIn(kBranching)) {
@@ -251,7 +251,7 @@ int SkipList<Key, Comparator>::RandomHeight() {
 
 template <typename Key, class Comparator>
 bool SkipList<Key, Comparator>::KeyIsAfterNode(const Key& key, Node* n) const {
-  // null n is considered infinite
+  // null n is considered infinite.
   return (n != nullptr) && (compare_(n->key, key) < 0);
 }
 
@@ -264,14 +264,14 @@ SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
   while (true) {
     Node* next = x->Next(level);
     if (KeyIsAfterNode(key, next)) {
-      // Keep searching in this list
+      // Keep searching in this list.
       x = next;
     } else {
       if (prev != nullptr) prev[level] = x;
       if (level == 0) {
         return next;
       } else {
-        // Switch to next list
+        // Switch to next list.
         level--;
       }
     }
@@ -290,7 +290,7 @@ SkipList<Key, Comparator>::FindLessThan(const Key& key) const {
       if (level == 0) {
         return x;
       } else {
-        // Switch to next list
+        // Switch to next list.
         level--;
       }
     } else {
@@ -338,7 +338,7 @@ void SkipList<Key, Comparator>::Insert(const Key& key) {
   Node* prev[kMaxHeight];
   Node* x = FindGreaterOrEqual(key, prev);
 
-  // Our data structure does not allow duplicate insertion
+  // Our data structure does not allow duplicate insertion.
   assert(x == nullptr || !Equal(key, x->key));
 
   int height = RandomHeight();

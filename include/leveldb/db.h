@@ -14,7 +14,7 @@
 
 namespace leveldb {
 
-// Update CMakeLists.txt if you change these
+// Update CMakeLists.txt if you change these.
 static const int kMajorVersion = 1;
 static const int kMinorVersion = 23;
 
@@ -31,7 +31,7 @@ class LEVELDB_EXPORT Snapshot {
   virtual ~Snapshot();
 };
 
-// A range of keys
+// A range of keys.
 struct LEVELDB_EXPORT Range {
   Range() = default;
   Range(const Slice& s, const Slice& l) : start(s), limit(l) {}

@@ -61,7 +61,7 @@ class Reader {
   uint64_t LastRecordOffset();
 
  private:
-  // Extend record types with the following special values
+  // Extend record types with the following special values.
   enum {
     kEof = kMaxRecordType + 1,
     // Returned whenever we find an invalid physical record.
@@ -77,7 +77,7 @@ class Reader {
   // Returns true on success. Handles reporting.
   bool SkipToInitialBlock();
 
-  // Return type, or one of the preceding special values
+  // Return type, or one of the preceding special values.
   unsigned int ReadPhysicalRecord(Slice* result);
 
   // Reports dropped bytes to the reporter.
@@ -97,12 +97,12 @@ class Reader {
   // Offset of the first location past the end of buffer_.
   uint64_t end_of_buffer_offset_;
 
-  // Offset at which to start looking for the first record to return
+  // Offset at which to start looking for the first record to return.
   uint64_t const initial_offset_;
 
   // True if we are resynchronizing after a seek (initial_offset_ > 0). In
   // particular, a run of kMiddleType and kLastType records can be silently
-  // skipped in this mode
+  // skipped in this mode.
   bool resyncing_;
 };
 

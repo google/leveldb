@@ -39,7 +39,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
       meta->largest.DecodeFrom(key);
     }
 
-    // Finish and check for builder errors
+    // Finish and check for builder errors.
     s = builder->Finish();
     if (s.ok()) {
       meta->file_size = builder->FileSize();
@@ -47,7 +47,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     }
     delete builder;
 
-    // Finish and check for file errors
+    // Finish and check for file errors.
     if (s.ok()) {
       s = file->Sync();
     }
@@ -58,7 +58,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     file = nullptr;
 
     if (s.ok()) {
-      // Verify that the table is usable
+      // Verify that the table is usable.
       Iterator* it = table_cache->NewIterator(ReadOptions(), meta->number,
                                               meta->file_size);
       s = it->status();
@@ -66,7 +66,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     }
   }
 
-  // Check for input iterator errors
+  // Check for input iterator errors.
   if (!iter->status().ok()) {
     s = iter->status();
   }

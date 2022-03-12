@@ -37,16 +37,16 @@ Status Writer::AddRecord(const Slice& slice) {
 
   // Fragment the record if necessary and emit it.  Note that if slice
   // is empty, we still want to iterate once to emit a single
-  // zero-length record
+  // zero-length record.
   Status s;
   bool begin = true;
   do {
     const int leftover = kBlockSize - block_offset_;
     assert(leftover >= 0);
     if (leftover < kHeaderSize) {
-      // Switch to a new block
+      // Switch to a new block.
       if (leftover > 0) {
-        // Fill the trailer (literal below relies on kHeaderSize being 7)
+        // Fill the trailer (literal below relies on kHeaderSize being 7).
         static_assert(kHeaderSize == 7, "");
         dest_->Append(Slice("\x00\x00\x00\x00\x00\x00", leftover));
       }
@@ -95,7 +95,7 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
   crc = crc32c::Mask(crc);  // Adjust for storage
   EncodeFixed32(buf, crc);
 
-  // Write the header and the payload
+  // Write the header and the payload.
   Status s = dest_->Append(Slice(buf, kHeaderSize));
   if (s.ok()) {
     s = dest_->Append(Slice(ptr, length));

@@ -175,7 +175,7 @@ void DBIter::Next() {
 }
 
 void DBIter::FindNextUserEntry(bool skipping, std::string* skip) {
-  // Loop until we hit an acceptable entry to yield
+  // Loop until we hit an acceptable entry to yield.
   assert(iter_->Valid());
   assert(direction_ == kForward);
   do {
@@ -243,7 +243,7 @@ void DBIter::FindPrevUserEntry() {
       if (ParseKey(&ikey) && ikey.sequence <= sequence_) {
         if ((value_type != kTypeDeletion) &&
             user_comparator_->Compare(ikey.user_key, saved_key_) < 0) {
-          // We encountered a non-deleted value in entries for previous keys,
+          // We encountered a non-deleted value in entries for previous keys.
           break;
         }
         value_type = ikey.type;
