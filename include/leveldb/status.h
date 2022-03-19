@@ -21,6 +21,7 @@
 
 namespace leveldb {
 
+// 有用到
 class LEVELDB_EXPORT Status {
  public:
   // Create a success status.

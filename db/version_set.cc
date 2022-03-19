@@ -282,6 +282,7 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
                                  bool (*func)(void*, int, FileMetaData*)) {
   const Comparator* ucmp = vset_->icmp_.user_comparator();
 
+  // level-0 每個 SSTable 的 key 範圍可能相交，所以每一個 SSTable 都需要判斷
   // Search level-0 in order from newest to oldest.
   std::vector<FileMetaData*> tmp;
   tmp.reserve(files_[0].size());
@@ -292,6 +293,7 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
       tmp.push_back(f);
     }
   }
+  // 蒐集 SSTable 後，按照 新到舊 開始查找(Match())。找到即可直接返回結果
   if (!tmp.empty()) {
     std::sort(tmp.begin(), tmp.end(), NewestFirst);
     for (uint32_t i = 0; i < tmp.size(); i++) {
@@ -301,6 +303,7 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
     }
   }
 
+  // 非 level-0 的 SSTable 內部是根據 key sorted 的，所以可以用二分搜尋法提高效率
   // Search other levels.
   for (int level = 1; level < config::kNumLevels; level++) {
     size_t num_files = files_[level].size();
@@ -313,6 +316,7 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
       if (ucmp->Compare(user_key, f->smallest.user_key()) < 0) {
         // All of "f" is past any data for user_key
       } else {
+        // 找到 SSTable 後開始查找(Match())。找到即可直接返回結果
         if (!(*func)(arg, level, f)) {
           return;
         }
@@ -321,6 +325,7 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
   }
 }
 
+// 有用到
 Status Version::Get(const ReadOptions& options, const LookupKey& k,
                     std::string* value, GetStats* stats) {
   stats->seek_file = nullptr;
@@ -351,6 +356,8 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
       state->last_file_read = f;
       state->last_file_read_level = level;
 
+      // 先取得 cache 的 table
+      // 1. 從 index block 查找對應的 data block
       state->s = state->vset->table_cache_->Get(*state->options, f->number,
                                                 f->file_size, state->ikey,
                                                 &state->saver, SaveValue);
@@ -379,12 +386,14 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
     }
   };
 
+  // init
   State state;
   state.found = false;
   state.stats = stats;
   state.last_file_read = nullptr;
   state.last_file_read_level = -1;
 
+  // prepare
   state.options = &options;
   state.ikey = k.internal_key();
   state.vset = vset_;

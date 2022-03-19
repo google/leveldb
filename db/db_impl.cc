@@ -1112,11 +1112,34 @@ int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
   return versions_->MaxNextLevelOverlappingBytes();
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Evan
+// input:
+//      options: 包括 verify_checksums, fill_cache, snapshot
+//      key: 查詢目標
+//      value: 放答案的地方
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,
                    std::string* value) {
+  // 搜尋狀態(e.g. ok)
   Status s;
+  // 創建鎖，concurrency control
   MutexLock l(&mutex_);
+  // snapshot: levelDB 對每一次 write key-val 都會給予一個 sequence_number
   SequenceNumber snapshot;
+  // 選取 snapshot ，預設是 nullptr（最新的）。只讀取 小於等於(<=) sequence_number 的 key-val
   if (options.snapshot != nullptr) {
     snapshot =
         static_cast<const SnapshotImpl*>(options.snapshot)->sequence_number();
@@ -1124,9 +1147,15 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
     snapshot = versions_->LastSequence();
   }
 
+  // 可讀可寫的 MemTable (in memory)
   MemTable* mem = mem_;
+  // 唯讀的 MemTable (Immutable MemTable) (in memory)
   MemTable* imm = imm_;
+  // Manifest 的版本，其紀錄 SSTable (in disk) 的一些訊息
+  // 包括 每一層有哪些SSTable、每個 SSTable 大小、最大key、最小key 等
   Version* current = versions_->current();
+
+  // Increase reference count. 避免在 compaction 時被回收
   mem->Ref();
   if (imm != nullptr) imm->Ref();
   current->Ref();
@@ -1136,28 +1165,51 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
 
   // Unlock while reading from files and memtables
   {
+    // 解鎖，所以不同 process 可以一起 read(concurrency)
     mutex_.Unlock();
-    // First look in the memtable, then in the immutable memtable (if any).
+    // 由 key, sequence_number 組成的，稍後用於查找
     LookupKey lkey(key, snapshot);
     if (mem->Get(lkey, value, &s)) {
+      // 先找 MemTable
       // Done
     } else if (imm != nullptr && imm->Get(lkey, value, &s)) {
+      // 再找 Immutable MemTable
       // Done
     } else {
+      // 還是找不到就只能去 SSTable 找 (必須到 disk 層級了)
       s = current->Get(options, lkey, value, &stats);
       have_stat_update = true;
     }
+    // 鎖上互斥鎖
     mutex_.Lock();
   }
 
+  //  更新 read 的統計結果，或許會觸發 compaction
   if (have_stat_update && current->UpdateStats(stats)) {
     MaybeScheduleCompaction();
   }
+
+  // Decrease reference count.
   mem->Unref();
   if (imm != nullptr) imm->Unref();
   current->Unref();
+
   return s;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Iterator* DBImpl::NewIterator(const ReadOptions& options) {
   SequenceNumber latest_snapshot;

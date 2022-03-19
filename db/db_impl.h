@@ -170,6 +170,7 @@ class DBImpl : public DB {
   // Lock over the persistent DB state.  Non-null iff successfully acquired.
   FileLock* db_lock_;
 
+  // lock 的原理
   // State below is protected by mutex_
   port::Mutex mutex_;
   std::atomic<bool> shutting_down_;

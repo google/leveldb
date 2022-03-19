@@ -99,39 +99,47 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
   table_.Insert(buf);
 }
 
+// 有用到
 bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
+  // MemTable 中保存的 data 是 key-value encode 成的一個字符串 (memkey) 結構:
+  //    klength (varint32)：表示 internal_key 的長度
+  //    internal_key (char[klength])：字串
+  //        user key (klength - 8)：排序用
+  //        sequence (7 bytes)：排序用
+  //        type (1 bytes)：排序用
+  //    vlength (varint32)：表示 value 的長度
+  //    value (char[vlength])：字串
   Slice memkey = key.memtable_key();
   Table::Iterator iter(&table_);
+
+  // 挑選出 ( <=sequence_number && largest) 的版本
+  // 比如說 userkey = 'hello' 有三個版本 | hello-20 | hello-10 | hello-5 |
+  // 當 sequence_number = 15，則會挑選 hello-10 版本進行查找
   iter.Seek(memkey.data());
   if (iter.Valid()) {
-    // entry format is:
-    //    klength  varint32
-    //    userkey  char[klength]
-    //    tag      uint64
-    //    vlength  varint32
-    //    value    char[vlength]
-    // Check that it belongs to same user key.  We do not check the
-    // sequence number since the Seek() call above should have skipped
-    // all entries with overly large sequence numbers.
     const char* entry = iter.key();
     uint32_t key_length;
     const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
+
+    // 從 memkey 中提取出 internal_key
     if (comparator_.comparator.user_comparator()->Compare(
             Slice(key_ptr, key_length - 8), key.user_key()) == 0) {
-      // Correct user key
       const uint64_t tag = DecodeFixed64(key_ptr + key_length - 8);
       switch (static_cast<ValueType>(tag & 0xff)) {
+        // 找到了
         case kTypeValue: {
           Slice v = GetLengthPrefixedSlice(key_ptr + key_length);
           value->assign(v.data(), v.size());
           return true;
         }
+        // 被刪除了
         case kTypeDeletion:
           *s = Status::NotFound(Slice());
           return true;
       }
     }
   }
+  // 沒找到這個 userkey
   return false;
 }
 
