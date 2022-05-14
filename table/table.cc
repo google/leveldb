@@ -61,6 +61,8 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
   s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
 
   if (s.ok()) {
+  
+
     // We've successfully read the footer and the index block: we're
     // ready to serve requests.
     Block* index_block = new Block(index_block_contents);
@@ -74,6 +76,15 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
     rep->filter = nullptr;
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
+    switch ()
+    {
+    case /* constant-expression */:
+      /* code */
+      break;
+    
+    default:
+      break;
+    }
   }
 
   return s;
@@ -218,6 +229,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k, void* arg,
   Iterator* iiter = rep_->index_block->NewIterator(rep_->options.comparator);
   iiter->Seek(k);
   if (iiter->Valid()) {
+    //TODO: judge 
     Slice handle_value = iiter->value();
     FilterBlockReader* filter = rep_->filter;
     BlockHandle handle;

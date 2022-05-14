@@ -130,6 +130,12 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
       result->cachable = true;
       break;
     }
+
+    case kNoCompression:
+      if (data != buf) {
+        delete [] buf;
+        result->data = Slice(data,n);
+      }
     default:
       delete[] buf;
       return Status::Corruption("bad block type");

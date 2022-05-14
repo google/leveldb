@@ -1,3 +1,11 @@
+/*
+ * @Author: yangxuan
+ * @Date: 2022-03-08 09:01:34
+ * @LastEditTime: 2022-05-02 17:29:56
+ * @LastEditors: yangxuan
+ * @Description: 
+ * @FilePath: /leveldb/db/filename.h
+ */
 // Copyright (c) 2011 The LevelDB Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
@@ -19,13 +27,13 @@ namespace leveldb {
 class Env;
 
 enum FileType {
-  kLogFile,
-  kDBLockFile,
-  kTableFile,
-  kDescriptorFile,
-  kCurrentFile,
-  kTempFile,
-  kInfoLogFile  // Either the current one, or an old one
+  kLogFile = 0,
+  kDBLockFile = 1,
+  kTableFile = 2,
+  kDescriptorFile = 3,
+  kCurrentFile = 4,
+  kTempFile = 5,
+  kInfoLogFile = 6 // Either the current one, or an old one
 };
 
 // Return the name of the log file with the specified number
