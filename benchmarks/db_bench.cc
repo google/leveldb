@@ -662,17 +662,18 @@ class Benchmark {
       g_env->StartThread(ThreadBody, &arg[i]);
     }
 
-    shared.mu.Lock();
-    while (shared.num_initialized < n) {
-      shared.cv.Wait();
-    }
+    {
+      MutexLock l(&shared.mu);
+      while (shared.num_initialized < n) {
+        shared.cv.Wait();
+      }
 
-    shared.start = true;
-    shared.cv.SignalAll();
-    while (shared.num_done < n) {
-      shared.cv.Wait();
+      shared.start = true;
+      shared.cv.SignalAll();
+      while (shared.num_done < n) {
+        shared.cv.Wait();
+      }
     }
-    shared.mu.Unlock();
 
     for (int i = 1; i < n; i++) {
       arg[0].thread->stats.Merge(arg[i].thread->stats);

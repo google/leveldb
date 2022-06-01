@@ -35,6 +35,7 @@
 #include "port/thread_annotations.h"
 #include "util/env_posix_test_helper.h"
 #include "util/posix_logger.h"
+#include "util/mutexlock.h"
 
 namespace leveldb {
 
@@ -499,15 +500,13 @@ class PosixFileLock : public FileLock {
 class PosixLockTable {
  public:
   bool Insert(const std::string& fname) LOCKS_EXCLUDED(mu_) {
-    mu_.Lock();
+    MutexLock l(&mu_);
     bool succeeded = locked_files_.insert(fname).second;
-    mu_.Unlock();
     return succeeded;
   }
   void Remove(const std::string& fname) LOCKS_EXCLUDED(mu_) {
-    mu_.Lock();
+    MutexLock l(&mu_);
     locked_files_.erase(fname);
-    mu_.Unlock();
   }
 
  private:
@@ -814,7 +813,7 @@ PosixEnv::PosixEnv()
 void PosixEnv::Schedule(
     void (*background_work_function)(void* background_work_arg),
     void* background_work_arg) {
-  background_work_mutex_.Lock();
+  MutexLock l(&background_work_mutex_);
 
   // Start the background thread, if we haven't done so already.
   if (!started_background_thread_) {
@@ -829,24 +828,24 @@ void PosixEnv::Schedule(
   }
 
   background_work_queue_.emplace(background_work_function, background_work_arg);
-  background_work_mutex_.Unlock();
 }
 
 void PosixEnv::BackgroundThreadMain() {
   while (true) {
-    background_work_mutex_.Lock();
+    void (*background_work_function)(void*);
+    void* background_work_arg = nullptr;
+    {
+      MutexLock l(&background_work_mutex_);
+      // Wait until there is work to be done.
+      while (background_work_queue_.empty()) {
+        background_work_cv_.Wait();
+      }
 
-    // Wait until there is work to be done.
-    while (background_work_queue_.empty()) {
-      background_work_cv_.Wait();
+      assert(!background_work_queue_.empty());
+      background_work_function = background_work_queue_.front().function;
+      background_work_arg = background_work_queue_.front().arg;
+      background_work_queue_.pop();
     }
-
-    assert(!background_work_queue_.empty());
-    auto background_work_function = background_work_queue_.front().function;
-    void* background_work_arg = background_work_queue_.front().arg;
-    background_work_queue_.pop();
-
-    background_work_mutex_.Unlock();
     background_work_function(background_work_arg);
   }
 }
