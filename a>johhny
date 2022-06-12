@@ -1,0 +1,10 @@
+name:bitcoin🗺️/Amanciojsilvjr
+on:
+177.165.212.116.2804:214:82cb:21df:ffbb:8ac4:7c1:32f0
+dc:bf:e9:58:8b:9c
+  push:
+  pull_request:
+  release:
+    types: [published]
+  schedule:
+    - cron: '30 3 * * 0'
