@@ -12,6 +12,13 @@
 // non-const method, all threads accessing the same Slice must use
 // external synchronization.
 
+/**
+ * 作用：
+ * Slice非常简单的数据结构，它包括length和一个指向外部字节数组的指针。
+ * 相比返回std::string，返回Slice的开销会小的多（没有拷贝，Slice中没有实际数据，只有指向数据的指针，开销低）。
+ * leveldb允许key和value包含’\0’。
+ * */
+
 #ifndef STORAGE_LEVELDB_INCLUDE_SLICE_H_
 #define STORAGE_LEVELDB_INCLUDE_SLICE_H_
 
@@ -86,7 +93,9 @@ class LEVELDB_EXPORT Slice {
   }
 
  private:
+  // 字符指针类型
   const char* data_;
+  // 字符大小
   size_t size_;
 };
 

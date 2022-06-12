@@ -2,6 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+/**
+ * 作用：
+ * Varint是一种比较特殊的整数类型，它包含有Varint32和Varint64两种，它相比于int32和int64最大的特点是长度可变。
+ * 机制：
+ * varint是一种紧凑的表示数字的方法，它用一个或多个字节来表示一个数字，值越小的数字使用越少的字节数。
+ * 采用Varint，对于很小的int32类型的数字，则可以用1个字节来表示。大的数字则可能需要5个字节来表示。
+ * varint中的每个字节的最高位（bit）有特殊含义，如果该位为1，表示后续的字节也是这个数字的一部分，如果该位为0，则结束。其他的7位（bit）都表示数字。
+ *
+ *
+ * */
 #include "util/coding.h"
 
 namespace leveldb {

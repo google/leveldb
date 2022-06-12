@@ -13,6 +13,7 @@
 
 namespace leveldb {
 
+// https://zhuanlan.zhihu.com/p/210100808
 class Arena {
  public:
   Arena();

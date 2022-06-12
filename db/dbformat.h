@@ -14,6 +14,7 @@
 #include "leveldb/filter_policy.h"
 #include "leveldb/slice.h"
 #include "leveldb/table_builder.h"
+
 #include "util/coding.h"
 #include "util/logging.h"
 
@@ -60,6 +61,10 @@ enum ValueType { kTypeDeletion = 0x0, kTypeValue = 0x1 };
 // ValueType, not the lowest).
 static const ValueType kValueTypeForSeek = kTypeValue;
 
+/**
+ * 关于typedef
+ * 的用法，可见：https://blog.csdn.net/Lee_Shuai/article/details/53242200
+ * */
 typedef uint64_t SequenceNumber;
 
 // We leave eight bits empty at the bottom so a type and sequence#
@@ -131,6 +136,14 @@ class InternalFilterPolicy : public FilterPolicy {
 // Modules in this directory should keep internal keys wrapped inside
 // the following class instead of plain strings so that we do not
 // incorrectly use string comparisons instead of an InternalKeyComparator.
+
+/**
+ * 作用：
+ * 用户角度：使用slice作为key
+ * leveldb内部：使用InternalKey作为key
+ * 结构：[Slice user_key] + [SequenceNumber<<8 +
+ * ValueType]，后半部分固定64位，即8字节。
+ * */
 class InternalKey {
  private:
   std::string rep_;
@@ -203,18 +216,27 @@ class LookupKey {
 
  private:
   // We construct a char array of the form:
-  //    klength  varint32               <-- start_
-  //    userkey  char[klength]          <-- kstart_
-  //    tag      uint64
+  // A:   klength  varint32               <-- start_
+  // B:   userkey  char[klength]          <-- kstart_
+  // C:   tag      uint64
   //                                    <-- end_
   // The array is a suitable MemTable key.
   // The suffix starting with "userkey" can be used as an InternalKey.
+
+  // A意义：user_key.size() + 8 变长编码后的值
+  // B意义：userkey
+  // C意义：64位整型顺序号<<8 + 值类型 64位定长编码后的值
+  //
+  // memtable_key = A + B + C
+  // internal_key = B + C
+  // user_key = B
   const char* start_;
   const char* kstart_;
   const char* end_;
   char space_[200];  // Avoid allocation for short keys
 };
 
+// 关于函数内联的解释可见：https://www.runoob.com/w3cnote/cpp-inline-usage.html
 inline LookupKey::~LookupKey() {
   if (start_ != space_) delete[] start_;
 }

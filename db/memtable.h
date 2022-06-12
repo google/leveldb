@@ -72,6 +72,7 @@ class MemTable {
     int operator()(const char* a, const char* b) const;
   };
 
+  // MemTable 的底层数据结构是 SkipList
   typedef SkipList<const char*, KeyComparator> Table;
 
   ~MemTable();  // Private since only Unref() should be used to delete it

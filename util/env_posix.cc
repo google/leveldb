@@ -164,7 +164,9 @@ class PosixSequentialFile final : public SequentialFile {
   }
 
  private:
+  // 文件句柄
   const int fd_;
+  // 文件名称
   const std::string filename_;
 };
 

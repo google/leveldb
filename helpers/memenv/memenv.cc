@@ -20,6 +20,7 @@ namespace leveldb {
 
 namespace {
 
+// 文件状态，表达一个简易文件系统
 class FileState {
  public:
   // FileStates are reference counted. The initial reference count is zero

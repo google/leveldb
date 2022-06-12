@@ -31,6 +31,7 @@ Writer::Writer(WritableFile* dest, uint64_t dest_length)
 
 Writer::~Writer() = default;
 
+// 添加记录
 Status Writer::AddRecord(const Slice& slice) {
   const char* ptr = slice.data();
   size_t left = slice.size();
@@ -38,6 +39,8 @@ Status Writer::AddRecord(const Slice& slice) {
   // Fragment the record if necessary and emit it.  Note that if slice
   // is empty, we still want to iterate once to emit a single
   // zero-length record
+  // 如有必要，将记录分段并发出。 请注意，如果 slice 为空，我们仍然希望迭代一次以发出单个零长度记录
+  // 关于 Log结构介绍可见：https://zhuanlan.zhihu.com/p/74491578
   Status s;
   bool begin = true;
   do {
@@ -79,6 +82,7 @@ Status Writer::AddRecord(const Slice& slice) {
   return s;
 }
 
+// 生产物理记录，存储到磁盘中
 Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
                                   size_t length) {
   assert(length <= 0xffff);  // Must fit in two bytes

@@ -140,6 +140,7 @@ class SkipList {
 };
 
 // Implementation details follow
+// 模版参数
 template <typename Key, class Comparator>
 struct SkipList<Key, Comparator>::Node {
   explicit Node(const Key& k) : key(k) {}
@@ -173,6 +174,8 @@ struct SkipList<Key, Comparator>::Node {
 
  private:
   // Array of length equal to the node height.  next_[0] is lowest level link.
+  // 指向 Node指针 的列表
+  // 关于 atomic 类型解释，可见：https://www.jianshu.com/p/8c1bb012d5f8
   std::atomic<Node*> next_[1];
 };
 
@@ -249,29 +252,35 @@ int SkipList<Key, Comparator>::RandomHeight() {
   return height;
 }
 
+// 判断 node 不为空，且key 为当前 node 之后
 template <typename Key, class Comparator>
 bool SkipList<Key, Comparator>::KeyIsAfterNode(const Key& key, Node* n) const {
   // null n is considered infinite
   return (n != nullptr) && (compare_(n->key, key) < 0);
 }
 
+// prev 对应于Notion中的update变量，用来存储存储大于等于key的，每个层次的结点指针。
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node*
 SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
                                               Node** prev) const {
   Node* x = head_;
+  // 从最高一层往下进行搜索
   int level = GetMaxHeight() - 1;
   while (true) {
     Node* next = x->Next(level);
     if (KeyIsAfterNode(key, next)) {
       // Keep searching in this list
+      // 在这一层列表中继续搜索
       x = next;
     } else {
       if (prev != nullptr) prev[level] = x;
       if (level == 0) {
+        // 如果为第0层，则直接返回
         return next;
       } else {
         // Switch to next list
+        // 跳转到下一层
         level--;
       }
     }
@@ -331,6 +340,7 @@ SkipList<Key, Comparator>::SkipList(Comparator cmp, Arena* arena)
   }
 }
 
+// SkipList的插入实现逻辑
 template <typename Key, class Comparator>
 void SkipList<Key, Comparator>::Insert(const Key& key) {
   // TODO(opt): We can use a barrier-free variant of FindGreaterOrEqual()
