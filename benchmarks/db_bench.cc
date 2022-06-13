@@ -118,6 +118,9 @@ static bool FLAGS_use_existing_db = false;
 // If true, reuse existing log/MANIFEST files when re-opening a database.
 static bool FLAGS_reuse_logs = false;
 
+// Max size of manifest, 0 means infinite
+static uint64_t FLAGS_manifest_file_max_size = 0;
+
 // Use the db with the following name.
 static const char* FLAGS_db = nullptr;
 
@@ -771,6 +774,7 @@ class Benchmark {
     options.max_open_files = FLAGS_open_files;
     options.filter_policy = filter_policy_;
     options.reuse_logs = FLAGS_reuse_logs;
+    options.manifest_file_max_size = FLAGS_manifest_file_max_size;
     Status s = DB::Open(options, FLAGS_db, &db_);
     if (!s.ok()) {
       std::fprintf(stderr, "open error: %s\n", s.ToString().c_str());
@@ -1029,6 +1033,7 @@ int main(int argc, char** argv) {
     double d;
     int n;
     char junk;
+    uint64_t size;
     if (leveldb::Slice(argv[i]).starts_with("--benchmarks=")) {
       FLAGS_benchmarks = argv[i] + strlen("--benchmarks=");
     } else if (sscanf(argv[i], "--compression_ratio=%lf%c", &d, &junk) == 1) {
@@ -1067,6 +1072,8 @@ int main(int argc, char** argv) {
       FLAGS_bloom_bits = n;
     } else if (sscanf(argv[i], "--open_files=%d%c", &n, &junk) == 1) {
       FLAGS_open_files = n;
+    } else if (sscanf(argv[i], "--manifest_file_max_size=%llu%c", &size, &junk) == 1) {
+      FLAGS_manifest_file_max_size = size;
     } else if (strncmp(argv[i], "--db=", 5) == 0) {
       FLAGS_db = argv[i] + 5;
     } else {
