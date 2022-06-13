@@ -740,6 +740,7 @@ VersionSet::VersionSet(const std::string& dbname, const Options* options,
       icmp_(*cmp),
       next_file_number_(2),
       manifest_file_number_(0),  // Filled by Recover()
+      manifest_file_size_(0),
       last_sequence_(0),
       log_number_(0),
       prev_log_number_(0),
@@ -797,6 +798,18 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
   }
   Finalize(v);
 
+  if (descriptor_log_ != nullptr && options_->manifest_file_max_size > 0) {
+    assert(descriptor_file_ != nullptr);
+    if (manifest_file_size_ > options_->manifest_file_max_size) {
+      delete descriptor_log_;
+      delete descriptor_file_;
+      descriptor_log_ = nullptr;
+      descriptor_file_ = nullptr;
+      manifest_file_number_ = NewFileNumber();
+      manifest_file_size_ = 0;
+    }
+  }
+
   // Initialize new descriptor log file if necessary by creating
   // a temporary file that contains a snapshot of the current version.
   std::string new_manifest_file;
@@ -827,6 +840,8 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
       }
       if (!s.ok()) {
         Log(options_->info_log, "MANIFEST write: %s\n", s.ToString().c_str());
+      } else {
+        manifest_file_size_ += record.size();
       }
     }
 
