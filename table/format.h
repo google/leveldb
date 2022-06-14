@@ -20,6 +20,7 @@ struct ReadOptions;
 
 // BlockHandle is a pointer to the extent of a file that stores a data
 // block or a meta block.
+// BlockHandle 是指向存储数据块或元块的文件范围的指针。
 class BlockHandle {
  public:
   // Maximum encoding length of a BlockHandle
@@ -39,8 +40,8 @@ class BlockHandle {
   Status DecodeFrom(Slice* input);
 
  private:
-  uint64_t offset_;
-  uint64_t size_;
+  uint64_t offset_; //偏移位置
+  uint64_t size_; // 大小
 };
 
 // Footer encapsulates the fixed information stored at the tail

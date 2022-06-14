@@ -62,6 +62,7 @@ void PutVarint32(std::string* dst, uint32_t v) {
   dst->append(buf, ptr - buf);
 }
 
+// 将 v 编码写入 dst指针
 char* EncodeVarint64(char* dst, uint64_t v) {
   static const int B = 128;
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
@@ -74,6 +75,7 @@ char* EncodeVarint64(char* dst, uint64_t v) {
 }
 
 void PutVarint64(std::string* dst, uint64_t v) {
+  // 最大十个字节
   char buf[10];
   char* ptr = EncodeVarint64(buf, v);
   dst->append(buf, ptr - buf);

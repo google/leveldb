@@ -91,6 +91,7 @@ Status TableBuilder::ChangeOptions(const Options& options) {
   return Status::OK();
 }
 
+// 向 TableBuilder写入 key-value 的entry
 void TableBuilder::Add(const Slice& key, const Slice& value) {
   Rep* r = rep_;
   assert(!r->closed);
@@ -116,23 +117,29 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
   r->num_entries++;
   r->data_block.Add(key, value);
 
+  // 计算data_block的预计数量，如果超过了预设的每块大小限制，
+  // 则会进行刷新操作，生成一个新data_block，index_block 块信息。
+  // 这也就是为什么一个sstable 中存在多个data_block， index_block的原因了。
   const size_t estimated_block_size = r->data_block.CurrentSizeEstimate();
   if (estimated_block_size >= r->options.block_size) {
     Flush();
   }
 }
 
+// 这个操作是将data_block内容刷新，对于超过限定大小的data_block，则写入到文件中，并更新相关的索引信息
 void TableBuilder::Flush() {
   Rep* r = rep_;
   assert(!r->closed);
   if (!ok()) return;
   if (r->data_block.empty()) return;
   assert(!r->pending_index_entry);
+  // 写入 data block 信息到 文件 中
   WriteBlock(&r->data_block, &r->pending_handle);
   if (ok()) {
     r->pending_index_entry = true;
     r->status = r->file->Flush();
   }
+  //生产一个filter block信息，注意，这里不是写入文件，在最后 sstable 整体写入时，才会写入文件
   if (r->filter_block != nullptr) {
     r->filter_block->StartBlock(r->offset);
   }
@@ -169,6 +176,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
       break;
     }
   }
+  // 写入（压缩或者没有压缩）后的block内容，并更新 handler的 offset 和 size
   WriteRawBlock(block_contents, type, handle);
   r->compressed_output.clear();
   block->Reset();
@@ -195,8 +203,10 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
 
 Status TableBuilder::status() const { return rep_->status; }
 
+// 注意，这里的 Finish方法，是将所有的数据内容写入文件中。
 Status TableBuilder::Finish() {
   Rep* r = rep_;
+  // 1.写入data block 信息
   Flush();
   assert(!r->closed);
   r->closed = true;
@@ -204,12 +214,14 @@ Status TableBuilder::Finish() {
   BlockHandle filter_block_handle, metaindex_block_handle, index_block_handle;
 
   // Write filter block
+  // 2. 写入 filter block 信息
   if (ok() && r->filter_block != nullptr) {
     WriteRawBlock(r->filter_block->Finish(), kNoCompression,
                   &filter_block_handle);
   }
 
   // Write metaindex block
+  // 3. 写入 metaindex block 信息
   if (ok()) {
     BlockBuilder meta_index_block(&r->options);
     if (r->filter_block != nullptr) {
@@ -226,6 +238,7 @@ Status TableBuilder::Finish() {
   }
 
   // Write index block
+  // 4. 写入 index block 信息
   if (ok()) {
     if (r->pending_index_entry) {
       r->options.comparator->FindShortSuccessor(&r->last_key);
@@ -238,6 +251,7 @@ Status TableBuilder::Finish() {
   }
 
   // Write footer
+  // 5. 最后一步，写入footer信息
   if (ok()) {
     Footer footer;
     footer.set_metaindex_handle(metaindex_block_handle);
