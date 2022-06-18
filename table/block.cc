@@ -99,7 +99,8 @@ class Block::Iter : public Iterator {
 
   uint32_t GetRestartPoint(uint32_t index) {
     assert(index < num_restarts_);
-    return DecodeFixed32(data_ + restarts_ + index * sizeof(uint32_t));
+    uint32_t off = DecodeFixed32(data_ + restarts_ + index * sizeof(uint32_t));
+    return std::min(off, restarts_);
   }
 
   void SeekToRestartPoint(uint32_t index) {
