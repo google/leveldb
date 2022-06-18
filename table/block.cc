@@ -268,7 +268,8 @@ class Block::Iter : public Iterator {
     uint32_t shared, non_shared, value_length;
     p = DecodeEntry(p, limit, &shared, &non_shared, &value_length);
     if (p == nullptr || key_.size() < shared ||
-        (comparator_->IsInternal() && shared + non_shared < 8)) {
+        (comparator_->IsInternal() &&
+         static_cast<uint64_t>(shared) + non_shared < 8)) {
       CorruptionError();
       return false;
     } else {
