@@ -896,7 +896,8 @@ Status VersionSet::Recover(bool* save_manifest) {
   uint64_t last_sequence = 0;
   uint64_t log_number = 0;
   uint64_t prev_log_number = 0;
-  Builder builder(this, current_);
+  Version* v = new Version(this);
+  Builder* builder = new Builder(this, v);
   int read_records = 0;
 
   {
@@ -920,7 +921,15 @@ Status VersionSet::Recover(bool* save_manifest) {
       }
 
       if (s.ok()) {
-        builder.Apply(&edit);
+        builder->Apply(&edit);
+        if (read_records % 100 == 0) {
+          Version* new_version = new Version(this);
+          builder->SaveTo(new_version);
+          delete builder;
+          // the old version will be deleted by ~Builder()
+          builder = new Builder(this, new_version);
+          v = new_version;
+        }
       }
 
       if (edit.has_log_number_) {
@@ -966,7 +975,7 @@ Status VersionSet::Recover(bool* save_manifest) {
 
   if (s.ok()) {
     Version* v = new Version(this);
-    builder.SaveTo(v);
+    builder->SaveTo(v);
     // Install recovered version
     Finalize(v);
     AppendVersion(v);
@@ -987,6 +996,8 @@ Status VersionSet::Recover(bool* save_manifest) {
     Log(options_->info_log, "Error recovering version set with %d records: %s",
         read_records, error.c_str());
   }
+
+  delete builder;
 
   return s;
 }
