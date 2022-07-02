@@ -40,6 +40,7 @@ namespace leveldb {
 const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
+// 每个等待的writer的信息存储
 struct DBImpl::Writer {
   explicit Writer(port::Mutex* mu)
       : batch(nullptr), sync(false), done(false), cv(mu) {}
@@ -551,6 +552,7 @@ void DBImpl::CompactMemTable() {
   assert(imm_ != nullptr);
 
   // Save the contents of the memtable as a new Table
+  // 将memtable 存储为一个新表（即immtable)
   VersionEdit edit;
   Version* base = versions_->current();
   base->Ref();
@@ -890,6 +892,7 @@ Status DBImpl::InstallCompactionResults(CompactionState* compact) {
 }
 
 Status DBImpl::DoCompactionWork(CompactionState* compact) {
+  // 获取当前时间
   const uint64_t start_micros = env_->NowMicros();
   int64_t imm_micros = 0;  // Micros spent doing imm_ compactions
 
@@ -1115,7 +1118,11 @@ int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,
                    std::string* value) {
   Status s;
-  MutexLock l(&mutex_);
+  MutexLock l(&mutex_); // 获取互斥锁
+
+  // 获取本次读操作的 Sequence Number：
+  // 如果 ReadOptions 参数的 snaphot 不为空，则使用这个 snapshot 的 Sequence Number；
+  // 否则，默认使用 LastSequence（LastSequence 会在每次写操作后更新）。
   SequenceNumber snapshot;
   if (options.snapshot != nullptr) {
     snapshot =
@@ -1124,6 +1131,8 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
     snapshot = versions_->LastSequence();
   }
 
+  // MemTable， Immutable Memtable 和 Current Version 增加引用计数，避免在读取过程中被后台线程进行 Compaction 时“垃圾回收”了。
+  // Version 主要用来维护 SST 文件的版本信息。
   MemTable* mem = mem_;
   MemTable* imm = imm_;
   Version* current = versions_->current();
@@ -1136,8 +1145,13 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
 
   // Unlock while reading from files and memtables
   {
+    //释放互斥锁
     mutex_.Unlock();
     // First look in the memtable, then in the immutable memtable (if any).
+    // 查找顺序：
+    // 1、从 MemTable 查找。机制为skiplist查找。
+    // 2、从 Immutable Memtable 查找。机制为skiplist查找。
+    // 3、从 SSTable 文件查找。
     LookupKey lkey(key, snapshot);
     if (mem->Get(lkey, value, &s)) {
       // Done
@@ -1147,15 +1161,20 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
       s = current->Get(options, lkey, value, &stats);
       have_stat_update = true;
     }
+    //获取互斥锁
     mutex_.Lock();
   }
 
+  // 更新 SST 文件的统计信息，根据统计结果决定是否调度后台 Compaction。
   if (have_stat_update && current->UpdateStats(stats)) {
     MaybeScheduleCompaction();
   }
+  // MemTable, Immutable Memtable 和 Current Version 减少引用计数。
   mem->Unref();
   if (imm != nullptr) imm->Unref();
   current->Unref();
+
+  // 释放锁（由析构函数完成），返回结果。
   return s;
 }
 
@@ -1198,20 +1217,26 @@ Status DBImpl::Delete(const WriteOptions& options, const Slice& key) {
 }
 
 Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
+  // 1.构造Writer。
   Writer w(&mutex_);
   w.batch = updates;
   w.sync = options.sync;
   w.done = false;
 
+  // 2.将Writer push到deque中。
   MutexLock l(&mutex_);
   writers_.push_back(&w);
+
+  // 3.构造的Writer未执行完（会有合并操作，可能被其他线程执行完），且未到队列头（尚未获得调度机会）时，通过std::condition_variable进行wait。
   while (!w.done && &w != writers_.front()) {
     w.cv.Wait();
   }
   if (w.done) {
+    //writer的任务被其他writer帮忙执行了，则返回。BuildBatchGroup会有合并写的操作。
     return w.status;
   }
 
+  // 4.真正得到调度，并进行后续处理。。
   // May temporarily unlock and wait.
   Status status = MakeRoomForWrite(updates == nullptr);
   uint64_t last_sequence = versions_->LastSequence();
@@ -1225,6 +1250,8 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     // during this phase since &w is currently responsible for logging
     // and protects against concurrent loggers and concurrent writes
     // into mem_.
+    // 添加到日志并应用于 memtable。 我们可以在这个阶段释放锁，
+    // 因为 &w 目前负责记录并防止并发记录器和并发写入 mem_。
     {
       mutex_.Unlock();
       status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));
@@ -1251,6 +1278,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     versions_->SetLastSequence(last_sequence);
   }
 
+  // 5.将处理完的任务从队列里取出，并置状态为done，然后通知对应的CondVar启动。
   while (true) {
     Writer* ready = writers_.front();
     writers_.pop_front();
@@ -1262,7 +1290,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     if (ready == last_writer) break;
   }
 
-  // Notify new head of write queue
+  // Notify new head of write queue。通知队列中第一个writer干活。
   if (!writers_.empty()) {
     writers_.front()->cv.Signal();
   }
