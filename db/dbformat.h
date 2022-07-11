@@ -77,6 +77,9 @@ struct ParsedInternalKey {
   std::string DebugString() const;
 };
 
+// Pack the sequence and the type into a uint64 tag
+uint64_t PackSequenceAndType(uint64_t seq, ValueType t);
+
 // Append the serialization of "key" to *result.
 void AppendInternalKey(std::string* result, const ParsedInternalKey& key);
 
