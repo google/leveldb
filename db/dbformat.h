@@ -77,11 +77,6 @@ struct ParsedInternalKey {
   std::string DebugString() const;
 };
 
-// Return the length of the encoding of "key".
-inline size_t InternalKeyEncodingLength(const ParsedInternalKey& key) {
-  return key.user_key.size() + 8;
-}
-
 // Append the serialization of "key" to *result.
 void AppendInternalKey(std::string* result, const ParsedInternalKey& key);
 
@@ -152,11 +147,6 @@ class InternalKey {
   }
 
   Slice user_key() const { return ExtractUserKey(rep_); }
-
-  void SetFrom(const ParsedInternalKey& p) {
-    rep_.clear();
-    AppendInternalKey(&rep_, p);
-  }
 
   void Clear() { rep_.clear(); }
 
