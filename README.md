@@ -77,7 +77,7 @@ Please see the CMake documentation and `CMakeLists.txt` for more advanced usage.
 
 # Contributing to the leveldb Project
 
-> **As of 2022, this repository is receiving very limited maintenance. We will only review the following types of changes.**
+> **This repository is receiving very limited maintenance. We will only review the following types of changes.**
 >
 > * Bug fixes
 > * Changes absolutely needed by internally supported leveldb clients. These typically fix breakage introduced by a language/standard library/OS update
