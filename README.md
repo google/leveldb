@@ -1,4 +1,9 @@
-**LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.**
+LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.**
+
+> **This repository is receiving very limited maintenance. We will only review the following types of changes.**
+>
+> * Fixes for critical bugs, such as data loss or memory corruption
+> * Changes absolutely needed by internally supported leveldb clients. These typically fix breakage introduced by a language/standard library/OS update
 
 [![ci](https://github.com/google/leveldb/actions/workflows/build.yml/badge.svg)](https://github.com/google/leveldb/actions/workflows/build.yml)
 
@@ -71,6 +76,11 @@ or open leveldb.sln in Visual Studio and build from within.
 Please see the CMake documentation and `CMakeLists.txt` for more advanced usage.
 
 # Contributing to the leveldb Project
+
+> **As of 2022, this repository is receiving very limited maintenance. We will only review the following types of changes.**
+>
+> * Bug fixes
+> * Changes absolutely needed by internally supported leveldb clients. These typically fix breakage introduced by a language/standard library/OS update
 
 The leveldb project welcomes contributions. leveldb's primary goal is to be
 a reliable and fast key/value store. Changes that are in line with the
