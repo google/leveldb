@@ -10,7 +10,6 @@
 
 Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
 
-
 # Features
 
   * Keys and values are arbitrary byte arrays.
