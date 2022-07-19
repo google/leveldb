@@ -15,6 +15,7 @@
 #include "util/hash.h"
 #include "util/random.h"
 #include "util/testutil.h"
+#include "util/mutexlock.h"
 
 namespace leveldb {
 
@@ -307,18 +308,16 @@ class TestState {
       : seed_(s), quit_flag_(false), state_(STARTING), state_cv_(&mu_) {}
 
   void Wait(ReaderState s) LOCKS_EXCLUDED(mu_) {
-    mu_.Lock();
+    MutexLock l(&mu_);
     while (state_ != s) {
       state_cv_.Wait();
     }
-    mu_.Unlock();
   }
 
   void Change(ReaderState s) LOCKS_EXCLUDED(mu_) {
-    mu_.Lock();
+    MutexLock l(&mu_);
     state_ = s;
     state_cv_.Signal();
-    mu_.Unlock();
   }
 
  private:

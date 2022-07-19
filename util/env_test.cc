@@ -144,11 +144,10 @@ struct State {
 
 static void ThreadBody(void* arg) {
   State* s = reinterpret_cast<State*>(arg);
-  s->mu.Lock();
+  MutexLock l(&s->mu);
   s->val += 1;
   s->num_running -= 1;
   s->cvar.Signal();
-  s->mu.Unlock();
 }
 
 TEST_F(EnvTest, StartThread) {

@@ -151,12 +151,13 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
 
 DBImpl::~DBImpl() {
   // Wait for background work to finish.
-  mutex_.Lock();
-  shutting_down_.store(true, std::memory_order_release);
-  while (background_compaction_scheduled_) {
-    background_work_finished_signal_.Wait();
+  {
+    MutexLock l(&mutex_);
+    shutting_down_.store(true, std::memory_order_release);
+    while (background_compaction_scheduled_) {
+      background_work_finished_signal_.Wait();
+    }
   }
-  mutex_.Unlock();
 
   if (db_lock_ != nullptr) {
     env_->UnlockFile(db_lock_);
@@ -802,7 +803,7 @@ Status DBImpl::OpenCompactionOutputFile(CompactionState* compact) {
   assert(compact->builder == nullptr);
   uint64_t file_number;
   {
-    mutex_.Lock();
+    MutexLock l(&mutex_);
     file_number = versions_->NewFileNumber();
     pending_outputs_.insert(file_number);
     CompactionState::Output out;
@@ -810,7 +811,6 @@ Status DBImpl::OpenCompactionOutputFile(CompactionState* compact) {
     out.smallest.Clear();
     out.largest.Clear();
     compact->outputs.push_back(out);
-    mutex_.Unlock();
   }
 
   // Make the output file
@@ -922,13 +922,14 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
     // Prioritize immutable compaction work
     if (has_imm_.load(std::memory_order_relaxed)) {
       const uint64_t imm_start = env_->NowMicros();
-      mutex_.Lock();
-      if (imm_ != nullptr) {
-        CompactMemTable();
-        // Wake up MakeRoomForWrite() if necessary.
-        background_work_finished_signal_.SignalAll();
+      {
+        MutexLock l(&mutex_);
+        if (imm_ != nullptr) {
+          CompactMemTable();
+          // Wake up MakeRoomForWrite() if necessary.
+          background_work_finished_signal_.SignalAll();
+        }
       }
-      mutex_.Unlock();
       imm_micros += (env_->NowMicros() - imm_start);
     }
 
@@ -1064,11 +1065,12 @@ struct IterState {
 
 static void CleanupIteratorState(void* arg1, void* arg2) {
   IterState* state = reinterpret_cast<IterState*>(arg1);
-  state->mu->Lock();
-  state->mem->Unref();
-  if (state->imm != nullptr) state->imm->Unref();
-  state->version->Unref();
-  state->mu->Unlock();
+  {
+    MutexLock l(state->mu);
+    state->mem->Unref();
+    if (state->imm != nullptr) state->imm->Unref();
+    state->version->Unref();
+  }
   delete state;
 }
 
@@ -1077,7 +1079,7 @@ static void CleanupIteratorState(void* arg1, void* arg2) {
 Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
                                       SequenceNumber* latest_snapshot,
                                       uint32_t* seed) {
-  mutex_.Lock();
+  MutexLock l(&mutex_);
   *latest_snapshot = versions_->LastSequence();
 
   // Collect together all needed child iterators
@@ -1097,7 +1099,6 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
   internal_iter->RegisterCleanup(CleanupIteratorState, cleanup, nullptr);
 
   *seed = ++seed_;
-  mutex_.Unlock();
   return internal_iter;
 }
 
@@ -1483,37 +1484,39 @@ DB::~DB() = default;
 Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   *dbptr = nullptr;
 
+  Status s;
   DBImpl* impl = new DBImpl(options, dbname);
-  impl->mutex_.Lock();
-  VersionEdit edit;
-  // Recover handles create_if_missing, error_if_exists
-  bool save_manifest = false;
-  Status s = impl->Recover(&edit, &save_manifest);
-  if (s.ok() && impl->mem_ == nullptr) {
-    // Create new log and a corresponding memtable.
-    uint64_t new_log_number = impl->versions_->NewFileNumber();
-    WritableFile* lfile;
-    s = options.env->NewWritableFile(LogFileName(dbname, new_log_number),
-                                     &lfile);
+  {
+    MutexLock l(&impl->mutex_);
+    VersionEdit edit;
+    // Recover handles create_if_missing, error_if_exists
+    bool save_manifest = false;
+    s = impl->Recover(&edit, &save_manifest);
+    if (s.ok() && impl->mem_ == nullptr) {
+      // Create new log and a corresponding memtable.
+      uint64_t new_log_number = impl->versions_->NewFileNumber();
+      WritableFile* lfile;
+      s = options.env->NewWritableFile(LogFileName(dbname, new_log_number),
+                                      &lfile);
+      if (s.ok()) {
+        edit.SetLogNumber(new_log_number);
+        impl->logfile_ = lfile;
+        impl->logfile_number_ = new_log_number;
+        impl->log_ = new log::Writer(lfile);
+        impl->mem_ = new MemTable(impl->internal_comparator_);
+        impl->mem_->Ref();
+      }
+    }
+    if (s.ok() && save_manifest) {
+      edit.SetPrevLogNumber(0);  // No older logs needed after recovery.
+      edit.SetLogNumber(impl->logfile_number_);
+      s = impl->versions_->LogAndApply(&edit, &impl->mutex_);
+    }
     if (s.ok()) {
-      edit.SetLogNumber(new_log_number);
-      impl->logfile_ = lfile;
-      impl->logfile_number_ = new_log_number;
-      impl->log_ = new log::Writer(lfile);
-      impl->mem_ = new MemTable(impl->internal_comparator_);
-      impl->mem_->Ref();
+      impl->RemoveObsoleteFiles();
+      impl->MaybeScheduleCompaction();
     }
   }
-  if (s.ok() && save_manifest) {
-    edit.SetPrevLogNumber(0);  // No older logs needed after recovery.
-    edit.SetLogNumber(impl->logfile_number_);
-    s = impl->versions_->LogAndApply(&edit, &impl->mutex_);
-  }
-  if (s.ok()) {
-    impl->RemoveObsoleteFiles();
-    impl->MaybeScheduleCompaction();
-  }
-  impl->mutex_.Unlock();
   if (s.ok()) {
     assert(impl->mem_ != nullptr);
     *dbptr = impl;
