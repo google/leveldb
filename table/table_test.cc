@@ -791,10 +791,8 @@ static bool SnappyCompressionSupported() {
 }
 
 TEST(TableTest, ApproximateOffsetOfCompressed) {
-  if (!SnappyCompressionSupported()) {
-    std::fprintf(stderr, "skipping compression tests\n");
-    return;
-  }
+  if (!SnappyCompressionSupported())
+    GTEST_SKIP() << "skipping compression tests";
 
   Random rnd(301);
   TableConstructor c(BytewiseComparator());
@@ -827,8 +825,3 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

@@ -4,7 +4,7 @@
 
 cmake_minimum_required(VERSION 3.9)
 # Keep the version below in sync with the one in db.h
-project(leveldb VERSION 1.22.0 LANGUAGES C CXX)
+project(leveldb VERSION 1.23.0 LANGUAGES C CXX)
 
 # C standard can be overridden when this is used as a sub-project.
 if(NOT CMAKE_C_STANDARD)
@@ -306,6 +306,60 @@ if(LEVELDB_BUILD_TESTS)
         APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
   endif(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
 
+  add_executable(leveldb_tests "")
+  target_sources(leveldb_tests
+    PRIVATE
+      # "db/fault_injection_test.cc"
+      # "issues/issue178_test.cc"
+      # "issues/issue200_test.cc"
+      # "issues/issue320_test.cc"
+      "${PROJECT_BINARY_DIR}/${LEVELDB_PORT_CONFIG_DIR}/port_config.h"
+      # "util/env_test.cc"
+      "util/status_test.cc"
+      "util/no_destructor_test.cc"
+      "util/testutil.cc"
+      "util/testutil.h"
+  )
+  if(NOT BUILD_SHARED_LIBS)
+    target_sources(leveldb_tests
+      PRIVATE
+        "db/autocompact_test.cc"
+        "db/corruption_test.cc"
+        "db/db_test.cc"
+        "db/dbformat_test.cc"
+        "db/filename_test.cc"
+        "db/log_test.cc"
+        "db/recovery_test.cc"
+        "db/skiplist_test.cc"
+        "db/version_edit_test.cc"
+        "db/version_set_test.cc"
+        "db/write_batch_test.cc"
+        "helpers/memenv/memenv_test.cc"
+        "table/filter_block_test.cc"
+        "table/table_test.cc"
+        "util/arena_test.cc"
+        "util/bloom_test.cc"
+        "util/cache_test.cc"
+        "util/coding_test.cc"
+        "util/crc32c_test.cc"
+        "util/hash_test.cc"
+        "util/logging_test.cc"
+    )
+  endif(NOT BUILD_SHARED_LIBS)
+  target_link_libraries(leveldb_tests leveldb gmock gtest gtest_main)
+  target_compile_definitions(leveldb_tests
+    PRIVATE
+      ${LEVELDB_PLATFORM_NAME}=1
+  )
+  if (NOT HAVE_CXX17_HAS_INCLUDE)
+    target_compile_definitions(leveldb_tests
+      PRIVATE
+        LEVELDB_HAS_PORT_CONFIG_H=1
+    )
+  endif(NOT HAVE_CXX17_HAS_INCLUDE)
+
+  add_test(NAME "leveldb_tests" COMMAND "leveldb_tests")
+
   function(leveldb_test test_file)
     get_filename_component(test_target_name "${test_file}" NAME_WE)
 
@@ -334,42 +388,8 @@ if(LEVELDB_BUILD_TESTS)
   endfunction(leveldb_test)
 
   leveldb_test("db/c_test.c")
-  leveldb_test("db/fault_injection_test.cc")
-
-  leveldb_test("issues/issue178_test.cc")
-  leveldb_test("issues/issue200_test.cc")
-  leveldb_test("issues/issue320_test.cc")
-
-  leveldb_test("util/env_test.cc")
-  leveldb_test("util/status_test.cc")
-  leveldb_test("util/no_destructor_test.cc")
 
   if(NOT BUILD_SHARED_LIBS)
-    leveldb_test("db/autocompact_test.cc")
-    leveldb_test("db/corruption_test.cc")
-    leveldb_test("db/db_test.cc")
-    leveldb_test("db/dbformat_test.cc")
-    leveldb_test("db/filename_test.cc")
-    leveldb_test("db/log_test.cc")
-    leveldb_test("db/recovery_test.cc")
-    leveldb_test("db/skiplist_test.cc")
-    leveldb_test("db/version_edit_test.cc")
-    leveldb_test("db/version_set_test.cc")
-    leveldb_test("db/write_batch_test.cc")
-
-    leveldb_test("helpers/memenv/memenv_test.cc")
-
-    leveldb_test("table/filter_block_test.cc")
-    leveldb_test("table/table_test.cc")
-
-    leveldb_test("util/arena_test.cc")
-    leveldb_test("util/bloom_test.cc")
-    leveldb_test("util/cache_test.cc")
-    leveldb_test("util/coding_test.cc")
-    leveldb_test("util/crc32c_test.cc")
-    leveldb_test("util/hash_test.cc")
-    leveldb_test("util/logging_test.cc")
-
     # TODO(costan): This test also uses
     #               "util/env_{posix|windows}_test_helper.h"
     if (WIN32)
@@ -381,6 +401,11 @@ if(LEVELDB_BUILD_TESTS)
 endif(LEVELDB_BUILD_TESTS)
 
 if(LEVELDB_BUILD_BENCHMARKS)
+  # This project uses Google benchmark for benchmarking.
+  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+  set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
+  add_subdirectory("third_party/benchmark")
+
   function(leveldb_benchmark bench_file)
     get_filename_component(bench_target_name "${bench_file}" NAME_WE)
 
@@ -395,7 +420,7 @@ if(LEVELDB_BUILD_BENCHMARKS)
 
         "${bench_file}"
     )
-    target_link_libraries("${bench_target_name}" leveldb gmock gtest)
+    target_link_libraries("${bench_target_name}" leveldb gmock gtest benchmark)
     target_compile_definitions("${bench_target_name}"
       PRIVATE
         ${LEVELDB_PLATFORM_NAME}=1

@@ -18,7 +18,7 @@ namespace leveldb {
 class RecoveryTest : public testing::Test {
  public:
   RecoveryTest() : env_(Env::Default()), db_(nullptr) {
-    dbname_ = testing::TempDir() + "/recovery_test";
+    dbname_ = testing::TempDir() + "recovery_test";
     DestroyDB(dbname_, Options());
     Open();
   }
@@ -332,8 +332,3 @@ TEST_F(RecoveryTest, ManifestMissing) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

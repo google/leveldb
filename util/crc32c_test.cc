@@ -54,8 +54,3 @@ TEST(CRC, Mask) {
 
 }  // namespace crc32c
 }  // namespace leveldb
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

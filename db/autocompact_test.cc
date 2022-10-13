@@ -108,8 +108,3 @@ TEST_F(AutoCompactTest, ReadAll) { DoReads(kCount); }
 TEST_F(AutoCompactTest, ReadHalf) { DoReads(kCount / 2); }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

@@ -144,8 +144,6 @@ struct LEVELDB_EXPORT Options {
 
 // Options that control read operations
 struct LEVELDB_EXPORT ReadOptions {
-  ReadOptions() = default;
-
   // If true, all data read from underlying storage will be
   // verified against corresponding checksums.
   bool verify_checksums = false;

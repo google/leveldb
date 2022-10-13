@@ -14,8 +14,6 @@
 
 namespace leveldb {
 
-static const int kDelayMicros = 100000;
-
 class EnvTest : public testing::Test {
  public:
   EnvTest() : env_(Env::Default()) {}
@@ -233,8 +231,3 @@ TEST_F(EnvTest, ReopenAppendableFile) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
