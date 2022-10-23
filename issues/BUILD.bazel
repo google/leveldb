@@ -1,0 +1,41 @@
+package(default_visibility = ["//visibility:public"])
+load("//:copts.bzl", "LEVELDB_FLAGS")
+
+cc_test(
+  name = "issue178_test",
+  srcs = glob(["issue178_test.cc"]),
+  deps = [
+    "//include/leveldb",
+    "//util:util_lib",
+    "//table:table_lib",
+    "//db:db_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+  name = "issue200_test",
+  srcs = glob(["issue200_test.cc"]),
+  deps = [
+    "//include/leveldb",
+    "//util:util_lib",
+    "//table:table_lib",
+    "//db:db_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+  name = "issue320_test",
+  srcs = glob(["issue320_test.cc"]),
+  deps = [
+    "//include/leveldb",
+    "//util:util_lib",
+    "//table:table_lib",
+    "//db:db_lib",
+    "@com_google_googletest//:gtest_main",
+  ],
+  copts = LEVELDB_FLAGS,
+)
