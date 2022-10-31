@@ -70,12 +70,11 @@ class SnapshotList {
   }
 
   // Removes a SnapshotImpl from this list.
-  //
   // The snapshot must have been created by calling New() on this list.
-  //
   // The snapshot pointer should not be const, because its memory is
   // deallocated. However, that would force us to change DB::ReleaseSnapshot(),
   // which is in the API, and currently takes a const Snapshot.
+ 
   void Delete(const SnapshotImpl* snapshot) {
 #if !defined(NDEBUG)
     assert(snapshot->list_ == this);
