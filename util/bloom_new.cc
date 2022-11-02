@@ -2,9 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "leveldb/filter_policy.h"
 #include <iostream>
+
+#include "leveldb/filter_policy.h"
 #include "leveldb/slice.h"
+
 #include "util/hash.h"
 
 namespace leveldb {
@@ -27,15 +29,14 @@ class BloomFilterPolicy : public FilterPolicy {
 
   void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
     // Compute bloom filter size (in both bits and bytes)
-      std::cout << "Creating filter of size" << n << std::endl;
-    
+
     size_t bits = n * bits_per_key_;
 
     // For small n, we can see a very high false positive rate.  Fix it
     // by enforcing a minimum bloom filter length.
-    if (bits < 64) bits = 64;
+    // if (bits < 64) bits = 64;
 
-    size_t bytes = (bits + 7) / 8;
+    // size_t bytes = (bits + 7) / 8;
     bits = bytes * 8;
 
     const size_t init_size = dst->size();
@@ -56,7 +57,7 @@ class BloomFilterPolicy : public FilterPolicy {
   }
 
   bool KeyMayMatch(const Slice& key, const Slice& bloom_filter) const override {
-    std::cout << "attempting to match" << key.ToString() << std::endl;
+    std::cout<< "HERE" << std::endl;
     const size_t len = bloom_filter.size();
     if (len < 2) return false;
 

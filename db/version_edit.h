@@ -20,6 +20,7 @@ struct FileMetaData {
 
   int refs;
   int allowed_seeks;  // Seeks allowed until compaction
+  uint8_t level;
   uint64_t number;
   uint64_t file_size;    // File size in bytes
   InternalKey smallest;  // Smallest internal key served by table
@@ -67,6 +68,7 @@ class VersionEdit {
     f.file_size = file_size;
     f.smallest = smallest;
     f.largest = largest;
+    f.level = level;
     new_files_.push_back(std::make_pair(level, f));
   }
 
