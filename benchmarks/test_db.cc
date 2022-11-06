@@ -2,7 +2,8 @@
 #include <ctime>
 #include <iostream>
 #include <string>
-
+#include <vector>
+#include <cmath>
 #include "leveldb/db.h"
 #include "leveldb/filter_policy.h"
 
@@ -33,11 +34,93 @@ void print_db(leveldb::DB* db) {
   delete it;
 }
 
-void write_data(leveldb::DB* db) {
+int write_data(leveldb::DB* db, int num_megabytes, int key_size) {
+  for (int i = 0; i < num_megabytes * 1024; i++) {
+    std::string value = gen_random(key_size);
+    leveldb::Status status =
+        db->Put(leveldb::WriteOptions(), leveldb::Slice(value), "");
+    if (!status.ok()) {
+      std::cout << "oops" << std::endl;
+      return -1;
+    }
+  }
+  return 0;
+}
+
+int read_data(leveldb::DB* db, int num_entries, int key_size) {
+  for (int i = 0; i < num_entries; i++) {
+    std::string value = gen_random(key_size);
+    std::string result;
+    leveldb::Status status = db->Get(leveldb::ReadOptions(), leveldb::Slice(value), &result);
+    if (!status.ok()) {
+      std::cout << "oops" << std::endl;
+      return -1;
+    }
+  }
+  return 0;
 
 }
 
-  int main() {
+double eval(long run_bits, long runs_entries){
+  return std::exp(run_bits / runs_entries * std::pow(std::log(2), 2) * -1);
+}
+
+double TrySwitch(long& run1_entries, long& run1_bits, long& run2_entries,
+                 long& run2_bits, long delta, double R) {
+  double R_new = R - eval(run1_bits, run1_entries) -
+                 eval(run2_bits, run2_entries) +
+                 eval(run1_bits + delta, run1_entries) +
+                 eval(run2_bits - delta, run2_entries);
+
+  if (R_new < R && run2_bits - delta > 0) {
+    run1_bits += delta;
+    run2_bits -= delta;
+    return R_new;
+  } else {
+    return R;
+  }
+}
+
+std::vector<long> run_algorithm_c(std::vector<long> entries_per_level,
+                                    int key_size, int bits_per_entry_equivalent) {
+  long total_entries = 0;
+  for (auto& i : entries_per_level) {
+    total_entries += i;
+  }
+  std::cout << "total bytes is " << total_entries * key_size << " which is entries: " << total_entries << std::endl;
+  long delta = total_entries * bits_per_entry_equivalent;
+  std::vector<long> runs_entries;
+  std::vector<long> runs_bits;
+  for (long i = 0; i < entries_per_level.size(); i++) {
+    runs_entries.push_back(entries_per_level[i]);
+    runs_bits.push_back(0);
+  }
+  runs_bits[0] = delta;
+  double R = runs_entries.size() - 1 + eval(runs_bits[0], runs_entries[0]);
+  
+  while (delta >= 1) {
+    double R_new = R;
+    for(int i = 0; i < runs_entries.size(); i++) {
+      for(int j = i+1; j < runs_entries.size(); j++) {
+        R_new = TrySwitch(runs_entries[i], runs_bits[i], runs_entries[j], runs_bits[j], delta, R_new);
+        R_new = TrySwitch(runs_entries[j], runs_bits[j], runs_entries[i], runs_bits[i], delta, R_new);
+      }
+    }
+    if (R_new == R) {
+      delta /= 2;
+    }
+    R = R_new;
+  }
+  std::vector<long> result;
+  for(int i = 0; i < runs_bits.size(); i++) {
+    result.push_back(runs_bits[i] / entries_per_level[i]);
+  }
+  return result;
+}
+
+
+
+int main() {
   leveldb::DB* db;
   leveldb::Options options;
   
@@ -45,34 +128,30 @@ void write_data(leveldb::DB* db) {
   // options.filter_policy = leveldb::NewBloomFilterPolicy(5);
   options.block_size = 1024 * 1024;
   options.compression = leveldb::kNoCompression;
-  leveldb::WriteOptions w_options;
-
+  int key_size = 512;
   leveldb::Status status = leveldb::DB::Open(options, "/tmp/testdb", &db);
-  int num_megabytes = 2;
-  for (int i = 0; i < num_megabytes * 1024; i++) {
-    std::string value = gen_random(512);
-    leveldb::Status status = db->Put(w_options, leveldb::Slice(value), value);
-    if (!status.ok()) {
-      std::cout << "oops" << std::endl;
-      return -1;
-    }
-      
-  }
-  
 
-  options.filter_policy = leveldb::NewBloomFilterPolicy(5);
+  write_data(db, 1024, 1024);
+  
   delete db;
-  
+  // options.filter_policy = leveldb::NewBloomFilterPolicy(5);
+
   status = leveldb::DB::Open(options, "/tmp/testdb", &db);
-  std::cout << "HERE" << std::endl;
-  for (int i = 0; i < 10; i++) {
-    std::string value = gen_random(512);
-    std::string result;
-    leveldb::Status status =
-        db->Get(leveldb::ReadOptions(), leveldb::Slice(value), &result);
+  
+
+  std::vector<long> bytes_per_level_with_zeros = db->GetBytesPerLevel();
+  std::vector<long> entries_per_level;
+  for(long i = 0; i < bytes_per_level_with_zeros.size(); i++) {
+    if (bytes_per_level_with_zeros[i] == 0) {
+      break;
+    }
+    entries_per_level.push_back(bytes_per_level_with_zeros[i] / 8);
   }
 
-
+  std::vector<long> bits_per_key_per_level = run_algorithm_c(entries_per_level, key_size, 5);
+  for(int i = 0; i < bits_per_key_per_level.size(); i++) {
+    std::cout << "Level " << i << " bits per key is " << bits_per_key_per_level[i] << std::endl;
+  }
   // print_db(db);
 
   assert(status.ok());

@@ -221,7 +221,7 @@ class TableConstructor : public Constructor {
       builder.Add(kvp.first, kvp.second);
       EXPECT_LEVELDB_OK(builder.status());
     }
-    Status s = builder.Finish();
+    Status s = builder.Finish(-1);
     EXPECT_LEVELDB_OK(s);
 
     EXPECT_EQ(sink.contents().size(), builder.FileSize());

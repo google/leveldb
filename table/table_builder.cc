@@ -195,7 +195,7 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
 
 Status TableBuilder::status() const { return rep_->status; }
 
-Status TableBuilder::Finish() {
+Status TableBuilder::Finish(int level) {
   Rep* r = rep_;
   Flush();
   assert(!r->closed);
@@ -223,7 +223,7 @@ Status TableBuilder::Finish() {
 
     std::string key2 = "level_of_block";
     std::string handle_encoding_2;
-    meta_index_block.Add(key2, "1");
+    meta_index_block.Add(key2, std::to_string(level));
 
     // TODO(postrelease): Add stats and other meta blocks
     WriteBlock(&meta_index_block, &metaindex_block_handle);

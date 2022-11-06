@@ -18,8 +18,24 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 #include "util/logging.h"
+#include <iostream>
 
 namespace leveldb {
+
+std::vector<long> Version::GetBytesPerLevel() { 
+  std::vector<long> result;
+  for(int i = 0; i < config::kNumLevels; i++) {
+    std::vector<FileMetaData*> level = files_[i];
+    // std::cout << "Level " << i << " has runs: " << level.size() << std::endl;
+    long sum = 0;
+    for (int j = 0; j < level.size(); j++) {
+      sum += level[j]->file_size;
+    }
+    result.push_back(sum);
+  }
+  return result;
+  
+}
 
 static size_t TargetFileSize(const Options* options) {
   return options->max_file_size;
@@ -725,6 +741,7 @@ class VersionSet::Builder {
                                     f->smallest) < 0);
       }
       f->refs++;
+      f->level = level;
       files->push_back(f);
     }
   }

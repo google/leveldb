@@ -2054,6 +2054,10 @@ class ModelDB : public DB {
   Status Put(const WriteOptions& o, const Slice& k, const Slice& v) override {
     return DB::Put(o, k, v);
   }
+  std::vector<long> GetBytesPerLevel() override {
+    std::vector<long> result;
+    return result;
+  }
   Status Delete(const WriteOptions& o, const Slice& key) override {
     return DB::Delete(o, key);
   }

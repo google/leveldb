@@ -3,7 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/db_impl.h"
-
+#include <iostream>
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
@@ -536,10 +536,10 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
     if (base != nullptr) {
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
-
     edit->AddFile(level, meta.number, meta.file_size, meta.smallest,
                   meta.largest);
   }
+  meta.level = level;
 
   CompactionStats stats;
   stats.micros = env_->NowMicros() - start_micros;
@@ -837,7 +837,7 @@ Status DBImpl::FinishCompactionOutputFile(CompactionState* compact,
   Status s = input->status();
   const uint64_t current_entries = compact->builder->NumEntries();
   if (s.ok()) {
-    s = compact->builder->Finish();
+    s = compact->builder->Finish(compact->compaction->level()+1);
   } else {
     compact->builder->Abandon();
   }
@@ -1556,6 +1556,12 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
     env->RemoveDir(dbname);  // Ignore error in case dir contains other files
   }
   return result;
+}
+
+std::vector<long> DBImpl::GetBytesPerLevel() { 
+  MutexLock l(&mutex_); 
+  Version *curr_version = versions_->current();
+  return curr_version->GetBytesPerLevel();
 }
 
 }  // namespace leveldb

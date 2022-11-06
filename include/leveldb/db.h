@@ -22,6 +22,7 @@ struct Options;
 struct ReadOptions;
 struct WriteOptions;
 class WriteBatch;
+class Version;
 
 // Abstract handle to particular state of a DB.
 // A Snapshot is an immutable object and can therefore be safely
@@ -100,10 +101,11 @@ class LEVELDB_EXPORT DB {
   // state.  The caller must call ReleaseSnapshot(result) when the
   // snapshot is no longer needed.
   virtual const Snapshot* GetSnapshot() = 0;
+  virtual std::vector<long> GetBytesPerLevel() = 0;
 
-  // Release a previously acquired snapshot.  The caller must not
-  // use "snapshot" after this call.
-  virtual void ReleaseSnapshot(const Snapshot* snapshot) = 0;
+      // Release a previously acquired snapshot.  The caller must not
+      // use "snapshot" after this call.
+      virtual void ReleaseSnapshot(const Snapshot* snapshot) = 0;
 
   // DB implementations can export properties about their state
   // via this method.  If "property" is a valid property understood by this

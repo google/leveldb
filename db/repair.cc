@@ -317,7 +317,7 @@ class Repairer {
     if (counter == 0) {
       builder->Abandon();  // Nothing to save
     } else {
-      s = builder->Finish();
+      s = builder->Finish(t.meta.level);
       if (s.ok()) {
         t.meta.file_size = builder->FileSize();
       }

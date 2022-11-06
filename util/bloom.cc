@@ -27,7 +27,7 @@ class BloomFilterPolicy : public FilterPolicy {
 
   void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
     // Compute bloom filter size (in both bits and bytes)
-      std::cout << "Creating filter of size" << n << std::endl;
+      // std::cout << "Creating filter of size" << n << std::endl;
     
     size_t bits = n * bits_per_key_;
 
@@ -56,7 +56,7 @@ class BloomFilterPolicy : public FilterPolicy {
   }
 
   bool KeyMayMatch(const Slice& key, const Slice& bloom_filter) const override {
-    std::cout << "attempting to match" << key.ToString() << std::endl;
+    // std::cout << "attempting to match" << key.ToString() << std::endl;
     const size_t len = bloom_filter.size();
     if (len < 2) return false;
 

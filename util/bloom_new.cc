@@ -57,7 +57,7 @@ class BloomFilterPolicy : public FilterPolicy {
   }
 
   bool KeyMayMatch(const Slice& key, const Slice& bloom_filter) const override {
-    std::cout<< "HERE" << std::endl;
+    std::cout<< "HERE2" << std::endl;
     const size_t len = bloom_filter.size();
     if (len < 2) return false;
 
