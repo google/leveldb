@@ -287,11 +287,11 @@ class Repairer {
     if (status.ok()) {
       tables_.push_back(t);
     } else {
-      RepairTable(fname, t);  // RepairTable archives input file.
+      RepairTable(fname, t, t.meta.level);  // RepairTable archives input file.
     }
   }
 
-  void RepairTable(const std::string& src, TableInfo t) {
+  void RepairTable(const std::string& src, TableInfo t, int level) {
     // We will copy src contents to a new table and then rename the
     // new table over the source.
 
@@ -302,7 +302,7 @@ class Repairer {
     if (!s.ok()) {
       return;
     }
-    TableBuilder* builder = new TableBuilder(options_, file);
+    TableBuilder* builder = new TableBuilder(options_, file, level);
 
     // Copy data.
     Iterator* iter = NewTableIterator(t.meta);
@@ -317,7 +317,7 @@ class Repairer {
     if (counter == 0) {
       builder->Abandon();  // Nothing to save
     } else {
-      s = builder->Finish(t.meta.level);
+      s = builder->Finish();
       if (s.ok()) {
         t.meta.file_size = builder->FileSize();
       }

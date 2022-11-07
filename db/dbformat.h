@@ -124,7 +124,7 @@ class InternalFilterPolicy : public FilterPolicy {
  public:
   explicit InternalFilterPolicy(const FilterPolicy* p) : user_policy_(p) {}
   const char* Name() const override;
-  void CreateFilter(const Slice* keys, int n, std::string* dst) const override;
+  void CreateFilter(const Slice* keys, int n, std::string* dst, int level) const override;
   bool KeyMayMatch(const Slice& key, const Slice& filter) const override;
 };
 

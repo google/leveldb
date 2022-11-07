@@ -62,10 +62,10 @@ struct TableBuilder::Rep {
   std::string compressed_output;
 };
 
-TableBuilder::TableBuilder(const Options& options, WritableFile* file)
-    : rep_(new Rep(options, file)) {
+TableBuilder::TableBuilder(const Options& options, WritableFile* file, int level)
+    : rep_(new Rep(options, file)), level_(level) {
   if (rep_->filter_block != nullptr) {
-    rep_->filter_block->StartBlock(0);
+    rep_->filter_block->StartBlock(0, level);
   }
 }
 
@@ -134,7 +134,7 @@ void TableBuilder::Flush() {
     r->status = r->file->Flush();
   }
   if (r->filter_block != nullptr) {
-    r->filter_block->StartBlock(r->offset);
+    r->filter_block->StartBlock(r->offset, level_);
   }
 }
 
@@ -195,7 +195,7 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
 
 Status TableBuilder::status() const { return rep_->status; }
 
-Status TableBuilder::Finish(int level) {
+Status TableBuilder::Finish() {
   Rep* r = rep_;
   Flush();
   assert(!r->closed);
@@ -205,7 +205,7 @@ Status TableBuilder::Finish(int level) {
 
   // Write filter block
   if (ok() && r->filter_block != nullptr) {
-    WriteRawBlock(r->filter_block->Finish(), kNoCompression,
+    WriteRawBlock(r->filter_block->Finish(level_), kNoCompression,
                   &filter_block_handle);
   }
 
@@ -223,7 +223,7 @@ Status TableBuilder::Finish(int level) {
 
     std::string key2 = "level_of_block";
     std::string handle_encoding_2;
-    meta_index_block.Add(key2, std::to_string(level));
+    meta_index_block.Add(key2, std::to_string(level_));
 
     // TODO(postrelease): Add stats and other meta blocks
     WriteBlock(&meta_index_block, &metaindex_block_handle);

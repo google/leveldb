@@ -215,13 +215,13 @@ class TableConstructor : public Constructor {
   Status FinishImpl(const Options& options, const KVMap& data) override {
     Reset();
     StringSink sink;
-    TableBuilder builder(options, &sink);
+    TableBuilder builder(options, &sink, 0);
 
     for (const auto& kvp : data) {
       builder.Add(kvp.first, kvp.second);
       EXPECT_LEVELDB_OK(builder.status());
     }
-    Status s = builder.Finish(-1);
+    Status s = builder.Finish();
     EXPECT_LEVELDB_OK(s);
 
     EXPECT_EQ(sink.contents().size(), builder.FileSize());

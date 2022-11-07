@@ -3,6 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include <iostream>
+#include <vector>
 
 #include "leveldb/filter_policy.h"
 #include "leveldb/slice.h"
@@ -18,37 +19,45 @@ static uint32_t BloomHash(const Slice& key) {
 
 class BloomFilterPolicy : public FilterPolicy {
  public:
-  explicit BloomFilterPolicy(int bits_per_key) : bits_per_key_(bits_per_key) {
+  explicit BloomFilterPolicy(std::vector<size_t> bits_per_key_per_level)
+      : bits_per_key_per_level_(bits_per_key_per_level) {
     // We intentionally round down to reduce probing cost a little bit
-    k_ = static_cast<size_t>(bits_per_key * 0.69);  // 0.69 =~ ln(2)
-    if (k_ < 1) k_ = 1;
-    if (k_ > 30) k_ = 30;
+    for (int i = 0; i < bits_per_key_per_level_.size(); i++) {
+      size_t k_ = static_cast<size_t>(bits_per_key_per_level_[i] * 0.69);
+      if (k_ < 1) k_ = 1;
+      if (k_ > 30) k_ = 30;
+
+      k_per_level_.push_back(k_);
+    }
   }
 
   const char* Name() const override { return "leveldb.BuiltinBloomFilter2"; }
 
-  void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
+  void CreateFilter(const Slice* keys, int n, std::string* dst,
+                    int level) const override {
     // Compute bloom filter size (in both bits and bytes)
+    // std::cout << "Creating filter of size" << n << std::endl;
 
-    size_t bits = n * bits_per_key_;
+    size_t bits = n * bits_per_key_per_level_[level];
 
     // For small n, we can see a very high false positive rate.  Fix it
     // by enforcing a minimum bloom filter length.
     // if (bits < 64) bits = 64;
 
-    // size_t bytes = (bits + 7) / 8;
+    size_t bytes = (bits + 7) / 8;
     bits = bytes * 8;
 
     const size_t init_size = dst->size();
     dst->resize(init_size + bytes, 0);
-    dst->push_back(static_cast<char>(k_));  // Remember # of probes in filter
+    dst->push_back(static_cast<char>(
+        k_per_level_[level]));  // Remember # of probes in filter
     char* array = &(*dst)[init_size];
     for (int i = 0; i < n; i++) {
       // Use double-hashing to generate a sequence of hash values.
       // See analysis in [Kirsch,Mitzenmacher 2006].
       uint32_t h = BloomHash(keys[i]);
       const uint32_t delta = (h >> 17) | (h << 15);  // Rotate right 17 bits
-      for (size_t j = 0; j < k_; j++) {
+      for (size_t j = 0; j < k_per_level_[level]; j++) {
         const uint32_t bitpos = h % bits;
         array[bitpos / 8] |= (1 << (bitpos % 8));
         h += delta;
@@ -57,7 +66,7 @@ class BloomFilterPolicy : public FilterPolicy {
   }
 
   bool KeyMayMatch(const Slice& key, const Slice& bloom_filter) const override {
-    std::cout<< "HERE2" << std::endl;
+    // std::cout << "attempting to match" << key.ToString() << std::endl;
     const size_t len = bloom_filter.size();
     if (len < 2) return false;
 
@@ -84,13 +93,8 @@ class BloomFilterPolicy : public FilterPolicy {
   }
 
  private:
-  size_t bits_per_key_;
-  size_t k_;
+  std::vector<size_t> bits_per_key_per_level_;
+  std::vector<size_t> k_per_level_;
 };
 }  // namespace
-
-const FilterPolicy* NewBloomFilterPolicy(int bits_per_key) {
-  return new BloomFilterPolicy(bits_per_key);
-}
-
 }  // namespace leveldb

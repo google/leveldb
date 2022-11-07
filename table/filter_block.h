@@ -34,12 +34,12 @@ class FilterBlockBuilder {
   FilterBlockBuilder(const FilterBlockBuilder&) = delete;
   FilterBlockBuilder& operator=(const FilterBlockBuilder&) = delete;
 
-  void StartBlock(uint64_t block_offset);
+  void StartBlock(uint64_t block_offset, int level);
   void AddKey(const Slice& key);
-  Slice Finish();
+  Slice Finish(int level);
 
  private:
-  void GenerateFilter();
+  void GenerateFilter(int level);
 
   const FilterPolicy* policy_;
   std::string keys_;             // Flattened key contents

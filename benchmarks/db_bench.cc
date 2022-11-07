@@ -464,9 +464,9 @@ class Benchmark {
  public:
   Benchmark()
       : cache_(FLAGS_cache_size >= 0 ? NewLRUCache(FLAGS_cache_size) : nullptr),
-        filter_policy_(FLAGS_bloom_bits >= 0
-                           ? NewBloomFilterPolicy(FLAGS_bloom_bits)
-                           : nullptr),
+        // filter_policy_(FLAGS_bloom_bits >= 0
+        //                    ? NewBloomFilterPolicy(FLAGS_bloom_bits)
+        //                    : nullptr),
         db_(nullptr),
         num_(FLAGS_num),
         value_size_(FLAGS_value_size),

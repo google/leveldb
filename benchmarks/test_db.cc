@@ -12,8 +12,9 @@
 std::string gen_random(const int len) {
   static const char alphanum[] =
       "0123456789"
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-      "abcdefghijklmnopqrstuvwxyz";
+      // "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      // "abcdefghijklmnopqrstuvwxyz"
+      ;
   std::string tmp_s;
   tmp_s.reserve(len);
 
@@ -52,13 +53,36 @@ int read_data(leveldb::DB* db, int num_entries, int key_size) {
     std::string value = gen_random(key_size);
     std::string result;
     leveldb::Status status = db->Get(leveldb::ReadOptions(), leveldb::Slice(value), &result);
-    if (!status.ok()) {
+    if (!(status.ok() || status.IsNotFound())) {
       std::cout << "oops" << std::endl;
       return -1;
+    }
+    if(status.ok()) {
+      std::cout << "actually found" << std::endl;
     }
   }
   return 0;
 
+}
+int sanity_check(leveldb::DB* db) {
+  std::string value = gen_random(100);
+  db->Put(leveldb::WriteOptions(), leveldb::Slice(value), "");
+
+  for(int i = 0; i < 10000; i++) {
+    std::string random = gen_random(100);
+    db->Put(leveldb::WriteOptions(), leveldb::Slice(random), "");
+  }
+
+  std::string result;
+  leveldb::Status status =
+      db->Get(leveldb::ReadOptions(), leveldb::Slice(value), &result);
+  if (!status.ok()) {
+    std::cout << "Error!!!!!" << std::endl;
+  }
+  else {
+    std::cout << "All good" << std::endl;
+  }
+  return 0;
 }
 
 double eval(long run_bits, long runs_entries){
@@ -125,20 +149,12 @@ int main() {
   leveldb::Options options;
   
   options.create_if_missing = true;
-  // options.filter_policy = leveldb::NewBloomFilterPolicy(5);
   options.block_size = 1024 * 1024;
   options.compression = leveldb::kNoCompression;
-  int key_size = 512;
+  int key_size = 500;
   leveldb::Status status = leveldb::DB::Open(options, "/tmp/testdb", &db);
 
-  write_data(db, 1024, 1024);
-  
-  delete db;
-  // options.filter_policy = leveldb::NewBloomFilterPolicy(5);
-
-  status = leveldb::DB::Open(options, "/tmp/testdb", &db);
-  
-
+  write_data(db, 512, key_size);
   std::vector<long> bytes_per_level_with_zeros = db->GetBytesPerLevel();
   std::vector<long> entries_per_level;
   for(long i = 0; i < bytes_per_level_with_zeros.size(); i++) {
@@ -152,7 +168,15 @@ int main() {
   for(int i = 0; i < bits_per_key_per_level.size(); i++) {
     std::cout << "Level " << i << " bits per key is " << bits_per_key_per_level[i] << std::endl;
   }
-  // print_db(db);
+  delete db;
+
+  options.filter_policy = leveldb::NewBloomFilterPolicy(bits_per_key_per_level);
+  
+  status = leveldb::DB::Open(options, "/tmp/testdb", &db);
+  // sanity_check(db);
+  // std::cout << "Status: " << status.ToString() << std::endl;
+  read_data(db, 12000, key_size);
+  
 
   assert(status.ok());
 

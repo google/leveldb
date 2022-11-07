@@ -108,7 +108,7 @@ void Table::ReadMeta(const Footer& footer) {
   }
 
   iter->Seek("level_of_block");
-  // std::cout<< "HERE AND LEVEL IS " << iter->value().ToString() << std::endl;
+  std::cout<< "HERE AND LEVEL IS " << iter->value().ToString() << std::endl;
   
   delete iter;
   delete meta;

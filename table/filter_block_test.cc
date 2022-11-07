@@ -18,7 +18,7 @@ class TestHashFilter : public FilterPolicy {
  public:
   const char* Name() const override { return "TestHashFilter"; }
 
-  void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
+  void CreateFilter(const Slice* keys, int n, std::string* dst, int level) const override {
     for (int i = 0; i < n; i++) {
       uint32_t h = Hash(keys[i].data(), keys[i].size(), 1);
       PutFixed32(dst, h);
@@ -43,7 +43,7 @@ class FilterBlockTest : public testing::Test {
 
 TEST_F(FilterBlockTest, EmptyBuilder) {
   FilterBlockBuilder builder(&policy_);
-  Slice block = builder.Finish();
+  Slice block = builder.Finish(0);
   ASSERT_EQ("\\x00\\x00\\x00\\x00\\x0b", EscapeString(block));
   FilterBlockReader reader(&policy_, block);
   ASSERT_TRUE(reader.KeyMayMatch(0, "foo"));
@@ -52,15 +52,15 @@ TEST_F(FilterBlockTest, EmptyBuilder) {
 
 TEST_F(FilterBlockTest, SingleChunk) {
   FilterBlockBuilder builder(&policy_);
-  builder.StartBlock(100);
+  builder.StartBlock(100, 0);
   builder.AddKey("foo");
   builder.AddKey("bar");
   builder.AddKey("box");
-  builder.StartBlock(200);
+  builder.StartBlock(200, 0);
   builder.AddKey("box");
-  builder.StartBlock(300);
+  builder.StartBlock(300, 0);
   builder.AddKey("hello");
-  Slice block = builder.Finish();
+  Slice block = builder.Finish(0);
   FilterBlockReader reader(&policy_, block);
   ASSERT_TRUE(reader.KeyMayMatch(100, "foo"));
   ASSERT_TRUE(reader.KeyMayMatch(100, "bar"));
@@ -75,23 +75,23 @@ TEST_F(FilterBlockTest, MultiChunk) {
   FilterBlockBuilder builder(&policy_);
 
   // First filter
-  builder.StartBlock(0);
+  builder.StartBlock(0, 0);
   builder.AddKey("foo");
-  builder.StartBlock(2000);
+  builder.StartBlock(2000, 0);
   builder.AddKey("bar");
 
   // Second filter
-  builder.StartBlock(3100);
+  builder.StartBlock(3100, 0);
   builder.AddKey("box");
 
   // Third filter is empty
 
   // Last filter
-  builder.StartBlock(9000);
+  builder.StartBlock(9000, 0);
   builder.AddKey("box");
   builder.AddKey("hello");
 
-  Slice block = builder.Finish();
+  Slice block = builder.Finish(0);
   FilterBlockReader reader(&policy_, block);
 
   // Check first filter
