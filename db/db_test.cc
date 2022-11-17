@@ -2051,6 +2051,11 @@ class ModelDB : public DB {
 
   explicit ModelDB(const Options& options) : options_(options) {}
   ~ModelDB() override = default;
+
+  virtual void SuspendCompactions() {}
+  virtual void ResumeCompactions() {}
+
+  virtual Status Put(const WriteOptions& o, const Slice& k, const Slice& v) {
   Status Put(const WriteOptions& o, const Slice& k, const Slice& v) override {
     return DB::Put(o, k, v);
   }
