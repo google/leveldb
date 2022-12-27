@@ -27,6 +27,15 @@ if (WIN32)
   # TODO(cmumford): Make UNICODE configurable for Windows.
   add_definitions(-D_UNICODE -DUNICODE)
 else (WIN32)
+  execute_process (
+    COMMAND grep -q "Microsoft" /proc/version
+    RESULT_VARIABLE  IS_WSL
+  )
+  if (IS_WSL EQUAL 0)
+    set(__WSL__ 1)
+  else()
+    set(__WSL__ 0)
+  endif()
   set(LEVELDB_PLATFORM_NAME LEVELDB_PLATFORM_POSIX)
 endif (WIN32)
 
