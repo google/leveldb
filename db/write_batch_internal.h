@@ -29,17 +29,24 @@ class WriteBatchInternal {
   // this batch.
   static void SetSequence(WriteBatch* batch, SequenceNumber seq);
 
-  static Slice Contents(const WriteBatch* batch) { return Slice(batch->rep_); }
+  static Slice Contents(const WriteBatch* batch) {
+    return Slice(batch->rep_);
+  }
 
-  static size_t ByteSize(const WriteBatch* batch) { return batch->rep_.size(); }
+  static size_t ByteSize(const WriteBatch* batch) {
+    return batch->rep_.size();
+  }
 
   static void SetContents(WriteBatch* batch, const Slice& contents);
 
   static Status InsertInto(const WriteBatch* batch, MemTable* memtable);
-
+  static Status InsertInto(const WriteBatch* batch, MemTable* memtable, uint64_t& pos, uint64_t file_numb);
+  //从batch的pos位置解析出一条kv对，并把pos更新为下一条记录在batch中偏移，isdel代表这条kv记录是不是删除操作
+  static Status ParseRecord(const WriteBatch* batch, uint64_t& pos, Slice& key, Slice& value, bool& isDel);
   static void Append(WriteBatch* dst, const WriteBatch* src);
 };
 
 }  // namespace leveldb
+
 
 #endif  // STORAGE_LEVELDB_DB_WRITE_BATCH_INTERNAL_H_

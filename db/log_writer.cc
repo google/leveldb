@@ -4,8 +4,7 @@
 
 #include "db/log_writer.h"
 
-#include <cstdint>
-
+#include <stdint.h>
 #include "leveldb/env.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
@@ -20,7 +19,9 @@ static void InitTypeCrc(uint32_t* type_crc) {
   }
 }
 
-Writer::Writer(WritableFile* dest) : dest_(dest), block_offset_(0) {
+Writer::Writer(WritableFile* dest)
+    : dest_(dest),
+      block_offset_(0) {
   InitTypeCrc(type_crc_);
 }
 
@@ -29,7 +30,8 @@ Writer::Writer(WritableFile* dest, uint64_t dest_length)
   InitTypeCrc(type_crc_);
 }
 
-Writer::~Writer() = default;
+Writer::~Writer() {
+}
 
 Status Writer::AddRecord(const Slice& slice) {
   const char* ptr = slice.data();
@@ -47,7 +49,7 @@ Status Writer::AddRecord(const Slice& slice) {
       // Switch to a new block
       if (leftover > 0) {
         // Fill the trailer (literal below relies on kHeaderSize being 7)
-        static_assert(kHeaderSize == 7, "");
+        assert(kHeaderSize == 7);
         dest_->Append(Slice("\x00\x00\x00\x00\x00\x00", leftover));
       }
       block_offset_ = 0;
@@ -79,31 +81,30 @@ Status Writer::AddRecord(const Slice& slice) {
   return s;
 }
 
-Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
-                                  size_t length) {
-  assert(length <= 0xffff);  // Must fit in two bytes
-  assert(block_offset_ + kHeaderSize + length <= kBlockSize);
+Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr, size_t n) {
+  assert(n <= 0xffff);  // Must fit in two bytes
+  assert(block_offset_ + kHeaderSize + n <= kBlockSize);
 
   // Format the header
   char buf[kHeaderSize];
-  buf[4] = static_cast<char>(length & 0xff);
-  buf[5] = static_cast<char>(length >> 8);
+  buf[4] = static_cast<char>(n & 0xff);
+  buf[5] = static_cast<char>(n >> 8);
   buf[6] = static_cast<char>(t);
 
   // Compute the crc of the record type and the payload.
-  uint32_t crc = crc32c::Extend(type_crc_[t], ptr, length);
-  crc = crc32c::Mask(crc);  // Adjust for storage
+  uint32_t crc = crc32c::Extend(type_crc_[t], ptr, n);
+  crc = crc32c::Mask(crc);                 // Adjust for storage
   EncodeFixed32(buf, crc);
 
   // Write the header and the payload
   Status s = dest_->Append(Slice(buf, kHeaderSize));
   if (s.ok()) {
-    s = dest_->Append(Slice(ptr, length));
+    s = dest_->Append(Slice(ptr, n));
     if (s.ok()) {
       s = dest_->Flush();
     }
   }
-  block_offset_ += kHeaderSize + length;
+  block_offset_ += kHeaderSize + n;
   return s;
 }
 

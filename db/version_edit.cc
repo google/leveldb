@@ -12,29 +12,35 @@ namespace leveldb {
 // Tag numbers for serialized VersionEdit.  These numbers are written to
 // disk and should not be changed.
 enum Tag {
-  kComparator = 1,
-  kLogNumber = 2,
-  kNextFileNumber = 3,
-  kLastSequence = 4,
-  kCompactPointer = 5,
-  kDeletedFile = 6,
-  kNewFile = 7,
+  kComparator           = 1,
+  kLogNumber            = 2,
+  kNextFileNumber       = 3,
+  kLastSequence         = 4,
+  kCompactPointer       = 5,
+  kDeletedFile          = 6,
+  kNewFile              = 7,
   // 8 was used for large value refs
-  kPrevLogNumber = 9
+  kPrevLogNumber        = 9,
+  kHead                 = 10,
+  kVloginfo             = 11,
+  kTail                 = 12
 };
 
 void VersionEdit::Clear() {
   comparator_.clear();
+  vloginfo_.clear();
   log_number_ = 0;
   prev_log_number_ = 0;
   last_sequence_ = 0;
   next_file_number_ = 0;
   has_comparator_ = false;
+  has_vloginfo_ = false;
   has_log_number_ = false;
   has_prev_log_number_ = false;
   has_next_file_number_ = false;
   has_last_sequence_ = false;
-  compact_pointers_.clear();
+  has_head_info_ = false;
+  has_tail_info_ = false;
   deleted_files_.clear();
   new_files_.clear();
 }
@@ -60,6 +66,21 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     PutVarint32(dst, kLastSequence);
     PutVarint64(dst, last_sequence_);
   }
+  if(has_head_info_)
+  {
+    PutVarint32(dst,kHead);
+    dst->append(head_info_, sizeof(head_info_));
+  }
+  if(has_tail_info_)
+  {
+    PutVarint32(dst,kTail);
+    dst->append(tail_info_, sizeof(tail_info_));
+  }
+  if(has_vloginfo_)
+  {
+      PutVarint32(dst,kVloginfo);
+      PutLengthPrefixedSlice(dst, vloginfo_);
+  }
 
   for (size_t i = 0; i < compact_pointers_.size(); i++) {
     PutVarint32(dst, kCompactPointer);
@@ -67,10 +88,12 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     PutLengthPrefixedSlice(dst, compact_pointers_[i].second.Encode());
   }
 
-  for (const auto& deleted_file_kvp : deleted_files_) {
+  for (DeletedFileSet::const_iterator iter = deleted_files_.begin();
+       iter != deleted_files_.end();
+       ++iter) {
     PutVarint32(dst, kDeletedFile);
-    PutVarint32(dst, deleted_file_kvp.first);   // level
-    PutVarint64(dst, deleted_file_kvp.second);  // file number
+    PutVarint32(dst, iter->first);   // level
+    PutVarint64(dst, iter->second);  // file number
   }
 
   for (size_t i = 0; i < new_files_.size(); i++) {
@@ -87,7 +110,8 @@ void VersionEdit::EncodeTo(std::string* dst) const {
 static bool GetInternalKey(Slice* input, InternalKey* dst) {
   Slice str;
   if (GetLengthPrefixedSlice(input, &str)) {
-    return dst->DecodeFrom(str);
+    dst->DecodeFrom(str);
+    return true;
   } else {
     return false;
   }
@@ -95,7 +119,8 @@ static bool GetInternalKey(Slice* input, InternalKey* dst) {
 
 static bool GetLevel(Slice* input, int* level) {
   uint32_t v;
-  if (GetVarint32(input, &v) && v < config::kNumLevels) {
+  if (GetVarint32(input, &v) &&
+      v < config::kNumLevels) {
     *level = v;
     return true;
   } else {
@@ -106,7 +131,7 @@ static bool GetLevel(Slice* input, int* level) {
 Status VersionEdit::DecodeFrom(const Slice& src) {
   Clear();
   Slice input = src;
-  const char* msg = nullptr;
+  const char* msg = NULL;
   uint32_t tag;
 
   // Temporary storage for parsing
@@ -116,7 +141,7 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
   Slice str;
   InternalKey key;
 
-  while (msg == nullptr && GetVarint32(&input, &tag)) {
+  while (msg == NULL && GetVarint32(&input, &tag)) {
     switch (tag) {
       case kComparator:
         if (GetLengthPrefixedSlice(&input, &str)) {
@@ -124,6 +149,15 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
           has_comparator_ = true;
         } else {
           msg = "comparator name";
+        }
+        break;
+
+      case kVloginfo:
+        if (GetLengthPrefixedSlice(&input, &str)) {
+          vloginfo_ = str.ToString();
+          has_vloginfo_ = true;
+        } else {
+          msg = "vloginfo";
         }
         break;
 
@@ -160,15 +194,33 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         break;
 
       case kCompactPointer:
-        if (GetLevel(&input, &level) && GetInternalKey(&input, &key)) {
+        if (GetLevel(&input, &level) &&
+            GetInternalKey(&input, &key)) {
           compact_pointers_.push_back(std::make_pair(level, key));
         } else {
           msg = "compaction pointer";
         }
         break;
 
+      case kHead:
+        if(memcpy(head_info_, input.data(), sizeof(head_info_)))
+        {
+            input.remove_prefix(sizeof(head_info_));
+            has_head_info_ = true;
+        }
+        break;
+
+      case kTail:
+        if(memcpy(tail_info_, input.data(), sizeof(tail_info_)))
+        {
+            input.remove_prefix(sizeof(tail_info_));
+            has_tail_info_ = true;
+        }
+        break;
+
       case kDeletedFile:
-        if (GetLevel(&input, &level) && GetVarint64(&input, &number)) {
+        if (GetLevel(&input, &level) &&
+            GetVarint64(&input, &number)) {
           deleted_files_.insert(std::make_pair(level, number));
         } else {
           msg = "deleted file";
@@ -176,7 +228,8 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         break;
 
       case kNewFile:
-        if (GetLevel(&input, &level) && GetVarint64(&input, &f.number) &&
+        if (GetLevel(&input, &level) &&
+            GetVarint64(&input, &f.number) &&
             GetVarint64(&input, &f.file_size) &&
             GetInternalKey(&input, &f.smallest) &&
             GetInternalKey(&input, &f.largest)) {
@@ -192,12 +245,12 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
     }
   }
 
-  if (msg == nullptr && !input.empty()) {
+  if (msg == NULL && !input.empty()) {
     msg = "invalid tag";
   }
 
   Status result;
-  if (msg != nullptr) {
+  if (msg != NULL) {
     result = Status::Corruption("VersionEdit", msg);
   }
   return result;
@@ -232,11 +285,13 @@ std::string VersionEdit::DebugString() const {
     r.append(" ");
     r.append(compact_pointers_[i].second.DebugString());
   }
-  for (const auto& deleted_files_kvp : deleted_files_) {
-    r.append("\n  RemoveFile: ");
-    AppendNumberTo(&r, deleted_files_kvp.first);
+  for (DeletedFileSet::const_iterator iter = deleted_files_.begin();
+       iter != deleted_files_.end();
+       ++iter) {
+    r.append("\n  DeleteFile: ");
+    AppendNumberTo(&r, iter->first);
     r.append(" ");
-    AppendNumberTo(&r, deleted_files_kvp.second);
+    AppendNumberTo(&r, iter->second);
   }
   for (size_t i = 0; i < new_files_.size(); i++) {
     const FileMetaData& f = new_files_[i].second;

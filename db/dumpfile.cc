@@ -2,10 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "leveldb/dumpfile.h"
-
-#include <cstdio>
-
+#include <stdio.h>
 #include "db/dbformat.h"
 #include "db/filename.h"
 #include "db/log_reader.h"
@@ -38,7 +35,8 @@ bool GuessType(const std::string& fname, FileType* type) {
 // Notified when log reader encounters corruption.
 class CorruptionReporter : public log::Reader::Reporter {
  public:
-  void Corruption(size_t bytes, const Status& status) override {
+  WritableFile* dst_;
+  virtual void Corruption(size_t bytes, const Status& status) {
     std::string r = "corruption: ";
     AppendNumberTo(&r, bytes);
     r += " bytes; ";
@@ -46,8 +44,6 @@ class CorruptionReporter : public log::Reader::Reporter {
     r.push_back('\n');
     dst_->Append(r);
   }
-
-  WritableFile* dst_;
 };
 
 // Print contents of a log file. (*func)() is called on every record.
@@ -74,7 +70,8 @@ Status PrintLogContents(Env* env, const std::string& fname,
 // Called on every item found in a WriteBatch.
 class WriteBatchItemPrinter : public WriteBatch::Handler {
  public:
-  void Put(const Slice& key, const Slice& value) override {
+  WritableFile* dst_;
+  virtual void Put(const Slice& key, const Slice& value) {
     std::string r = "  put '";
     AppendEscapedStringTo(&r, key);
     r += "' '";
@@ -82,15 +79,14 @@ class WriteBatchItemPrinter : public WriteBatch::Handler {
     r += "'\n";
     dst_->Append(r);
   }
-  void Delete(const Slice& key) override {
+  virtual void Delete(const Slice& key) {
     std::string r = "  del '";
     AppendEscapedStringTo(&r, key);
     r += "'\n";
     dst_->Append(r);
   }
-
-  WritableFile* dst_;
 };
+
 
 // Called on every log record (each one of which is a WriteBatch)
 // found in a kLogFile.
@@ -146,8 +142,8 @@ Status DumpDescriptor(Env* env, const std::string& fname, WritableFile* dst) {
 
 Status DumpTable(Env* env, const std::string& fname, WritableFile* dst) {
   uint64_t file_size;
-  RandomAccessFile* file = nullptr;
-  Table* table = nullptr;
+  RandomAccessFile* file = NULL;
+  Table* table = NULL;
   Status s = env->GetFileSize(fname, &file_size);
   if (s.ok()) {
     s = env->NewRandomAccessFile(fname, &file);
@@ -217,12 +213,9 @@ Status DumpFile(Env* env, const std::string& fname, WritableFile* dst) {
     return Status::InvalidArgument(fname + ": unknown file type");
   }
   switch (ftype) {
-    case kLogFile:
-      return DumpLog(env, fname, dst);
-    case kDescriptorFile:
-      return DumpDescriptor(env, fname, dst);
-    case kTableFile:
-      return DumpTable(env, fname, dst);
+    case kLogFile:         return DumpLog(env, fname, dst);
+    case kDescriptorFile:  return DumpDescriptor(env, fname, dst);
+    case kTableFile:       return DumpTable(env, fname, dst);
     default:
       break;
   }

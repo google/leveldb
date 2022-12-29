@@ -2,12 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "gtest/gtest.h"
+#include "leveldb/db.h"
+
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
-#include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "util/logging.h"
+#include "util/testharness.h"
 
 namespace leveldb {
 
@@ -21,7 +22,7 @@ static std::string PrintContents(WriteBatch* b) {
   Iterator* iter = mem->NewIterator();
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     ParsedInternalKey ikey;
-    EXPECT_TRUE(ParseInternalKey(iter->key(), &ikey));
+    ASSERT_TRUE(ParseInternalKey(iter->key(), &ikey));
     switch (ikey.type) {
       case kTypeValue:
         state.append("Put(");
@@ -51,6 +52,8 @@ static std::string PrintContents(WriteBatch* b) {
   return state;
 }
 
+class WriteBatchTest { };
+
 TEST(WriteBatchTest, Empty) {
   WriteBatch batch;
   ASSERT_EQ("", PrintContents(&batch));
@@ -65,11 +68,10 @@ TEST(WriteBatchTest, Multiple) {
   WriteBatchInternal::SetSequence(&batch, 100);
   ASSERT_EQ(100, WriteBatchInternal::Sequence(&batch));
   ASSERT_EQ(3, WriteBatchInternal::Count(&batch));
-  ASSERT_EQ(
-      "Put(baz, boo)@102"
-      "Delete(box)@101"
-      "Put(foo, bar)@100",
-      PrintContents(&batch));
+  ASSERT_EQ("Put(baz, boo)@102"
+            "Delete(box)@101"
+            "Put(foo, bar)@100",
+            PrintContents(&batch));
 }
 
 TEST(WriteBatchTest, Corruption) {
@@ -79,37 +81,36 @@ TEST(WriteBatchTest, Corruption) {
   WriteBatchInternal::SetSequence(&batch, 200);
   Slice contents = WriteBatchInternal::Contents(&batch);
   WriteBatchInternal::SetContents(&batch,
-                                  Slice(contents.data(), contents.size() - 1));
-  ASSERT_EQ(
-      "Put(foo, bar)@200"
-      "ParseError()",
-      PrintContents(&batch));
+                                  Slice(contents.data(),contents.size()-1));
+  ASSERT_EQ("Put(foo, bar)@200"
+            "ParseError()",
+            PrintContents(&batch));
 }
 
 TEST(WriteBatchTest, Append) {
   WriteBatch b1, b2;
   WriteBatchInternal::SetSequence(&b1, 200);
   WriteBatchInternal::SetSequence(&b2, 300);
-  b1.Append(b2);
-  ASSERT_EQ("", PrintContents(&b1));
+  WriteBatchInternal::Append(&b1, &b2);
+  ASSERT_EQ("",
+            PrintContents(&b1));
   b2.Put("a", "va");
-  b1.Append(b2);
-  ASSERT_EQ("Put(a, va)@200", PrintContents(&b1));
+  WriteBatchInternal::Append(&b1, &b2);
+  ASSERT_EQ("Put(a, va)@200",
+            PrintContents(&b1));
   b2.Clear();
   b2.Put("b", "vb");
-  b1.Append(b2);
-  ASSERT_EQ(
-      "Put(a, va)@200"
-      "Put(b, vb)@201",
-      PrintContents(&b1));
+  WriteBatchInternal::Append(&b1, &b2);
+  ASSERT_EQ("Put(a, va)@200"
+            "Put(b, vb)@201",
+            PrintContents(&b1));
   b2.Delete("foo");
-  b1.Append(b2);
-  ASSERT_EQ(
-      "Put(a, va)@200"
-      "Put(b, vb)@202"
-      "Put(b, vb)@201"
-      "Delete(foo)@203",
-      PrintContents(&b1));
+  WriteBatchInternal::Append(&b1, &b2);
+  ASSERT_EQ("Put(a, va)@200"
+            "Put(b, vb)@202"
+            "Put(b, vb)@201"
+            "Delete(foo)@203",
+            PrintContents(&b1));
 }
 
 TEST(WriteBatchTest, ApproximateSize) {
@@ -130,3 +131,7 @@ TEST(WriteBatchTest, ApproximateSize) {
 }
 
 }  // namespace leveldb
+
+int main(int argc, char** argv) {
+  return leveldb::test::RunAllTests();
+}
