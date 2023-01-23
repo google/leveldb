@@ -54,7 +54,7 @@ class SkipList {
   // REQUIRES: nothing that compares equal to key is currently in the list.
   void Insert(const Key& key);
 
-  // Returns true iff an entry that compares equal to key is in the list.
+  // Returns true if an entry that compares equal to key is in the list.
   bool Contains(const Key& key) const;
 
   // Iteration over the contents of a skip list
@@ -64,7 +64,7 @@ class SkipList {
     // The returned iterator is not valid.
     explicit Iterator(const SkipList* list);
 
-    // Returns true iff the iterator is positioned at a valid node.
+    // Returns true if the iterator is positioned at a valid node.
     bool Valid() const;
 
     // Returns the key at the current position.
@@ -83,11 +83,11 @@ class SkipList {
     void Seek(const Key& target);
 
     // Position at the first entry in list.
-    // Final state of iterator is Valid() iff list is not empty.
+    // Final state of iterator is Valid() if list is not empty.
     void SeekToFirst();
 
     // Position at the last entry in list.
-    // Final state of iterator is Valid() iff list is not empty.
+    // Final state of iterator is Valid() if list is not empty.
     void SeekToLast();
 
    private:
