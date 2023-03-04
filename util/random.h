@@ -5,7 +5,7 @@
 #ifndef STORAGE_LEVELDB_UTIL_RANDOM_H_
 #define STORAGE_LEVELDB_UTIL_RANDOM_H_
 
-#include <cstdint>
+#include <stdint.h>
 
 namespace leveldb {
 
@@ -15,17 +15,11 @@ namespace leveldb {
 class Random {
  private:
   uint32_t seed_;
-
  public:
-  explicit Random(uint32_t s) : seed_(s & 0x7fffffffu) {
-    // Avoid bad seeds.
-    if (seed_ == 0 || seed_ == 2147483647L) {
-      seed_ = 1;
-    }
-  }
+  explicit Random(uint32_t s) : seed_(s & 0x7fffffffu) { }
   uint32_t Next() {
-    static const uint32_t M = 2147483647L;  // 2^31-1
-    static const uint64_t A = 16807;        // bits 14, 8, 7, 5, 2, 1, 0
+    static const uint32_t M = 2147483647L;   // 2^31-1
+    static const uint64_t A = 16807;  // bits 14, 8, 7, 5, 2, 1, 0
     // We are computing
     //       seed_ = (seed_ * A) % M,    where M = 2^31-1
     //
@@ -55,7 +49,22 @@ class Random {
   // Skewed: pick "base" uniformly from range [0,max_log] and then
   // return "base" random bits.  The effect is to pick a number in the
   // range [0,2^max_log-1] with exponential bias towards smaller numbers.
-  uint32_t Skewed(int max_log) { return Uniform(1 << Uniform(max_log + 1)); }
+  uint32_t Skewed(int max_log) {
+    return Uniform(1 << Uniform(max_log + 1));
+  }
+
+  // Shuffle the array into random order
+  void Shuffle(int *array, int n) {
+  	if (n > 1) {
+	  int i;
+	  for (i=0; i<n-1; i++) {
+	  	int j = i + Next() / (2147483647 / (n-i) + 1);
+		int t = array[j];
+		array[j] = array[i];
+		array[i] = t;
+	  }
+	}
+  }
 };
 
 }  // namespace leveldb
