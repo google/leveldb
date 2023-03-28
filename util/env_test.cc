@@ -96,45 +96,40 @@ TEST_F(EnvTest, RunMany) {
   struct RunState {
     port::Mutex mu;
     port::CondVar cvar{&mu};
-    int run_count = 0;
+    int last_id = 0;
   };
 
   struct Callback {
-    RunState* const state_;  // Pointer to shared state.
-    bool run = false;
+    RunState* state_;  // Pointer to shared state.
+    const int id_;  // Order# for the execution of this callback.
 
-    Callback(RunState* s) : state_(s) {}
+    Callback(RunState* s, int id) : state_(s), id_(id) {}
 
     static void Run(void* arg) {
       Callback* callback = reinterpret_cast<Callback*>(arg);
       RunState* state = callback->state_;
 
       MutexLock l(&state->mu);
-      state->run_count++;
-      callback->run = true;
+      ASSERT_EQ(state->last_id, callback->id_ - 1);
+      state->last_id = callback->id_;
       state->cvar.Signal();
     }
   };
 
   RunState state;
-  Callback callback1(&state);
-  Callback callback2(&state);
-  Callback callback3(&state);
-  Callback callback4(&state);
+  Callback callback1(&state, 1);
+  Callback callback2(&state, 2);
+  Callback callback3(&state, 3);
+  Callback callback4(&state, 4);
   env_->Schedule(&Callback::Run, &callback1);
   env_->Schedule(&Callback::Run, &callback2);
   env_->Schedule(&Callback::Run, &callback3);
   env_->Schedule(&Callback::Run, &callback4);
 
   MutexLock l(&state.mu);
-  while (state.run_count != 4) {
+  while (state.last_id != 4) {
     state.cvar.Wait();
   }
-
-  ASSERT_TRUE(callback1.run);
-  ASSERT_TRUE(callback2.run);
-  ASSERT_TRUE(callback3.run);
-  ASSERT_TRUE(callback4.run);
 }
 
 struct State {

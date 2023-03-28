@@ -1723,7 +1723,8 @@ TEST_F(DBTest, DestroyEmptyDir) {
   std::vector<std::string> children;
   ASSERT_LEVELDB_OK(env.GetChildren(dbname, &children));
 #if defined(LEVELDB_PLATFORM_CHROMIUM)
-  // Chromium's file system abstraction always filters out '.' and '..'.
+  // TODO(https://crbug.com/1428746): Chromium's file system abstraction always
+  // filters out '.' and '..'.
   ASSERT_EQ(0, children.size());
 #else
   // The stock Env's do not filter out '.' and '..' special files.
