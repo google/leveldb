@@ -1722,8 +1722,13 @@ TEST_F(DBTest, DestroyEmptyDir) {
   ASSERT_TRUE(env.FileExists(dbname));
   std::vector<std::string> children;
   ASSERT_LEVELDB_OK(env.GetChildren(dbname, &children));
+#if defined(LEVELDB_PLATFORM_CHROMIUM)
+  // Chromium's file system abstraction always filters out '.' and '..'.
+  ASSERT_EQ(0, children.size());
+#else
   // The stock Env's do not filter out '.' and '..' special files.
   ASSERT_EQ(2, children.size());
+#endif  // defined(LEVELDB_PLATFORM_CHROMIUM)
   ASSERT_LEVELDB_OK(DestroyDB(dbname, opts));
   ASSERT_TRUE(!env.FileExists(dbname));
 
