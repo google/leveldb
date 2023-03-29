@@ -180,11 +180,21 @@ TEST_F(EnvTest, TestOpenNonExistentFile) {
   RandomAccessFile* random_access_file;
   Status status =
       env_->NewRandomAccessFile(non_existent_file, &random_access_file);
+#if defined(LEVELDB_PLATFORM_CHROMIUM)
+  // TODO(crbug.com/760362): See comment in MakeIOError() from env_chromium.cc.
+  ASSERT_TRUE(status.IsIOError());
+#else
   ASSERT_TRUE(status.IsNotFound());
+#endif  // defined(LEVELDB_PLATFORM_CHROMIUM)
 
   SequentialFile* sequential_file;
   status = env_->NewSequentialFile(non_existent_file, &sequential_file);
+#if defined(LEVELDB_PLATFORM_CHROMIUM)
+  // TODO(crbug.com/760362): See comment in MakeIOError() from env_chromium.cc.
+  ASSERT_TRUE(status.IsIOError());
+#else
   ASSERT_TRUE(status.IsNotFound());
+#endif  // defined(LEVELDB_PLATFORM_CHROMIUM)
 }
 
 TEST_F(EnvTest, ReopenWritableFile) {
