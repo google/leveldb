@@ -791,7 +791,7 @@ static bool CompressionSupported(CompressionType type) {
   if (type == kSnappyCompression) {
     return port::Snappy_Compress(in.data(), in.size(), &out);
   } else if (type == kZstdCompression) {
-    return port::Zstd_Compress(in.data(), in.size(), &out);
+    return port::Zstd_Compress(/*level=*/1, in.data(), in.size(), &out);
   }
   return false;
 }

@@ -171,7 +171,8 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
 
     case kZstdCompression: {
       std::string* compressed = &r->compressed_output;
-      if (port::Zstd_Compress(raw.data(), raw.size(), compressed) &&
+      if (port::Zstd_Compress(r->options.zstd_compression_level, raw.data(),
+                              raw.size(), compressed) &&
           compressed->size() < raw.size() - (raw.size() / 8u)) {
         block_contents = *compressed;
       } else {
