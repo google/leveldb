@@ -23,6 +23,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <stack>
 
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
@@ -492,6 +493,11 @@ class WindowsEnv : public Env {
     return GetFileAttributesA(filename.c_str()) != INVALID_FILE_ATTRIBUTES;
   }
 
+  bool DirectoryExists(const std::string& dir_path) override {
+    DWORD attrs = GetFileAttributesA(dir_path.c_str());
+    return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY);
+  }
+
   Status GetChildren(const std::string& directory_path,
                      std::vector<std::string>* result) override {
     const std::string find_pattern = directory_path + "\\*";
@@ -531,6 +537,43 @@ class WindowsEnv : public Env {
   Status CreateDir(const std::string& dirname) override {
     if (!::CreateDirectoryA(dirname.c_str(), nullptr)) {
       return WindowsError(dirname, ::GetLastError());
+    }
+    return Status::OK();
+  }
+
+  Status CreateDirIteratively(const std::string& path) override {
+    if (DirectoryExists(path)) {
+      return Status::OK();
+    }
+
+    std::string& dirpath = GetNormalizedDirectoryPath(path);
+    
+    std::stack<std::string> dirs;
+    bool dir_exists = false;
+    int root_length = IsAbsolute(dirpath) ? 2 : 0;
+    int path_length = dirpath.size() - 1;
+
+    while (path_length >= root_length && !dir_exists) {
+      std::string dir = dirpath.substr(0, path_length + 1);
+
+      if (!DirectoryExists(dir)) {
+        dirs.push(std::move(dir));
+      } else {
+        dir_exists = true;
+      }
+
+      while (path_length > root_length && !IsDirectorySeparator(dirpath[path_length])) {
+        --path_length;
+      }
+      --path_length;
+    }
+    while (!dirs.empty()) {
+      const std::string dir_to_create = dirs.top();
+      dirs.pop();
+
+      if (!::CreateDirectoryA(dir_to_create.c_str(), nullptr)) {
+        return WindowsError(dir_to_create, ::GetLastError());
+      }
     }
     return Status::OK();
   }
