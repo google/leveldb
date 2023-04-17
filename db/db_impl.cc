@@ -37,6 +37,8 @@
 
 namespace leveldb {
 
+using namespace filesystem;
+
 const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
@@ -132,6 +134,7 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       owns_info_log_(options_.info_log != raw_options.info_log),
       owns_cache_(options_.block_cache != raw_options.block_cache),
       dbname_(dbname),
+      path_(PathFactory::Create(dbname)),
       table_cache_(new TableCache(dbname_, options_, TableCacheSize(options_))),
       db_lock_(nullptr),
       shutting_down_(false),
@@ -175,6 +178,9 @@ DBImpl::~DBImpl() {
   }
   if (owns_cache_) {
     delete options_.block_cache;
+  }
+  if (path_ != nullptr) {
+    delete path_;
   }
 }
 
@@ -295,6 +301,10 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   // Ignore error from CreateDir since the creation of the DB is
   // committed only when the descriptor is created, and this directory
   // may already exist from a previous failed creation attempt.
+  if (path_->IsDirectory()) {
+    path_->CreateDirectories();
+  }
+
   env_->CreateDir(dbname_);
   assert(db_lock_ == nullptr);
   Status s = env_->LockFile(LockFileName(dbname_), &db_lock_);
