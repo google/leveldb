@@ -302,7 +302,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   // committed only when the descriptor is created, and this directory
   // may already exist from a previous failed creation attempt.
   if (path_->IsDirectory()) {
-    path_->CreateDirectories();
+    path_->CreateDirs();
   }
 
   env_->CreateDir(dbname_);

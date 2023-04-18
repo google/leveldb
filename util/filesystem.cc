@@ -7,17 +7,9 @@ bool IsDirectorySeparator(const char c) {
   return (c == Path::kDirectorySeparator || c == Path::kAltDirecttorySeparator);
 }
 
-Path* PathFactory::Create(const std::string& path)
-{
-  #ifdef LEVELDB_PLATFORM_WINDOWS
-    return new WindowsFilePath(path);
-  #elif LEVELDB_PLATFORM_POSIX
-    return nullptr;
-  #endif
-    return nullptr;
-}
-
 #ifdef LEVELDB_PLATFORM_WINDOWS
+
+#include <windows.h>
 
 bool WindowsFilePath::IsAbsolute() const {
   return path_.size() >= 3 && IsValidDriveChar(path_[0]) &&
@@ -39,7 +31,6 @@ bool WindowsFilePath::IsRelative() const {
       IsDirectorySeparator(path_[2])) {
     return IsValidDriveChar(path_[0]);
   }
-
   return true;
 };
 
@@ -49,7 +40,7 @@ void WindowsFilePath::Normalize() {
   for (const char c : path_) {
     if (!IsDirectorySeparator(c)) {
       *(out++) = c;
-    } else if (out == path_.begin() || IsDirectorySeparator(*std::prev(out))) {
+    } else if (out == path_.begin() || !IsDirectorySeparator(*std::prev(out))) {
       *(out++) = Path::kDirectorySeparator;
     } else {
       continue;
@@ -59,11 +50,28 @@ void WindowsFilePath::Normalize() {
   path_.erase(out, path_.end());
 }
 
-bool WindowsFilePath::CreateDirectories() { return true; }
+Status WindowsFilePath::CreateDirs() { return Status::OK(); }
 
-bool WindowsFilePath::CreateDirectory() { return true; }
+Status WindowsFilePath::CreateDir() { 
+  if (!CreateDirectoryA(Path::ToCString(), nullptr)) {
+    DWORD error_code = GetLastError();
+    if (error_code == ERROR_FILE_NOT_FOUND || error_code == ERROR_PATH_NOT_FOUND)
+      return Status::NotFound(path_ + "not foud.");
+    return Status::IOError("I/O error occured during " + path_ + " creation");
+  }
+  return Status::OK();
+}
 
 #endif
+
+Path* PathFactory::Create(const std::string& path) {
+#ifdef LEVELDB_PLATFORM_WINDOWS
+  return new WindowsFilePath(path);
+#elif LEVELDB_PLATFORM_POSIX
+  return nullptr;
+#endif
+  return nullptr;
+}
 
 }
 }

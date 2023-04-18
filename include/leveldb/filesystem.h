@@ -5,6 +5,7 @@
 #include <string>
 
 #include "leveldb/export.h"
+#include "leveldb/status.h"
 
 namespace leveldb {
 
@@ -19,9 +20,9 @@ public:
   static const char kAltDirecttorySeparator = '/';
   static const char kVolumeSeparatorChar = ':';
 
-  Path() : isDir_{false}, path_("") {}
+  Path() : is_dir_{false}, path_("") {}
   Path(const std::string& path) : path_(path) {
-    isDir_ = !IsEmpty() && IsDirectorySeparator(path_[Size() - 1]);
+    is_dir_ = !IsEmpty() && IsDirectorySeparator(path_[Size() - 1]);
   }
   virtual ~Path() {}
 
@@ -31,17 +32,17 @@ public:
   virtual bool IsAbsolute() const = 0;
   virtual bool IsRelative() const = 0;
 
-  virtual bool CreateDirectories() = 0;
-  virtual bool CreateDirectory() = 0;
+  virtual Status CreateDirs() = 0;
+  virtual Status CreateDir() = 0;
 
   inline size_t Size() const { return path_.size(); }
   inline bool IsEmpty() const { return path_.empty(); }
-  inline bool IsDirectory() const { return isDir_; }
+  inline bool IsDirectory() const { return is_dir_; }
 
   // Utility functions
 
   inline bool HasExtension() { 
-    if (!IsEmpty()) {
+    if (!IsEmpty() && !is_dir_) {
       std::string::reverse_iterator& path_iter = path_.rbegin();
 
       while (path_iter != path_.rend()) {
@@ -60,13 +61,11 @@ public:
   }
 
 protected:
-  bool isDir_;
+  bool is_dir_;
   std::string path_;
 
   virtual void Normalize() = 0;
 };
-
-#ifdef LEVELDB_PLATFORM_WINDOWS
 
 class WindowsFilePath : public Path {
 public:
@@ -79,8 +78,8 @@ public:
   bool IsAbsolute() const override;
   bool IsRelative() const override;
 
-  bool CreateDirectories() override;
-  bool CreateDirectory() override;
+  Status CreateDirs() override;
+  Status CreateDir() override;
 
 protected:
   void Normalize() override;
@@ -91,16 +90,13 @@ inline bool IsValidDriveChar(const char c) {
   return drive_char >= 'A' && drive_char <= 'Z';
 }
 
-#endif
-
 // Factory
 class PathFactory {
- public:
-  static Path* Create(const std::string& path);
+public:
+  PathFactory() = delete;
+  ~PathFactory() = delete;
 
- private:
-  PathFactory() {}
-  ~PathFactory() {}
+  static Path* Create(const std::string& path);
 };
 
 } // namespace filesystem
