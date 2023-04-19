@@ -17,11 +17,11 @@
 #include "leveldb/env.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
-#include "leveldb/filesystem.h"
+#include "leveldb/db_path.h"
 
 namespace leveldb {
 
-using namespace filesystem;
+using namespace path;
 
 class MemTable;
 class TableCache;
@@ -167,7 +167,7 @@ class DBImpl : public DB {
   const bool owns_cache_;
   // TODO: replace with Path;
   const std::string dbname_;
-  Path* const path_;
+  DbPath* const path_;
 
   // table_cache_ provides its own synchronization
   TableCache* const table_cache_;

@@ -37,7 +37,7 @@
 
 namespace leveldb {
 
-using namespace filesystem;
+using namespace path;
 
 const int kNumNonTableCacheFiles = 10;
 
@@ -301,11 +301,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   // Ignore error from CreateDir since the creation of the DB is
   // committed only when the descriptor is created, and this directory
   // may already exist from a previous failed creation attempt.
-  if (path_->IsDirectory()) {
-    path_->CreateDirs();
-  }
-
-  env_->CreateDir(dbname_);
+  env_->CreateDir(path_->Name());
   assert(db_lock_ == nullptr);
   Status s = env_->LockFile(LockFileName(dbname_), &db_lock_);
   if (!s.ok()) {
