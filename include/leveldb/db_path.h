@@ -4,9 +4,6 @@
 #include <cstdint>
 #include <string>
 
-#include "leveldb/export.h"
-#include "leveldb/status.h"
-
 namespace leveldb {
 
 namespace path {
@@ -23,10 +20,9 @@ public:
   const std::string& Name() const { return path_; }
   const char* CName() const { return path_.c_str(); }
 
-  static bool IsDirectorySeparator(const char c);
-
   virtual bool IsAbsolute() const = 0;
   virtual bool IsRelative() const = 0;
+  virtual size_t RootLength() = 0;
 
   inline size_t Size() const { return path_.size(); }
   inline bool IsEmpty() const { return path_.empty(); }
@@ -38,9 +34,14 @@ protected:
 
   std::string path_;
 
+  static bool IsDirectorySeparator(const char c);
+
+  bool StartsWith(const std::string& value, bool ignore_case = false);
+
   virtual void Normalize() = 0;
 };
 
+// Win path
 class WindowsDbPath : public DbPath {
 public:
   explicit WindowsDbPath(const std::string& path) : DbPath(path) {
@@ -48,13 +49,19 @@ public:
   }
   ~WindowsDbPath() {}
 
-  static bool IsValidDriveChar(const char c);
-
   bool IsAbsolute() const override;
   bool IsRelative() const override;
 
+  size_t RootLength() override;
+
 protected:
+  static bool IsValidDriveChar(const char c);
+
   void Normalize() override;
+
+private:
+  const char* kExtendedPathPrefix = "\\\\?\\";
+  const char* kUncExtendedPathPrefix = "\\\\?\\UNC\\";
 };
 
 
