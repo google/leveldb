@@ -17,6 +17,10 @@ namespace leveldb {
 
 Comparator::~Comparator() = default;
 
+bool Comparator::IsInternal() const {
+  return false;
+}
+
 namespace {
 class BytewiseComparatorImpl : public Comparator {
  public:
