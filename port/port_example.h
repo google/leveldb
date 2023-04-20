@@ -83,7 +83,8 @@ bool Snappy_Uncompress(const char* input_data, size_t input_length,
 
 // Store the zstd compression of "input[0,input_length-1]" in *output.
 // Returns false if zstd is not supported by this port.
-bool Zstd_Compress(const char* input, size_t input_length, std::string* output);
+bool Zstd_Compress(int level, const char* input, size_t input_length,
+                   std::string* output);
 
 // If input[0,input_length-1] looks like a valid zstd compressed
 // buffer, store the size of the uncompressed data in *result and

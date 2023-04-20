@@ -126,6 +126,9 @@ static bool FLAGS_compression = true;
 // Use the db with the following name.
 static const char* FLAGS_db = nullptr;
 
+// ZSTD compression level to try out
+static int FLAGS_zstd_compression_level = 1;
+
 namespace leveldb {
 
 namespace {
@@ -779,11 +782,21 @@ class Benchmark {
   }
 
   void ZstdCompress(ThreadState* thread) {
-    Compress(thread, "zstd", &port::Zstd_Compress);
+    Compress(thread, "zstd",
+             [](const char* input, size_t length, std::string* output) {
+               return port::Zstd_Compress(FLAGS_zstd_compression_level, input,
+                                          length, output);
+             });
   }
 
   void ZstdUncompress(ThreadState* thread) {
-    Uncompress(thread, "zstd", &port::Zstd_Compress, &port::Zstd_Uncompress);
+    Uncompress(
+        thread, "zstd",
+        [](const char* input, size_t length, std::string* output) {
+          return port::Zstd_Compress(FLAGS_zstd_compression_level, input,
+                                     length, output);
+        },
+        &port::Zstd_Uncompress);
   }
 
   void Open() {

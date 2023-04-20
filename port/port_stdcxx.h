@@ -29,6 +29,7 @@
 #include <snappy.h>
 #endif  // HAVE_SNAPPY
 #if HAVE_ZSTD
+#define ZSTD_STATIC_LINKING_ONLY  // For ZSTD_compressionParameters.
 #include <zstd.h>
 #endif  // HAVE_ZSTD
 
@@ -129,7 +130,7 @@ inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {
 #endif  // HAVE_SNAPPY
 }
 
-inline bool Zstd_Compress(const char* input, size_t length,
+inline bool Zstd_Compress(int level, const char* input, size_t length,
                           std::string* output) {
 #if HAVE_ZSTD
   // Get the MaxCompressedLength.
@@ -139,6 +140,9 @@ inline bool Zstd_Compress(const char* input, size_t length,
   }
   output->resize(outlen);
   ZSTD_CCtx* ctx = ZSTD_createCCtx();
+  ZSTD_compressionParameters parameters =
+      ZSTD_getCParams(level, std::max(length, size_t{1}), /*dictSize=*/0);
+  ZSTD_CCtx_setCParams(ctx, parameters);
   outlen = ZSTD_compress2(ctx, &(*output)[0], output->size(), input, length);
   ZSTD_freeCCtx(ctx);
   if (ZSTD_isError(outlen)) {
@@ -148,6 +152,7 @@ inline bool Zstd_Compress(const char* input, size_t length,
   return true;
 #else
   // Silence compiler warnings about unused arguments.
+  (void)level;
   (void)input;
   (void)length;
   (void)output;
