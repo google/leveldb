@@ -290,9 +290,7 @@ add_executable(leveldbutil
 )
 target_link_libraries(leveldbutil leveldb)
 
-if(LEVELDB_BUILD_TESTS)
-  enable_testing()
-
+if(LEVELDB_BUILD_TESTS OR LEVELDB_BUILD_BENCHMARKS)
   # Prevent overriding the parent project's compiler/linker settings on Windows.
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
   set(install_gtest OFF)
@@ -309,6 +307,15 @@ if(LEVELDB_BUILD_TESTS)
     set_property(TARGET gmock
         APPEND PROPERTY COMPILE_OPTIONS -Wno-missing-field-initializers)
   endif(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
+endif(LEVELDB_BUILD_TESTS OR LEVELDB_BUILD_BENCHMARKS)
+
+if(LEVELDB_BUILD_TESTS)
+  enable_testing()
+
+  # This project uses Google benchmark for benchmarking.
+  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+  set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
+  add_subdirectory("third_party/benchmark")
 
   add_executable(leveldb_tests "")
   target_sources(leveldb_tests
