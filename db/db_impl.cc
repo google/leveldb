@@ -179,7 +179,7 @@ DBImpl::~DBImpl() {
   if (owns_cache_) {
     delete options_.block_cache;
   }
-  if (path_ != nullptr) {
+  if (path_) {
     delete path_;
   }
 }
@@ -301,7 +301,7 @@ Status DBImpl::Recover(VersionEdit* edit, bool* save_manifest) {
   // Ignore error from CreateDir since the creation of the DB is
   // committed only when the descriptor is created, and this directory
   // may already exist from a previous failed creation attempt.
-  env_->CreateDir(path_->Name());
+  env_->CreateDir(path_->ToString());
   assert(db_lock_ == nullptr);
   Status s = env_->LockFile(LockFileName(dbname_), &db_lock_);
   if (!s.ok()) {

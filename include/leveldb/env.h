@@ -20,6 +20,7 @@
 
 #include "leveldb/export.h"
 #include "leveldb/status.h"
+#include "leveldb/db_path.h"
 
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.
 #if defined(_WIN32)
@@ -113,6 +114,9 @@ class LEVELDB_EXPORT Env {
   // Returns true iff the named file exists.
   virtual bool FileExists(const std::string& fname) = 0;
 
+  // Returns true if the input directory path exists.
+  virtual bool DirectoryExists(const std::string& dirname) = 0;
+
   // Store in *result the names of the children of the specified directory.
   // The names are relative to "dir".
   // Original contents of *results are dropped.
@@ -140,6 +144,8 @@ class LEVELDB_EXPORT Env {
 
   // Create the specified directory.
   virtual Status CreateDir(const std::string& dirname) = 0;
+
+  virtual Status CreateDir(const path::DbPath& dbpath) = 0;
 
   // Delete the specified directory.
   //
@@ -358,6 +364,9 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   bool FileExists(const std::string& f) override {
     return target_->FileExists(f);
   }
+  bool DirectoryExists(const std::string& d) override {
+    return target_->DirectoryExists(d);
+  }
   Status GetChildren(const std::string& dir,
                      std::vector<std::string>* r) override {
     return target_->GetChildren(dir, r);
@@ -366,6 +375,9 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
     return target_->RemoveFile(f);
   }
   Status CreateDir(const std::string& d) override {
+    return target_->CreateDir(d);
+  }
+  Status CreateDir(const path::DbPath& d) override { 
     return target_->CreateDir(d);
   }
   Status RemoveDir(const std::string& d) override {

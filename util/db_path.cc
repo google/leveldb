@@ -7,7 +7,7 @@ bool DbPath::IsDirectorySeparator(const char c) {
   return (c == DbPath::kDirectorySeparator || c == DbPath::kAltDirecttorySeparator);
 }
 
-bool DbPath::StartsWith(const std::string& value, bool ignore_case) {
+bool DbPath::StartsWith(const std::string& value, bool ignore_case) const {
   if (value.size() > path_.size()) {
     return false;
   }
@@ -43,30 +43,12 @@ bool WindowsDbPath::IsRelative() const {
   return true;
 };
 
-void WindowsDbPath::Normalize() {
-  auto out = path_.begin();
-
-  for (const char c : path_) {
-    if (!IsDirectorySeparator(c)) {
-      *(out++) = c;
-    } 
-    else if (out == path_.begin() || !IsDirectorySeparator(*std::prev(out))) {
-      *(out++) = kDirectorySeparator;
-    } 
-    else {
-      continue;
-    }
-  }
-
-  path_.erase(out, path_.end());
-}
-
 bool WindowsDbPath::IsValidDriveChar(const char c) {
   const char drive_char = std::toupper(c);
   return drive_char >= 'A' && drive_char <= 'Z';
 }
 
-size_t WindowsDbPath::RootLength() {
+size_t WindowsDbPath::RootLength() const {
   size_t path_length = path_.size();
   size_t root_length = 0;
   size_t volume_separator_length = 2;
@@ -78,8 +60,7 @@ size_t WindowsDbPath::RootLength() {
   if (extended_syntax) {
     if (extended_unc_syntax) {
       unc_root_length = std::strlen(kUncExtendedPathPrefix);
-    } 
-    else {
+    } else {
       volume_separator_length += std::strlen(kExtendedPathPrefix);
     }
   }
@@ -89,20 +70,38 @@ size_t WindowsDbPath::RootLength() {
 
     if (extended_unc_syntax || (path_length > 1 && IsDirectorySeparator(path_[1]))) {
       root_length = unc_root_length;
-      int n = 2; // maximum separators to skip
-      while (root_length < path_length && (!IsDirectorySeparator(path_[root_length]) || --n > 0)) {
+      int n = 2;  // maximum separators to skip
+      while (root_length < path_length &&
+             (!IsDirectorySeparator(path_[root_length]) || --n > 0)) {
         ++root_length;
       }
     }
-  } 
-  else if (path_length >= volume_separator_length && path_[volume_separator_length - 1] == kVolumeSeparatorChar) {
+  } else if (path_length >= volume_separator_length &&
+             path_[volume_separator_length - 1] == kVolumeSeparatorChar) {
     root_length = volume_separator_length;
-    if (path_length >= volume_separator_length && IsDirectorySeparator(path_[volume_separator_length])) {
+    if (path_length >= volume_separator_length &&
+        IsDirectorySeparator(path_[volume_separator_length])) {
       ++root_length;
     }
   }
 
   return root_length;
+}
+
+void WindowsDbPath::Normalize() {
+  auto out = path_.begin();
+
+  for (const char c : path_) {
+    if (!IsDirectorySeparator(c)) {
+      *(out++) = c;
+    } else if (out == path_.begin() || !IsDirectorySeparator(*std::prev(out))) {
+      *(out++) = kDirectorySeparator;
+    } else {
+      continue;
+    }
+  }
+
+  path_.erase(out, path_.end());
 }
 
 // Windows path
