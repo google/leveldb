@@ -70,7 +70,7 @@ TEST(FormatTest, InternalKey_DecodeFromEmpty) {
   ASSERT_TRUE(!internal_key.DecodeFrom(""));
 }
 
-TEST(FormatTest, InternalKeyShortSeparator) {
+TEST(FormatTest, InternalKeyShortestSeparator) {
   // When user keys are same
   ASSERT_EQ(IKey("foo", 100, kTypeValue),
             Shorten(IKey("foo", 100, kTypeValue), IKey("foo", 99, kTypeValue)));
@@ -104,7 +104,7 @@ TEST(FormatTest, InternalKeyShortSeparator) {
       Shorten(IKey("foobar", 100, kTypeValue), IKey("foo", 200, kTypeValue)));
 }
 
-TEST(FormatTest, InternalKeyShortestSuccessor) {
+TEST(FormatTest, InternalKeyShortSuccessor) {
   ASSERT_EQ(IKey("g", kMaxSequenceNumber, kValueTypeForSeek),
             ShortSuccessor(IKey("foo", 100, kTypeValue)));
   ASSERT_EQ(IKey("\xff\xff", 100, kTypeValue),
