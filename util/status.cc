@@ -6,8 +6,6 @@
 
 #include <cstdio>
 
-#include "port/port.h"
-
 namespace leveldb {
 
 const char* Status::CopyState(const char* state) {

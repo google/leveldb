@@ -6,7 +6,6 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include <utility>
 
 #include "gtest/gtest.h"
 
