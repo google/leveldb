@@ -35,6 +35,8 @@
 #include "util/logging.h"
 #include "util/mutexlock.h"
 
+#include "iostream"
+
 namespace leveldb {
 
 const int kNumNonTableCacheFiles = 10;
@@ -125,6 +127,11 @@ static int TableCacheSize(const Options& sanitized_options) {
 
 DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
     : env_(raw_options.env),
+      // 추가 
+      stall_time_(0), 
+      dumptime(0), 
+      wa(0),
+      
       internal_comparator_(raw_options.comparator),
       internal_filter_policy_(raw_options.filter_policy),
       options_(SanitizeOptions(dbname, &internal_comparator_,
@@ -176,6 +183,10 @@ DBImpl::~DBImpl() {
   if (owns_cache_) {
     delete options_.block_cache;
   }
+  // 추가 
+  std::cout << "stall time: " << stall_time_ << "us" << std::endl;
+  std::cout << "flush time: " << dumptime << "us" << std::endl;
+  std::cout << "wa: " << wa << "Bytes" << std::endl;
 }
 
 Status DBImpl::NewDB() {
@@ -516,8 +527,15 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Status s;
   {
     mutex_.Unlock();
+    uint64_t start = env_->NowMicros();
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
+    uint64_t end = env_->NowMicros();
+    dumptime += (end - start);
+    
     mutex_.Lock();
+  
+
+  
   }
 
   Log(options_.info_log, "Level-0 table #%llu: %lld bytes %s",
@@ -1349,10 +1367,16 @@ Status DBImpl::MakeRoomForWrite(bool force) {
       // There is room in current memtable
       break;
     } else if (imm_ != nullptr) {
+      //추가 
+      uint64_t start = env_->NowMicros();
       // We have filled up the current memtable, but the previous
       // one is still being compacted, so we wait.
       Log(options_.info_log, "Current memtable full; waiting...\n");
       background_work_finished_signal_.Wait();
+      uint64_t end = env_->NowMicros();
+      stall_time_ += (end - start);
+      
+
     } else if (versions_->NumLevelFiles(0) >= config::kL0_StopWritesTrigger) {
       // There are too many level-0 files.
       Log(options_.info_log, "Too many L0 files; waiting...\n");

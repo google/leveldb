@@ -75,6 +75,10 @@ class DBImpl : public DB {
   friend class DB;
   struct CompactionState;
   struct Writer;
+  // 추가 
+  uint64_t stall_time_;
+  uint64_t dumptime;
+  size_t wa;
 
   // Information for a manual compaction
   struct ManualCompaction {
