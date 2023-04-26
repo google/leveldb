@@ -28,6 +28,10 @@
 #if HAVE_SNAPPY
 #include <snappy.h>
 #endif  // HAVE_SNAPPY
+#if HAVE_ZSTD
+#define ZSTD_STATIC_LINKING_ONLY  // For ZSTD_compressionParameters.
+#include <zstd.h>
+#endif  // HAVE_ZSTD
 
 #include <cassert>
 #include <condition_variable>  // NOLINT
@@ -124,6 +128,74 @@ inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {
   (void)output;
   return false;
 #endif  // HAVE_SNAPPY
+}
+
+inline bool Zstd_Compress(int level, const char* input, size_t length,
+                          std::string* output) {
+#if HAVE_ZSTD
+  // Get the MaxCompressedLength.
+  size_t outlen = ZSTD_compressBound(length);
+  if (ZSTD_isError(outlen)) {
+    return false;
+  }
+  output->resize(outlen);
+  ZSTD_CCtx* ctx = ZSTD_createCCtx();
+  ZSTD_compressionParameters parameters =
+      ZSTD_getCParams(level, std::max(length, size_t{1}), /*dictSize=*/0);
+  ZSTD_CCtx_setCParams(ctx, parameters);
+  outlen = ZSTD_compress2(ctx, &(*output)[0], output->size(), input, length);
+  ZSTD_freeCCtx(ctx);
+  if (ZSTD_isError(outlen)) {
+    return false;
+  }
+  output->resize(outlen);
+  return true;
+#else
+  // Silence compiler warnings about unused arguments.
+  (void)level;
+  (void)input;
+  (void)length;
+  (void)output;
+  return false;
+#endif  // HAVE_ZSTD
+}
+
+inline bool Zstd_GetUncompressedLength(const char* input, size_t length,
+                                       size_t* result) {
+#if HAVE_ZSTD
+  size_t size = ZSTD_getFrameContentSize(input, length);
+  if (size == 0) return false;
+  *result = size;
+  return true;
+#else
+  // Silence compiler warnings about unused arguments.
+  (void)input;
+  (void)length;
+  (void)result;
+  return false;
+#endif  // HAVE_ZSTD
+}
+
+inline bool Zstd_Uncompress(const char* input, size_t length, char* output) {
+#if HAVE_ZSTD
+  size_t outlen;
+  if (!Zstd_GetUncompressedLength(input, length, &outlen)) {
+    return false;
+  }
+  ZSTD_DCtx* ctx = ZSTD_createDCtx();
+  outlen = ZSTD_decompressDCtx(ctx, output, outlen, input, length);
+  ZSTD_freeDCtx(ctx);
+  if (ZSTD_isError(outlen)) {
+    return false;
+  }
+  return true;
+#else
+  // Silence compiler warnings about unused arguments.
+  (void)input;
+  (void)length;
+  (void)output;
+  return false;
+#endif  // HAVE_ZSTD
 }
 
 inline bool GetHeapProfile(void (*func)(void*, const char*, int), void* arg) {

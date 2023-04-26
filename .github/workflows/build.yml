@@ -66,10 +66,11 @@ jobs:
 
     - name: Install dependencies on Linux
       if: ${{ runner.os == 'Linux' }}
+      # libgoogle-perftools-dev is temporarily removed from the package list
+      # because it is currently broken on GitHub's Ubuntu 22.04.
       run: |
         sudo apt-get update
-        sudo apt-get install libgoogle-perftools-dev libkyotocabinet-dev \
-            libsnappy-dev libsqlite3-dev
+        sudo apt-get install libkyotocabinet-dev libsnappy-dev libsqlite3-dev
 
     - name: Generate build config
       run: >-
