@@ -160,14 +160,12 @@ class DBImpl : public DB {
 
   // Constant after construction
   Env* const env_;
+  const std::string dbname_;
   const InternalKeyComparator internal_comparator_;
   const InternalFilterPolicy internal_filter_policy_;
   const Options options_;  // options_.comparator == &internal_comparator_
   const bool owns_info_log_;
   const bool owns_cache_;
-  // TODO: replace with Path;
-  const std::string dbname_;
-  DbPath* const path_;
 
   // table_cache_ provides its own synchronization
   TableCache* const table_cache_;

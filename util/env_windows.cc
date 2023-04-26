@@ -536,41 +536,33 @@ class WindowsEnv : public Env {
   }
 
   Status CreateDir(const std::string& dirname) override {
-    if (!::CreateDirectoryA(dirname.c_str(), nullptr)) {
-      return WindowsError(dirname, ::GetLastError());
-    }
-    return Status::OK();
-  }
+    size_t path_length = dirname.size();
 
-  Status CreateDir(const DbPath& dirpath) override {
-    size_t path_length = dirpath.Size();
-
-    if (path_length >= 2 && DbPath::IsDirectorySeparator(dirpath[path_length - 1])) {
+    if (path_length >= 2 && path::IsDirectorySeparator(dirname[path_length - 1])) {
       --path_length;
     }
 
-    if (DirectoryExists(dirpath.ToString())) {
+    if (DirectoryExists(dirname)) {
       return Status::OK();
     }
 
     std::vector<std::string> stackDir;
     bool path_exists = false;
-    size_t root_length = dirpath.RootLength();
+    size_t root_length = path::RootLength(dirname);
 
-    if (path_length > root_length) { // Special case root (fullpath = X:\\)
+    if (path_length > root_length) {  // Special case root (fullpath = X:\\)
       size_t i = path_length - 1;
 
       while (i >= root_length && !path_exists) {
-        const std::string dir = dirpath.Substring(0, i + 1);
+        const std::string dir = dirname.substr(0, i + 1);
 
         if (!DirectoryExists(dir)) {
           stackDir.push_back(dir);
-        } 
-        else {
+        } else {
           path_exists = true;
         }
 
-        while (i > root_length && dirpath[i] != DbPath::kDirectorySeparator && dirpath[i] != DbPath::kAltDirecttorySeparator)
+        while (i > root_length && dirname[i] != path::kDirectorySeparator && dirname[i] != path::kAltDirecttorySeparator)
           --i;
         --i;
       }
@@ -586,7 +578,7 @@ class WindowsEnv : public Env {
         }
       }
     }
-    
+
     return Status::OK();
   }
 

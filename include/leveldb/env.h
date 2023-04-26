@@ -145,8 +145,6 @@ class LEVELDB_EXPORT Env {
   // Create the specified directory.
   virtual Status CreateDir(const std::string& dirname) = 0;
 
-  virtual Status CreateDir(const path::DbPath& dbpath) = 0;
-
   // Delete the specified directory.
   //
   // The default implementation calls DeleteDir, to support legacy Env
@@ -375,9 +373,6 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
     return target_->RemoveFile(f);
   }
   Status CreateDir(const std::string& d) override {
-    return target_->CreateDir(d);
-  }
-  Status CreateDir(const path::DbPath& d) override { 
     return target_->CreateDir(d);
   }
   Status RemoveDir(const std::string& d) override {
