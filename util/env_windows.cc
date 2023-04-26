@@ -37,6 +37,8 @@ namespace leveldb {
 
 namespace {
 
+using namespace path;
+
 constexpr const size_t kWritableFileBufferSize = 65536;
 
 // Up to 1000 mmaps for 64-bit binaries; none for 32-bit.
@@ -492,6 +494,11 @@ class WindowsEnv : public Env {
     return GetFileAttributesA(filename.c_str()) != INVALID_FILE_ATTRIBUTES;
   }
 
+  bool DirectoryExists(const std::string& dir_path) override {
+    DWORD attrs = GetFileAttributesA(dir_path.c_str());
+    return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY);
+  }
+
   Status GetChildren(const std::string& directory_path,
                      std::vector<std::string>* result) override {
     const std::string find_pattern = directory_path + "\\*";
@@ -529,9 +536,49 @@ class WindowsEnv : public Env {
   }
 
   Status CreateDir(const std::string& dirname) override {
-    if (!::CreateDirectoryA(dirname.c_str(), nullptr)) {
-      return WindowsError(dirname, ::GetLastError());
+    size_t path_length = dirname.size();
+
+    if (path_length >= 2 && path::IsDirectorySeparator(dirname[path_length - 1])) {
+      --path_length;
     }
+
+    if (DirectoryExists(dirname)) {
+      return Status::OK();
+    }
+
+    std::vector<std::string> stackDir;
+    bool path_exists = false;
+    size_t root_length = path::RootLength(dirname);
+
+    if (path_length > root_length) {  // Special case root (fullpath = X:\\)
+      size_t i = path_length - 1;
+
+      while (i >= root_length && !path_exists) {
+        const std::string dir = dirname.substr(0, i + 1);
+
+        if (!DirectoryExists(dir)) {
+          stackDir.push_back(dir);
+        } else {
+          path_exists = true;
+        }
+
+        while (i > root_length && dirname[i] != path::kDirectorySeparator && dirname[i] != path::kAltDirecttorySeparator)
+          --i;
+        --i;
+      }
+    }
+
+    while (!stackDir.empty()) {
+      const std::string dir = stackDir[stackDir.size() - 1];
+      stackDir.pop_back();
+
+      if (!DirectoryExists(dir)) {
+        if (!::CreateDirectoryA(dir.c_str(), nullptr)) {
+          return WindowsError(dir, ::GetLastError());
+        }
+      }
+    }
+
     return Status::OK();
   }
 
