@@ -21,6 +21,9 @@ class Env;
 
 class TableCache {
  public:
+
+  static uint64_t De_serialize;
+ 
   TableCache(const std::string& dbname, const Options& options, int entries);
 
   TableCache(const TableCache&) = delete;
@@ -54,6 +57,9 @@ class TableCache {
   const std::string dbname_;
   const Options& options_;
   Cache* cache_;
+  
+  
+
 };
 
 }  // namespace leveldb

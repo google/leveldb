@@ -131,6 +131,7 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       stall_time_(0), 
       dumptime(0), 
       wa(0),
+
       
       internal_comparator_(raw_options.comparator),
       internal_filter_policy_(raw_options.filter_policy),
@@ -185,8 +186,9 @@ DBImpl::~DBImpl() {
   }
   // 추가 
   std::cout << "stall time: " << stall_time_ << "us" << std::endl;
-  std::cout << "flush time: " << dumptime << "us" << std::endl;
-  std::cout << "wa: " << wa << "Bytes" << std::endl;
+  std::cout << "serialize time: " << dumptime << "us" << std::endl;
+  // std::cout << "wa: " << wa << "Bytes" << std::endl;
+  std::cout << "De_serialize time: " << TableCache::De_serialize << "us" << std::endl;
 }
 
 Status DBImpl::NewDB() {
@@ -527,14 +529,12 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Status s;
   {
     mutex_.Unlock();
+    // 수정 
     uint64_t start = env_->NowMicros();
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     uint64_t end = env_->NowMicros();
     dumptime += (end - start);
-    
     mutex_.Lock();
-  
-
   
   }
 

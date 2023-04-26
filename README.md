@@ -10,7 +10,7 @@ LevelDB is a fast key-value storage library written at Google that provides an o
 Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
 
 # Features
-
+- 
   * Keys and values are arbitrary byte arrays.
   * Data is stored sorted by key.
   * Callers can provide a custom comparison function to override the sort order.

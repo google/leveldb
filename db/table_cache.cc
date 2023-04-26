@@ -29,6 +29,7 @@ static void UnrefEntry(void* arg1, void* arg2) {
   cache->Release(h);
 }
 
+uint64_t TableCache::De_serialize=0;
 TableCache::TableCache(const std::string& dbname, const Options& options,
                        int entries)
     : env_(options.env),
@@ -38,8 +39,12 @@ TableCache::TableCache(const std::string& dbname, const Options& options,
 
 TableCache::~TableCache() { delete cache_; }
 
+// 반 직렬화 
 Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
                              Cache::Handle** handle) {
+
+  uint64_t start = env_->NowMicros();
+
   Status s;
   char buf[sizeof(file_number)];
   EncodeFixed64(buf, file_number);
@@ -72,6 +77,13 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
       *handle = cache_->Insert(key, tf, 1, &DeleteEntry);
     }
   }
+    //추가 
+  uint64_t end = env_->NowMicros();
+  De_serialize+=(end-start);
+
+
+
+
   return s;
 }
 

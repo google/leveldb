@@ -28,6 +28,7 @@ class VersionSet;
 
 class DBImpl : public DB {
  public:
+ 
   DBImpl(const Options& options, const std::string& dbname);
 
   DBImpl(const DBImpl&) = delete;
@@ -70,6 +71,7 @@ class DBImpl : public DB {
   // Samples are taken approximately once every config::kReadBytesPeriod
   // bytes.
   void RecordReadSample(Slice key);
+  uint64_t De_serialize;
 
  private:
   friend class DB;

@@ -14,6 +14,7 @@
 #include "table/format.h"
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
+#include "leveldb/env.h"
 
 namespace leveldb {
 
@@ -35,8 +36,12 @@ struct Table::Rep {
   Block* index_block;
 };
 
+
 Status Table::Open(const Options& options, RandomAccessFile* file,
                    uint64_t size, Table** table) {
+  
+                    
+
   *table = nullptr;
   if (size < Footer::kEncodedLength) {
     return Status::Corruption("file is too short to be an sstable");
@@ -75,8 +80,8 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
     *table = new Table(rep);
     (*table)->ReadMeta(footer);
   }
-
   return s;
+
 }
 
 void Table::ReadMeta(const Footer& footer) {
