@@ -77,7 +77,7 @@ void MemTable::Add(SequenceNumber s, ValueType type, const Slice& key,
                    const Slice& value) {
   // Format of an entry is concatenation of:
   //  key_size     : varint32 of internal_key.size()
-  //  key bytes    : char[internal_key.size()]
+  //  key bytes    : char[key.size()]
   //  tag          : uint64((sequence << 8) | type)
   //  value_size   : varint32 of value.size()
   //  value bytes  : char[value.size()]
@@ -106,7 +106,7 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
   if (iter.Valid()) {
     // entry format is:
     //    klength  varint32
-    //    userkey  char[klength]
+    //    userkey  char[klength - 8]
     //    tag      uint64
     //    vlength  varint32
     //    value    char[vlength]
