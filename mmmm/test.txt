@@ -1,0 +1,1 @@
+uftrace record  db_bench  --benchmarks="fillrandom" --db=/home/eros/workspace/Thanos-leveldb/tmp --num=100000 > /home/eros/workspace/Thanos-leveldb/mmmm/test.txt

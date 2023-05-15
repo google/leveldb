@@ -29,6 +29,9 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     }
 
     TableBuilder* builder = new TableBuilder(options, file);
+
+      // se time
+    uint64_t se_start = env->NowMicros();
     meta->smallest.DecodeFrom(iter->key());
     Slice key;
     for (; iter->Valid(); iter->Next()) {
@@ -41,6 +44,10 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
 
     // Finish and check for builder errors
     s = builder->Finish();
+
+    uint64_t se_end = env->NowMicros();
+    env->ser_time += (se_end - se_start);
+    
     if (s.ok()) {
       meta->file_size = builder->FileSize();
       assert(meta->file_size > 0);

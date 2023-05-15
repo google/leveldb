@@ -285,8 +285,6 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
 
   //在第0层寻找
   // Search level-0 in order from newest to oldest.
-
-  
   std::vector<FileMetaData*> tmp;
   tmp.reserve(files_[0].size());
   for (uint32_t i = 0; i < files_[0].size(); i++) {
@@ -344,6 +342,7 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
     Status s;
     bool found;
 
+    // sst들을 순회하면서 찾는다.
     static bool Match(void* arg, int level, FileMetaData* f) {
       State* state = reinterpret_cast<State*>(arg);
 

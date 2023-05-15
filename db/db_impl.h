@@ -71,15 +71,24 @@ class DBImpl : public DB {
   // Samples are taken approximately once every config::kReadBytesPeriod
   // bytes.
   void RecordReadSample(Slice key);
-  uint64_t De_serialize;
+  //uint64_t De_serialize;
 
  private:
   friend class DB;
   struct CompactionState;
   struct Writer;
   // 추가 
-  uint64_t stall_time_;
+  uint64_t mem_stall_time_;
+  uint64_t L0_stall_time_;
+  uint64_t mem_time_;
+  uint64_t SST_time_;
   uint64_t dumptime;
+  uint64_t log_time;
+  uint64_t comp_time;
+  uint64_t w_mem_time;
+
+
+
   size_t wa;
 
   // Information for a manual compaction

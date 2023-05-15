@@ -36,11 +36,11 @@ struct Table::Rep {
   Block* index_block;
 };
 
+//추가 
+uint64_t Table::return_value=0;
 
 Status Table::Open(const Options& options, RandomAccessFile* file,
                    uint64_t size, Table** table) {
-  
-                    
 
   *table = nullptr;
   if (size < Footer::kEncodedLength) {
@@ -220,6 +220,7 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k, void* arg,
                           void (*handle_result)(void*, const Slice&,
                                                 const Slice&)) {
   Status s;
+  Env* env_ = Env::Default();
   Iterator* iiter = rep_->index_block->NewIterator(rep_->options.comparator);
   iiter->Seek(k);
   if (iiter->Valid()) {
@@ -233,7 +234,11 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k, void* arg,
       Iterator* block_iter = BlockReader(this, options, iiter->value());
       block_iter->Seek(k);
       if (block_iter->Valid()) {
+        // return  추가 
+        uint64_t start = env_->NowMicros(); 
         (*handle_result)(arg, block_iter->key(), block_iter->value());
+        uint64_t end = env_->NowMicros();
+        return_value+= (end-start);
       }
       s = block_iter->status();
       delete block_iter;

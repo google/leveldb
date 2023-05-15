@@ -51,7 +51,7 @@ class WritableFile;
 class LEVELDB_EXPORT Env {
  public:
   Env();
-
+  uint64_t ser_time;  
   Env(const Env&) = delete;
   Env& operator=(const Env&) = delete;
 

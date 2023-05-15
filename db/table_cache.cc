@@ -29,7 +29,8 @@ static void UnrefEntry(void* arg1, void* arg2) {
   cache->Release(h);
 }
 
-uint64_t TableCache::De_serialize=0;
+uint64_t TableCache::De_serialize = 0;
+uint64_t TableCache::return_value_func = 0;
 TableCache::TableCache(const std::string& dbname, const Options& options,
                        int entries)
     : env_(options.env),
@@ -39,12 +40,9 @@ TableCache::TableCache(const std::string& dbname, const Options& options,
 
 TableCache::~TableCache() { delete cache_; }
 
-// 반 직렬화 
+
 Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
                              Cache::Handle** handle) {
-
-  uint64_t start = env_->NowMicros();
-
   Status s;
   char buf[sizeof(file_number)];
   EncodeFixed64(buf, file_number);
@@ -76,12 +74,9 @@ Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
       tf->table = table;
       *handle = cache_->Insert(key, tf, 1, &DeleteEntry);
     }
+
+
   }
-    //추가 
-  uint64_t end = env_->NowMicros();
-  De_serialize+=(end-start);
-
-
 
 
   return s;
@@ -95,7 +90,11 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
   }
 
   Cache::Handle* handle = nullptr;
+  uint64_t start = env_->NowMicros();
+
   Status s = FindTable(file_number, file_size, &handle);
+  uint64_t end = env_->NowMicros();
+  De_serialize+=(end-start);
   if (!s.ok()) {
     return NewErrorIterator(s);
   }
@@ -114,14 +113,23 @@ Status TableCache::Get(const ReadOptions& options, uint64_t file_number,
                        void (*handle_result)(void*, const Slice&,
                                              const Slice&)) {
   Cache::Handle* handle = nullptr;
+
+  uint64_t start = env_->NowMicros();
   Status s = FindTable(file_number, file_size, &handle);
+  uint64_t end = env_->NowMicros();
+  De_serialize+=(end-start);
   if (s.ok()) {
     Table* t = reinterpret_cast<TableAndFile*>(cache_->Value(handle))->table;
+    uint64_t start = env_->NowMicros();
     s = t->InternalGet(options, k, arg, handle_result);
+    uint64_t end = env_->NowMicros();
+    return_value_func+=(end-start);
+    
     cache_->Release(handle);
   }
   return s;
 }
+
 
 void TableCache::Evict(uint64_t file_number) {
   char buf[sizeof(file_number)];

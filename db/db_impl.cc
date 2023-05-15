@@ -128,8 +128,14 @@ static int TableCacheSize(const Options& sanitized_options) {
 DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
     : env_(raw_options.env),
       // 추가 
-      stall_time_(0), 
-      dumptime(0), 
+      mem_stall_time_(0), 
+      L0_stall_time_(0),
+      mem_time_(0),
+      w_mem_time(0),
+      SST_time_(0),
+      comp_time(0),
+      dumptime(0),
+      log_time(0),
       wa(0),
 
       
@@ -184,11 +190,24 @@ DBImpl::~DBImpl() {
   if (owns_cache_) {
     delete options_.block_cache;
   }
-  // 추가 
-  std::cout << "stall time: " << stall_time_ << "us" << std::endl;
-  std::cout << "serialize time: " << dumptime << "us" << std::endl;
+  // 쓰기 시간
+  std::cout << "log time: " << log_time << "us" << std::endl;
+  std::cout << "memtable write time: " << w_mem_time << "us" << std::endl;
+  std::cout << "memtable stall time: " << mem_stall_time_ << "us" << std::endl;
+  std::cout << "L0 stall time: " << L0_stall_time_ << "us" << std::endl; 
+  std::cout << "Flush time: " << dumptime << "us" << std::endl;
+  std::cout << "serialize time: " << env_->ser_time << "us" << std::endl;
+  std::cout << "Compaction time: " << comp_time << "us" << std::endl;
+  
+  /*
+  // 읽기 시간 
+  std::cout << "memtable time: " << mem_time_ << "us" << std::endl;
+  std::cout << "SST time: " << SST_time_ << "us" << std::endl;
+  std::cout << " return_value_func: " << TableCache::return_value_func << "us" << std::endl;
+  std::cout << " return_value: " << Table::return_value << "us" << std::endl;
   // std::cout << "wa: " << wa << "Bytes" << std::endl;
   std::cout << "De_serialize time: " << TableCache::De_serialize << "us" << std::endl;
+  */
 }
 
 Status DBImpl::NewDB() {
@@ -529,11 +548,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Status s;
   {
     mutex_.Unlock();
-    // 수정 
-    uint64_t start = env_->NowMicros();
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
-    uint64_t end = env_->NowMicros();
-    dumptime += (end - start);
     mutex_.Lock();
   
   }
@@ -572,7 +587,10 @@ void DBImpl::CompactMemTable() {
   VersionEdit edit;
   Version* base = versions_->current();
   base->Ref();
+  uint64_t start = env_->NowMicros();
   Status s = WriteLevel0Table(imm_, &edit, base);
+  uint64_t end = env_->NowMicros();
+  dumptime += (end - start);
   base->Unref();
 
   if (s.ok() && shutting_down_.load(std::memory_order_acquire)) {
@@ -706,7 +724,9 @@ void DBImpl::BackgroundCall() {
   } else if (!bg_error_.ok()) {
     // No more background work after a background error.
   } else {
+    uint64_t com_start = env_->NowMicros();
     BackgroundCompaction();
+    comp_time +=(env_->NowMicros()- com_start);
   }
 
   background_compaction_scheduled_ = false;
@@ -1157,12 +1177,21 @@ Status DBImpl::Get(const ReadOptions& options, const Slice& key,
     mutex_.Unlock();
     // First look in the memtable, then in the immutable memtable (if any).
     LookupKey lkey(key, snapshot);
+
+    uint64_t start = env_->NowMicros();
     if (mem->Get(lkey, value, &s)) {
-      // Done
+      uint64_t end = env_->NowMicros();
+      mem_time_ += (end - start);
     } else if (imm != nullptr && imm->Get(lkey, value, &s)) {
-      // Done
+      uint64_t end = env_->NowMicros();
+      mem_time_ += (end - start);
     } else {
+      // sst 찾기 
+      uint64_t start_s = env_->NowMicros();
       s = current->Get(options, lkey, value, &stats);
+      uint64_t end_s = env_->NowMicros();
+      SST_time_ += (end_s - start_s);
+
       have_stat_update = true;
     }
     mutex_.Lock();
@@ -1245,7 +1274,11 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
     // into mem_.
     {
       mutex_.Unlock();
+      // log 시간 
+      uint64_t start = env_->NowMicros();
       status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));
+      uint64_t end = env_->NowMicros();
+      log_time += (end - start);
       bool sync_error = false;
       if (status.ok() && options.sync) {
         status = logfile_->Sync();
@@ -1254,7 +1287,10 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
         }
       }
       if (status.ok()) {
+        uint64_t start2 = env_->NowMicros();
         status = WriteBatchInternal::InsertInto(write_batch, mem_);
+        uint64_t end2 = env_->NowMicros();
+        w_mem_time += (end2 - start2);
       }
       mutex_.Lock();
       if (sync_error) {
@@ -1374,12 +1410,15 @@ Status DBImpl::MakeRoomForWrite(bool force) {
       Log(options_.info_log, "Current memtable full; waiting...\n");
       background_work_finished_signal_.Wait();
       uint64_t end = env_->NowMicros();
-      stall_time_ += (end - start);
+      mem_stall_time_ += (end - start);
       
 
     } else if (versions_->NumLevelFiles(0) >= config::kL0_StopWritesTrigger) {
       // There are too many level-0 files.
+      uint64_t start = env_->NowMicros();
       Log(options_.info_log, "Too many L0 files; waiting...\n");
+      uint64_t end = env_->NowMicros();
+      L0_stall_time_ += (end - start);
       background_work_finished_signal_.Wait();
     } else {
       // Attempt to switch to a new memtable and trigger compaction of old

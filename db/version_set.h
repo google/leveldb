@@ -38,6 +38,7 @@ class TableCache;
 class Version;
 class VersionSet;
 class WritableFile;
+class Env;
 
 // Return the smallest index i such that files[i]->largest >= key.
 // Return files.size() if there is no such file.
@@ -63,6 +64,7 @@ class Version {
     FileMetaData* seek_file;
     int seek_file_level;
   };
+
 
   // Append to *iters a sequence of iterators that will
   // yield the contents of this Version when merged together.
@@ -149,7 +151,7 @@ class Version {
   Version* next_;     // Next version in linked list
   Version* prev_;     // Previous version in linked list
   int refs_;          // Number of live refs to this version
-
+  
   // List of files per level
   std::vector<FileMetaData*> files_[config::kNumLevels];
 
@@ -157,6 +159,7 @@ class Version {
   FileMetaData* file_to_compact_;
   int file_to_compact_level_;
 
+  static uint64_t De_serialize;
   // Level that should be compacted next and its compaction score.
   // Score < 1 means compaction is not strictly needed.  These fields
   // are initialized by Finalize().
