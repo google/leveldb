@@ -35,7 +35,7 @@ ZKEY=("16")
 ZVALUE=("496" "1008" "4080" "8192" "16368")
 # ZVALUE=("112" "240" "496" "1008" "2032" "4080" "8192" "16368"  "65520")
 # ZVALUE=("112" "240" "496" "1008")
-thread=("1")
+# thread=("1")
 
 DB="/home/eros/workspace/tmp/"
 DBc="/home/eros/workspace/tmp/cpu/"
