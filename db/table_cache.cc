@@ -29,7 +29,7 @@ static void UnrefEntry(void* arg1, void* arg2) {
   cache->Release(h);
 }
 
-uint64_t TableCache::De_serialize = 0;
+uint64_t TableCache::find_table_time = 0;
 uint64_t TableCache::return_value_func = 0;
 TableCache::TableCache(const std::string& dbname, const Options& options,
                        int entries)
@@ -94,7 +94,7 @@ Iterator* TableCache::NewIterator(const ReadOptions& options,
 
   Status s = FindTable(file_number, file_size, &handle);
   uint64_t end = env_->NowMicros();
-  De_serialize+=(end-start);
+  find_table_time +=(end-start);
   if (!s.ok()) {
     return NewErrorIterator(s);
   }
@@ -117,7 +117,7 @@ Status TableCache::Get(const ReadOptions& options, uint64_t file_number,
   uint64_t start = env_->NowMicros();
   Status s = FindTable(file_number, file_size, &handle);
   uint64_t end = env_->NowMicros();
-  De_serialize+=(end-start);
+  find_table_time +=(end-start);
   if (s.ok()) {
     Table* t = reinterpret_cast<TableAndFile*>(cache_->Value(handle))->table;
     uint64_t start = env_->NowMicros();

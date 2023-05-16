@@ -60,6 +60,7 @@ bool SomeFileOverlapsRange(const InternalKeyComparator& icmp,
 
 class Version {
  public:
+   static uint64_t sst_index_time;
   struct GetStats {
     FileMetaData* seek_file;
     int seek_file_level;

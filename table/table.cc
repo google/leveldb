@@ -231,14 +231,16 @@ Status Table::InternalGet(const ReadOptions& options, const Slice& k, void* arg,
         !filter->KeyMayMatch(handle.offset(), k)) {
       // Not found
     } else {
+
+
+      // uint64_t start = env_->NowMicros(); 
       Iterator* block_iter = BlockReader(this, options, iiter->value());
       block_iter->Seek(k);
       if (block_iter->Valid()) {
-        // return  추가 
-        uint64_t start = env_->NowMicros(); 
         (*handle_result)(arg, block_iter->key(), block_iter->value());
-        uint64_t end = env_->NowMicros();
-        return_value+= (end-start);
+        //uint64_t end = env_->NowMicros();
+        //return_value+= (end-start);
+
       }
       s = block_iter->status();
       delete block_iter;

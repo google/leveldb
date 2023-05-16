@@ -199,14 +199,16 @@ DBImpl::~DBImpl() {
   std::cout << "serialize time: " << env_->ser_time << "us" << std::endl;
   std::cout << "Compaction time: " << comp_time << "us" << std::endl;
   
-  /*
-  // 읽기 시간 
+  std::cout << "*** read *** " << std::endl;
+
   std::cout << "memtable time: " << mem_time_ << "us" << std::endl;
   std::cout << "SST time: " << SST_time_ << "us" << std::endl;
-  std::cout << " return_value_func: " << TableCache::return_value_func << "us" << std::endl;
-  std::cout << " return_value: " << Table::return_value << "us" << std::endl;
-  // std::cout << "wa: " << wa << "Bytes" << std::endl;
-  std::cout << "De_serialize time: " << TableCache::De_serialize << "us" << std::endl;
+  std::cout << "sst indexing time: " << Version::sst_index_time << "us" << std::endl;
+  std::cout << "find table time: " << TableCache::find_table_time << "us" << std::endl;
+  std::cout << " de_serialize time : " << TableCache::return_value_func << "us" << std::endl;
+  // std::cout << " return_value: " << Table::return_value << "us" << std::endl;
+  /*
+  // 읽기 시간 
   */
 }
 
@@ -548,7 +550,10 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   Status s;
   {
     mutex_.Unlock();
-    s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
+      uint64_t start = env_->NowMicros();
+      s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
+      uint64_t end = env_->NowMicros();
+     dumptime += (end - start);
     mutex_.Lock();
   
   }
@@ -587,10 +592,7 @@ void DBImpl::CompactMemTable() {
   VersionEdit edit;
   Version* base = versions_->current();
   base->Ref();
-  uint64_t start = env_->NowMicros();
   Status s = WriteLevel0Table(imm_, &edit, base);
-  uint64_t end = env_->NowMicros();
-  dumptime += (end - start);
   base->Unref();
 
   if (s.ok() && shutting_down_.load(std::memory_order_acquire)) {
@@ -785,7 +787,9 @@ void DBImpl::BackgroundCompaction() {
         status.ToString().c_str(), versions_->LevelSummary(&tmp));
   } else {
     CompactionState* compact = new CompactionState(c);
+
     status = DoCompactionWork(compact);
+    
     if (!status.ok()) {
       RecordBackgroundError(status);
     }
@@ -962,12 +966,16 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
       const uint64_t imm_start = env_->NowMicros();
       mutex_.Lock();
       if (imm_ != nullptr) {
+       // const uint64_t imm_start = env_->NowMicros();
         CompactMemTable();
+      imm_micros += (env_->NowMicros() - imm_start);
+      //comp_time-=imm_micros;
         // Wake up MakeRoomForWrite() if necessary.
         background_work_finished_signal_.SignalAll();
       }
       mutex_.Unlock();
-      imm_micros += (env_->NowMicros() - imm_start);
+      //imm_micros += (env_->NowMicros() - imm_start);
+
     }
 
     Slice key = input->key();

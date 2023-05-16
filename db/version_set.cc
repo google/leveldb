@@ -325,8 +325,11 @@ void Version::ForEachOverlapping(Slice user_key, Slice internal_key, void* arg,
   }
 }
 
+uint64_t Version::sst_index_time = 0;
 Status Version::Get(const ReadOptions& options, const LookupKey& k,
                     std::string* value, GetStats* stats) {
+
+  
   stats->seek_file = nullptr;
   stats->seek_file_level = -1;
 
@@ -399,8 +402,12 @@ Status Version::Get(const ReadOptions& options, const LookupKey& k,
   state.saver.user_key = k.user_key();
   state.saver.value = value;
 
+                         //sst indexing
+  auto sst_start = std::chrono::high_resolution_clock::now();
   ForEachOverlapping(state.saver.user_key, state.ikey, &state, &State::Match);
-
+  auto sst_end = std::chrono::high_resolution_clock::now();
+  Version::sst_index_time += std::chrono::duration_cast<std::chrono::microseconds>(sst_end - sst_start).count();
+ 
   return state.found ? state.s : Status::NotFound(Slice());
 }
 

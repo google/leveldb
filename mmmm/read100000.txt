@@ -23,7 +23,8 @@
    12.744  s   62.342 ms          22  leveldb::DBImpl::DoCompactionWork
    10.890  s   48.879 ms      265789  leveldb::Version::Get::State::Match
    10.761  s  134.933 ms      265789  leveldb::TableCache::Get
-    9.450  s  235.848 ms      265789  leveldb::Table::InternalGet
+    9.450  s   235848 us      265789  leveldb::Table::InternalGet
+              4150319 us  
     7.521  s   55.821 ms       84354  leveldb::TableBuilder::Add
     6.348  s   22.674 ms       84461  leveldb::TableBuilder::Flush
     6.115  s   44.133 ms       84568  leveldb::TableBuilder::WriteBlock

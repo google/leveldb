@@ -22,7 +22,7 @@ class Env;
 class TableCache {
  public:
 
-  static uint64_t De_serialize;
+  static uint64_t find_table_time;
   static uint64_t return_value_func;
  
   TableCache(const std::string& dbname, const Options& options, int entries);
