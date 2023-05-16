@@ -66,6 +66,12 @@ class LEVELDB_EXPORT DB {
   virtual Status Put(const WriteOptions& options, const Slice& key,
                      const Slice& value) = 0;
 
+  // Convenience wrapper
+  Status Put(const Slice& key, const Slice& value,
+             const WriteOptions& options = WriteOptions()) {
+    return Put(options, key, value);
+  };
+
   // Remove the database entry (if any) for "key".  Returns OK on
   // success, and a non-OK status on error.  It is not an error if "key"
   // did not exist in the database.
