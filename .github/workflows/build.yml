@@ -88,7 +88,7 @@ jobs:
       run: ctest -C "${{ env.CMAKE_BUILD_TYPE }}" --verbose
 
     - name: Run LevelDB Benchmarks
-      run: ${{ env.BINARY_PATH }}db_bench${{ env.BINARY_SUFFIX }}
+      run: ${{ env.BINARY_PATH }}db_bench${{ env.BINARY_SUFFIX }} ----print_process=0
 
     - name: Run SQLite Benchmarks
       if: ${{ runner.os != 'Windows' }}
