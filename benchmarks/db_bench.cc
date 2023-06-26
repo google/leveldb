@@ -132,6 +132,8 @@ static int FLAGS_zstd_compression_level = 1;
 // If false, disable FinishedSingleOp() printf
 static bool FLAGS_print_process = true;
 
+static bool FLAGS_clean_bench_file = false;
+
 namespace leveldb {
 
 namespace {
@@ -674,6 +676,10 @@ class Benchmark {
         RunBenchmark(num_threads, name, method);
       }
     }
+
+    if(FLAGS_clean_bench_file){
+      DestroyDB(FLAGS_db, Options());
+    }
   }
 
  private:
@@ -1100,7 +1106,10 @@ int main(int argc, char** argv) {
       FLAGS_compression = n;
     }else if (sscanf(argv[i], "--print_process=%d%c", &n, &junk) == 1 &&
                (n == 0 || n == 1)) {
-        FLAGS_print_process = n;
+      FLAGS_print_process = n;
+    }else if (sscanf(argv[i], "--clean_bench_file=%d%c", &n, &junk) == 1 &&
+                 (n == 0 || n == 1)) {
+      FLAGS_clean_bench_file = n;
     } else if (sscanf(argv[i], "--num=%d%c", &n, &junk) == 1) {
       FLAGS_num = n;
     } else if (sscanf(argv[i], "--reads=%d%c", &n, &junk) == 1) {
