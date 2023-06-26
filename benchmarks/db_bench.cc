@@ -129,6 +129,9 @@ static const char* FLAGS_db = nullptr;
 // ZSTD compression level to try out
 static int FLAGS_zstd_compression_level = 1;
 
+// If false, disable FinishedSingleOp() printf
+static bool FLAGS_print_process = true;
+
 namespace leveldb {
 
 namespace {
@@ -292,23 +295,25 @@ class Stats {
     }
 
     done_++;
-    if (done_ >= next_report_) {
-      if (next_report_ < 1000)
-        next_report_ += 100;
-      else if (next_report_ < 5000)
-        next_report_ += 500;
-      else if (next_report_ < 10000)
-        next_report_ += 1000;
-      else if (next_report_ < 50000)
-        next_report_ += 5000;
-      else if (next_report_ < 100000)
-        next_report_ += 10000;
-      else if (next_report_ < 500000)
-        next_report_ += 50000;
-      else
-        next_report_ += 100000;
-      std::fprintf(stderr, "... finished %d ops%30s\r", done_, "");
-      std::fflush(stderr);
+    if(FLAGS_print_process) {
+      if (done_ >= next_report_) {
+        if (next_report_ < 1000)
+          next_report_ += 100;
+        else if (next_report_ < 5000)
+          next_report_ += 500;
+        else if (next_report_ < 10000)
+          next_report_ += 1000;
+        else if (next_report_ < 50000)
+          next_report_ += 5000;
+        else if (next_report_ < 100000)
+          next_report_ += 10000;
+        else if (next_report_ < 500000)
+          next_report_ += 50000;
+        else
+          next_report_ += 100000;
+        std::fprintf(stderr, "... finished %d ops%30s\r", done_, "");
+        std::fflush(stderr);
+      }
     }
   }
 
@@ -1093,6 +1098,9 @@ int main(int argc, char** argv) {
     } else if (sscanf(argv[i], "--compression=%d%c", &n, &junk) == 1 &&
                (n == 0 || n == 1)) {
       FLAGS_compression = n;
+    }else if (sscanf(argv[i], "--print_process=%d%c", &n, &junk) == 1 &&
+               (n == 0 || n == 1)) {
+        FLAGS_print_process = n;
     } else if (sscanf(argv[i], "--num=%d%c", &n, &junk) == 1) {
       FLAGS_num = n;
     } else if (sscanf(argv[i], "--reads=%d%c", &n, &junk) == 1) {
