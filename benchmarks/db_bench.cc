@@ -552,6 +552,9 @@ class Benchmark {
 
   ~Benchmark() {
     delete db_;
+    if(FLAGS_clean_bench_file){
+      DestroyDB(FLAGS_db, Options());
+    }
     delete cache_;
     delete filter_policy_;
   }
@@ -675,10 +678,6 @@ class Benchmark {
       if (method != nullptr) {
         RunBenchmark(num_threads, name, method);
       }
-    }
-
-    if(FLAGS_clean_bench_file){
-      DestroyDB(FLAGS_db, Options());
     }
   }
 
