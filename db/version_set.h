@@ -109,7 +109,7 @@ class Version {
   int PickLevelForMemTableOutput(const Slice& smallest_user_key,
                                  const Slice& largest_user_key);
 
-  int NumFiles(int level) const { return files_[level].size(); }
+  int NumFiles(int level) const { return static_cast<int>(files_[level].size()); }
 
   // Return a human readable string that describes this version's contents.
   std::string DebugString() const;
@@ -317,6 +317,35 @@ class VersionSet {
 
 // A Compaction encapsulates information about a compaction.
 class Compaction {
+  friend class Version;
+  friend class VersionSet;
+  
+  int level_;
+  uint64_t max_output_file_size_;
+  Version* input_version_;
+  VersionEdit edit_;
+
+  // Each compaction reads inputs from "level_" and "level_+1"
+  std::vector<FileMetaData*> inputs_[2];  // The two sets of inputs
+
+  // State used to check for number of overlapping grandparent files
+  // (parent == level_ + 1, grandparent == level_ + 2)
+  std::vector<FileMetaData*> grandparents_;
+  size_t grandparent_index_;  // Index in grandparent_starts_
+  bool seen_key_;             // Some output key has been seen
+  int64_t overlapped_bytes_;  // Bytes of overlap between current output
+                              // and grandparent files
+
+  // State for implementing IsBaseLevelForKey
+
+  // level_ptrs_ holds indices into input_version_->levels_: our state
+  // is that we are positioned at one of the file ranges for each
+  // higher level than the ones involved in this compaction (i.e. for
+  // all L >= level_ + 2).
+  size_t level_ptrs_[config::kNumLevels];
+
+  Compaction(const Options* options, int level);
+
  public:
   ~Compaction();
 
@@ -329,7 +358,7 @@ class Compaction {
   VersionEdit* edit() { return &edit_; }
 
   // "which" must be either 0 or 1
-  int num_input_files(int which) const { return inputs_[which].size(); }
+  int num_input_files(int which) const { return static_cast<int>(inputs_[which].size()); }
 
   // Return the ith input file at "level()+which" ("which" must be 0 or 1).
   FileMetaData* input(int which, int i) const { return inputs_[which][i]; }
@@ -356,36 +385,6 @@ class Compaction {
   // Release the input version for the compaction, once the compaction
   // is successful.
   void ReleaseInputs();
-
- private:
-  friend class Version;
-  friend class VersionSet;
-
-  Compaction(const Options* options, int level);
-
-  int level_;
-  uint64_t max_output_file_size_;
-  Version* input_version_;
-  VersionEdit edit_;
-
-  // Each compaction reads inputs from "level_" and "level_+1"
-  std::vector<FileMetaData*> inputs_[2];  // The two sets of inputs
-
-  // State used to check for number of overlapping grandparent files
-  // (parent == level_ + 1, grandparent == level_ + 2)
-  std::vector<FileMetaData*> grandparents_;
-  size_t grandparent_index_;  // Index in grandparent_starts_
-  bool seen_key_;             // Some output key has been seen
-  int64_t overlapped_bytes_;  // Bytes of overlap between current output
-                              // and grandparent files
-
-  // State for implementing IsBaseLevelForKey
-
-  // level_ptrs_ holds indices into input_version_->levels_: our state
-  // is that we are positioned at one of the file ranges for each
-  // higher level than the ones involved in this compaction (i.e. for
-  // all L >= level_ + 2).
-  size_t level_ptrs_[config::kNumLevels];
 };
 
 }  // namespace leveldb
