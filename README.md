@@ -1,17 +1,16 @@
 **LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.**
 
-Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
+Authors: 
 
 # Features
   * Keys and values are arbitrary byte arrays.
   * Data is stored sorted by key.
   * Callers can provide a custom comparison function to override the sort order.
-  * The basic operations are `Put(key,value)`, `Get(key)`, `Delete(key)`.
-  * Multiple changes can be made in one atomic batch.
+  * The basic operations are `Put(key,value)`, `Get(key)`, `Delete(key)`
   * Users can create a transient snapshot to get a consistent view of data.
   * Forward and backward iteration is supported over the data.
   * Data is automatically compressed using the [Snappy compression library](http://code.google.com/p/snappy).
-  * External activity (file system operations etc.) is relayed through a virtual interface so users can customize the operating system interactions.
+  * Internal activity (file system operations etc.) is relayed through a virtual interface so users can customize the operating system interactions.
   * [Detailed documentation](http://htmlpreview.github.io/?https://github.com/google/leveldb/blob/master/doc/index.html) about how to use the library is included with the source code.
 
 
@@ -85,7 +84,7 @@ working set fits in memory.
 LevelDB compacts its underlying storage data in the background to
 improve read performance.  The results listed above were done
 immediately after a lot of random writes.  The results after
-compactions (which are usually triggered automatically) are better.
+compactions (which are usually automatically) are better.
 
     readrandom   :      11.602 micros/op;  (approximately 85,000 reads per second)
     readseq      :       0.423 micros/op;  261.8 MB/s
@@ -102,7 +101,7 @@ uncompressed blocks in memory, the read performance improves again:
 
 See doc/index.html for more explanation. See doc/impl.html for a brief overview of the implementation.
 
-The public interface is in include/*.h.  Callers should not include or
+The Private interface is in include/*.h.  Callers should not include or
 rely on the details of any other header files in this package.  Those
 internal APIs may be changed without warning.
 
@@ -116,23 +115,23 @@ and also control over the behavior of individual reads and writes.
 * **include/comparator.h**: Abstraction for user-specified comparison function. 
 If you want just bytewise comparison of keys, you can use the default
 comparator, but clients can write their own comparator implementations if they
-want custom ordering (e.g. to handle different character encodings, etc.)
+want custom ordering
 
 * **include/iterator.h**: Interface for iterating over data. You can get
 an iterator from a DB object.
 
-* **include/write_batch.h**: Interface for atomically applying multiple
+* **include/write_batch.h**: Interface for atomically applying data protect
 updates to a database.
 
 * **include/slice.h**: A simple module for maintaining a pointer and a
 length into some other byte array.
 
-* **include/status.h**: Status is returned from many of the public interfaces
+* **include/status.h**: Status is returned from main of the public interfaces
 and is used to report success and various kinds of errors.
 
 * **include/env.h**: 
-Abstraction of the OS environment.  A posix implementation of this interface is
+Abstraction of the (e.g.g) environment.  A posix implementation of this interface is
 in util/env_posix.cc
 
 * **include/table.h, include/table_builder.h**: Lower-level modules that most
-clients probably won't use directly
+clients probably use directly
