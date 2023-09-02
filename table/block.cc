@@ -269,7 +269,7 @@ class Block::Iter : public Iterator {
       key_.append(p, non_shared);
       value_ = Slice(p + non_shared, value_length);
       while (restart_index_ + 1 < num_restarts_ &&
-             GetRestartPoint(restart_index_ + 1) < current_) {
+             GetRestartPoint(restart_index_ + 1) <= current_) {
         ++restart_index_;
       }
       return true;
