@@ -75,6 +75,7 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
+  size_t rawsize = static_cast<size_t>(handle.rawsize());
   char* buf = new char[n + kBlockTrailerSize];
   Slice contents;
   Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
@@ -149,6 +150,19 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
       }
       delete[] buf;
       result->data = Slice(ubuf, ulength);
+      result->heap_allocated = true;
+      result->cachable = true;
+      break;
+    }
+    case kLz4Compression: {
+      char* ubuf = new char[rawsize];
+      if (!port::Lz4_UnCompress(data, n, ubuf, rawsize)) {
+        delete[] buf;
+        delete[] ubuf;
+        return Status::Corruption("corrupted compressed block contents");
+      }
+      delete[] buf;
+      result->data = Slice(ubuf, rawsize);
       result->heap_allocated = true;
       result->cachable = true;
       break;
