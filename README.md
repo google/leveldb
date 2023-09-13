@@ -1,4 +1,9 @@
-**LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.**
+LevelDB is a fast key-value storage library written at Google that provides an ordered mapping from string keys to string values.
+
+> **This repository is receiving very limited maintenance. We will only review the following types of changes.**
+>
+> * Fixes for critical bugs, such as data loss or memory corruption
+> * Changes absolutely needed by internally supported leveldb clients. These typically fix breakage introduced by a language/standard library/OS update
 
 [![ci](https://github.com/google/leveldb/actions/workflows/build.yml/badge.svg)](https://github.com/google/leveldb/actions/workflows/build.yml)
 
@@ -13,12 +18,12 @@ Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
   * Multiple changes can be made in one atomic batch.
   * Users can create a transient snapshot to get a consistent view of data.
   * Forward and backward iteration is supported over the data.
-  * Data is automatically compressed using the [Snappy compression library](https://google.github.io/snappy/).
+  * Data is automatically compressed using the [Snappy compression library](https://google.github.io/snappy/), but [Zstd compression](https://facebook.github.io/zstd/) is also supported.
   * External activity (file system operations etc.) is relayed through a virtual interface so users can customize the operating system interactions.
 
 # Documentation
 
-  [LevelDB library documentation](https://github.com/google/leveldb/blob/master/doc/index.md) is online and bundled with the source code.
+  [LevelDB library documentation](https://github.com/google/leveldb/blob/main/doc/index.md) is online and bundled with the source code.
 
 # Limitations
 
@@ -72,6 +77,11 @@ Please see the CMake documentation and `CMakeLists.txt` for more advanced usage.
 
 # Contributing to the leveldb Project
 
+> **This repository is receiving very limited maintenance. We will only review the following types of changes.**
+>
+> * Bug fixes
+> * Changes absolutely needed by internally supported leveldb clients. These typically fix breakage introduced by a language/standard library/OS update
+
 The leveldb project welcomes contributions. leveldb's primary goal is to be
 a reliable and fast key/value store. Changes that are in line with the
 features/limitations outlined above, and meet the requirements below,
@@ -113,7 +123,7 @@ Contributor License Agreement (CLA) at https://cla.developers.google.com/.
 In order to keep the commit timeline linear
 [squash](https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History#Squashing-Commits)
 your changes down to a single commit and [rebase](https://git-scm.com/docs/git-rebase)
-on google/leveldb/master. This keeps the commit timeline linear and more easily sync'ed
+on google/leveldb/main. This keeps the commit timeline linear and more easily sync'ed
 with the internal repository at Google. More information at GitHub's
 [About Git rebase](https://help.github.com/articles/about-git-rebase/) page.
 
