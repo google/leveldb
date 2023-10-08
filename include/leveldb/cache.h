@@ -79,6 +79,7 @@ class LEVELDB_EXPORT Cache {
   // underlying entry will be kept around until all existing handles
   // to it have been released.
   virtual void Erase(const Slice& key) = 0;
+  virtual void AddSome(const Entity& value) = 0;
 
   // Return a new numeric id.  May be used by multiple clients who are
   // sharing the same cache to partition the key space.  Typically the
