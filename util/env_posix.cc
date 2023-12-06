@@ -883,7 +883,7 @@ class SingletonEnv {
   SingletonEnv(const SingletonEnv&) = delete;
   SingletonEnv& operator=(const SingletonEnv&) = delete;
 
-  Env* env() { return reinterpret_cast<Env*>(&env_storage_); }
+  Env* env() { return LAUNDER(reinterpret_cast<Env*>(&env_storage_)); }
 
   static void AssertEnvNotInitialized() {
 #if !defined(NDEBUG)
