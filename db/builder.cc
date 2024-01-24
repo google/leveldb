@@ -77,6 +77,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     env->RemoveFile(fname);
   }
   return s;
+  return s;
 }
 
 }  // namespace leveldb
