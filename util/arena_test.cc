@@ -4,6 +4,9 @@
 
 #include "util/arena.h"
 
+#include <thread>
+#include <cstring>
+
 #include "gtest/gtest.h"
 #include "util/random.h"
 
@@ -56,6 +59,37 @@ TEST(ArenaTest, Simple) {
       ASSERT_EQ(int(p[b]) & 0xff, i % 256);
     }
   }
+}
+
+void ThreadedAllocation(Arena* arena, std::atomic<size_t>* bytes_allocated, Random* rnd) {
+  const int N = 10000; // Number of allocations per thread
+  for (int i = 0; i < N; ++i) {
+    size_t s = rnd->OneIn(4000) ? rnd->Uniform(1000) : (rnd->OneIn(10) ? rnd->Uniform(100) : rnd->Uniform(20));
+    if (s == 0) {
+      s = 1; // Ensure we never allocate 0 bytes.
+    }
+    char* r = arena->Allocate(s);
+    std::memset(r, 0, s); // Fill allocated memory with zeros.
+    *bytes_allocated += s;
+  }
+}
+
+TEST(ArenaTest, ThreadSafety) {
+  Arena arena;
+  std::atomic<size_t> bytes_allocated(0);
+  const int kNumThreads = 4; // Adjust based on how many threads you want to test with.
+  std::vector<std::thread> threads;
+  Random rnd(301);
+
+  for (int i = 0; i < kNumThreads; ++i) {
+    threads.emplace_back(std::thread(ThreadedAllocation, &arena, &bytes_allocated, &rnd));
+  }
+
+  for (auto& t : threads) {
+    t.join();
+  }
+
+  ASSERT_GE(arena.MemoryUsage(), bytes_allocated.load());
 }
 
 }  // namespace leveldb

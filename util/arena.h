@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_UTIL_ARENA_H_
 
 #include <atomic>
+#include <mutex>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -45,6 +46,9 @@ class Arena {
   // Array of new[] allocated memory blocks
   std::vector<char*> blocks_;
 
+  // Mutex protects alloc_ptr_, alloc_bytes_remaining_, and blocks_ in Allocate() and AllocateAligned().
+  std::mutex mutex_;
+
   // Total memory usage of the arena.
   //
   // TODO(costan): This member is accessed via atomics, but the others are
@@ -56,6 +60,7 @@ inline char* Arena::Allocate(size_t bytes) {
   // The semantics of what to return are a bit messy if we allow
   // 0-byte allocations, so we disallow them here (we don't need
   // them for our internal use).
+  std::lock_guard<std::mutex> lock(mutex_); // Protect access with a mutex
   assert(bytes > 0);
   if (bytes <= alloc_bytes_remaining_) {
     char* result = alloc_ptr_;
