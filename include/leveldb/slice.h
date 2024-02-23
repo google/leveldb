@@ -80,7 +80,7 @@ class LEVELDB_EXPORT Slice {
   //   >  0 iff "*this" >  "b"
   int compare(const Slice& b) const;
 
-  // Return true iff "x" is a prefix of "*this"
+  // Return true if "x" is a prefix of "*this"
   bool starts_with(const Slice& x) const {
     return ((size_ >= x.size_) && (memcmp(data_, x.data_, x.size_) == 0));
   }
