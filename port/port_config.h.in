@@ -30,4 +30,9 @@
 #cmakedefine01 HAVE_SNAPPY
 #endif  // !defined(HAVE_SNAPPY)
 
+// Define to 1 if you have Zstd.
+#if !defined(HAVE_Zstd)
+#cmakedefine01 HAVE_ZSTD
+#endif  // !defined(HAVE_ZSTD)
+
 #endif  // STORAGE_LEVELDB_PORT_PORT_CONFIG_H_
