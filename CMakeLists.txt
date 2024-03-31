@@ -53,7 +53,7 @@ check_cxx_symbol_exists(fdatasync "unistd.h" HAVE_FDATASYNC)
 check_cxx_symbol_exists(F_FULLFSYNC "fcntl.h" HAVE_FULLFSYNC)
 check_cxx_symbol_exists(O_CLOEXEC "fcntl.h" HAVE_O_CLOEXEC)
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
   # Disable C++ exceptions.
   string(REGEX REPLACE "/EH[a-z]+" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs-c-")
@@ -62,7 +62,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # Disable RTTI.
   string(REGEX REPLACE "/GR" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
-else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
   # Enable strict prototype warnings for C code in clang and gcc.
   if(NOT CMAKE_C_FLAGS MATCHES "-Wstrict-prototypes")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wstrict-prototypes")
@@ -75,7 +75,7 @@ else(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   # Disable RTTI.
   string(REGEX REPLACE "-frtti" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
-endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
 
 # Test whether -Wthread-safety is available. See
 # https://clang.llvm.org/docs/ThreadSafetyAnalysis.html
