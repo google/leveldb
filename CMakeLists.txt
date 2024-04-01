@@ -237,8 +237,10 @@ target_include_directories(leveldb
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-set_target_properties(leveldb
-  PROPERTIES VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR})
+set_target_properties(leveldb PROPERTIES 
+    VERSION ${PROJECT_VERSION} SOVERSION ${PROJECT_VERSION_MAJOR}
+    CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:DebugDLL>
+)
 
 target_compile_definitions(leveldb
   PRIVATE
