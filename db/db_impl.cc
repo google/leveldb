@@ -998,7 +998,12 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         compact->current_output()->smallest.DecodeFrom(key);
       }
       compact->current_output()->largest.DecodeFrom(key);
-      compact->builder->Add(key, input->value());
+
+      status = compact->builder->Add(key, input->value());
+      if (!status.ok()) {
+        FinishCompactionOutputFile(compact, input);
+        break;
+      }
 
       // Close output file if it is big enough
       if (compact->builder->FileSize() >=
