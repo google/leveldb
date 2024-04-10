@@ -145,6 +145,12 @@ struct LEVELDB_EXPORT Options {
   // Many applications will benefit from passing the result of
   // NewBloomFilterPolicy() here.
   const FilterPolicy* filter_policy = nullptr;
+
+  // Storage systems with low seek times (SSDs) may want to
+  // disable seek count triggered autocompaction altogether.
+  //
+  // Default: false
+  bool disable_seek_autocompaction = false;
 };
 
 // Options that control read operations

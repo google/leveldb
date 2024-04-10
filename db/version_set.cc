@@ -403,10 +403,12 @@ bool Version::UpdateStats(const GetStats& stats) {
   FileMetaData* f = stats.seek_file;
   if (f != nullptr) {
     f->allowed_seeks--;
-    if (f->allowed_seeks <= 0 && file_to_compact_ == nullptr) {
-      file_to_compact_ = f;
-      file_to_compact_level_ = stats.seek_file_level;
-      return true;
+    if (!vset_->options_->disable_seek_autocompaction) {
+      if (f->allowed_seeks <= 0 && file_to_compact_ == nullptr) {
+        file_to_compact_ = f;
+        file_to_compact_level_ = stats.seek_file_level;
+        return true;
+      }
     }
   }
   return false;
@@ -647,21 +649,23 @@ class VersionSet::Builder {
       FileMetaData* f = new FileMetaData(edit->new_files_[i].second);
       f->refs = 1;
 
-      // We arrange to automatically compact this file after
-      // a certain number of seeks.  Let's assume:
-      //   (1) One seek costs 10ms
-      //   (2) Writing or reading 1MB costs 10ms (100MB/s)
-      //   (3) A compaction of 1MB does 25MB of IO:
-      //         1MB read from this level
-      //         10-12MB read from next level (boundaries may be misaligned)
-      //         10-12MB written to next level
-      // This implies that 25 seeks cost the same as the compaction
-      // of 1MB of data.  I.e., one seek costs approximately the
-      // same as the compaction of 40KB of data.  We are a little
-      // conservative and allow approximately one seek for every 16KB
-      // of data before triggering a compaction.
-      f->allowed_seeks = static_cast<int>((f->file_size / 16384U));
-      if (f->allowed_seeks < 100) f->allowed_seeks = 100;
+      if (!vset_->options_->disable_seek_autocompaction) {
+        // We arrange to automatically compact this file after
+        // a certain number of seeks.  Let's assume:
+        //   (1) One seek costs 10ms
+        //   (2) Writing or reading 1MB costs 10ms (100MB/s)
+        //   (3) A compaction of 1MB does 25MB of IO:
+        //         1MB read from this level
+        //         10-12MB read from next level (boundaries may be misaligned)
+        //         10-12MB written to next level
+        // This implies that 25 seeks cost the same as the compaction
+        // of 1MB of data.  I.e., one seek costs approximately the
+        // same as the compaction of 40KB of data.  We are a little
+        // conservative and allow approximately one seek for every 16KB
+        // of data before triggering a compaction.
+        f->allowed_seeks = static_cast<int>((f->file_size / 16384U));
+        if (f->allowed_seeks < 100) f->allowed_seeks = 100;
+      }
 
       levels_[level].deleted_files.erase(f->number);
       levels_[level].added_files->insert(f);

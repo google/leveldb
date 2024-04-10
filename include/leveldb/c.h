@@ -189,6 +189,8 @@ LEVELDB_EXPORT void leveldb_options_set_block_restart_interval(
     leveldb_options_t*, int);
 LEVELDB_EXPORT void leveldb_options_set_max_file_size(leveldb_options_t*,
                                                       size_t);
+LEVELDB_EXPORT void leveldb_options_set_disable_seek_autocompaction(leveldb_options_t*,
+	                                                                bool);
 
 enum { leveldb_no_compression = 0, leveldb_snappy_compression = 1 };
 LEVELDB_EXPORT void leveldb_options_set_compression(leveldb_options_t*, int);
