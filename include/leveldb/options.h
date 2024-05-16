@@ -5,6 +5,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 #define STORAGE_LEVELDB_INCLUDE_OPTIONS_H_
 
+#if __cplusplus
+
 #include <cstddef>
 
 #include "leveldb/export.h"
@@ -186,5 +188,7 @@ struct LEVELDB_EXPORT WriteOptions {
 };
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_OPTIONS_H_

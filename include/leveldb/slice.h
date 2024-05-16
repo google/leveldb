@@ -15,6 +15,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_SLICE_H_
 #define STORAGE_LEVELDB_INCLUDE_SLICE_H_
 
+#if __cplusplus
+
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -110,5 +112,7 @@ inline int Slice::compare(const Slice& b) const {
 }
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_SLICE_H_

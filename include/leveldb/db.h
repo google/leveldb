@@ -5,6 +5,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_DB_H_
 #define STORAGE_LEVELDB_INCLUDE_DB_H_
 
+#if __cplusplus
+
 #include <cstdint>
 #include <cstdio>
 
@@ -163,5 +165,7 @@ LEVELDB_EXPORT Status RepairDB(const std::string& dbname,
                                const Options& options);
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_DB_H_

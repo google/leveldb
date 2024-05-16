@@ -13,6 +13,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_STATUS_H_
 #define STORAGE_LEVELDB_INCLUDE_STATUS_H_
 
+#if __cplusplus
+
 #include <algorithm>
 #include <string>
 
@@ -118,5 +120,7 @@ inline Status& Status::operator=(Status&& rhs) noexcept {
 }
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_STATUS_H_
