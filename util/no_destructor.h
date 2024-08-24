@@ -5,10 +5,15 @@
 #ifndef STORAGE_LEVELDB_UTIL_NO_DESTRUCTOR_H_
 #define STORAGE_LEVELDB_UTIL_NO_DESTRUCTOR_H_
 
-#include <type_traits>
+#include <new>
 #include <utility>
 
 namespace leveldb {
+
+template <std::size_t Size, std::size_t Alignment>
+struct ObjectBuffer {
+  alignas(Alignment) unsigned char data_[Size];
+};
 
 // Wraps an instance whose destructor is never called.
 //
@@ -23,7 +28,7 @@ class NoDestructor {
     static_assert(
         alignof(decltype(instance_storage_)) >= alignof(InstanceType),
         "instance_storage_ does not meet the instance's alignment requirement");
-    new (&instance_storage_)
+    ::new (static_cast<void*>(instance_storage_.data_))
         InstanceType(std::forward<ConstructorArgTypes>(constructor_args)...);
   }
 
@@ -33,12 +38,11 @@ class NoDestructor {
   NoDestructor& operator=(const NoDestructor&) = delete;
 
   InstanceType* get() {
-    return reinterpret_cast<InstanceType*>(&instance_storage_);
+    return reinterpret_cast<InstanceType*>(instance_storage_.data_);
   }
 
  private:
-  typename std::aligned_storage<sizeof(InstanceType),
-                                alignof(InstanceType)>::type instance_storage_;
+  ObjectBuffer<sizeof(InstanceType), alignof(InstanceType)> instance_storage_;
 };
 
 }  // namespace leveldb
