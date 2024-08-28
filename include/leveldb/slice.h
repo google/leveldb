@@ -35,6 +35,10 @@ class LEVELDB_EXPORT Slice {
   // Create a slice that refers to the contents of "s"
   Slice(const std::string& s) : data_(s.data()), size_(s.size()) {}
 
+  // For any object
+  template<typename T>
+  Slice(const T& s) : data_(reinterpret_cast<const char*>(&s)), size_(sizeof(T)) {}
+
   // Create a slice that refers to s[0,strlen(s)-1]
   Slice(const char* s) : data_(s), size_(strlen(s)) {}
 
