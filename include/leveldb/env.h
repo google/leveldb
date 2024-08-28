@@ -13,6 +13,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_ENV_H_
 #define STORAGE_LEVELDB_INCLUDE_ENV_H_
 
+#if __cplusplus
+
 #include <cstdarg>
 #include <cstdint>
 #include <string>
@@ -413,5 +415,7 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
 #define DeleteFile DeleteFileA
 #endif  // defined(UNICODE)
 #endif  // defined(_WIN32) && defined(LEVELDB_DELETEFILE_UNDEFINED)
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_ENV_H_

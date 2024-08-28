@@ -5,6 +5,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_COMPARATOR_H_
 #define STORAGE_LEVELDB_INCLUDE_COMPARATOR_H_
 
+#if __cplusplus
+
 #include <string>
 
 #include "leveldb/export.h"
@@ -60,5 +62,7 @@ class LEVELDB_EXPORT Comparator {
 LEVELDB_EXPORT const Comparator* BytewiseComparator();
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_COMPARATOR_H_
