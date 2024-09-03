@@ -35,12 +35,17 @@ class BlockHandle {
   uint64_t size() const { return size_; }
   void set_size(uint64_t size) { size_ = size; }
 
+  // The size of the raw stored block
+  uint64_t rawsize() const { return rawsize_; }
+  void set_rawsize(uint64_t size) { rawsize_ = size; }
+
   void EncodeTo(std::string* dst) const;
   Status DecodeFrom(Slice* input);
 
  private:
   uint64_t offset_;
   uint64_t size_;
+  uint64_t rawsize_;
 };
 
 // Footer encapsulates the fixed information stored at the tail
