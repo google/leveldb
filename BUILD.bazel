@@ -1,0 +1,9 @@
+package(default_visibility = ["//visibility:public"])
+
+# default use clang compiler
+config_setting(
+    name = "clang_compiler",
+    flag_values = {
+        "@bazel_tools//tools/cpp:compiler": "clang",
+    },
+)

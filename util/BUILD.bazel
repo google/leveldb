@@ -1,0 +1,187 @@
+package(default_visibility = ["//visibility:public"])
+load("//:copts.bzl", "LEVELDB_FLAGS")
+
+cc_library(
+    name = "unix_env_lib",
+    srcs = [
+        "env_posix.cc",
+        "env.cc",
+        "env_posix_test.cc",
+        "env_posix_test_helper.h",
+        "posix_logger.h",
+        "testutil.h",
+        "random.h",
+        "testutil.cc",
+    ],
+    deps = [
+        "//include/leveldb",
+        "//port:port_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_library(
+    name = "windows_env_lib",
+    srcs = select({
+        "//port:windows_x86_64":[
+            "env.cc",
+            "testutil.cc",
+            "random.h",
+            "testutil.h",
+            "env_windows.cc",
+            "env_windows_test.cc",
+            "env_windows_test_helper.h",
+        ],
+        "//conditions:default": [
+            
+        ],
+    }),
+    deps = [
+        "//include/leveldb",
+        "//port:port_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_library(
+    name = "util_lib",
+    srcs = glob(
+        ["*.cc"],
+        exclude = glob(["env*",]),
+    ),
+    hdrs = glob(["*.h"]),
+    linkopts = select({
+        "//port:osx_x86_64": [
+            "-pthread",
+        ],
+        "//port:linux_x86_64": [
+            "-pthread",
+        ],
+        "//port:windows_x86_64": [],
+        "//conditions:default": [],
+    }),
+    deps = select({
+        "//port:windows_x86_64": ["windows_env_lib"],
+        "//port:linux_x86_64": ["unix_env_lib"],
+        "//port:osx_x86_64": ["unix_env_lib"],
+        "//conditions:default": ["unix_env_lib"],
+    }),
+    copts = LEVELDB_FLAGS,
+)
+
+cc_library(
+  name = "leveldb_mutex_lib",
+  srcs = glob(
+    ["mutexlock.h",],
+  ),
+  deps = [
+    "//port:port_lib"
+  ],
+  copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "arena_test",
+    srcs = ["arena_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "bloom_test",
+    srcs = ["bloom_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "cache_test",
+    srcs = ["cache_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "coding_test",
+    srcs = ["coding_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "crc32c_test",
+    srcs = ["crc32c_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "env_posix_test",
+    srcs = ["env_posix_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "env_test",
+    srcs = ["env_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "hash_test",
+    srcs = ["hash_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "logging_test",
+    srcs = ["logging_test.cc"],
+    deps = [":util_lib",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+        ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "status_test",
+    srcs = ["status_test.cc"],
+    deps = [
+        ":util_lib",
+        "//include/leveldb",
+        "//helpers/memenv:mem_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = LEVELDB_FLAGS,
+)
