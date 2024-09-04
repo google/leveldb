@@ -70,9 +70,8 @@ Create a brand new memtable and log file and direct future updates here.
 In the background:
 
 1. Write the contents of the previous memtable to an sstable.
-2. Discard the memtable.
-3. Delete the old log file and the old memtable.
-4. Add the new sstable to the young (level-0) level.
+2. Delete the old log file and the old memtable.
+3. Add the new sstable to the young (level-0) level.
 
 ## Compactions
 
