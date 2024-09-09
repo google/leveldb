@@ -87,6 +87,7 @@ void VersionEdit::EncodeTo(std::string* dst) const {
 static bool GetInternalKey(Slice* input, InternalKey* dst) {
   Slice str;
   if (GetLengthPrefixedSlice(input, &str)) {
+    if (str.size() < 8) return false;
     return dst->DecodeFrom(str);
   } else {
     return false;
