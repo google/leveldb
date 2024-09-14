@@ -295,9 +295,9 @@ if(LEVELDB_BUILD_TESTS)
 
   # Prevent overriding the parent project's compiler/linker settings on Windows.
   set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-  set(install_gtest OFF)
-  set(install_gmock OFF)
-  set(build_gmock ON)
+  set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+  set(install_gmock OFF CACHE BOOL "" FORCE)
+  set(BUILD_GMOCK ON CACHE BOOL "" FORCE)
 
   # This project is tested using GoogleTest.
   add_subdirectory("third_party/googletest")
