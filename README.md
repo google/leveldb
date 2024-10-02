@@ -89,12 +89,12 @@ will be considered.
 
 Contribution requirements:
 
-1. **Tested platforms only**. We _generally_ will only accept changes for
+1. **Tested platforms only**: We _generally_ will only accept changes for
    platforms that are compiled and tested. This means POSIX (for Linux and
    macOS) or Windows. Very small changes will sometimes be accepted, but
    consider that more of an exception than the rule.
 
-2. **Stable API**. We strive very hard to maintain a stable API. Changes that
+2. **Stable API**: We strive very hard to maintain a stable API. Changes that
    require changes for projects using leveldb _might_ be rejected without
    sufficient benefit to the project.
 
