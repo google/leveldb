@@ -3,7 +3,7 @@ LevelDB is a fast key-value storage library written at Google that provides an o
 > **This repository is receiving very limited maintenance. We will only review the following types of changes.**
 >
 > * Fixes for critical bugs, such as data loss or memory corruption
-> * Changes absolutely needed by internally supported leveldb clients. These typically fix breakage introduced by a language/standard library/OS update
+> * Changes absolutely needed by internally supported LevelDB clients. These typically fix breakage introduced by a language/standard library/OS update
 
 [![ci](https://github.com/google/leveldb/actions/workflows/build.yml/badge.svg)](https://github.com/google/leveldb/actions/workflows/build.yml)
 
@@ -29,7 +29,7 @@ Authors: Sanjay Ghemawat (sanjay@google.com) and Jeff Dean (jeff@google.com)
 
   * This is not a SQL database.  It does not have a relational data model, it does not support SQL queries, and it has no support for indexes.
   * Only a single process (possibly multi-threaded) can access a particular database at a time.
-  * There is no client-server support builtin to the library.  An application that needs such support will have to wrap their own server around the library.
+  * There is no client-server support built-in to the library.  An application that needs such support will have to wrap their own server around the library.
 
 # Getting the Source
 
@@ -59,7 +59,7 @@ mkdir build
 cd build
 cmake -G "Visual Studio 15" ..
 ```
-The default default will build for x86. For 64-bit run:
+The default will build for x86. For 64-bit run:
 
 ```cmd
 cmake -G "Visual Studio 15 Win64" ..
@@ -75,14 +75,14 @@ or open leveldb.sln in Visual Studio and build from within.
 
 Please see the CMake documentation and `CMakeLists.txt` for more advanced usage.
 
-# Contributing to the leveldb Project
+# Contributing to the LevelDB Project
 
 > **This repository is receiving very limited maintenance. We will only review the following types of changes.**
 >
 > * Bug fixes
-> * Changes absolutely needed by internally supported leveldb clients. These typically fix breakage introduced by a language/standard library/OS update
+> * Changes absolutely needed by internally supported LevelDB clients. These typically fix breakage introduced by a language/standard library/OS update
 
-The leveldb project welcomes contributions. leveldb's primary goal is to be
+The LevelDB project welcomes contributions. LevelDB's primary goal is to be
 a reliable and fast key/value store. Changes that are in line with the
 features/limitations outlined above, and meet the requirements below,
 will be considered.
@@ -95,7 +95,7 @@ Contribution requirements:
    consider that more of an exception than the rule.
 
 2. **Stable API**. We strive very hard to maintain a stable API. Changes that
-   require changes for projects using leveldb _might_ be rejected without
+   require changes for projects using LevelDB _might_ be rejected without
    sufficient benefit to the project.
 
 3. **Tests**: All changes must be accompanied by a new (or changed) test, or
