@@ -6,3 +6,4 @@
 # Build directory.
 build/
 out/
+/.vs
