@@ -91,10 +91,12 @@ Status TableBuilder::ChangeOptions(const Options& options) {
   return Status::OK();
 }
 
-void TableBuilder::Add(const Slice& key, const Slice& value) {
+Status TableBuilder::Add(const Slice& key, const Slice& value) {
   Rep* r = rep_;
   assert(!r->closed);
-  if (!ok()) return;
+  if (!ok()) {
+    return status();
+  }
   if (r->num_entries > 0) {
     assert(r->options.comparator->Compare(key, Slice(r->last_key)) > 0);
   }
@@ -120,6 +122,7 @@ void TableBuilder::Add(const Slice& key, const Slice& value) {
   if (estimated_block_size >= r->options.block_size) {
     Flush();
   }
+  return status();
 }
 
 void TableBuilder::Flush() {
