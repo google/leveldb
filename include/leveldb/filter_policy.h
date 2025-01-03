@@ -16,6 +16,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_
 #define STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_
 
+#if __cplusplus
+
 #include <string>
 
 #include "leveldb/export.h"
@@ -68,5 +70,7 @@ class LEVELDB_EXPORT FilterPolicy {
 LEVELDB_EXPORT const FilterPolicy* NewBloomFilterPolicy(int bits_per_key);
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_FILTER_POLICY_H_
