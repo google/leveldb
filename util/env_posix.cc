@@ -880,7 +880,7 @@ class SingletonEnv {
         "env_storage_ does not meet the Env's alignment needs");
     static_assert(alignof(SingletonEnv<EnvType>) % alignof(EnvType) == 0,
                   "env_storage_ does not meet the Env's alignment needs");
-    new (&env_storage_) EnvType();
+    new (env_storage_) EnvType();
   }
   ~SingletonEnv() = default;
 

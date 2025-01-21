@@ -28,7 +28,7 @@ class NoDestructor {
     static_assert(
         alignof(NoDestructor<InstanceType>) % alignof(InstanceType) == 0,
         "instance_storage_ does not meet the instance's alignment requirement");
-    new (&instance_storage_)
+    new (instance_storage_)
         InstanceType(std::forward<ConstructorArgTypes>(constructor_args)...);
   }
 
