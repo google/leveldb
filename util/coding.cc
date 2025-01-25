@@ -108,7 +108,7 @@ bool GetVarint32(Slice* input, uint32_t* value) {
   if (q == nullptr) {
     return false;
   } else {
-    *input = Slice(q, limit - q);
+    input->remove_prefix(q - p);
     return true;
   }
 }
@@ -137,7 +137,7 @@ bool GetVarint64(Slice* input, uint64_t* value) {
   if (q == nullptr) {
     return false;
   } else {
-    *input = Slice(q, limit - q);
+    input->remove_prefix(q - p);
     return true;
   }
 }
