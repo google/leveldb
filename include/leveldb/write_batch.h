@@ -21,6 +21,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
 #define STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_
 
+#if __cplusplus
+
 #include <string>
 
 #include "leveldb/export.h"
@@ -79,5 +81,7 @@ class LEVELDB_EXPORT WriteBatch {
 };
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_WRITE_BATCH_H_

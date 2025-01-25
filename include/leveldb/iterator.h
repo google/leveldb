@@ -15,6 +15,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_ITERATOR_H_
 #define STORAGE_LEVELDB_INCLUDE_ITERATOR_H_
 
+#if __cplusplus
+
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 #include "leveldb/status.h"
@@ -108,5 +110,7 @@ LEVELDB_EXPORT Iterator* NewEmptyIterator();
 LEVELDB_EXPORT Iterator* NewErrorIterator(const Status& status);
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_ITERATOR_H_

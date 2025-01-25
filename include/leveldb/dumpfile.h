@@ -5,6 +5,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_DUMPFILE_H_
 #define STORAGE_LEVELDB_INCLUDE_DUMPFILE_H_
 
+#if __cplusplus
+
 #include <string>
 
 #include "leveldb/env.h"
@@ -24,5 +26,7 @@ LEVELDB_EXPORT Status DumpFile(Env* env, const std::string& fname,
                                WritableFile* dst);
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_DUMPFILE_H_
