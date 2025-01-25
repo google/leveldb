@@ -49,6 +49,15 @@ Quick start:
 mkdir -p build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
 ```
+Bazel Support:
+```bash
+# build all
+bazel build "..."
+```
+bazel generate compile_commands.json, this command need python support. and the version can't be too old.
+```bash
+bazel run @hedron_compile_commands//:refresh_all
+```
 
 ### Building for Windows
 
