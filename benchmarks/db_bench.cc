@@ -61,6 +61,8 @@ static const char* FLAGS_benchmarks =
     "crc32c,"
     "snappycomp,"
     "snappyuncomp,"
+    "lz4comp,"
+    "lz4uncomp,";
     "zstdcomp,"
     "zstduncomp,";
 
@@ -635,6 +637,10 @@ class Benchmark {
         method = &Benchmark::SnappyCompress;
       } else if (name == Slice("snappyuncomp")) {
         method = &Benchmark::SnappyUncompress;
+      } else if (name == Slice("lz4comp")) {
+        method = &Benchmark::Lz4Compress;
+      } else if (name == Slice("lz4uncomp")) {
+        method = &Benchmark::Lz4Uncompress;
       } else if (name == Slice("zstdcomp")) {
         method = &Benchmark::ZstdCompress;
       } else if (name == Slice("zstduncomp")) {
@@ -797,6 +803,55 @@ class Benchmark {
                                      length, output);
         },
         &port::Zstd_Uncompress);
+  }
+
+  void Lz4Compress(ThreadState* thread) {
+    RandomGenerator gen;
+    Slice input = gen.Generate(Options().block_size);
+    int64_t bytes = 0;
+    int64_t produced = 0;
+    bool ok = true;
+    std::string compressed;
+    while (ok && bytes < 1024 * 1048576) {  // Compress 1G
+      ok = port::Lz4_Compress(input.data(), input.size(), &compressed);
+      // std::fprintf(stdout, "Lz4_Compress
+      // compressed.size():%lu,compressed:%s\n",compressed.size(),compressed.c_str());
+      produced += compressed.size();
+      bytes += input.size();
+      thread->stats.FinishedSingleOp();
+    }
+    if (!ok) {
+      thread->stats.AddMessage("(Lz4Compress failure)");
+    } else {
+      char buf[100];
+      std::snprintf(buf, sizeof(buf), "(output: %.1f)",
+                    (produced * 100.0) / bytes);
+      thread->stats.AddMessage(buf);
+      thread->stats.AddBytes(bytes);
+    }
+  }
+
+  void Lz4Uncompress(ThreadState* thread) {
+    RandomGenerator gen;
+    Slice input = gen.Generate(Options().block_size);
+    std::string compressed;
+    bool ok = port::Lz4_Compress(input.data(), input.size(), &compressed);
+    int64_t bytes = 0;
+    char* uncompressed = new char[input.size()];
+    while (ok && bytes < 1024 * 1048576) {  // Compress 1G
+      ok = port::Lz4_UnCompress(compressed.data(), compressed.size(),
+                                uncompressed, input.size());
+      bytes += input.size();
+      thread->stats.FinishedSingleOp();
+    }
+
+    delete[] uncompressed;
+
+    if (!ok) {
+      thread->stats.AddMessage("(Lz4Uncompress failure)");
+    } else {
+      thread->stats.AddBytes(bytes);
+    }
   }
 
   void Open() {
