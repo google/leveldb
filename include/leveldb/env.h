@@ -39,6 +39,12 @@
 #endif  // defined(DeleteFile)
 #endif  // defined(_WIN32)
 
+#ifdef __cpp_lib_launder
+#define LAUNDER(x) std::launder((x))
+#else
+#define LAUNDER(x) x
+#endif
+
 namespace leveldb {
 
 class FileLock;
