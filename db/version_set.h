@@ -114,6 +114,10 @@ class Version {
   // Return a human readable string that describes this version's contents.
   std::string DebugString() const;
 
+  bool OverlapInLevel0() const { return overlap_in_level0_; }
+
+  void SetOverlapInLevel0() { overlap_in_level0_ = true; }
+
  private:
   friend class Compaction;
   friend class VersionSet;
@@ -128,7 +132,8 @@ class Version {
         file_to_compact_(nullptr),
         file_to_compact_level_(-1),
         compaction_score_(-1),
-        compaction_level_(-1) {}
+        compaction_level_(-1),
+        overlap_in_level0_(false) {}
 
   Version(const Version&) = delete;
   Version& operator=(const Version&) = delete;
@@ -162,6 +167,7 @@ class Version {
   // are initialized by Finalize().
   double compaction_score_;
   int compaction_level_;
+  bool overlap_in_level0_;
 };
 
 class VersionSet {
