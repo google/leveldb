@@ -30,14 +30,15 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
 
     TableBuilder* builder = new TableBuilder(options, file);
     meta->smallest.DecodeFrom(iter->key());
-    Slice key;
     for (; iter->Valid(); iter->Next()) {
-      key = iter->key();
-      builder->Add(key, iter->value());
+      builder->Add(iter->key(), iter->value());
     }
-    if (!key.empty()) {
-      meta->largest.DecodeFrom(key);
+    
+    iter->SeekToLast();
+    if(iter->Valid()) {
+      meta->largest.DecodeFrom(iter->key());
     }
+    
 
     // Finish and check for builder errors
     s = builder->Finish();
