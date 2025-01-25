@@ -216,8 +216,7 @@ double Histogram::Percentile(double p) const {
       double left_point = (b == 0) ? 0 : kBucketLimit[b - 1];
       double right_point = kBucketLimit[b];
       double left_sum = sum - buckets_[b];
-      double right_sum = sum;
-      double pos = (threshold - left_sum) / (right_sum - left_sum);
+      double pos = (threshold - left_sum) / buckets_[b];
       double r = left_point + (right_point - left_point) * pos;
       if (r < min_) r = min_;
       if (r > max_) r = max_;
