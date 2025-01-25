@@ -609,7 +609,11 @@ class PosixEnv : public Env {
     }
     struct ::dirent* entry;
     while ((entry = ::readdir(dir)) != nullptr) {
+      if (!(entry->d_name[0] == '.' && entry->d_name[1] == '\0' ||
+            entry->d_name[0] == '.' && entry->d_name[1] == '.' && 
+            entry->d_name[2] == '\0')) {
       result->emplace_back(entry->d_name);
+    }
     }
     ::closedir(dir);
     return Status::OK();
