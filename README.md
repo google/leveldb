@@ -59,7 +59,7 @@ mkdir build
 cd build
 cmake -G "Visual Studio 15" ..
 ```
-The default default will build for x86. For 64-bit run:
+The default default will build for x86. For x64 run:
 
 ```cmd
 cmake -G "Visual Studio 15 Win64" ..
@@ -71,7 +71,7 @@ To compile the Windows solution from the command-line:
 devenv /build Debug leveldb.sln
 ```
 
-or open leveldb.sln in Visual Studio and build from within.
+or open `leveldb.sln` in Visual Studio and build from within.
 
 Please see the CMake documentation and `CMakeLists.txt` for more advanced usage.
 
