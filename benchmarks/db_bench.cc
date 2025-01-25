@@ -107,6 +107,7 @@ static int FLAGS_open_files = 0;
 
 // Bloom filter bits per key.
 // Negative means use default settings.
+// 0 means use minimum size of bloom filter.
 static int FLAGS_bloom_bits = -1;
 
 // Common key prefix length.
