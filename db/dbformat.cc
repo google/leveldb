@@ -96,6 +96,10 @@ void InternalKeyComparator::FindShortSuccessor(std::string* key) const {
   }
 }
 
+bool InternalKeyComparator::IsInternal() const {
+  return true;
+}
+
 const char* InternalFilterPolicy::Name() const { return user_policy_->Name(); }
 
 void InternalFilterPolicy::CreateFilter(const Slice* keys, int n,

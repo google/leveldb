@@ -162,6 +162,11 @@ class Block::Iter : public Iterator {
   }
 
   void Seek(const Slice& target) override {
+    if (comparator_->IsInternal() && target.size() < 8) {
+      CorruptionError();
+      return;
+    }
+
     // Binary search in restart array to find the last restart point
     // with a key < target
     uint32_t left = 0;
@@ -191,7 +196,8 @@ class Block::Iter : public Iterator {
       const char* key_ptr =
           DecodeEntry(data_ + region_offset, data_ + restarts_, &shared,
                       &non_shared, &value_length);
-      if (key_ptr == nullptr || (shared != 0)) {
+      if (key_ptr == nullptr || (shared != 0) ||
+          (comparator_->IsInternal() && non_shared < 8)) {
         CorruptionError();
         return;
       }
@@ -261,7 +267,9 @@ class Block::Iter : public Iterator {
     // Decode next entry
     uint32_t shared, non_shared, value_length;
     p = DecodeEntry(p, limit, &shared, &non_shared, &value_length);
-    if (p == nullptr || key_.size() < shared) {
+    if (p == nullptr || key_.size() < shared ||
+        (comparator_->IsInternal() &&
+         static_cast<uint64_t>(shared) + non_shared < 8)) {
       CorruptionError();
       return false;
     } else {
