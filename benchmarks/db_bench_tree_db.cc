@@ -319,6 +319,7 @@ class Benchmark {
     if (!db_->close()) {
       std::fprintf(stderr, "close error: %s\n", db_->error().name());
     }
+    delete db_;
   }
 
   void Run() {
