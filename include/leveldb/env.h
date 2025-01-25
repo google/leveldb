@@ -20,6 +20,7 @@
 
 #include "leveldb/export.h"
 #include "leveldb/status.h"
+#include "util/dir_helper.h"
 
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.
 #if defined(_WIN32)
@@ -112,6 +113,9 @@ class LEVELDB_EXPORT Env {
 
   // Returns true iff the named file exists.
   virtual bool FileExists(const std::string& fname) = 0;
+
+  // Returns true if specified director path exists.
+  virtual bool DirectoryExists(const std::string& dir_path) = 0;
 
   // Store in *result the names of the children of the specified directory.
   // The names are relative to "dir".
@@ -216,6 +220,9 @@ class LEVELDB_EXPORT Env {
 
   // Sleep/delay the thread for the prescribed number of micro-seconds.
   virtual void SleepForMicroseconds(int micros) = 0;
+
+  // Create folder with specified subfolders recursively
+  virtual Status CreateDirIteratively(const std::string& path) = 0;
 };
 
 // A file abstraction for reading sequentially through a file
@@ -358,6 +365,9 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   bool FileExists(const std::string& f) override {
     return target_->FileExists(f);
   }
+  bool DirectoryExists(const std::string& d) override {
+    return target_->DirectoryExists(d);
+  }
   Status GetChildren(const std::string& dir,
                      std::vector<std::string>* r) override {
     return target_->GetChildren(dir, r);
@@ -367,6 +377,9 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   }
   Status CreateDir(const std::string& d) override {
     return target_->CreateDir(d);
+  }
+  Status CreateDirIteratively(const std::string& d) override {
+    return target_->CreateDirIteratively(d);
   }
   Status RemoveDir(const std::string& d) override {
     return target_->RemoveDir(d);
