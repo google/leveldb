@@ -10,7 +10,6 @@
 #include <type_traits>
 
 #include "leveldb/slice.h"
-#include "util/logging.h"
 #include "util/no_destructor.h"
 
 namespace leveldb {

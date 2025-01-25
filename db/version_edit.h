@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "db/dbformat.h"
+#include "leveldb/status.h"
 
 namespace leveldb {
 

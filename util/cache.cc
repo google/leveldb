@@ -5,10 +5,8 @@
 #include "leveldb/cache.h"
 
 #include <cassert>
-#include <cstdio>
 #include <cstdlib>
 
-#include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/hash.h"
 #include "util/mutexlock.h"
