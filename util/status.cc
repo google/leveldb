@@ -42,9 +42,6 @@ std::string Status::ToString() const {
     char tmp[30];
     const char* type;
     switch (code()) {
-      case kOk:
-        type = "OK";
-        break;
       case kNotFound:
         type = "NotFound: ";
         break;
