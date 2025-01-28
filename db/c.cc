@@ -44,6 +44,8 @@ using leveldb::WritableFile;
 using leveldb::WriteBatch;
 using leveldb::WriteOptions;
 
+#pragma clang unsafe_buffer_usage begin
+
 extern "C" {
 
 struct leveldb_t {
@@ -563,3 +565,5 @@ int leveldb_major_version() { return kMajorVersion; }
 int leveldb_minor_version() { return kMinorVersion; }
 
 }  // end extern "C"
+
+#pragma clang unsafe_buffer_usage end

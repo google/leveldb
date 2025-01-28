@@ -34,6 +34,8 @@
 #include "util/arena.h"
 #include "util/random.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 template <typename Key, class Comparator>
@@ -376,5 +378,7 @@ bool SkipList<Key, Comparator>::Contains(const Key& key) const {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
 
 #endif  // STORAGE_LEVELDB_DB_SKIPLIST_H_

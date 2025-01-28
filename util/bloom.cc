@@ -7,6 +7,8 @@
 #include "leveldb/slice.h"
 #include "util/hash.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 namespace {
@@ -90,3 +92,5 @@ const FilterPolicy* NewBloomFilterPolicy(int bits_per_key) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

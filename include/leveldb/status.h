@@ -19,6 +19,8 @@
 #include "leveldb/export.h"
 #include "leveldb/slice.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 class LEVELDB_EXPORT Status {
@@ -118,5 +120,7 @@ inline Status& Status::operator=(Status&& rhs) noexcept {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
 
 #endif  // STORAGE_LEVELDB_INCLUDE_STATUS_H_

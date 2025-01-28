@@ -10,6 +10,8 @@
 #include "port/port.h"
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 static uint64_t PackSequenceAndType(uint64_t seq, ValueType t) {
@@ -134,3 +136,5 @@ LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

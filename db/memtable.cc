@@ -9,6 +9,8 @@
 #include "leveldb/iterator.h"
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 static Slice GetLengthPrefixedSlice(const char* data) {
@@ -136,3 +138,5 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

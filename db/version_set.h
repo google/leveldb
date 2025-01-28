@@ -24,6 +24,8 @@
 #include "port/port.h"
 #include "port/thread_annotations.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 namespace log {
@@ -389,5 +391,7 @@ class Compaction {
 };
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
 
 #endif  // STORAGE_LEVELDB_DB_VERSION_SET_H_

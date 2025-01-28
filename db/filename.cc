@@ -20,8 +20,10 @@ Status WriteStringToFileSync(Env* env, const Slice& data,
 static std::string MakeFileName(const std::string& dbname, uint64_t number,
                                 const char* suffix) {
   char buf[100];
+#pragma clang unsafe_buffer_usage begin
   std::snprintf(buf, sizeof(buf), "/%06llu.%s",
                 static_cast<unsigned long long>(number), suffix);
+#pragma clang unsafe_buffer_usage end
   return dbname + buf;
 }
 

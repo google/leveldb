@@ -19,6 +19,8 @@
 #include "util/env_posix_test_helper.h"
 #include "util/testutil.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 #if HAVE_O_CLOEXEC
 
 namespace {
@@ -351,3 +353,5 @@ int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }
+
+#pragma clang unsafe_buffer_usage end

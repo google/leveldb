@@ -15,6 +15,8 @@
 #include "table/two_level_iterator.h"
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 struct Table::Rep {
@@ -269,3 +271,5 @@ uint64_t Table::ApproximateOffsetOf(const Slice& key) const {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

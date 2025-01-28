@@ -10,6 +10,8 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 namespace log {
 
@@ -109,3 +111,5 @@ Status Writer::EmitPhysicalRecord(RecordType t, const char* ptr,
 
 }  // namespace log
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

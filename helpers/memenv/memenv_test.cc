@@ -13,6 +13,8 @@
 #include "leveldb/env.h"
 #include "util/testutil.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 class MemEnvTest : public testing::Test {
@@ -257,3 +259,5 @@ TEST_F(MemEnvTest, DBTest) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

@@ -7,6 +7,8 @@
 #include "gtest/gtest.h"
 #include "util/logging.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 static std::string IKey(const std::string& user_key, uint64_t seq,
@@ -126,3 +128,5 @@ TEST(FormatTest, InternalKeyDebugString) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

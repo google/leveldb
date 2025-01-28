@@ -16,6 +16,8 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 struct TableBuilder::Rep {
@@ -278,3 +280,5 @@ uint64_t TableBuilder::NumEntries() const { return rep_->num_entries; }
 uint64_t TableBuilder::FileSize() const { return rep_->offset; }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

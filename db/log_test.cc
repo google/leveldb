@@ -10,6 +10,8 @@
 #include "util/crc32c.h"
 #include "util/random.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 namespace log {
 
@@ -556,3 +558,5 @@ TEST_F(LogTest, ReadPastEnd) { CheckOffsetPastEndReturnsNoRecords(5); }
 
 }  // namespace log
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

@@ -21,6 +21,8 @@
 #include "leveldb/db.h"
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 // WriteBatch header has an 8-byte sequence number followed by a 4-byte count.
@@ -148,3 +150,5 @@ void WriteBatchInternal::Append(WriteBatch* dst, const WriteBatch* src) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

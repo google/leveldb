@@ -10,6 +10,8 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 namespace log {
 
@@ -272,3 +274,5 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
 
 }  // namespace log
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

@@ -7,6 +7,8 @@
 #include "gtest/gtest.h"
 #include "util/random.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 TEST(ArenaTest, Empty) { Arena arena; }
@@ -59,3 +61,5 @@ TEST(ArenaTest, Simple) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

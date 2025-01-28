@@ -16,6 +16,8 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 typedef uint64_t Key;
@@ -366,3 +368,5 @@ TEST(SkipTest, Concurrent4) { RunConcurrent(4); }
 TEST(SkipTest, Concurrent5) { RunConcurrent(5); }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

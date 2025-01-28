@@ -8,6 +8,8 @@
 #include "leveldb/iterator.h"
 #include "table/iterator_wrapper.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 namespace {
@@ -189,3 +191,5 @@ Iterator* NewMergingIterator(const Comparator* comparator, Iterator** children,
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

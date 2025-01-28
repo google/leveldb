@@ -16,6 +16,8 @@
 #include "port/thread_annotations.h"
 #include "util/mutexlock.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 namespace {
@@ -388,3 +390,5 @@ class InMemoryEnv : public EnvWrapper {
 Env* NewMemEnv(Env* base_env) { return new InMemoryEnv(base_env); }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

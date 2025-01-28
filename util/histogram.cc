@@ -9,6 +9,8 @@
 
 #include "port/port.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 const double Histogram::kBucketLimit[kNumBuckets] = {
@@ -270,3 +272,5 @@ std::string Histogram::ToString() const {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

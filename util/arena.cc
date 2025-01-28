@@ -4,6 +4,8 @@
 
 #include "util/arena.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 static const int kBlockSize = 4096;
@@ -64,3 +66,5 @@ char* Arena::AllocateNewBlock(size_t block_bytes) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

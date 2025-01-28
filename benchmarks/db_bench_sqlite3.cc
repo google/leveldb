@@ -11,6 +11,8 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
 //
@@ -724,3 +726,5 @@ int main(int argc, char** argv) {
   benchmark.Run();
   return 0;
 }
+
+#pragma clang unsafe_buffer_usage end

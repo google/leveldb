@@ -19,6 +19,8 @@
 
 #include "leveldb/env.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 class PosixLogger final : public Logger {
@@ -126,5 +128,7 @@ class PosixLogger final : public Logger {
 };
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
 
 #endif  // STORAGE_LEVELDB_UTIL_POSIX_LOGGER_H_

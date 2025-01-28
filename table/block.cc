@@ -15,6 +15,8 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 inline uint32_t Block::NumRestarts() const {
@@ -290,3 +292,5 @@ Iterator* Block::NewIterator(const Comparator* comparator) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

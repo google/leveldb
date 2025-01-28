@@ -13,6 +13,8 @@
 #include "util/hash.h"
 #include "util/mutexlock.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 Cache::~Cache() {}
@@ -399,3 +401,5 @@ class ShardedLRUCache : public Cache {
 Cache* NewLRUCache(size_t capacity) { return new ShardedLRUCache(capacity); }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

@@ -17,6 +17,8 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 // Grouping of constants.  We may want to make some of these
@@ -220,5 +222,7 @@ inline LookupKey::~LookupKey() {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
 
 #endif  // STORAGE_LEVELDB_DB_DBFORMAT_H_

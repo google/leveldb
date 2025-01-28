@@ -6,6 +6,8 @@
 
 #include "gtest/gtest.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 namespace crc32c {
 
@@ -54,3 +56,5 @@ TEST(CRC, Mask) {
 
 }  // namespace crc32c
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

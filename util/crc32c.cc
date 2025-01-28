@@ -12,6 +12,8 @@
 #include "port/port.h"
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 namespace crc32c {
 
@@ -378,3 +380,5 @@ uint32_t Extend(uint32_t crc, const char* data, size_t n) {
 
 }  // namespace crc32c
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

@@ -7,6 +7,8 @@
 #include "leveldb/filter_policy.h"
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 // See doc/table_format.md for an explanation of the filter block format.
@@ -104,3 +106,5 @@ bool FilterBlockReader::KeyMayMatch(uint64_t block_offset, const Slice& key) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

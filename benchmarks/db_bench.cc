@@ -21,6 +21,8 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 // Comma-separated list of operations to run in the specified order
 //   Actual benchmarks:
 //      fillseq       -- write N values in sequential key order in async mode
@@ -1136,3 +1138,5 @@ int main(int argc, char** argv) {
   benchmark.Run();
   return 0;
 }
+
+#pragma clang unsafe_buffer_usage end

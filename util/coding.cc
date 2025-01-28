@@ -4,6 +4,8 @@
 
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 void PutFixed32(std::string* dst, uint32_t value) {
@@ -154,3 +156,5 @@ bool GetLengthPrefixedSlice(Slice* input, Slice* result) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

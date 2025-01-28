@@ -159,19 +159,23 @@ class CorruptionTest : public testing::Test {
   int Property(const std::string& name) {
     std::string property;
     int result;
+#pragma clang unsafe_buffer_usage begin
     if (db_->GetProperty(name, &property) &&
         sscanf(property.c_str(), "%d", &result) == 1) {
       return result;
     } else {
       return -1;
     }
+#pragma clang unsafe_buffer_usage end
   }
 
   // Return the ith key
   Slice Key(int i, std::string* storage) {
     char buf[100];
     std::snprintf(buf, sizeof(buf), "%016d", i);
+#pragma clang unsafe_buffer_usage begin
     storage->assign(buf, strlen(buf));
+#pragma clang unsafe_buffer_usage end
     return Slice(*storage);
   }
 

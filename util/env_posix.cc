@@ -36,6 +36,8 @@
 #include "util/env_posix_test_helper.h"
 #include "util/posix_logger.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 namespace {
@@ -927,3 +929,5 @@ Env* Env::Default() {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

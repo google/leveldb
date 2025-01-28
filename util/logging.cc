@@ -12,6 +12,8 @@
 #include "leveldb/env.h"
 #include "leveldb/slice.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 void AppendNumberTo(std::string* str, uint64_t num) {
@@ -80,3 +82,5 @@ bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

@@ -17,6 +17,8 @@
 #include "leveldb/slice.h"
 #include "port/port.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 // Standard Put... routines append to a string
@@ -118,5 +120,7 @@ inline const char* GetVarint32Ptr(const char* p, const char* limit,
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
 
 #endif  // STORAGE_LEVELDB_UTIL_CODING_H_

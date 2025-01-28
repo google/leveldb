@@ -9,6 +9,8 @@
 #include "port/port.h"
 #include "util/logging.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 TEST(FileNameTest, Parse) {
@@ -125,3 +127,5 @@ TEST(FileNameTest, Construction) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

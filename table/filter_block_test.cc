@@ -11,6 +11,8 @@
 #include "util/logging.h"
 #include "util/testutil.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 // For testing: emit an array with one hash value per key
@@ -120,3 +122,5 @@ TEST_F(FilterBlockTest, MultiChunk) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

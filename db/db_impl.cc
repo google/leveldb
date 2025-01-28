@@ -35,6 +35,8 @@
 #include "util/logging.h"
 #include "util/mutexlock.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 const int kNumNonTableCacheFiles = 10;
@@ -1576,3 +1578,6 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
+

@@ -8,6 +8,8 @@
 
 #include "gtest/gtest.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 TEST(Coding, Fixed32) {
@@ -191,3 +193,5 @@ TEST(Coding, Strings) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

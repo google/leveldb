@@ -11,6 +11,8 @@
 #include "util/coding.h"
 #include "util/crc32c.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 void BlockHandle::EncodeTo(std::string* dst) const {
@@ -162,3 +164,5 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

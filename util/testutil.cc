@@ -26,7 +26,9 @@ std::string RandomKey(Random* rnd, int len) {
                                     'd',  'e',  '\xfd', '\xfe', '\xff'};
   std::string result;
   for (int i = 0; i < len; i++) {
+#pragma clang unsafe_buffer_usage begin
     result += kTestChars[rnd->Uniform(sizeof(kTestChars))];
+#pragma clang unsafe_buffer_usage end
   }
   return result;
 }

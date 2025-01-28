@@ -19,6 +19,8 @@
 #include "util/coding.h"
 #include "util/logging.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 static size_t TargetFileSize(const Options* options) {
@@ -1567,3 +1569,5 @@ void Compaction::ReleaseInputs() {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

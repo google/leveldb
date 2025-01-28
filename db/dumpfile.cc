@@ -19,6 +19,8 @@
 #include "leveldb/write_batch.h"
 #include "util/logging.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 namespace {
@@ -230,3 +232,5 @@ Status DumpFile(Env* env, const std::string& fname, WritableFile* dst) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

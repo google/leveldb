@@ -8,6 +8,8 @@
 #include "leveldb/env.h"
 #include "leveldb/status.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 namespace {
 
@@ -62,3 +64,5 @@ int main(int argc, char** argv) {
   }
   return (ok ? 0 : 1);
 }
+
+#pragma clang unsafe_buffer_usage end

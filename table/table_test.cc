@@ -22,6 +22,8 @@
 #include "util/random.h"
 #include "util/testutil.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 // Return reverse of "key".
@@ -840,3 +842,5 @@ TEST_P(CompressionTableTest, ApproximateOffsetOfCompressed) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

@@ -8,6 +8,8 @@
 
 #include "port/port.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 const char* Status::CopyState(const char* state) {
@@ -75,3 +77,5 @@ std::string Status::ToString() const {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

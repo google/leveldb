@@ -22,6 +22,8 @@
 
 #include "leveldb/export.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 class LEVELDB_EXPORT Slice {
@@ -110,5 +112,7 @@ inline int Slice::compare(const Slice& b) const {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
 
 #endif  // STORAGE_LEVELDB_INCLUDE_SLICE_H_

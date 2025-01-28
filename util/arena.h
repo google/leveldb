@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <vector>
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 class Arena {
@@ -67,5 +69,7 @@ inline char* Arena::Allocate(size_t bytes) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
 
 #endif  // STORAGE_LEVELDB_UTIL_ARENA_H_

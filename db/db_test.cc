@@ -24,6 +24,8 @@
 #include "util/mutexlock.h"
 #include "util/testutil.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 static std::string RandomString(Random* rnd, int len) {
@@ -2358,3 +2360,5 @@ TEST_F(DBTest, Randomized) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

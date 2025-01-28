@@ -35,6 +35,8 @@
 #include "leveldb/options.h"
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 BlockBuilder::BlockBuilder(const Options* options)
@@ -105,3 +107,5 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

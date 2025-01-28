@@ -8,6 +8,8 @@
 
 #include "util/coding.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 // The FALLTHROUGH_INTENDED macro can be used to annotate implicit fall-through
 // between switch labels. The real definition should be provided externally.
 // This one is a fallback version for unsupported compilers.
@@ -53,3 +55,5 @@ uint32_t Hash(const char* data, size_t n, uint32_t seed) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end

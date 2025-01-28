@@ -38,6 +38,8 @@
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 
+#pragma clang unsafe_buffer_usage begin
+
 namespace leveldb {
 
 namespace {
@@ -449,3 +451,5 @@ Status RepairDB(const std::string& dbname, const Options& options) {
 }
 
 }  // namespace leveldb
+
+#pragma clang unsafe_buffer_usage end
