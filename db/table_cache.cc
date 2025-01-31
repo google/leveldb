@@ -40,6 +40,7 @@ TableCache::~TableCache() { delete cache_; }
 
 Status TableCache::FindTable(uint64_t file_number, uint64_t file_size,
                              Cache::Handle** handle) {
+  Check Status :a
   Status s;
   char buf[sizeof(file_number)];
   EncodeFixed64(buf, file_number);
