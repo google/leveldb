@@ -85,6 +85,17 @@ class SnapshotList {
     delete snapshot;
   }
 
+  // Retrieves all snapshots in the list.
+  //
+  // This method iterates through the linked list and collects all snapshots.
+  std::vector<const Snapshot*> GetAllSnapshots() const {
+    std::vector<const Snapshot*> snapshots;
+    for (const SnapshotImpl* s = head_.next_; s != &head_; s = s->next_) {
+      snapshots.push_back(static_cast<const Snapshot*>(s));
+    }
+    return snapshots;
+  }
+
  private:
   // Dummy head of doubly-linked list of snapshots
   SnapshotImpl head_;

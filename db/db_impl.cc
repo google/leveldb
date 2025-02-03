@@ -1575,4 +1575,12 @@ Status DestroyDB(const std::string& dbname, const Options& options) {
   return result;
 }
 
+std::vector<const Snapshot*> DBImpl::GetAllSnapshots() {
+  std::vector<const Snapshot*> snapshots;
+  mutex_.Lock();
+  snapshots = snapshots_.GetAllSnapshots();  // Call the SnapshotList method
+  mutex_.Unlock();
+  return snapshots;
+}
+
 }  // namespace leveldb
