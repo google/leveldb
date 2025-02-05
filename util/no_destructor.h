@@ -6,6 +6,7 @@
 #define STORAGE_LEVELDB_UTIL_NO_DESTRUCTOR_H_
 
 #include <cstddef>
+#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -28,7 +29,7 @@ class NoDestructor {
     static_assert(
         alignof(NoDestructor<InstanceType>) % alignof(InstanceType) == 0,
         "instance_storage_ does not meet the instance's alignment requirement");
-    new (instance_storage_)
+    ::new (instance_storage_)
         InstanceType(std::forward<ConstructorArgTypes>(constructor_args)...);
   }
 
@@ -42,7 +43,7 @@ class NoDestructor {
   }
 
  private:
-  alignas(InstanceType) char instance_storage_[sizeof(InstanceType)];
+  alignas(InstanceType) unsigned char instance_storage_[sizeof(InstanceType)];
 };
 
 }  // namespace leveldb
