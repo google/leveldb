@@ -18,7 +18,7 @@ namespace leveldb {
 class RecoveryTest : public testing::Test {
  public:
   RecoveryTest() : env_(Env::Default()), db_(nullptr) {
-    dbname_ = testing::TempDir() + "/recovery_test";
+    dbname_ = testing::TempDir() + "recovery_test";
     DestroyDB(dbname_, Options());
     Open();
   }
@@ -328,12 +328,12 @@ TEST_F(RecoveryTest, ManifestMissing) {
   RemoveManifestFile();
 
   Status status = OpenWithStatus();
+#if defined(LEVELDB_PLATFORM_CHROMIUM)
+  // TODO(crbug.com/760362): See comment in MakeIOError() from env_chromium.cc.
+  ASSERT_TRUE(status.IsIOError());
+#else
   ASSERT_TRUE(status.IsCorruption());
+#endif  // defined(LEVELDB_PLATFORM_CHROMIUM)
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

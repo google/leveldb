@@ -55,7 +55,7 @@ class CondVar {
   void Signal();
 
   // Wake up all waiting threads.
-  void SignallAll();
+  void SignalAll();
 };
 
 // ------------------ Compression -------------------
@@ -72,7 +72,7 @@ bool Snappy_GetUncompressedLength(const char* input, size_t length,
                                   size_t* result);
 
 // Attempt to snappy uncompress input[0,input_length-1] into *output.
-// Returns true if successful, false if the input is invalid lightweight
+// Returns true if successful, false if the input is invalid snappy
 // compressed data.
 //
 // REQUIRES: at least the first "n" bytes of output[] must be writable
@@ -80,6 +80,26 @@ bool Snappy_GetUncompressedLength(const char* input, size_t length,
 // Snappy_GetUncompressedLength.
 bool Snappy_Uncompress(const char* input_data, size_t input_length,
                        char* output);
+
+// Store the zstd compression of "input[0,input_length-1]" in *output.
+// Returns false if zstd is not supported by this port.
+bool Zstd_Compress(int level, const char* input, size_t input_length,
+                   std::string* output);
+
+// If input[0,input_length-1] looks like a valid zstd compressed
+// buffer, store the size of the uncompressed data in *result and
+// return true.  Else return false.
+bool Zstd_GetUncompressedLength(const char* input, size_t length,
+                                size_t* result);
+
+// Attempt to zstd uncompress input[0,input_length-1] into *output.
+// Returns true if successful, false if the input is invalid zstd
+// compressed data.
+//
+// REQUIRES: at least the first "n" bytes of output[] must be writable
+// where "n" is the result of a successful call to
+// Zstd_GetUncompressedLength.
+bool Zstd_Uncompress(const char* input_data, size_t input_length, char* output);
 
 // ------------------ Miscellaneous -------------------
 

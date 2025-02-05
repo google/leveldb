@@ -14,6 +14,7 @@
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "leveldb/iterator.h"
+#include "leveldb/options.h"
 #include "leveldb/table_builder.h"
 #include "table/block.h"
 #include "table/block_builder.h"
@@ -784,16 +785,28 @@ TEST(TableTest, ApproximateOffsetOfPlain) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 610000, 612000));
 }
 
-static bool SnappyCompressionSupported() {
+static bool CompressionSupported(CompressionType type) {
   std::string out;
   Slice in = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-  return port::Snappy_Compress(in.data(), in.size(), &out);
+  if (type == kSnappyCompression) {
+    return port::Snappy_Compress(in.data(), in.size(), &out);
+  } else if (type == kZstdCompression) {
+    return port::Zstd_Compress(/*level=*/1, in.data(), in.size(), &out);
+  }
+  return false;
 }
 
-TEST(TableTest, ApproximateOffsetOfCompressed) {
-  if (!SnappyCompressionSupported()) {
-    std::fprintf(stderr, "skipping compression tests\n");
-    return;
+class CompressionTableTest
+    : public ::testing::TestWithParam<std::tuple<CompressionType>> {};
+
+INSTANTIATE_TEST_SUITE_P(CompressionTests, CompressionTableTest,
+                         ::testing::Values(kSnappyCompression,
+                                           kZstdCompression));
+
+TEST_P(CompressionTableTest, ApproximateOffsetOfCompressed) {
+  CompressionType type = ::testing::get<0>(GetParam());
+  if (!CompressionSupported(type)) {
+    GTEST_SKIP() << "skipping compression test: " << type;
   }
 
   Random rnd(301);
@@ -807,7 +820,7 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
   KVMap kvmap;
   Options options;
   options.block_size = 1024;
-  options.compression = kSnappyCompression;
+  options.compression = type;
   c.Finish(options, &keys, &kvmap);
 
   // Expected upper and lower bounds of space used by compressible strings.
@@ -827,8 +840,3 @@ TEST(TableTest, ApproximateOffsetOfCompressed) {
 }
 
 }  // namespace leveldb
-
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}

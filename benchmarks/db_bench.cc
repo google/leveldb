@@ -60,7 +60,9 @@ static const char* FLAGS_benchmarks =
     "fill100K,"
     "crc32c,"
     "snappycomp,"
-    "snappyuncomp,";
+    "snappyuncomp,"
+    "zstdcomp,"
+    "zstduncomp,";
 
 // Number of key/values to place in database
 static int FLAGS_num = 1000000;
@@ -118,8 +120,14 @@ static bool FLAGS_use_existing_db = false;
 // If true, reuse existing log/MANIFEST files when re-opening a database.
 static bool FLAGS_reuse_logs = false;
 
+// If true, use compression.
+static bool FLAGS_compression = true;
+
 // Use the db with the following name.
 static const char* FLAGS_db = nullptr;
+
+// ZSTD compression level to try out
+static int FLAGS_zstd_compression_level = 1;
 
 namespace leveldb {
 
@@ -364,6 +372,57 @@ struct ThreadState {
   ThreadState(int index, int seed) : tid(index), rand(seed), shared(nullptr) {}
 };
 
+void Compress(
+    ThreadState* thread, std::string name,
+    std::function<bool(const char*, size_t, std::string*)> compress_func) {
+  RandomGenerator gen;
+  Slice input = gen.Generate(Options().block_size);
+  int64_t bytes = 0;
+  int64_t produced = 0;
+  bool ok = true;
+  std::string compressed;
+  while (ok && bytes < 1024 * 1048576) {  // Compress 1G
+    ok = compress_func(input.data(), input.size(), &compressed);
+    produced += compressed.size();
+    bytes += input.size();
+    thread->stats.FinishedSingleOp();
+  }
+
+  if (!ok) {
+    thread->stats.AddMessage("(" + name + " failure)");
+  } else {
+    char buf[100];
+    std::snprintf(buf, sizeof(buf), "(output: %.1f%%)",
+                  (produced * 100.0) / bytes);
+    thread->stats.AddMessage(buf);
+    thread->stats.AddBytes(bytes);
+  }
+}
+
+void Uncompress(
+    ThreadState* thread, std::string name,
+    std::function<bool(const char*, size_t, std::string*)> compress_func,
+    std::function<bool(const char*, size_t, char*)> uncompress_func) {
+  RandomGenerator gen;
+  Slice input = gen.Generate(Options().block_size);
+  std::string compressed;
+  bool ok = compress_func(input.data(), input.size(), &compressed);
+  int64_t bytes = 0;
+  char* uncompressed = new char[input.size()];
+  while (ok && bytes < 1024 * 1048576) {  // Compress 1G
+    ok = uncompress_func(compressed.data(), compressed.size(), uncompressed);
+    bytes += input.size();
+    thread->stats.FinishedSingleOp();
+  }
+  delete[] uncompressed;
+
+  if (!ok) {
+    thread->stats.AddMessage("(" + name + " failure)");
+  } else {
+    thread->stats.AddBytes(bytes);
+  }
+}
+
 }  // namespace
 
 class Benchmark {
@@ -576,6 +635,10 @@ class Benchmark {
         method = &Benchmark::SnappyCompress;
       } else if (name == Slice("snappyuncomp")) {
         method = &Benchmark::SnappyUncompress;
+      } else if (name == Slice("zstdcomp")) {
+        method = &Benchmark::ZstdCompress;
+      } else if (name == Slice("zstduncomp")) {
+        method = &Benchmark::ZstdUncompress;
       } else if (name == Slice("heapprofile")) {
         HeapProfile();
       } else if (name == Slice("stats")) {
@@ -710,50 +773,30 @@ class Benchmark {
   }
 
   void SnappyCompress(ThreadState* thread) {
-    RandomGenerator gen;
-    Slice input = gen.Generate(Options().block_size);
-    int64_t bytes = 0;
-    int64_t produced = 0;
-    bool ok = true;
-    std::string compressed;
-    while (ok && bytes < 1024 * 1048576) {  // Compress 1G
-      ok = port::Snappy_Compress(input.data(), input.size(), &compressed);
-      produced += compressed.size();
-      bytes += input.size();
-      thread->stats.FinishedSingleOp();
-    }
-
-    if (!ok) {
-      thread->stats.AddMessage("(snappy failure)");
-    } else {
-      char buf[100];
-      std::snprintf(buf, sizeof(buf), "(output: %.1f%%)",
-                    (produced * 100.0) / bytes);
-      thread->stats.AddMessage(buf);
-      thread->stats.AddBytes(bytes);
-    }
+    Compress(thread, "snappy", &port::Snappy_Compress);
   }
 
   void SnappyUncompress(ThreadState* thread) {
-    RandomGenerator gen;
-    Slice input = gen.Generate(Options().block_size);
-    std::string compressed;
-    bool ok = port::Snappy_Compress(input.data(), input.size(), &compressed);
-    int64_t bytes = 0;
-    char* uncompressed = new char[input.size()];
-    while (ok && bytes < 1024 * 1048576) {  // Compress 1G
-      ok = port::Snappy_Uncompress(compressed.data(), compressed.size(),
-                                   uncompressed);
-      bytes += input.size();
-      thread->stats.FinishedSingleOp();
-    }
-    delete[] uncompressed;
+    Uncompress(thread, "snappy", &port::Snappy_Compress,
+               &port::Snappy_Uncompress);
+  }
 
-    if (!ok) {
-      thread->stats.AddMessage("(snappy failure)");
-    } else {
-      thread->stats.AddBytes(bytes);
-    }
+  void ZstdCompress(ThreadState* thread) {
+    Compress(thread, "zstd",
+             [](const char* input, size_t length, std::string* output) {
+               return port::Zstd_Compress(FLAGS_zstd_compression_level, input,
+                                          length, output);
+             });
+  }
+
+  void ZstdUncompress(ThreadState* thread) {
+    Uncompress(
+        thread, "zstd",
+        [](const char* input, size_t length, std::string* output) {
+          return port::Zstd_Compress(FLAGS_zstd_compression_level, input,
+                                     length, output);
+        },
+        &port::Zstd_Uncompress);
   }
 
   void Open() {
@@ -771,6 +814,8 @@ class Benchmark {
     options.max_open_files = FLAGS_open_files;
     options.filter_policy = filter_policy_;
     options.reuse_logs = FLAGS_reuse_logs;
+    options.compression =
+        FLAGS_compression ? kSnappyCompression : kNoCompression;
     Status s = DB::Open(options, FLAGS_db, &db_);
     if (!s.ok()) {
       std::fprintf(stderr, "open error: %s\n", s.ToString().c_str());
@@ -1045,6 +1090,9 @@ int main(int argc, char** argv) {
     } else if (sscanf(argv[i], "--reuse_logs=%d%c", &n, &junk) == 1 &&
                (n == 0 || n == 1)) {
       FLAGS_reuse_logs = n;
+    } else if (sscanf(argv[i], "--compression=%d%c", &n, &junk) == 1 &&
+               (n == 0 || n == 1)) {
+      FLAGS_compression = n;
     } else if (sscanf(argv[i], "--num=%d%c", &n, &junk) == 1) {
       FLAGS_num = n;
     } else if (sscanf(argv[i], "--reads=%d%c", &n, &junk) == 1) {

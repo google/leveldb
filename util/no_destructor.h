@@ -5,15 +5,12 @@
 #ifndef STORAGE_LEVELDB_UTIL_NO_DESTRUCTOR_H_
 #define STORAGE_LEVELDB_UTIL_NO_DESTRUCTOR_H_
 
+#include <cstddef>
 #include <new>
+#include <type_traits>
 #include <utility>
 
 namespace leveldb {
-
-template <std::size_t Size, std::size_t Alignment>
-struct ObjectBuffer {
-  alignas(Alignment) unsigned char data_[Size];
-};
 
 // Wraps an instance whose destructor is never called.
 //
@@ -25,10 +22,14 @@ class NoDestructor {
   explicit NoDestructor(ConstructorArgTypes&&... constructor_args) {
     static_assert(sizeof(instance_storage_) >= sizeof(InstanceType),
                   "instance_storage_ is not large enough to hold the instance");
+    static_assert(std::is_standard_layout_v<NoDestructor<InstanceType>>);
     static_assert(
-        alignof(decltype(instance_storage_)) >= alignof(InstanceType),
+        offsetof(NoDestructor, instance_storage_) % alignof(InstanceType) == 0,
         "instance_storage_ does not meet the instance's alignment requirement");
-    ::new (static_cast<void*>(instance_storage_.data_))
+    static_assert(
+        alignof(NoDestructor<InstanceType>) % alignof(InstanceType) == 0,
+        "instance_storage_ does not meet the instance's alignment requirement");
+    ::new (instance_storage_)
         InstanceType(std::forward<ConstructorArgTypes>(constructor_args)...);
   }
 
@@ -38,11 +39,11 @@ class NoDestructor {
   NoDestructor& operator=(const NoDestructor&) = delete;
 
   InstanceType* get() {
-    return reinterpret_cast<InstanceType*>(instance_storage_.data_);
+    return reinterpret_cast<InstanceType*>(&instance_storage_);
   }
 
  private:
-  ObjectBuffer<sizeof(InstanceType), alignof(InstanceType)> instance_storage_;
+  alignas(InstanceType) unsigned char instance_storage_[sizeof(InstanceType)];
 };
 
 }  // namespace leveldb

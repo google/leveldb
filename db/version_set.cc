@@ -626,7 +626,7 @@ class VersionSet::Builder {
   }
 
   // Apply all of the edits in *edit to the current state.
-  void Apply(VersionEdit* edit) {
+  void Apply(const VersionEdit* edit) {
     // Update compaction pointers
     for (size_t i = 0; i < edit->compact_pointers_.size(); i++) {
       const int level = edit->compact_pointers_[i].first;
@@ -806,7 +806,6 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
     // first call to LogAndApply (when opening the database).
     assert(descriptor_file_ == nullptr);
     new_manifest_file = DescriptorFileName(dbname_, manifest_file_number_);
-    edit->SetNextFile(next_file_number_);
     s = env_->NewWritableFile(new_manifest_file, &descriptor_file_);
     if (s.ok()) {
       descriptor_log_ = new log::Writer(descriptor_file_);
@@ -1304,7 +1303,7 @@ Compaction* VersionSet::PickCompaction() {
   return c;
 }
 
-// Finds the largest key in a vector of files. Returns true if files it not
+// Finds the largest key in a vector of files. Returns true if files is not
 // empty.
 bool FindLargestKey(const InternalKeyComparator& icmp,
                     const std::vector<FileMetaData*>& files,
@@ -1392,6 +1391,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
 
   current_->GetOverlappingInputs(level + 1, &smallest, &largest,
                                  &c->inputs_[1]);
+  AddBoundaryInputs(icmp_, current_->files_[level + 1], &c->inputs_[1]);
 
   // Get entire range covered by compaction
   InternalKey all_start, all_limit;
@@ -1414,6 +1414,7 @@ void VersionSet::SetupOtherInputs(Compaction* c) {
       std::vector<FileMetaData*> expanded1;
       current_->GetOverlappingInputs(level + 1, &new_start, &new_limit,
                                      &expanded1);
+      AddBoundaryInputs(icmp_, current_->files_[level + 1], &expanded1);
       if (expanded1.size() == c->inputs_[1].size()) {
         Log(options_->info_log,
             "Expanding@%d %d+%d (%ld+%ld bytes) to %d+%d (%ld+%ld bytes)\n",
