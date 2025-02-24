@@ -13,6 +13,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_
 #define STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_
 
+#if __cplusplus
+
 #include <cstdint>
 
 #include "leveldb/export.h"
@@ -89,5 +91,7 @@ class LEVELDB_EXPORT TableBuilder {
 };
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_TABLE_BUILDER_H_

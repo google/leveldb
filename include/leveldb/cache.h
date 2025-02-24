@@ -18,6 +18,8 @@
 #ifndef STORAGE_LEVELDB_INCLUDE_CACHE_H_
 #define STORAGE_LEVELDB_INCLUDE_CACHE_H_
 
+#if __cplusplus
+
 #include <cstdint>
 
 #include "leveldb/export.h"
@@ -99,5 +101,7 @@ class LEVELDB_EXPORT Cache {
 };
 
 }  // namespace leveldb
+
+#endif // __cplusplus
 
 #endif  // STORAGE_LEVELDB_INCLUDE_CACHE_H_
