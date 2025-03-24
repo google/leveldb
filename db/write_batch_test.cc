@@ -116,6 +116,14 @@ TEST(WriteBatchTest, ApproximateSize) {
   WriteBatch batch;
   size_t empty_size = batch.ApproximateSize();
 
+  // Reserve space for multiple operations
+  size_t expected_size = 35;
+  batch.Reserve(expected_size);
+
+  // The approximate size should still be the same as empty
+  // since Reserve doesn't affect the content size
+  ASSERT_EQ(empty_size, batch.ApproximateSize());
+
   batch.Put(Slice("foo"), Slice("bar"));
   size_t one_key_size = batch.ApproximateSize();
   ASSERT_LT(empty_size, one_key_size);
@@ -127,6 +135,8 @@ TEST(WriteBatchTest, ApproximateSize) {
   batch.Delete(Slice("box"));
   size_t post_delete_size = batch.ApproximateSize();
   ASSERT_LT(two_keys_size, post_delete_size);
+
+  ASSERT_EQ(expected_size, batch.ApproximateSize());
 }
 
 }  // namespace leveldb
