@@ -56,6 +56,9 @@ class LEVELDB_EXPORT WriteBatch {
   // Clear all updates buffered in this batch.
   void Clear();
 
+  // Preallocate memory for a batch containing a sequence of updates.
+  void Reserve(size_t size);
+
   // The size of the database changes caused by this batch.
   //
   // This number is tied to implementation details, and may change across
