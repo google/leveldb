@@ -114,6 +114,7 @@ class TestWritableFile : public WritableFile {
   Status Close() override;
   Status Flush() override;
   Status Sync() override;
+  std::string GetName() const override { return ""; }
 
  private:
   FileState state_;
