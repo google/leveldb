@@ -526,7 +526,8 @@ void Version::GetOverlappingInputs(int level, const InternalKey* begin,
           user_begin = file_start;
           inputs->clear();
           i = 0;
-        } else if (end != nullptr &&
+        } 
+        if (end != nullptr &&
                    user_cmp->Compare(file_limit, user_end) > 0) {
           user_end = file_limit;
           inputs->clear();
