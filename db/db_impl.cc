@@ -150,10 +150,13 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
                                &internal_comparator_)) {}
 
 DBImpl::~DBImpl() {
-  // Wait for background work to finish.
+  // Wait for background work and in-flight writes to finish.
   mutex_.Lock();
   shutting_down_.store(true, std::memory_order_release);
-  while (background_compaction_scheduled_) {
+  // Wake up any threads blocked in MakeRoomForWrite() or other places that wait
+  // for background work to finish.
+  background_work_finished_signal_.SignalAll();
+  while (background_compaction_scheduled_ || !writers_.empty()) {
     background_work_finished_signal_.Wait();
   }
   mutex_.Unlock();
@@ -1219,9 +1222,9 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
 
   // May temporarily unlock and wait.
   Status status = MakeRoomForWrite(updates == nullptr);
-  uint64_t last_sequence = versions_->LastSequence();
   Writer* last_writer = &w;
   if (status.ok() && updates != nullptr) {  // nullptr batch is for compactions
+    uint64_t last_sequence = versions_->LastSequence();
     WriteBatch* write_batch = BuildBatchGroup(&last_writer);
     WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);
     last_sequence += WriteBatchInternal::Count(write_batch);
@@ -1270,6 +1273,9 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   // Notify new head of write queue
   if (!writers_.empty()) {
     writers_.front()->cv.Signal();
+  } else {
+    // The writer queue is empty; wake up shutdown/destructor waiters.
+    background_work_finished_signal_.SignalAll();
   }
 
   return status;
@@ -1333,7 +1339,10 @@ Status DBImpl::MakeRoomForWrite(bool force) {
   bool allow_delay = !force;
   Status s;
   while (true) {
-    if (!bg_error_.ok()) {
+    if (shutting_down_.load(std::memory_order_acquire)) {
+      s = Status::IOError("Deleting DB during MakeRoomForWrite");
+      break;
+    } else if (!bg_error_.ok()) {
       // Yield previous error
       s = bg_error_;
       break;
