@@ -147,7 +147,10 @@ DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
       background_compaction_scheduled_(false),
       manual_compaction_(nullptr),
       versions_(new VersionSet(dbname_, &options_, table_cache_,
-                               &internal_comparator_)) {}
+                               &internal_comparator_)) {
+  // Initialize mutex wrapper used for lifetime extension of iterators
+  mutex_state_ = std::make_shared<SharedMutexState>();
+}
 
 DBImpl::~DBImpl() {
   // Wait for background work to finish.
@@ -1058,22 +1061,28 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 namespace {
 
 struct IterState {
-  port::Mutex* const mu;
-  Version* const version GUARDED_BY(mu);
-  MemTable* const mem GUARDED_BY(mu);
-  MemTable* const imm GUARDED_BY(mu);
+  std::shared_ptr<SharedMutexState> shared;  // shared mutex state
+  Version* const version GUARDED_BY(shared);
+  MemTable* const mem GUARDED_BY(shared);
+  MemTable* const imm GUARDED_BY(shared);
 
-  IterState(port::Mutex* mutex, MemTable* mem, MemTable* imm, Version* version)
-      : mu(mutex), version(version), mem(mem), imm(imm) {}
+  IterState(std::shared_ptr<SharedMutexState> s, MemTable* mem, MemTable* imm,
+            Version* version)
+      : shared(std::move(s)), version(version), mem(mem), imm(imm) {}
 };
 
 static void CleanupIteratorState(void* arg1, void* arg2) {
   IterState* state = reinterpret_cast<IterState*>(arg1);
-  state->mu->Lock();
+  // Use the shared mutex if available to guard cleanup; otherwise skip locking.
+  if (state->shared) {
+    state->shared->mutex.Lock();
+  }
   state->mem->Unref();
   if (state->imm != nullptr) state->imm->Unref();
   state->version->Unref();
-  state->mu->Unlock();
+  if (state->shared) {
+    state->shared->mutex.Unlock();
+  }
   delete state;
 }
 
@@ -1098,7 +1107,7 @@ Iterator* DBImpl::NewInternalIterator(const ReadOptions& options,
       NewMergingIterator(&internal_comparator_, &list[0], list.size());
   versions_->current()->Ref();
 
-  IterState* cleanup = new IterState(&mutex_, mem_, imm_, versions_->current());
+  IterState* cleanup = new IterState(mutex_state_, mem_, imm_, versions_->current());
   internal_iter->RegisterCleanup(CleanupIteratorState, cleanup, nullptr);
 
   *seed = ++seed_;
