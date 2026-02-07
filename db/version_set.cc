@@ -815,7 +815,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
 
   // Unlock during expensive MANIFEST log write
   {
-    mu->Unlock();
+    mu->unlock();
 
     // Write new record to MANIFEST log
     if (s.ok()) {
@@ -836,7 +836,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
       s = SetCurrentFile(env_, dbname_, manifest_file_number_);
     }
 
-    mu->Lock();
+    mu->lock();
   }
 
   // Install the new version
