@@ -646,7 +646,8 @@ Status DBImpl::TEST_CompactMemTable() {
   if (s.ok()) {
     // Wait until the compaction completes
     MutexLock l(&mutex_);
-    while (imm_ != nullptr && bg_error_.ok()) {
+    while (imm_ != nullptr && bg_error_.ok() &&
+           !shutting_down_.load(std::memory_order_acquire)) {
       background_work_finished_signal_.Wait();
     }
     if (imm_ != nullptr) {
