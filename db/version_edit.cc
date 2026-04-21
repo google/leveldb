@@ -20,7 +20,8 @@ enum Tag {
   kDeletedFile = 6,
   kNewFile = 7,
   // 8 was used for large value refs
-  kPrevLogNumber = 9
+  kPrevLogNumber = 9,
+  kNewFileWithStats = 10  // New file with tombstone statistics
 };
 
 void VersionEdit::Clear() {
@@ -75,12 +76,23 @@ void VersionEdit::EncodeTo(std::string* dst) const {
 
   for (size_t i = 0; i < new_files_.size(); i++) {
     const FileMetaData& f = new_files_[i].second;
-    PutVarint32(dst, kNewFile);
-    PutVarint32(dst, new_files_[i].first);  // level
-    PutVarint64(dst, f.number);
-    PutVarint64(dst, f.file_size);
-    PutLengthPrefixedSlice(dst, f.smallest.Encode());
-    PutLengthPrefixedSlice(dst, f.largest.Encode());
+    if (f.num_entries > 0 || f.num_tombstones > 0) {
+      PutVarint32(dst, kNewFileWithStats);
+      PutVarint32(dst, new_files_[i].first);  // level
+      PutVarint64(dst, f.number);
+      PutVarint64(dst, f.file_size);
+      PutVarint64(dst, f.num_tombstones);
+      PutVarint64(dst, f.num_entries);
+      PutLengthPrefixedSlice(dst, f.smallest.Encode());
+      PutLengthPrefixedSlice(dst, f.largest.Encode());
+    } else {
+      PutVarint32(dst, kNewFile);
+      PutVarint32(dst, new_files_[i].first);  // level
+      PutVarint64(dst, f.number);
+      PutVarint64(dst, f.file_size);
+      PutLengthPrefixedSlice(dst, f.smallest.Encode());
+      PutLengthPrefixedSlice(dst, f.largest.Encode());
+    }
   }
 }
 
@@ -176,6 +188,8 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
         break;
 
       case kNewFile:
+        f.num_tombstones = 0;
+        f.num_entries = 0;
         if (GetLevel(&input, &level) && GetVarint64(&input, &f.number) &&
             GetVarint64(&input, &f.file_size) &&
             GetInternalKey(&input, &f.smallest) &&
@@ -183,6 +197,19 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
           new_files_.push_back(std::make_pair(level, f));
         } else {
           msg = "new-file entry";
+        }
+        break;
+
+      case kNewFileWithStats:
+        if (GetLevel(&input, &level) && GetVarint64(&input, &f.number) &&
+            GetVarint64(&input, &f.file_size) &&
+            GetVarint64(&input, &f.num_tombstones) &&
+            GetVarint64(&input, &f.num_entries) &&
+            GetInternalKey(&input, &f.smallest) &&
+            GetInternalKey(&input, &f.largest)) {
+          new_files_.push_back(std::make_pair(level, f));
+        } else {
+          msg = "new-file with stats entry";
         }
         break;
 
@@ -246,6 +273,10 @@ std::string VersionEdit::DebugString() const {
     AppendNumberTo(&r, f.number);
     r.append(" ");
     AppendNumberTo(&r, f.file_size);
+    r.append(" tombstones:");
+    AppendNumberTo(&r, f.num_tombstones);
+    r.append(" entries:");
+    AppendNumberTo(&r, f.num_entries);
     r.append(" ");
     r.append(f.smallest.DebugString());
     r.append(" .. ");
