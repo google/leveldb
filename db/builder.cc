@@ -18,6 +18,8 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
                   TableCache* table_cache, Iterator* iter, FileMetaData* meta) {
   Status s;
   meta->file_size = 0;
+  meta->num_entries = 0;
+  meta->num_tombstones = 0;
   iter->SeekToFirst();
 
   std::string fname = TableFileName(dbname, meta->number);
@@ -31,8 +33,13 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     TableBuilder* builder = new TableBuilder(options, file);
     meta->smallest.DecodeFrom(iter->key());
     Slice key;
+    ParsedInternalKey ikey;
     for (; iter->Valid(); iter->Next()) {
       key = iter->key();
+      meta->num_entries++;
+      if (ParseInternalKey(key, &ikey) && ikey.type == kTypeDeletion) {
+        meta->num_tombstones++;
+      }
       builder->Add(key, iter->value());
     }
     if (!key.empty()) {
