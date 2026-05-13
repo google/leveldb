@@ -27,6 +27,7 @@ struct Table::Rep {
   Options options;
   Status status;
   RandomAccessFile* file;
+  uint64_t file_size;
   uint64_t cache_id;
   FilterBlockReader* filter;
   const char* filter_data;
@@ -34,6 +35,19 @@ struct Table::Rep {
   BlockHandle metaindex_handle;  // Handle to metaindex_block: saved from footer
   Block* index_block;
 };
+
+// Returns true iff the block described by "handle" fits entirely within a
+// file of "file_size" bytes, including the block trailer.
+static bool IsValidBlockHandle(const BlockHandle& handle, uint64_t file_size) {
+  if (file_size < kBlockTrailerSize) {
+    return false;
+  }
+  const uint64_t max_block_end = file_size - kBlockTrailerSize;
+  if (handle.size() > max_block_end) {
+    return false;
+  }
+  return handle.offset() <= max_block_end - handle.size();
+}
 
 Status Table::Open(const Options& options, RandomAccessFile* file,
                    uint64_t size, Table** table) {
@@ -58,7 +72,12 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
   if (options.paranoid_checks) {
     opt.verify_checksums = true;
   }
-  s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+  if (!IsValidBlockHandle(footer.index_handle(), size)) {
+    s = Status::Corruption("bad index handle");
+  }
+  if (s.ok()) {
+    s = ReadBlock(file, opt, footer.index_handle(), &index_block_contents);
+  }
 
   if (s.ok()) {
     // We've successfully read the footer and the index block: we're
@@ -67,6 +86,7 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
     Rep* rep = new Table::Rep;
     rep->options = options;
     rep->file = file;
+    rep->file_size = size;
     rep->metaindex_handle = footer.metaindex_handle();
     rep->index_block = index_block;
     rep->cache_id = (options.block_cache ? options.block_cache->NewId() : 0);
@@ -91,7 +111,8 @@ void Table::ReadMeta(const Footer& footer) {
     opt.verify_checksums = true;
   }
   BlockContents contents;
-  if (!ReadBlock(rep_->file, opt, footer.metaindex_handle(), &contents).ok()) {
+  if (!IsValidBlockHandle(footer.metaindex_handle(), rep_->file_size) ||
+      !ReadBlock(rep_->file, opt, footer.metaindex_handle(), &contents).ok()) {
     // Do not propagate errors since meta info is not needed for operation
     return;
   }
@@ -122,7 +143,8 @@ void Table::ReadFilter(const Slice& filter_handle_value) {
     opt.verify_checksums = true;
   }
   BlockContents block;
-  if (!ReadBlock(rep_->file, opt, filter_handle, &block).ok()) {
+  if (!IsValidBlockHandle(filter_handle, rep_->file_size) ||
+      !ReadBlock(rep_->file, opt, filter_handle, &block).ok()) {
     return;
   }
   if (block.heap_allocated) {
@@ -162,6 +184,10 @@ Iterator* Table::BlockReader(void* arg, const ReadOptions& options,
   Status s = handle.DecodeFrom(&input);
   // We intentionally allow extra stuff in index_value so that we
   // can add more features in the future.
+
+  if (s.ok() && !IsValidBlockHandle(handle, table->rep_->file_size)) {
+    s = Status::Corruption("bad block handle");
+  }
 
   if (s.ok()) {
     BlockContents contents;
