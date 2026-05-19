@@ -48,17 +48,22 @@ struct LRUHandle {
   LRUHandle* prev;
   size_t charge;  // TODO(opt): Only allow uint32_t?
   size_t key_length;
-  bool in_cache;     // Whether entry is in the cache.
-  uint32_t refs;     // References, including cache reference, if present.
-  uint32_t hash;     // Hash of key(); used for fast sharding and comparisons
-  char key_data[1];  // Beginning of key
+  bool in_cache;  // Whether entry is in the cache.
+  uint32_t refs;  // References, including cache reference, if present.
+  uint32_t hash;  // Hash of key(); used for fast sharding and comparisons
 
   Slice key() const {
     // next is only equal to this if the LRU handle is the list head of an
     // empty list. List heads never have meaningful keys.
     assert(next != this);
 
-    return Slice(key_data, key_length);
+    return Slice(key_data(), key_length);
+  }
+
+  char* key_data() { return reinterpret_cast<char*>(this + 1); }
+
+  const char* key_data() const {
+    return reinterpret_cast<const char*>(this + 1);
   }
 };
 
@@ -271,7 +276,7 @@ Cache::Handle* LRUCache::Insert(const Slice& key, uint32_t hash, void* value,
   MutexLock l(&mutex_);
 
   LRUHandle* e =
-      reinterpret_cast<LRUHandle*>(malloc(sizeof(LRUHandle) - 1 + key.size()));
+      reinterpret_cast<LRUHandle*>(malloc(sizeof(LRUHandle) + key.size()));
   e->value = value;
   e->deleter = deleter;
   e->charge = charge;
@@ -279,7 +284,7 @@ Cache::Handle* LRUCache::Insert(const Slice& key, uint32_t hash, void* value,
   e->hash = hash;
   e->in_cache = false;
   e->refs = 1;  // for the returned handle.
-  std::memcpy(e->key_data, key.data(), key.size());
+  std::memcpy(e->key_data(), key.data(), key.size());
 
   if (capacity_ > 0) {
     e->refs++;  // for the cache's reference.
