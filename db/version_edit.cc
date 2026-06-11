@@ -86,11 +86,15 @@ void VersionEdit::EncodeTo(std::string* dst) const {
 
 static bool GetInternalKey(Slice* input, InternalKey* dst) {
   Slice str;
-  if (GetLengthPrefixedSlice(input, &str)) {
-    return dst->DecodeFrom(str);
-  } else {
+  ParsedInternalKey parsed;
+  if (!GetLengthPrefixedSlice(input, &str)) {
     return false;
   }
+  if (!ParseInternalKey(str, &parsed)) {
+    return false;
+  }
+  dst->SetFrom(parsed);
+  return true;
 }
 
 static bool GetLevel(Slice* input, int* level) {

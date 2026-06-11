@@ -85,6 +85,17 @@ TEST(FormatTest, InternalKey_DecodeFromInvalidType) {
   ASSERT_TRUE(!internal_key.DecodeFrom(encoded));
 }
 
+TEST(FormatTest, ExtractUserKeyReturnsEmptyForShortKey) {
+  ASSERT_EQ(0u, ExtractUserKey("a").size());
+  ASSERT_EQ(0u, ExtractUserKey(std::string(7, 'x')).size());
+}
+
+TEST(FormatTest, ComparatorDoesNotCrashOnShortKeys) {
+  InternalKeyComparator cmp(BytewiseComparator());
+  ASSERT_NO_FATAL_FAILURE(cmp.Compare(Slice("a", 1), Slice("b", 1)));
+  ASSERT_NO_FATAL_FAILURE(cmp.Compare(Slice("a", 1), IKey("z", 1, kTypeValue)));
+}
+
 TEST(FormatTest, InternalKeyShortSeparator) {
   // When user keys are same
   ASSERT_EQ(IKey("foo", 100, kTypeValue),

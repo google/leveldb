@@ -949,7 +949,8 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
 
     // Handle key/value, add to state, etc.
     bool drop = false;
-    if (!ParseInternalKey(key, &ikey)) {
+    const bool parsed = ParseInternalKey(key, &ikey);
+    if (!parsed) {
       // Do not hide error keys
       current_user_key.clear();
       has_current_user_key = false;
@@ -992,7 +993,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         (int)last_sequence_for_key, (int)compact->smallest_snapshot);
 #endif
 
-    if (!drop) {
+    if (!drop && parsed) {
       // Open output file if necessary
       if (compact->builder == nullptr) {
         status = OpenCompactionOutputFile(compact);
