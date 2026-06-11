@@ -469,7 +469,8 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
   delete file;
 
   // See if we should keep reusing the last log file.
-  if (status.ok() && options_.reuse_logs && last_log && compactions == 0) {
+  if (status.ok() && options_.reuse_logs && last_log && compactions == 0 &&
+      !reader.HasIncompleteTrailingRecord()) {
     assert(logfile_ == nullptr);
     assert(log_ == nullptr);
     assert(mem_ == nullptr);

@@ -898,6 +898,7 @@ Status VersionSet::Recover(bool* save_manifest) {
   uint64_t prev_log_number = 0;
   Builder builder(this, current_);
   int read_records = 0;
+  bool manifest_has_incomplete_trailing_record = false;
 
   {
     LogReporter reporter;
@@ -943,6 +944,8 @@ Status VersionSet::Recover(bool* save_manifest) {
         have_last_sequence = true;
       }
     }
+    manifest_has_incomplete_trailing_record =
+        reader.HasIncompleteTrailingRecord();
   }
   delete file;
   file = nullptr;
@@ -977,7 +980,8 @@ Status VersionSet::Recover(bool* save_manifest) {
     prev_log_number_ = prev_log_number;
 
     // See if we can reuse the existing MANIFEST file.
-    if (ReuseManifest(dscname, current)) {
+    if (!manifest_has_incomplete_trailing_record &&
+        ReuseManifest(dscname, current)) {
       // No need to save new manifest
     } else {
       *save_manifest = true;
