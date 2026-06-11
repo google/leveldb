@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <algorithm>
+#include <cstring>
+
 #include "gtest/gtest.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -174,22 +177,24 @@ class LogTest : public testing::Test {
 
   class StringSource : public SequentialFile {
    public:
-    StringSource() : force_error_(false), returned_partial_(false) {}
+    StringSource() : force_error_(false) {}
 
     Status Read(size_t n, Slice* result, char* scratch) override {
-      EXPECT_TRUE(!returned_partial_) << "must not Read() after eof/error";
-
       if (force_error_) {
         force_error_ = false;
-        returned_partial_ = true;
         return Status::Corruption("read error");
+      }
+
+      if (contents_.empty()) {
+        *result = Slice(scratch, 0);
+        return Status::OK();
       }
 
       if (contents_.size() < n) {
         n = contents_.size();
-        returned_partial_ = true;
       }
-      *result = Slice(contents_.data(), n);
+      std::memcpy(scratch, contents_.data(), n);
+      *result = Slice(scratch, n);
       contents_.remove_prefix(n);
       return Status::OK();
     }
@@ -207,7 +212,6 @@ class LogTest : public testing::Test {
 
     Slice contents_;
     bool force_error_;
-    bool returned_partial_;
   };
 
   class ReportCollector : public Reader::Reporter {
@@ -257,6 +261,73 @@ uint64_t LogTest::initial_offset_last_record_offsets_[] = {
 // LogTest::initial_offset_last_record_offsets_ must be defined before this.
 int LogTest::num_initial_offset_records_ =
     sizeof(LogTest::initial_offset_last_record_offsets_) / sizeof(uint64_t);
+
+// Returns at most |max_per_read| bytes per call, even when more data is
+// available. Simulates a SequentialFile::Read() that returns short reads
+// before end-of-file (e.g. due to EINTR after a partial read).
+class PartialReadSource : public SequentialFile {
+ public:
+  PartialReadSource(std::string contents, size_t max_per_read)
+      : contents_(std::move(contents)), max_per_read_(max_per_read) {}
+
+  Status Read(size_t n, Slice* result, char* scratch) override {
+    if (contents_.empty()) {
+      *result = Slice(scratch, 0);
+      return Status::OK();
+    }
+    const size_t to_read =
+        std::min(n, std::min(max_per_read_, contents_.size()));
+    std::memcpy(scratch, contents_.data(), to_read);
+    *result = Slice(scratch, to_read);
+    contents_.erase(0, to_read);
+    return Status::OK();
+  }
+
+  Status Skip(uint64_t n) override {
+    if (n > contents_.size()) {
+      contents_.clear();
+      return Status::NotFound("in-memory file skipped past end");
+    }
+    contents_.erase(0, static_cast<size_t>(n));
+    return Status::OK();
+  }
+
+ private:
+  std::string contents_;
+  const size_t max_per_read_;
+};
+
+TEST(PartialReadSourceTest, LogReaderRetriesShortReads) {
+  class StringDest : public WritableFile {
+   public:
+    Status Close() override { return Status::OK(); }
+    Status Flush() override { return Status::OK(); }
+    Status Sync() override { return Status::OK(); }
+    Status Append(const Slice& slice) override {
+      contents_.append(slice.data(), slice.size());
+      return Status::OK();
+    }
+
+    std::string contents_;
+  };
+
+  StringDest dest;
+  Writer writer(&dest);
+  ASSERT_TRUE(writer.AddRecord(Slice("first")).ok());
+  ASSERT_TRUE(writer.AddRecord(Slice(BigString("x", 2 * kBlockSize))).ok());
+
+  PartialReadSource source(dest.contents_, 1000);
+  Reader::Reporter* reporter = nullptr;
+  Reader reader(&source, reporter, true /*checksum*/, 0 /*initial_offset*/);
+
+  Slice record;
+  std::string scratch;
+  ASSERT_TRUE(reader.ReadRecord(&record, &scratch));
+  ASSERT_EQ("first", record.ToString());
+  ASSERT_TRUE(reader.ReadRecord(&record, &scratch));
+  ASSERT_EQ(2 * kBlockSize, record.size());
+  ASSERT_FALSE(reader.ReadRecord(&record, &scratch));
+}
 
 TEST_F(LogTest, Empty) { ASSERT_EQ("EOF", Read()); }
 

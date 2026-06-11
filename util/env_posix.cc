@@ -140,20 +140,22 @@ class PosixSequentialFile final : public SequentialFile {
   ~PosixSequentialFile() override { close(fd_); }
 
   Status Read(size_t n, Slice* result, char* scratch) override {
-    Status status;
-    while (true) {
-      ::ssize_t read_size = ::read(fd_, scratch, n);
+    size_t nread = 0;
+    while (nread < n) {
+      ::ssize_t read_size = ::read(fd_, scratch + nread, n - nread);
       if (read_size < 0) {  // Read error.
         if (errno == EINTR) {
           continue;  // Retry
         }
-        status = PosixError(filename_, errno);
-        break;
+        return PosixError(filename_, errno);
       }
-      *result = Slice(scratch, read_size);
-      break;
+      if (read_size == 0) {
+        break;  // EOF
+      }
+      nread += static_cast<size_t>(read_size);
     }
-    return status;
+    *result = Slice(scratch, nread);
+    return Status::OK();
   }
 
   Status Skip(uint64_t n) override {
