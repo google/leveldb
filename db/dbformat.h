@@ -142,8 +142,13 @@ class InternalKey {
   }
 
   bool DecodeFrom(const Slice& s) {
+    ParsedInternalKey parsed;
+    if (!ParseInternalKey(s, &parsed)) {
+      rep_.clear();
+      return false;
+    }
     rep_.assign(s.data(), s.size());
-    return !rep_.empty();
+    return true;
   }
 
   Slice Encode() const {
