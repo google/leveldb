@@ -4,6 +4,7 @@
 
 #include "leveldb/table.h"
 
+#include <limits>
 #include <map>
 #include <string>
 
@@ -837,6 +838,48 @@ TEST_P(CompressionTableTest, ApproximateOffsetOfCompressed) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k04"), min_z, max_z));
   // Have now emitted two large compressible strings, so adjust expected offset.
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
+}
+
+TEST(ReadBlockTest, RejectsOversizedBlockHandle) {
+  char backing[64];
+  std::memset(backing, 0, sizeof(backing));
+  StringSource source(Slice(backing, sizeof(backing)));
+  ReadOptions read_options;
+  read_options.verify_checksums = false;
+  BlockContents result;
+
+  const uint64_t bad_sizes[] = {
+      std::numeric_limits<uint64_t>::max() - 4,
+      std::numeric_limits<uint64_t>::max(),
+      static_cast<uint64_t>(std::numeric_limits<size_t>::max()),
+  };
+
+  for (uint64_t size : bad_sizes) {
+    BlockHandle handle;
+    handle.set_offset(0);
+    handle.set_size(size);
+
+    Status s = ReadBlock(&source, read_options, handle, &result);
+    ASSERT_TRUE(!s.ok()) << "size=" << size;
+    ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+  }
+}
+
+TEST(ReadBlockTest, TruncatedBlockRead) {
+  char backing[16];
+  std::memset(backing, 0, sizeof(backing));
+  StringSource source(Slice(backing, sizeof(backing)));
+  ReadOptions read_options;
+  read_options.verify_checksums = false;
+  BlockContents result;
+
+  BlockHandle handle;
+  handle.set_offset(0);
+  handle.set_size(100);
+
+  Status s = ReadBlock(&source, read_options, handle, &result);
+  ASSERT_TRUE(!s.ok());
+  ASSERT_TRUE(s.IsCorruption()) << s.ToString();
 }
 
 }  // namespace leveldb
