@@ -31,7 +31,7 @@
 #endif  // !defined(HAVE_SNAPPY)
 
 // Define to 1 if you have Zstd.
-#if !defined(HAVE_Zstd)
+#if !defined(HAVE_ZSTD)
 #cmakedefine01 HAVE_ZSTD
 #endif  // !defined(HAVE_ZSTD)
 
