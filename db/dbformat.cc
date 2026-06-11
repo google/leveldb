@@ -49,6 +49,15 @@ int InternalKeyComparator::Compare(const Slice& akey, const Slice& bkey) const {
   //    increasing user key (according to user-supplied comparator)
   //    decreasing sequence number
   //    decreasing type (though sequence# should be enough to disambiguate)
+  if (akey.size() < 8 || bkey.size() < 8) {
+    if (akey.size() < bkey.size()) {
+      return -1;
+    }
+    if (akey.size() > bkey.size()) {
+      return +1;
+    }
+    return 0;
+  }
   int r = user_comparator_->Compare(ExtractUserKey(akey), ExtractUserKey(bkey));
   if (r == 0) {
     const uint64_t anum = DecodeFixed64(akey.data() + akey.size() - 8);
@@ -64,6 +73,9 @@ int InternalKeyComparator::Compare(const Slice& akey, const Slice& bkey) const {
 
 void InternalKeyComparator::FindShortestSeparator(std::string* start,
                                                   const Slice& limit) const {
+  if (start->size() < 8 || limit.size() < 8) {
+    return;
+  }
   // Attempt to shorten the user portion of the key
   Slice user_start = ExtractUserKey(*start);
   Slice user_limit = ExtractUserKey(limit);
@@ -82,6 +94,9 @@ void InternalKeyComparator::FindShortestSeparator(std::string* start,
 }
 
 void InternalKeyComparator::FindShortSuccessor(std::string* key) const {
+  if (key->size() < 8) {
+    return;
+  }
   Slice user_key = ExtractUserKey(*key);
   std::string tmp(user_key.data(), user_key.size());
   user_comparator_->FindShortSuccessor(&tmp);
