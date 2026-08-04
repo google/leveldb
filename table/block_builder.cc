@@ -52,6 +52,13 @@ void BlockBuilder::Reset() {
   last_key_.clear();
 }
 
+void BlockBuilder::OnOptionsChanged() {
+  assert(options_->block_restart_interval >= 1);
+  if (counter_ > options_->block_restart_interval) {
+    counter_ = options_->block_restart_interval;
+  }
+}
+
 size_t BlockBuilder::CurrentSizeEstimate() const {
   return (buffer_.size() +                       // Raw data buffer
           restarts_.size() * sizeof(uint32_t) +  // Restart array
