@@ -71,7 +71,10 @@ Slice BlockBuilder::Finish() {
 void BlockBuilder::Add(const Slice& key, const Slice& value) {
   Slice last_key_piece(last_key_);
   assert(!finished_);
-  assert(counter_ <= options_->block_restart_interval);
+  // counter_ can exceed options_->block_restart_interval: options_ aliases the
+  // Options owned by the caller, and TableBuilder::ChangeOptions() may lower
+  // block_restart_interval while this block is still open. The restart branch
+  // below handles that by emitting a restart point on the next key.
   assert(buffer_.empty()  // No values yet?
          || options_->comparator->Compare(key, last_key_piece) > 0);
   size_t shared = 0;

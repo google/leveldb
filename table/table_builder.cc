@@ -84,7 +84,10 @@ Status TableBuilder::ChangeOptions(const Options& options) {
   }
 
   // Note that any live BlockBuilders point to rep_->options and therefore
-  // will automatically pick up the updated options.
+  // will automatically pick up the updated options. Lowering
+  // block_restart_interval below the number of keys already buffered in the
+  // open data block is allowed; the next Add() simply starts a new restart
+  // point.
   rep_->options = options;
   rep_->index_block_options = options;
   rep_->index_block_options.block_restart_interval = 1;
