@@ -93,6 +93,14 @@ class LEVELDB_EXPORT Cache {
   // leveldb may change Prune() to a pure abstract method.
   virtual void Prune() {}
 
+  // Set the capacity of the cache. Entries may be evicted if the new capacity
+  // is smaller than the current usage.
+  //
+  // This method is optional to implement and the default implementation does
+  // nothing.  Subclasses that do not support dynamic capacity sizing may ignore
+  // this call.
+  virtual void SetCapacity(size_t capacity) {}
+
   // Return an estimate of the combined charges of all elements stored in the
   // cache.
   virtual size_t TotalCharge() const = 0;

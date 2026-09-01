@@ -221,4 +221,24 @@ TEST_F(CacheTest, ZeroSizeCache) {
   ASSERT_EQ(-1, Lookup(1));
 }
 
+TEST_F(CacheTest, SetCapacity) {
+  // Insert many items.
+  for (int i = 0; i < 100; i++) {
+    Insert(i, 1000 + i);
+  }
+  ASSERT_EQ(100, cache_->TotalCharge());
+
+  // Reduce capacity to 10.
+  // Each shard gets (10 + 15) / 16 = 1 capacity.
+  // Total capacity = 16.
+  cache_->SetCapacity(10);
+
+  // Usage should be at most 16.
+  ASSERT_LE(cache_->TotalCharge(), 16);
+
+  // Reduce capacity to 0.
+  cache_->SetCapacity(0);
+  ASSERT_EQ(0, cache_->TotalCharge());
+}
+
 }  // namespace leveldb

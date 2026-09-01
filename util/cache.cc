@@ -154,7 +154,7 @@ class LRUCache {
   ~LRUCache();
 
   // Separate from constructor so caller can easily make an array of LRUCache
-  void SetCapacity(size_t capacity) { capacity_ = capacity; }
+  void SetInitialCapacity(size_t capacity) { capacity_ = capacity; }
 
   // Like Cache methods, but with an extra "hash" parameter.
   Cache::Handle* Insert(const Slice& key, uint32_t hash, void* value,
@@ -164,6 +164,7 @@ class LRUCache {
   void Release(Cache::Handle* handle);
   void Erase(const Slice& key, uint32_t hash);
   void Prune();
+  void SetCapacity(size_t capacity);
   size_t TotalCharge() const {
     MutexLock l(&mutex_);
     return usage_;
@@ -333,6 +334,19 @@ void LRUCache::Prune() {
   }
 }
 
+void LRUCache::SetCapacity(size_t capacity) {
+  MutexLock l(&mutex_);
+  capacity_ = capacity;
+  while (usage_ > capacity_ && lru_.next != &lru_) {
+    LRUHandle* old = lru_.next;
+    assert(old->refs == 1);
+    bool erased = FinishErase(table_.Remove(old->key(), old->hash));
+    if (!erased) {  // to avoid unused variable when compiled NDEBUG
+      assert(erased);
+    }
+  }
+}
+
 static const int kNumShardBits = 4;
 static const int kNumShards = 1 << kNumShardBits;
 
@@ -352,7 +366,7 @@ class ShardedLRUCache : public Cache {
   explicit ShardedLRUCache(size_t capacity) : last_id_(0) {
     const size_t per_shard = (capacity + (kNumShards - 1)) / kNumShards;
     for (int s = 0; s < kNumShards; s++) {
-      shard_[s].SetCapacity(per_shard);
+      shard_[s].SetInitialCapacity(per_shard);
     }
   }
   ~ShardedLRUCache() override {}
@@ -383,6 +397,12 @@ class ShardedLRUCache : public Cache {
   void Prune() override {
     for (int s = 0; s < kNumShards; s++) {
       shard_[s].Prune();
+    }
+  }
+  void SetCapacity(size_t capacity) override {
+    const size_t per_shard = (capacity + (kNumShards - 1)) / kNumShards;
+    for (int s = 0; s < kNumShards; s++) {
+      shard_[s].SetCapacity(per_shard);
     }
   }
   size_t TotalCharge() const override {
