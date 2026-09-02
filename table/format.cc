@@ -75,6 +75,10 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
+  if (n > static_cast<size_t>(64u << 20) ||
+      n + kBlockTrailerSize < n) {
+    return Status::Corruption("block size is too large or overflows");
+  }
   char* buf = new char[n + kBlockTrailerSize];
   Slice contents;
   Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
