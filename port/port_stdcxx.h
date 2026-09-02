@@ -37,6 +37,7 @@
 #include <condition_variable>  // NOLINT
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <mutex>  // NOLINT
 #include <string>
 
@@ -118,6 +119,16 @@ inline bool Snappy_GetUncompressedLength(const char* input, size_t length,
 #endif  // HAVE_SNAPPY
 }
 
+inline bool Snappy_ValidateCompressedBuffer(const char* input, size_t length) {
+#if HAVE_SNAPPY
+  return snappy::IsValidCompressedBuffer(input, length);
+#else
+  (void)input;
+  (void)length;
+  return false;
+#endif  // HAVE_SNAPPY
+}
+
 inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {
 #if HAVE_SNAPPY
   return snappy::RawUncompress(input, length, output);
@@ -163,15 +174,57 @@ inline bool Zstd_Compress(int level, const char* input, size_t length,
 inline bool Zstd_GetUncompressedLength(const char* input, size_t length,
                                        size_t* result) {
 #if HAVE_ZSTD
-  size_t size = ZSTD_getFrameContentSize(input, length);
-  if (size == 0) return false;
-  *result = size;
+  const unsigned long long size = ZSTD_getFrameContentSize(input, length);
+  if (size == 0 || size == ZSTD_CONTENTSIZE_ERROR ||
+      size == ZSTD_CONTENTSIZE_UNKNOWN ||
+      size > std::numeric_limits<size_t>::max()) {
+    return false;
+  }
+  *result = static_cast<size_t>(size);
   return true;
 #else
   // Silence compiler warnings about unused arguments.
   (void)input;
   (void)length;
   (void)result;
+  return false;
+#endif  // HAVE_ZSTD
+}
+
+inline bool Zstd_ValidateCompressedBuffer(const char* input, size_t length) {
+#if HAVE_ZSTD
+  ZSTD_DCtx* ctx = ZSTD_createDCtx();
+  if (ctx == nullptr) return false;
+
+  char scratch[64 * 1024];
+  ZSTD_inBuffer in = {input, length, 0};
+  size_t last_in_pos = static_cast<size_t>(-1);
+
+  while (true) {
+    ZSTD_outBuffer out = {scratch, sizeof(scratch), 0};
+    const size_t rc = ZSTD_decompressStream(ctx, &out, &in);
+    if (ZSTD_isError(rc)) {
+      ZSTD_freeDCtx(ctx);
+      return false;
+    }
+    if (rc == 0) {
+      const bool consumed_all = (in.pos == in.size);
+      ZSTD_freeDCtx(ctx);
+      return consumed_all;
+    }
+    if (in.pos == in.size && out.pos == 0) {
+      ZSTD_freeDCtx(ctx);
+      return false;
+    }
+    if (in.pos == last_in_pos && out.pos == 0) {
+      ZSTD_freeDCtx(ctx);
+      return false;
+    }
+    last_in_pos = in.pos;
+  }
+#else
+  (void)input;
+  (void)length;
   return false;
 #endif  // HAVE_ZSTD
 }
