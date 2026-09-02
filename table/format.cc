@@ -4,6 +4,8 @@
 
 #include "table/format.h"
 
+#include <new>
+
 #include "leveldb/env.h"
 #include "leveldb/options.h"
 #include "port/port.h"
@@ -12,6 +14,10 @@
 #include "util/crc32c.h"
 
 namespace leveldb {
+
+namespace {
+constexpr size_t kDecompressionFastPathBytes = 8 * 1024 * 1024;
+}  // namespace
 
 void BlockHandle::EncodeTo(std::string* dst) const {
   // Sanity check that all fields have been set
@@ -123,7 +129,19 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
         delete[] buf;
         return Status::Corruption("corrupted snappy compressed block length");
       }
-      char* ubuf = new char[ulength];
+      // Ordinary blocks stay on the original one-pass fast path. Large
+      // declarations are validated before any equally large allocation. This
+      // threshold selects an implementation path; it does not reject valid data.
+      if (ulength > kDecompressionFastPathBytes &&
+          !port::Snappy_ValidateCompressedBuffer(data, n)) {
+        delete[] buf;
+        return Status::Corruption("corrupted snappy compressed block contents");
+      }
+      char* ubuf = new (std::nothrow) char[ulength];
+      if (ubuf == nullptr) {
+        delete[] buf;
+        return Status::Corruption("snappy block allocation failed");
+      }
       if (!port::Snappy_Uncompress(data, n, ubuf)) {
         delete[] buf;
         delete[] ubuf;
@@ -141,7 +159,18 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
         delete[] buf;
         return Status::Corruption("corrupted zstd compressed block length");
       }
-      char* ubuf = new char[ulength];
+      // Ordinary blocks use the original one-pass decompressor. Large
+      // declarations use bounded streaming validation before the large allocation.
+      if (ulength > kDecompressionFastPathBytes &&
+          !port::Zstd_ValidateCompressedBuffer(data, n)) {
+        delete[] buf;
+        return Status::Corruption("corrupted zstd compressed block contents");
+      }
+      char* ubuf = new (std::nothrow) char[ulength];
+      if (ubuf == nullptr) {
+        delete[] buf;
+        return Status::Corruption("zstd block allocation failed");
+      }
       if (!port::Zstd_Uncompress(data, n, ubuf)) {
         delete[] buf;
         delete[] ubuf;
