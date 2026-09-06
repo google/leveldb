@@ -35,5 +35,5 @@ TEST(DumpFileTest, AcceptsWindowsPathSeparators) {
 #endif
 }
 
-}
+}  // namespace
 }  // namespace leveldb
