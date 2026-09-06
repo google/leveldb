@@ -17,6 +17,19 @@ class NoopWritableFile : public WritableFile {
   Status Sync() override { return Status::OK(); }
 };
 
+TEST(DumpFileTest, AcceptsUnixPathSeparators) {
+  Env* env = Env::Default();
+  const std::string filename = testing::TempDir() + "000001.log";
+  WritableFile* file;
+  ASSERT_TRUE(env->NewWritableFile(filename, &file).ok());
+  delete file;
+
+  NoopWritableFile sink;
+  ASSERT_TRUE(DumpFile(env, filename, &sink).ok());
+
+  ASSERT_TRUE(env->RemoveFile(filename).ok());
+}
+
 TEST(DumpFileTest, AcceptsWindowsPathSeparators) {
 #if defined(LEVELDB_PLATFORM_WINDOWS)
   Env* env = Env::Default();
