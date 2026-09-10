@@ -214,6 +214,7 @@ class VersionSet {
   // Set the last sequence number to s.
   void SetLastSequence(uint64_t s) {
     assert(s >= last_sequence_);
+    assert(s <= kMaxSequenceNumber);
     last_sequence_ = s;
   }
 

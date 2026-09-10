@@ -5,6 +5,7 @@
 #include "db/version_edit.h"
 
 #include "gtest/gtest.h"
+#include "util/coding.h"
 
 namespace leveldb {
 
@@ -36,6 +37,15 @@ TEST(VersionEditTest, EncodeDecode) {
   edit.SetNextFile(kBig + 200);
   edit.SetLastSequence(kBig + 1000);
   TestEncodeDecode(edit);
+}
+
+TEST(VersionEditTest, InvalidSequenceNumber) {
+  std::string record;
+  PutVarint32(&record, 4);  // kLastSequence
+  PutVarint64(&record, kMaxSequenceNumber + 1);
+  VersionEdit edit;
+  Status s = edit.DecodeFrom(record);
+  ASSERT_TRUE(s.IsCorruption()) << s.ToString();
 }
 
 }  // namespace leveldb

@@ -92,6 +92,7 @@ SequenceNumber WriteBatchInternal::Sequence(const WriteBatch* b) {
 }
 
 void WriteBatchInternal::SetSequence(WriteBatch* b, SequenceNumber seq) {
+  assert(seq <= kMaxSequenceNumber);
   EncodeFixed64(&b->rep_[0], seq);
 }
 
@@ -130,8 +131,14 @@ class MemTableInserter : public WriteBatch::Handler {
 }  // namespace
 
 Status WriteBatchInternal::InsertInto(const WriteBatch* b, MemTable* memtable) {
+  const SequenceNumber seq = WriteBatchInternal::Sequence(b);
+  const int count = WriteBatchInternal::Count(b);
+  if (seq > kMaxSequenceNumber || count < 0 ||
+      (count > 0 && seq > kMaxSequenceNumber - count + 1)) {
+    return Status::Corruption("bad sequence number in WriteBatch");
+  }
   MemTableInserter inserter;
-  inserter.sequence_ = WriteBatchInternal::Sequence(b);
+  inserter.sequence_ = seq;
   inserter.mem_ = memtable;
   return b->Iterate(&inserter);
 }

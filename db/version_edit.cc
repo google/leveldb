@@ -153,7 +153,11 @@ Status VersionEdit::DecodeFrom(const Slice& src) {
 
       case kLastSequence:
         if (GetVarint64(&input, &last_sequence_)) {
-          has_last_sequence_ = true;
+          if (last_sequence_ > kMaxSequenceNumber) {
+            msg = "last sequence number overflow";
+          } else {
+            has_last_sequence_ = true;
+          }
         } else {
           msg = "last sequence number";
         }

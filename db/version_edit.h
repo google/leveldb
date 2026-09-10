@@ -50,6 +50,7 @@ class VersionEdit {
     next_file_number_ = num;
   }
   void SetLastSequence(SequenceNumber seq) {
+    assert(seq <= kMaxSequenceNumber);
     has_last_sequence_ = true;
     last_sequence_ = seq;
   }

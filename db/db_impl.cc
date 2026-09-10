@@ -437,6 +437,17 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
     }
     WriteBatchInternal::SetContents(&batch, record);
 
+    const SequenceNumber batch_seq = WriteBatchInternal::Sequence(&batch);
+    const int batch_count = WriteBatchInternal::Count(&batch);
+    if (batch_seq > kMaxSequenceNumber || batch_count < 0 ||
+        (batch_count > 0 &&
+         batch_seq > kMaxSequenceNumber - batch_count + 1)) {
+      reporter.Corruption(
+          record.size(),
+          Status::Corruption("bad sequence number in log record"));
+      continue;
+    }
+
     if (mem == nullptr) {
       mem = new MemTable(internal_comparator_);
       mem->Ref();
@@ -446,10 +457,11 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
     if (!status.ok()) {
       break;
     }
-    const SequenceNumber last_seq = WriteBatchInternal::Sequence(&batch) +
-                                    WriteBatchInternal::Count(&batch) - 1;
-    if (last_seq > *max_sequence) {
-      *max_sequence = last_seq;
+    if (batch_count > 0) {
+      const SequenceNumber last_seq = batch_seq + batch_count - 1;
+      if (last_seq > *max_sequence) {
+        *max_sequence = last_seq;
+      }
     }
 
     if (mem->ApproximateMemoryUsage() > options_.write_buffer_size) {
@@ -1224,37 +1236,43 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   Writer* last_writer = &w;
   if (status.ok() && updates != nullptr) {  // nullptr batch is for compactions
     WriteBatch* write_batch = BuildBatchGroup(&last_writer);
-    WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);
-    last_sequence += WriteBatchInternal::Count(write_batch);
+    const uint64_t count = WriteBatchInternal::Count(write_batch);
+    if (last_sequence > kMaxSequenceNumber - count) {
+      status = Status::InvalidArgument("sequence number limit exceeded");
+    } else {
+      WriteBatchInternal::SetSequence(write_batch, last_sequence + 1);
+      last_sequence += count;
 
-    // Add to log and apply to memtable.  We can release the lock
-    // during this phase since &w is currently responsible for logging
-    // and protects against concurrent loggers and concurrent writes
-    // into mem_.
-    {
-      mutex_.Unlock();
-      status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));
-      bool sync_error = false;
-      if (status.ok() && options.sync) {
-        status = logfile_->Sync();
-        if (!status.ok()) {
-          sync_error = true;
+      // Add to log and apply to memtable.  We can release the lock
+      // during this phase since &w is currently responsible for logging
+      // and protects against concurrent loggers and concurrent writes
+      // into mem_.
+      {
+        mutex_.Unlock();
+        status = log_->AddRecord(WriteBatchInternal::Contents(write_batch));
+        bool sync_error = false;
+        if (status.ok() && options.sync) {
+          status = logfile_->Sync();
+          if (!status.ok()) {
+            sync_error = true;
+          }
+        }
+        if (status.ok()) {
+          status = WriteBatchInternal::InsertInto(write_batch, mem_);
+        }
+        mutex_.Lock();
+        if (sync_error) {
+          // The state of the log file is indeterminate: the log record we
+          // just added may or may not show up when the DB is re-opened.
+          // So we force the DB into a mode where all future writes fail.
+          RecordBackgroundError(status);
         }
       }
       if (status.ok()) {
-        status = WriteBatchInternal::InsertInto(write_batch, mem_);
-      }
-      mutex_.Lock();
-      if (sync_error) {
-        // The state of the log file is indeterminate: the log record we
-        // just added may or may not show up when the DB is re-opened.
-        // So we force the DB into a mode where all future writes fail.
-        RecordBackgroundError(status);
+        versions_->SetLastSequence(last_sequence);
       }
     }
     if (write_batch == tmp_batch_) tmp_batch_->Clear();
-
-    versions_->SetLastSequence(last_sequence);
   }
 
   while (true) {

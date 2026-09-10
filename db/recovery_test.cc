@@ -10,6 +10,7 @@
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "leveldb/write_batch.h"
+#include "util/coding.h"
 #include "util/logging.h"
 #include "util/testutil.h"
 
@@ -148,6 +149,27 @@ class RecoveryTest : public testing::Test {
     batch.Put(key, val);
     WriteBatchInternal::SetSequence(&batch, seq);
     ASSERT_LEVELDB_OK(writer.AddRecord(WriteBatchInternal::Contents(&batch)));
+    ASSERT_LEVELDB_OK(file->Flush());
+    delete file;
+  }
+
+  void MakeEmptyLogFile(uint64_t lognum) {
+    std::string fname = LogFileName(dbname_, lognum);
+    WritableFile* file;
+    ASSERT_LEVELDB_OK(env_->NewWritableFile(fname, &file));
+    log::Writer writer(file);
+    WriteBatch batch;
+    ASSERT_LEVELDB_OK(writer.AddRecord(WriteBatchInternal::Contents(&batch)));
+    ASSERT_LEVELDB_OK(file->Flush());
+    delete file;
+  }
+
+  void MakeRawLogFile(uint64_t lognum, const std::string& record) {
+    std::string fname = LogFileName(dbname_, lognum);
+    WritableFile* file;
+    ASSERT_LEVELDB_OK(env_->NewWritableFile(fname, &file));
+    log::Writer writer(file);
+    ASSERT_LEVELDB_OK(writer.AddRecord(record));
     ASSERT_LEVELDB_OK(file->Flush());
     delete file;
   }
@@ -336,4 +358,75 @@ TEST_F(RecoveryTest, ManifestMissing) {
 #endif  // defined(LEVELDB_PLATFORM_CHROMIUM)
 }
 
+TEST_F(RecoveryTest, EmptyWriteBatchInLog) {
+  Close();
+  uint64_t old_log = FirstLogFile();
+  ASSERT_LEVELDB_OK(env()->RemoveFile(LogName(old_log)));
+  MakeEmptyLogFile(old_log + 1);
+
+  Open();
+  ASSERT_EQ("NOT_FOUND", Get("foo"));
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
+  ASSERT_EQ("bar", Get("foo"));
+}
+
+TEST_F(RecoveryTest, CorruptedSequenceNumberInLog) {
+  Close();
+  uint64_t old_log = FirstLogFile();
+  ASSERT_LEVELDB_OK(env()->RemoveFile(LogName(old_log)));
+
+  WriteBatch batch;
+  batch.Put("foo", "bar");
+  std::string record = WriteBatchInternal::Contents(&batch).ToString();
+  EncodeFixed64(&record[0], kMaxSequenceNumber + 100);
+  MakeRawLogFile(old_log + 1, record);
+
+  Options opt;
+  opt.paranoid_checks = true;
+  Status s = OpenWithStatus(&opt);
+  ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+}
+
+TEST_F(RecoveryTest, CorruptedSequenceNumberInLogIgnoredWhenNotParanoid) {
+  Close();
+  uint64_t old_log = FirstLogFile();
+  ASSERT_LEVELDB_OK(env()->RemoveFile(LogName(old_log)));
+
+  WriteBatch batch;
+  batch.Put("foo", "bar");
+  std::string record = WriteBatchInternal::Contents(&batch).ToString();
+  EncodeFixed64(&record[0], kMaxSequenceNumber + 100);
+  MakeRawLogFile(old_log + 1, record);
+
+  Options opt;
+  opt.paranoid_checks = false;
+  ASSERT_LEVELDB_OK(OpenWithStatus(&opt));
+  ASSERT_EQ("NOT_FOUND", Get("foo"));
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
+  ASSERT_EQ("bar", Get("foo"));
+}
+
+TEST_F(RecoveryTest, CorruptedSequenceNumberInManifest) {
+  if (!CanAppend()) {
+    return;
+  }
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
+  Close();
+  std::string manifest = ManifestFileName();
+
+  WritableFile* file;
+  ASSERT_LEVELDB_OK(env()->NewAppendableFile(manifest, &file));
+  log::Writer writer(file);
+  std::string record;
+  PutVarint32(&record, 4);  // kLastSequence
+  PutVarint64(&record, kMaxSequenceNumber + 1);
+  ASSERT_LEVELDB_OK(writer.AddRecord(record));
+  ASSERT_LEVELDB_OK(file->Flush());
+  delete file;
+
+  Status s = OpenWithStatus();
+  ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+}
+
 }  // namespace leveldb
+

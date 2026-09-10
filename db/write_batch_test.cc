@@ -129,4 +129,20 @@ TEST(WriteBatchTest, ApproximateSize) {
   ASSERT_LT(two_keys_size, post_delete_size);
 }
 
+TEST(WriteBatchTest, BadSequenceNumber) {
+  WriteBatch batch;
+  batch.Put("a", "va");
+  std::string record = WriteBatchInternal::Contents(&batch).ToString();
+  EncodeFixed64(&record[0], kMaxSequenceNumber + 1);
+  WriteBatch corrupted;
+  WriteBatchInternal::SetContents(&corrupted, record);
+
+  InternalKeyComparator cmp(BytewiseComparator());
+  MemTable* mem = new MemTable(cmp);
+  mem->Ref();
+  Status s = WriteBatchInternal::InsertInto(&corrupted, mem);
+  ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+  mem->Unref();
+}
+
 }  // namespace leveldb

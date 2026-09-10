@@ -954,6 +954,8 @@ Status VersionSet::Recover(bool* save_manifest) {
       s = Status::Corruption("no meta-lognumber entry in descriptor");
     } else if (!have_last_sequence) {
       s = Status::Corruption("no last-sequence-number entry in descriptor");
+    } else if (last_sequence > kMaxSequenceNumber) {
+      s = Status::Corruption("last-sequence-number too large in descriptor");
     }
 
     if (!have_prev_log_number) {
