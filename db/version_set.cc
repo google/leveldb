@@ -1559,6 +1559,11 @@ bool Compaction::ShouldStopBefore(const Slice& internal_key) {
   }
 }
 
+void Compaction::ResetGrandparentOverlap() {
+  seen_key_ = false;
+  overlapped_bytes_ = 0;
+}
+
 void Compaction::ReleaseInputs() {
   if (input_version_ != nullptr) {
     input_version_->Unref();
