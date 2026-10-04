@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <limits>
+
 #include "gtest/gtest.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
@@ -127,6 +129,65 @@ TEST(WriteBatchTest, ApproximateSize) {
   batch.Delete(Slice("box"));
   size_t post_delete_size = batch.ApproximateSize();
   ASSERT_LT(two_keys_size, post_delete_size);
+}
+
+TEST(WriteBatchTest, OversizedKeyRejected) {
+  Options options;
+  options.create_if_missing = true;
+  std::string dbname = testing::TempDir() + "write_batch_oversized_key_test";
+  DestroyDB(dbname, options);
+  DB* db = nullptr;
+  ASSERT_TRUE(DB::Open(options, dbname, &db).ok());
+
+  size_t oversized =
+      static_cast<size_t>(std::numeric_limits<uint32_t>::max()) - 7;
+  Slice oversized_key(nullptr, oversized);
+
+  Status s = db->Put(WriteOptions(), oversized_key, "value");
+  EXPECT_TRUE(s.IsInvalidArgument());
+
+  s = db->Delete(WriteOptions(), oversized_key);
+  EXPECT_TRUE(s.IsInvalidArgument());
+
+  if (sizeof(size_t) > sizeof(uint32_t)) {
+    size_t oversized_64 =
+        static_cast<size_t>(std::numeric_limits<uint32_t>::max()) + 1;
+    Slice oversized_key_64(nullptr, oversized_64);
+
+    s = db->Put(WriteOptions(), oversized_key_64, "value");
+    EXPECT_TRUE(s.IsInvalidArgument());
+
+    s = db->Delete(WriteOptions(), oversized_key_64);
+    EXPECT_TRUE(s.IsInvalidArgument());
+  }
+
+  delete db;
+  DestroyDB(dbname, options);
+}
+
+TEST(WriteBatchTest, ShortInternalKeyUnderflow) {
+  Slice short_key("short");
+  ASSERT_EQ(0, ExtractUserKey(short_key).size());
+
+  InternalKeyComparator cmp(BytewiseComparator());
+  ASSERT_EQ(0, cmp.Compare(short_key, short_key));
+
+  // Compare two distinct short keys (< 8 bytes)
+  Slice short_a("abc");
+  Slice short_b("xyz");
+  ASSERT_LT(cmp.Compare(short_a, short_b), 0);
+  ASSERT_GT(cmp.Compare(short_b, short_a), 0);
+
+  // Compare short key (< 8 bytes) against a valid 8-byte key with empty user key.
+  // Both ExtractUserKey calls return empty slices, so r == 0, exercising the
+  // guard that avoids underflowing akey.size() - 8 / bkey.size() - 8.
+  std::string valid_8_byte(8, '\0');
+  ASSERT_LT(cmp.Compare(short_key, Slice(valid_8_byte)), 0);
+  ASSERT_GT(cmp.Compare(Slice(valid_8_byte), short_key), 0);
+
+  // Compare short key (< 8 bytes) against a key with non-empty user key.
+  ASSERT_LT(cmp.Compare(short_key, Slice("longer_key_1234")), 0);
+  ASSERT_GT(cmp.Compare(Slice("longer_key_1234"), short_key), 0);
 }
 
 }  // namespace leveldb
