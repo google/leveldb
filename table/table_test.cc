@@ -103,6 +103,7 @@ class StringSink : public WritableFile {
     return Status::OK();
   }
 
+  std::string GetName() const override { return ""; }
  private:
   std::string contents_;
 };
@@ -129,6 +130,7 @@ class StringSource : public RandomAccessFile {
     return Status::OK();
   }
 
+  std::string GetName() const { return ""; }
  private:
   std::string contents_;
 };

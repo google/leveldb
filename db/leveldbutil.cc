@@ -20,6 +20,7 @@ class StdoutPrinter : public WritableFile {
   Status Close() override { return Status::OK(); }
   Status Flush() override { return Status::OK(); }
   Status Sync() override { return Status::OK(); }
+  std::string GetName() const override { return "[stdout]"; }
 };
 
 bool HandleDumpCommand(Env* env, char** files, int num) {
