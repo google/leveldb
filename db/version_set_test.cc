@@ -6,7 +6,6 @@
 
 #include "gtest/gtest.h"
 #include "util/logging.h"
-#include "util/testutil.h"
 
 namespace leveldb {
 

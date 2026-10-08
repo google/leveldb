@@ -15,6 +15,7 @@
 #include "table/format.h"
 #include "util/coding.h"
 #include "util/crc32c.h"
+#include "port/port.h"
 
 namespace leveldb {
 
