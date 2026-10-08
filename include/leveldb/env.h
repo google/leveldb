@@ -231,6 +231,9 @@ class LEVELDB_EXPORT SequentialFile {
   // Read up to "n" bytes from the file.  "scratch[0..n-1]" may be
   // written by this routine.  Sets "*result" to the data that was
   // read (including if fewer than "n" bytes were successfully read).
+  // Implementations should only return fewer than "n" bytes when end
+  // of file is reached; if interrupted while reading, they should
+  // retry and return as many bytes as requested (or until EOF).
   // May set "*result" to point at data in "scratch[0..n-1]", so
   // "scratch[0..n-1]" must be live when "*result" is used.
   // If an error was encountered, returns a non-OK status.
