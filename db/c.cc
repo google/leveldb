@@ -149,11 +149,11 @@ static bool SaveError(char** errptr, const Status& s) {
   if (s.ok()) {
     return false;
   } else if (*errptr == nullptr) {
-    *errptr = strdup(s.ToString().c_str());
+    *errptr = _strdup(s.ToString().c_str());
   } else {
     // TODO(sanjay): Merge with existing error?
     std::free(*errptr);
-    *errptr = strdup(s.ToString().c_str());
+    *errptr = _strdup(s.ToString().c_str());
   }
   return true;
 }
@@ -239,7 +239,7 @@ char* leveldb_property_value(leveldb_t* db, const char* propname) {
   std::string tmp;
   if (db->rep->GetProperty(Slice(propname), &tmp)) {
     // We use strdup() since we expect human readable output.
-    return strdup(tmp.c_str());
+    return _strdup(tmp.c_str());
   } else {
     return nullptr;
   }
