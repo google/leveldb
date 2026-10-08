@@ -8,6 +8,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
+#include <limits>
 #include <set>
 #include <string>
 #include <vector>
@@ -1487,12 +1488,18 @@ void DBImpl::GetApproximateSizes(const Range* range, int n, uint64_t* sizes) {
 // Default implementations of convenience methods that subclasses of DB
 // can call if they wish
 Status DB::Put(const WriteOptions& opt, const Slice& key, const Slice& value) {
+  if (key.size() > std::numeric_limits<uint32_t>::max() - 8) {
+    return Status::InvalidArgument("key too large");
+  }
   WriteBatch batch;
   batch.Put(key, value);
   return Write(opt, &batch);
 }
 
 Status DB::Delete(const WriteOptions& opt, const Slice& key) {
+  if (key.size() > std::numeric_limits<uint32_t>::max() - 8) {
+    return Status::InvalidArgument("key too large");
+  }
   WriteBatch batch;
   batch.Delete(key);
   return Write(opt, &batch);

@@ -15,6 +15,8 @@
 
 #include "leveldb/write_batch.h"
 
+#include <limits>
+
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
@@ -56,6 +58,9 @@ Status WriteBatch::Iterate(Handler* handler) const {
       case kTypeValue:
         if (GetLengthPrefixedSlice(&input, &key) &&
             GetLengthPrefixedSlice(&input, &value)) {
+          if (key.size() > std::numeric_limits<uint32_t>::max() - 8) {
+            return Status::InvalidArgument("key too large");
+          }
           handler->Put(key, value);
         } else {
           return Status::Corruption("bad WriteBatch Put");
@@ -63,6 +68,9 @@ Status WriteBatch::Iterate(Handler* handler) const {
         break;
       case kTypeDeletion:
         if (GetLengthPrefixedSlice(&input, &key)) {
+          if (key.size() > std::numeric_limits<uint32_t>::max() - 8) {
+            return Status::InvalidArgument("key too large");
+          }
           handler->Delete(key);
         } else {
           return Status::Corruption("bad WriteBatch Delete");
