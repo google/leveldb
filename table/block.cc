@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "leveldb/comparator.h"
+
 #include "table/format.h"
 #include "util/coding.h"
 #include "util/logging.h"
@@ -34,7 +35,12 @@ Block::Block(const BlockContents& contents)
       // The size is too small for NumRestarts()
       size_ = 0;
     } else {
-      restart_offset_ = size_ - (1 + NumRestarts()) * sizeof(uint32_t);
+      size_t restart_offset = size_ - (1 + NumRestarts()) * sizeof(uint32_t);
+      if (restart_offset > UINT32_MAX) {
+        size_ = 0;
+      } else {
+        restart_offset_ = restart_offset;
+      }
     }
   }
 }
