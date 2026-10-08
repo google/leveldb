@@ -130,7 +130,7 @@ with the internal repository at Google. More information at GitHub's
 # Performance
 
 Here is a performance report (with explanations) from the run of the
-included db_bench program.  The results are somewhat noisy, but should
+included `db_bench` program.  The results are somewhat noisy, but should
 be enough to get a ballpark performance estimate.
 
 ## Setup
