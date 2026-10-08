@@ -4,7 +4,7 @@
 
 #include <sys/types.h>
 
-#include <atomic>
+#include <atomic><atomic>
 #include <cstdio>
 #include <cstdlib>
 
