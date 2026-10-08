@@ -12,7 +12,7 @@
 namespace leveldb {
 
 static Slice GetLengthPrefixedSlice(const char* data) {
-  uint32_t len;
+  uint32_t len = 0u;
   const char* p = data;
   p = GetVarint32Ptr(p, p + 5, &len);  // +5: we assume "p" is not corrupted
   return Slice(p, len);
@@ -114,8 +114,11 @@ bool MemTable::Get(const LookupKey& key, std::string* value, Status* s) {
     // sequence number since the Seek() call above should have skipped
     // all entries with overly large sequence numbers.
     const char* entry = iter.key();
-    uint32_t key_length;
+    uint32_t key_length = 0u;
     const char* key_ptr = GetVarint32Ptr(entry, entry + 5, &key_length);
+    if (!key_ptr) {
+      return false;
+    }
     if (comparator_.comparator.user_comparator()->Compare(
             Slice(key_ptr, key_length - 8), key.user_key()) == 0) {
       // Correct user key
