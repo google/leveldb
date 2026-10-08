@@ -284,8 +284,11 @@ class Repairer {
     Log(options_.info_log, "Table #%llu: %d entries %s",
         (unsigned long long)t.meta.number, counter, status.ToString().c_str());
 
-    if (status.ok()) {
+    if (status.ok()&& !empty) {
       tables_.push_back(t);
+    } else if (status.ok() && empty) {
+      ArchiveFile(TableFileName(dbname_, number));
+      Log(options_.info_log, "Table #%llu: dropped (no valid keys)",(unsigned long long)t.meta.number);
     } else {
       RepairTable(fname, t);  // RepairTable archives input file.
     }
