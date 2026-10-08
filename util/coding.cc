@@ -56,7 +56,7 @@ char* EncodeVarint64(char* dst, uint64_t v) {
   static const int B = 128;
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
   while (v >= B) {
-    *(ptr++) = v | B;
+    *(ptr++) = static_cast<uint8_t>(v | B);
     v >>= 7;
   }
   *(ptr++) = static_cast<uint8_t>(v);
