@@ -124,7 +124,7 @@ LookupKey::LookupKey(const Slice& user_key, SequenceNumber s) {
     dst = new char[needed];
   }
   start_ = dst;
-  dst = EncodeVarint32(dst, usize + 8);
+  dst = EncodeVarint32(dst, uint32_t(usize + 8));
   kstart_ = dst;
   std::memcpy(dst, user_key.data(), usize);
   dst += usize;
