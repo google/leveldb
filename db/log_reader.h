@@ -60,6 +60,13 @@ class Reader {
   // Undefined before the first call to ReadRecord.
   uint64_t LastRecordOffset();
 
+  // Returns true if reading stopped because the file ended with an incomplete
+  // log record (e.g. the writer crashed mid-record). Logs with incomplete
+  // trailing records must not be reused for append.
+  bool HasIncompleteTrailingRecord() const {
+    return incomplete_trailing_record_;
+  }
+
  private:
   // Extend record types with the following special values
   enum {
@@ -91,6 +98,7 @@ class Reader {
   char* const backing_store_;
   Slice buffer_;
   bool eof_;  // Last Read() indicated EOF by returning < kBlockSize
+  bool incomplete_trailing_record_;
 
   // Offset of the last record returned by ReadRecord.
   uint64_t last_record_offset_;

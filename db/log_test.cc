@@ -122,6 +122,15 @@ class LogTest : public testing::Test {
     reader_ = new Reader(&source_, &report_, true /*checksum*/, initial_offset);
   }
 
+  void DrainRecords() {
+    while (Read() != "EOF") {
+    }
+  }
+
+  bool HasIncompleteTrailingRecord() const {
+    return reader_->HasIncompleteTrailingRecord();
+  }
+
   void CheckOffsetPastEndReturnsNoRecords(uint64_t offset_past_end) {
     WriteInitialOffsetLog();
     reading_ = true;
@@ -473,6 +482,20 @@ TEST_F(LogTest, PartialLastIsIgnored) {
   ASSERT_EQ("EOF", Read());
   ASSERT_EQ("", ReportMessage());
   ASSERT_EQ(0, DroppedBytes());
+}
+
+TEST_F(LogTest, IncompleteTrailingRecordDetected) {
+  Write("foo");
+  ShrinkSize(1);
+  DrainRecords();
+  ASSERT_TRUE(HasIncompleteTrailingRecord());
+}
+
+TEST_F(LogTest, CompleteTrailingRecordNotIncomplete) {
+  Write("foo");
+  ASSERT_EQ("foo", Read());
+  ASSERT_EQ("EOF", Read());
+  ASSERT_FALSE(HasIncompleteTrailingRecord());
 }
 
 TEST_F(LogTest, SkipIntoMultiRecord) {
