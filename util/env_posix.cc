@@ -347,7 +347,7 @@ class PosixWritableFile final : public WritableFile {
       return status;
     }
 
-    return SyncFd(fd_, filename_);
+    return SyncFd(fd_, filename_, false);
   }
 
  private:
@@ -382,7 +382,7 @@ class PosixWritableFile final : public WritableFile {
     if (fd < 0) {
       status = PosixError(dirname_, errno);
     } else {
-      status = SyncFd(fd, dirname_);
+      status = SyncFd(fd, dirname_, true);
       ::close(fd);
     }
     return status;
@@ -394,7 +394,7 @@ class PosixWritableFile final : public WritableFile {
   //
   // The path argument is only used to populate the description string in the
   // returned Status if an error occurs.
-  static Status SyncFd(int fd, const std::string& fd_path) {
+  static Status SyncFd(int fd, const std::string& fd_path, bool syncing_dir) {
 #if HAVE_FULLFSYNC
     // On macOS and iOS, fsync() doesn't guarantee durability past power
     // failures. fcntl(F_FULLFSYNC) is required for that purpose. Some
@@ -412,6 +412,11 @@ class PosixWritableFile final : public WritableFile {
 #endif  // HAVE_FDATASYNC
 
     if (sync_success) {
+      return Status::OK();
+    }
+    // Do not crash if filesystem can't fsync directories
+    // (see https://github.com/bitcoin/bitcoin/pull/10000)
+    if (syncing_dir && errno == EINVAL) {
       return Status::OK();
     }
     return PosixError(fd_path, errno);
