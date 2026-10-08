@@ -9,6 +9,7 @@
 #include <deque>
 #include <set>
 #include <string>
+#include <memory>
 
 #include "db/dbformat.h"
 #include "db/log_writer.h"
@@ -19,6 +20,14 @@
 #include "port/thread_annotations.h"
 
 namespace leveldb {
+
+// Lightweight shared state wrapper to extend the lifetime of the mutex used by
+// iterators. This helps prevent Use-After-Free scenarios when a DB instance is
+// destroyed while iterators created from it are still alive.
+struct SharedMutexState {
+  port::Mutex mutex;
+};
+
 
 class MemTable;
 class TableCache;
@@ -172,6 +181,8 @@ class DBImpl : public DB {
 
   // State below is protected by mutex_
   port::Mutex mutex_;
+  // Shared state wrapper to extend mutex lifetime across iterators.
+  std::shared_ptr<SharedMutexState> mutex_state_;
   std::atomic<bool> shutting_down_;
   port::CondVar background_work_finished_signal_ GUARDED_BY(mutex_);
   MemTable* mem_;
