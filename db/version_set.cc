@@ -740,6 +740,7 @@ VersionSet::VersionSet(const std::string& dbname, const Options* options,
       icmp_(*cmp),
       next_file_number_(2),
       manifest_file_number_(0),  // Filled by Recover()
+      manifest_file_size_hint_(0),
       last_sequence_(0),
       log_number_(0),
       prev_log_number_(0),
@@ -797,6 +798,20 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
   }
   Finalize(v);
 
+  if (descriptor_log_ != nullptr) {
+    if (manifest_file_size_hint_ >= options_->write_buffer_size) {
+      Log(options_->info_log, "MANIFEST size %ld exceed, switch to next file\n",
+          long(manifest_file_size_hint_));
+      delete descriptor_log_;
+      delete descriptor_file_;
+      descriptor_log_ = nullptr;
+      descriptor_file_ = nullptr;
+      manifest_file_number_ = manifest_file_number_ + 1;
+      next_file_number_ = next_file_number_ + 1;
+      manifest_file_size_hint_ = 0;
+    }
+  }
+
   // Initialize new descriptor log file if necessary by creating
   // a temporary file that contains a snapshot of the current version.
   std::string new_manifest_file;
@@ -824,6 +839,7 @@ Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
       s = descriptor_log_->AddRecord(record);
       if (s.ok()) {
         s = descriptor_file_->Sync();
+        manifest_file_size_hint_ += record.size();
       }
       if (!s.ok()) {
         Log(options_->info_log, "MANIFEST write: %s\n", s.ToString().c_str());
