@@ -259,6 +259,8 @@ class Repairer {
     bool empty = true;
     ParsedInternalKey parsed;
     t.max_sequence = 0;
+    t.meta.num_entries = 0;
+    t.meta.num_tombstones = 0;
     for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
       Slice key = iter->key();
       if (!ParseInternalKey(key, &parsed)) {
@@ -268,6 +270,10 @@ class Repairer {
       }
 
       counter++;
+      t.meta.num_entries++;
+      if (parsed.type == kTypeDeletion) {
+        t.meta.num_tombstones++;
+      }
       if (empty) {
         empty = false;
         t.meta.smallest.DecodeFrom(key);
@@ -368,8 +374,8 @@ class Repairer {
     for (size_t i = 0; i < tables_.size(); i++) {
       // TODO(opt): separate out into multiple levels
       const TableInfo& t = tables_[i];
-      edit_.AddFile(0, t.meta.number, t.meta.file_size, t.meta.smallest,
-                    t.meta.largest);
+      edit_.AddFile(0, t.meta.number, t.meta.file_size, t.meta.num_tombstones,
+                    t.meta.num_entries, t.meta.smallest, t.meta.largest);
     }
 
     // std::fprintf(stderr,

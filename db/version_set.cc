@@ -593,9 +593,20 @@ class VersionSet::Builder {
   Version* base_;
   LevelState levels_[config::kNumLevels];
 
+  // Incremental tracking for tombstone-based compaction priority
+  // These track the file with highest tombstone density (> 50%) across all levels > 0
+  FileMetaData* best_tombstone_file_;
+  int best_tombstone_level_;
+  double best_tombstone_density_;
+
  public:
   // Initialize a builder with the files from *base and other info from *vset
-  Builder(VersionSet* vset, Version* base) : vset_(vset), base_(base) {
+  Builder(VersionSet* vset, Version* base)
+      : vset_(vset),
+        base_(base),
+        best_tombstone_file_(nullptr),
+        best_tombstone_level_(-1),
+        best_tombstone_density_(0.5) {  // Threshold: 50%
     base_->Ref();
     BySmallestKey cmp;
     cmp.internal_comparator = &vset_->icmp_;
@@ -663,6 +674,18 @@ class VersionSet::Builder {
       f->allowed_seeks = static_cast<int>((f->file_size / 16384U));
       if (f->allowed_seeks < 100) f->allowed_seeks = 100;
 
+      // Incremental check: if this new file has high tombstone density (> 50%),
+      // and it's in level > 0, track it as a candidate for priority compaction.
+      // This is O(1) per new file.
+      if (level > 0) {
+        double density = f->TombstoneDensity();
+        if (density > best_tombstone_density_) {
+          best_tombstone_density_ = density;
+          best_tombstone_file_ = f;
+          best_tombstone_level_ = level;
+        }
+      }
+
       levels_[level].deleted_files.erase(f->number);
       levels_[level].added_files->insert(f);
     }
@@ -670,6 +693,32 @@ class VersionSet::Builder {
 
   // Save the current state in *v.
   void SaveTo(Version* v) {
+    // Initialize tombstone compaction fields for new version
+    v->tombstone_file_to_compact_ = nullptr;
+    v->tombstone_file_to_compact_level_ = -1;
+
+    // Step 1: Check if base_ has a tombstone file that should be inherited.
+    // This is O(1) check: just verify if the file was deleted.
+    if (base_->tombstone_file_to_compact_ != nullptr) {
+      FileMetaData* base_candidate = base_->tombstone_file_to_compact_;
+      int base_level = base_->tombstone_file_to_compact_level_;
+      double base_density = base_candidate->TombstoneDensity();
+
+      // Check if this candidate file was deleted in this version edit
+      bool is_deleted = (levels_[base_level].deleted_files.count(base_candidate->number) > 0);
+
+      if (!is_deleted) {
+        // Base candidate survives; compare with our best from new files
+        if (base_density > best_tombstone_density_) {
+          // Base candidate is better
+          best_tombstone_density_ = base_density;
+          best_tombstone_file_ = base_candidate;
+          best_tombstone_level_ = base_level;
+        }
+      }
+    }
+
+    // Step 2: Now perform the normal file merging
     BySmallestKey cmp;
     cmp.internal_comparator = &vset_->icmp_;
     for (int level = 0; level < config::kNumLevels; level++) {
@@ -711,6 +760,18 @@ class VersionSet::Builder {
         }
       }
 #endif
+    }
+
+    // Step 3: Set the tombstone compaction file in the new version
+    // Only set if density > 50% threshold and file was not deleted
+    if (best_tombstone_file_ != nullptr && best_tombstone_density_ > 0.5) {
+      // Double-check that our best candidate was not deleted in this version edit
+      bool is_deleted = (levels_[best_tombstone_level_].deleted_files.count(
+                             best_tombstone_file_->number) > 0);
+      if (!is_deleted) {
+        v->tombstone_file_to_compact_ = best_tombstone_file_;
+        v->tombstone_file_to_compact_level_ = best_tombstone_level_;
+      }
     }
   }
 
@@ -1087,7 +1148,8 @@ Status VersionSet::WriteSnapshot(log::Writer* log) {
     const std::vector<FileMetaData*>& files = current_->files_[level];
     for (size_t i = 0; i < files.size(); i++) {
       const FileMetaData* f = files[i];
-      edit.AddFile(level, f->number, f->file_size, f->smallest, f->largest);
+      edit.AddFile(level, f->number, f->file_size, f->num_tombstones,
+                   f->num_entries, f->smallest, f->largest);
     }
   }
 
@@ -1253,11 +1315,23 @@ Compaction* VersionSet::PickCompaction() {
   Compaction* c;
   int level;
 
-  // We prefer compactions triggered by too much data in a level over
-  // the compactions triggered by seeks.
+  // Priority order:
+  // 1. Tombstone compaction (density > 50%) - highest priority
+  // 2. Size compaction (based on file size/number limits)
+  // 3. Seek compaction (based on seek stats)
+  const bool tombstone_compaction = (current_->tombstone_file_to_compact_ != nullptr);
   const bool size_compaction = (current_->compaction_score_ >= 1);
   const bool seek_compaction = (current_->file_to_compact_ != nullptr);
-  if (size_compaction) {
+
+  if (tombstone_compaction) {
+    // Prioritize compaction for files with high tombstone density (> 50%)
+    level = current_->tombstone_file_to_compact_level_;
+    assert(level >= 0);
+    assert(level > 0);  // Tombstone compaction only for levels > 0
+    assert(level + 1 < config::kNumLevels);
+    c = new Compaction(options_, level);
+    c->inputs_[0].push_back(current_->tombstone_file_to_compact_);
+  } else if (size_compaction) {
     level = current_->compaction_level_;
     assert(level >= 0);
     assert(level + 1 < config::kNumLevels);

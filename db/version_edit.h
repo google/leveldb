@@ -16,14 +16,25 @@ namespace leveldb {
 class VersionSet;
 
 struct FileMetaData {
-  FileMetaData() : refs(0), allowed_seeks(1 << 30), file_size(0) {}
+  FileMetaData()
+      : refs(0),
+        allowed_seeks(1 << 30),
+        file_size(0),
+        num_tombstones(0),
+        num_entries(0) {}
 
   int refs;
   int allowed_seeks;  // Seeks allowed until compaction
   uint64_t number;
-  uint64_t file_size;    // File size in bytes
-  InternalKey smallest;  // Smallest internal key served by table
-  InternalKey largest;   // Largest internal key served by table
+  uint64_t file_size;     // File size in bytes
+  uint64_t num_tombstones;  // Number of tombstone entries (kTypeDeletion)
+  uint64_t num_entries;    // Total number of entries in the file
+  InternalKey smallest;   // Smallest internal key served by table
+  InternalKey largest;    // Largest internal key served by table
+
+  double TombstoneDensity() const {
+    return (num_entries > 0) ? static_cast<double>(num_tombstones) / num_entries : 0.0;
+  }
 };
 
 class VersionEdit {
@@ -65,6 +76,19 @@ class VersionEdit {
     FileMetaData f;
     f.number = file;
     f.file_size = file_size;
+    f.smallest = smallest;
+    f.largest = largest;
+    new_files_.push_back(std::make_pair(level, f));
+  }
+
+  void AddFile(int level, uint64_t file, uint64_t file_size,
+               uint64_t num_tombstones, uint64_t num_entries,
+               const InternalKey& smallest, const InternalKey& largest) {
+    FileMetaData f;
+    f.number = file;
+    f.file_size = file_size;
+    f.num_tombstones = num_tombstones;
+    f.num_entries = num_entries;
     f.smallest = smallest;
     f.largest = largest;
     new_files_.push_back(std::make_pair(level, f));
