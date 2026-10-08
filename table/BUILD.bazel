@@ -1,0 +1,38 @@
+package(default_visibility = ["//visibility:public"])
+load("//:copts.bzl", "LEVELDB_FLAGS")
+
+cc_library(
+    name = "table_lib",
+    srcs = glob(
+        ["*.cc"],
+        exclude = glob(["*_test.cc"]),
+    ),
+    hdrs = glob(["*.h"]),
+    deps = [
+        "//include/leveldb",
+        "//util:util_lib",
+    ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "table_test",
+    srcs = ["table_test.cc"],
+    deps = [
+        ":table_lib",
+        "//db:db_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = LEVELDB_FLAGS,
+)
+
+cc_test(
+    name = "filter_block_test",
+    srcs = ["filter_block_test.cc"],
+    deps = [
+        ":table_lib",
+        "//db:db_lib",
+        "@com_google_googletest//:gtest_main",
+    ],
+    copts = LEVELDB_FLAGS,
+)

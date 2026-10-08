@@ -1,0 +1,20 @@
+package(default_visibility = ["//visibility:public"])
+load("//:copts.bzl", "LEVELDB_FLAGS")
+
+cc_library(
+  name = "mem_lib",
+  srcs = glob(
+    ["memenv.h",
+     "memenv.cc"],
+  ),
+  hdrs = glob(
+    ["*.h"],
+  ),
+  visibility = ["//visibility:public"],
+  deps = [
+    "//port:port_lib",
+    "//util:leveldb_mutex_lib",
+    "//include/leveldb",
+  ],
+  copts = LEVELDB_FLAGS,
+)
