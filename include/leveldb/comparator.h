@@ -52,6 +52,9 @@ class LEVELDB_EXPORT Comparator {
   // Simple comparator implementations may return with *key unchanged,
   // i.e., an implementation of this method that does nothing is correct.
   virtual void FindShortSuccessor(std::string* key) const = 0;
+
+  // For internal usage only.
+  virtual bool IsInternal() const;
 };
 
 // Return a builtin comparator that uses lexicographic byte-wise

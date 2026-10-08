@@ -110,6 +110,7 @@ class InternalKeyComparator : public Comparator {
   void FindShortestSeparator(std::string* start,
                              const Slice& limit) const override;
   void FindShortSuccessor(std::string* key) const override;
+  bool IsInternal() const override;
 
   const Comparator* user_comparator() const { return user_comparator_; }
 
