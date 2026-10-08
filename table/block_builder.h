@@ -24,6 +24,9 @@ class BlockBuilder {
   // Reset the contents as if the BlockBuilder was just constructed.
   void Reset();
 
+  // Reconcile internal counters after the pointed-to Options value changes.
+  void OnOptionsChanged();
+
   // REQUIRES: Finish() has not been called since the last call to Reset().
   // REQUIRES: key is larger than any previously added key
   void Add(const Slice& key, const Slice& value);

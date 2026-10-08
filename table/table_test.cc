@@ -256,6 +256,39 @@ class TableConstructor : public Constructor {
   TableConstructor();
 };
 
+TEST(TableTest, ChangeOptionsLowerRestartInterval) {
+  Options options;
+  options.block_restart_interval = 16;
+
+  StringSink sink;
+  TableBuilder builder(options, &sink);
+  for (int i = 0; i < 8; ++i) {
+    builder.Add("key00" + std::to_string(i), "value00" + std::to_string(i));
+    EXPECT_LEVELDB_OK(builder.status());
+  }
+
+  Options changed_options = options;
+  changed_options.block_restart_interval = 2;
+  EXPECT_LEVELDB_OK(builder.ChangeOptions(changed_options));
+
+  builder.Add("key008", "value008");
+  EXPECT_LEVELDB_OK(builder.status());
+  EXPECT_LEVELDB_OK(builder.Finish());
+
+  StringSource source(sink.contents());
+  Table* table = nullptr;
+  EXPECT_LEVELDB_OK(Table::Open(options, &source, sink.contents().size(), &table));
+
+  Iterator* iter = table->NewIterator(ReadOptions());
+  iter->Seek("key008");
+  ASSERT_TRUE(iter->Valid());
+  EXPECT_EQ(iter->key().ToString(), "key008");
+  EXPECT_EQ(iter->value().ToString(), "value008");
+
+  delete iter;
+  delete table;
+}
+
 // A helper class that converts internal format keys into user keys
 class KeyConvertingIterator : public Iterator {
  public:
