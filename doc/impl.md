@@ -25,7 +25,7 @@ A sorted table (*.ldb) stores a sequence of entries sorted by key. Each entry is
 either a value for the key, or a deletion marker for the key. (Deletion markers
 are kept around to hide obsolete values present in older sorted tables).
 
-The set of sorted tables are organized into a sequence of levels. The sorted
+The set of sorted tables is organized into a sequence of levels. The sorted
 table generated from a log file is placed in a special **young** level (also
 called level-0). When the number of young files exceeds a certain threshold
 (currently four), all of the young files are merged together with all of the
