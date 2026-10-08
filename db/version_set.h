@@ -43,7 +43,8 @@ class WritableFile;
 // Return files.size() if there is no such file.
 // REQUIRES: "files" contains a sorted list of non-overlapping files.
 int FindFile(const InternalKeyComparator& icmp,
-             const std::vector<FileMetaData*>& files, const Slice& key);
+             const std::vector<FileMetaData*>& files, const Slice& key,
+             bool use_user_comparator = false);
 
 // Returns true iff some file in "files" overlaps the user key range
 // [*smallest,*largest].
@@ -378,14 +379,6 @@ class Compaction {
   bool seen_key_;             // Some output key has been seen
   int64_t overlapped_bytes_;  // Bytes of overlap between current output
                               // and grandparent files
-
-  // State for implementing IsBaseLevelForKey
-
-  // level_ptrs_ holds indices into input_version_->levels_: our state
-  // is that we are positioned at one of the file ranges for each
-  // higher level than the ones involved in this compaction (i.e. for
-  // all L >= level_ + 2).
-  size_t level_ptrs_[config::kNumLevels];
 };
 
 }  // namespace leveldb
