@@ -4,6 +4,7 @@
 
 #include "leveldb/table.h"
 
+#include <limits>
 #include <map>
 #include <string>
 
@@ -837,6 +838,79 @@ TEST_P(CompressionTableTest, ApproximateOffsetOfCompressed) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k04"), min_z, max_z));
   // Have now emitted two large compressible strings, so adjust expected offset.
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
+}
+
+// Test that ReadBlock rejects a BlockHandle whose size overflows size_t
+// when kBlockTrailerSize is added.  Before the fix this would wrap around
+// to a tiny allocation and either crash or read out-of-bounds memory.
+TEST(ReadBlockTest, SizeOverflow) {
+  // A small backing buffer – the read should never get far enough to
+  // actually touch it because the size checks must fire first.
+  char backing[64];
+  std::memset(backing, 0, sizeof(backing));
+  StringSource source(Slice(backing, sizeof(backing)));
+  ReadOptions read_options;
+  read_options.verify_checksums = false;
+  BlockContents result;
+
+  // --- Test 1: overflow on n + kBlockTrailerSize ---
+  // kBlockTrailerSize is 5, so SIZE_MAX - 3 will overflow when 5 is added.
+  {
+    BlockHandle handle;
+    handle.set_offset(0);
+    handle.set_size(std::numeric_limits<size_t>::max() - 3);
+
+    Status s = ReadBlock(&source, read_options, handle, &result);
+    ASSERT_TRUE(!s.ok()) << "Expected Corruption, got OK";
+    ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+  }
+
+  // --- Test 2: SIZE_MAX itself (also overflows) ---
+  {
+    BlockHandle handle;
+    handle.set_offset(0);
+    handle.set_size(static_cast<uint64_t>(std::numeric_limits<size_t>::max()));
+
+    Status s = ReadBlock(&source, read_options, handle, &result);
+    ASSERT_TRUE(!s.ok()) << "Expected Corruption, got OK";
+    ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+  }
+
+  // --- Test 3: truncation check (uint64_t value larger than size_t on
+  //     32-bit platforms; on 64-bit this is the same as SIZE_MAX so the
+  //     overflow guard catches it, but the test still exercises the path). ---
+  {
+    BlockHandle handle;
+    handle.set_offset(0);
+    // A value that cannot be represented in size_t on 32-bit systems.
+    // On 64-bit this equals SIZE_MAX and is still caught by the overflow check.
+    handle.set_size(std::numeric_limits<uint64_t>::max());
+
+    Status s = ReadBlock(&source, read_options, handle, &result);
+    ASSERT_TRUE(!s.ok()) << "Expected Corruption, got OK";
+    ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+  }
+}
+
+// Test that ReadBlock correctly detects truncated reads (file too small for
+// the claimed block size).
+TEST(ReadBlockTest, TruncatedBlock) {
+  // Create a small backing buffer (16 bytes).
+  char backing[16];
+  std::memset(backing, 0, sizeof(backing));
+  StringSource source(Slice(backing, sizeof(backing)));
+  ReadOptions read_options;
+  read_options.verify_checksums = false;
+  BlockContents result;
+
+  // Ask for a block whose data + trailer (100 + 5 = 105 bytes) exceeds the
+  // 16-byte file.  ReadBlock should return Corruption("truncated block read").
+  BlockHandle handle;
+  handle.set_offset(0);
+  handle.set_size(100);
+
+  Status s = ReadBlock(&source, read_options, handle, &result);
+  ASSERT_TRUE(!s.ok()) << "Expected error for truncated read, got OK";
 }
 
 }  // namespace leveldb
