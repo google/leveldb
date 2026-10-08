@@ -81,8 +81,10 @@ TwoLevelIterator::~TwoLevelIterator() = default;
 
 void TwoLevelIterator::Seek(const Slice& target) {
   index_iter_.Seek(target);
-  InitDataBlock();
-  if (data_iter_.iter() != nullptr) data_iter_.Seek(target);
+  if (data_iter_.iter() != nullptr) {
+    InitDataBlock();
+    data_iter_.Seek(target);
+  }
   SkipEmptyDataBlocksForward();
 }
 
