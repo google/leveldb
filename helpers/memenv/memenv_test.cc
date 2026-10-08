@@ -91,6 +91,29 @@ TEST_F(MemEnvTest, Basics) {
   ASSERT_LEVELDB_OK(env_->RemoveDir("/dir"));
 }
 
+TEST_F(MemEnvTest, NewAppendableFileCreatesFile) {
+  uint64_t file_size;
+  WritableFile* writable_file;
+
+  ASSERT_LEVELDB_OK(env_->CreateDir("/dir"));
+
+  ASSERT_LEVELDB_OK(env_->NewAppendableFile("/dir/f", &writable_file));
+  ASSERT_LEVELDB_OK(writable_file->Append("abc"));
+  delete writable_file;
+
+  ASSERT_TRUE(env_->FileExists("/dir/f"));
+  ASSERT_LEVELDB_OK(env_->GetFileSize("/dir/f", &file_size));
+  ASSERT_EQ(3, file_size);
+
+  SequentialFile* seq_file;
+  Slice result;
+  char scratch[10];
+  ASSERT_LEVELDB_OK(env_->NewSequentialFile("/dir/f", &seq_file));
+  ASSERT_LEVELDB_OK(seq_file->Read(10, &result, scratch));
+  ASSERT_EQ(0, result.compare("abc"));
+  delete seq_file;
+}
+
 TEST_F(MemEnvTest, ReadWrite) {
   WritableFile* writable_file;
   SequentialFile* seq_file;
