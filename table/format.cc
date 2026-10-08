@@ -72,6 +72,15 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   result->cachable = false;
   result->heap_allocated = false;
 
+  // Reject block handles with unreasonably large sizes to prevent OOM from
+  // malicious or corrupted SSTable files. BlockHandle::DecodeFrom() stores
+  // the size field with no range check; without this guard, a crafted file
+  // can trigger a multi-gigabyte allocation before Block::Block() validation.
+  static const uint64_t kMaxBlockSize = 128ULL * 1024 * 1024;  // 128 MiB
+  if (handle.size() > kMaxBlockSize) {
+    return Status::Corruption("block handle size exceeds sanity limit");
+  }
+
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
