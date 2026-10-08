@@ -37,6 +37,8 @@
 
 namespace leveldb {
 
+using namespace path;
+
 const int kNumNonTableCacheFiles = 10;
 
 // Information kept for every waiting writer
@@ -125,13 +127,13 @@ static int TableCacheSize(const Options& sanitized_options) {
 
 DBImpl::DBImpl(const Options& raw_options, const std::string& dbname)
     : env_(raw_options.env),
+      dbname_(path::Normalize(dbname)),
       internal_comparator_(raw_options.comparator),
       internal_filter_policy_(raw_options.filter_policy),
-      options_(SanitizeOptions(dbname, &internal_comparator_,
+      options_(SanitizeOptions(dbname_, &internal_comparator_,
                                &internal_filter_policy_, raw_options)),
       owns_info_log_(options_.info_log != raw_options.info_log),
       owns_cache_(options_.block_cache != raw_options.block_cache),
-      dbname_(dbname),
       table_cache_(new TableCache(dbname_, options_, TableCacheSize(options_))),
       db_lock_(nullptr),
       shutting_down_(false),
