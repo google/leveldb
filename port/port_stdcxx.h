@@ -37,6 +37,7 @@
 #include <condition_variable>  // NOLINT
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <mutex>  // NOLINT
 #include <string>
 
@@ -90,6 +91,10 @@ class CondVar {
 inline bool Snappy_Compress(const char* input, size_t length,
                             std::string* output) {
 #if HAVE_SNAPPY
+  // The snappy stream format stores the uncompressed length as a varint32.
+  if (length > std::numeric_limits<uint32_t>::max()) {
+    return false;
+  }
   output->resize(snappy::MaxCompressedLength(length));
   size_t outlen;
   snappy::RawCompress(input, length, &(*output)[0], &outlen);

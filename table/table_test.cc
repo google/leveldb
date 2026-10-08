@@ -4,6 +4,7 @@
 
 #include "leveldb/table.h"
 
+#include <limits>
 #include <map>
 #include <string>
 
@@ -837,6 +838,15 @@ TEST_P(CompressionTableTest, ApproximateOffsetOfCompressed) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k04"), min_z, max_z));
   // Have now emitted two large compressible strings, so adjust expected offset.
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
+}
+
+TEST(TableTest, SnappyCompressOversizedInput) {
+  if (sizeof(size_t) > sizeof(uint32_t)) {
+    std::string out;
+    size_t oversized =
+        static_cast<size_t>(std::numeric_limits<uint32_t>::max()) + 1;
+    ASSERT_FALSE(port::Snappy_Compress(nullptr, oversized, &out));
+  }
 }
 
 }  // namespace leveldb
