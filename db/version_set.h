@@ -127,6 +127,8 @@ class Version {
         refs_(0),
         file_to_compact_(nullptr),
         file_to_compact_level_(-1),
+        tombstone_file_to_compact_(nullptr),
+        tombstone_file_to_compact_level_(-1),
         compaction_score_(-1),
         compaction_level_(-1) {}
 
@@ -156,6 +158,11 @@ class Version {
   // Next file to compact based on seek stats.
   FileMetaData* file_to_compact_;
   int file_to_compact_level_;
+
+  // Next file to compact based on tombstone density.
+  // When tombstone density > 50%, we prioritize this file for compaction.
+  FileMetaData* tombstone_file_to_compact_;
+  int tombstone_file_to_compact_level_;
 
   // Level that should be compacted next and its compaction score.
   // Score < 1 means compaction is not strictly needed.  These fields
@@ -251,7 +258,8 @@ class VersionSet {
   // Returns true iff some level needs a compaction.
   bool NeedsCompaction() const {
     Version* v = current_;
-    return (v->compaction_score_ >= 1) || (v->file_to_compact_ != nullptr);
+    return (v->compaction_score_ >= 1) || (v->file_to_compact_ != nullptr) ||
+           (v->tombstone_file_to_compact_ != nullptr);
   }
 
   // Add all files listed in any live version to *live.

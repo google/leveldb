@@ -1033,6 +1033,15 @@ void VersionSet::Finalize(Version* v) {
   int best_level = -1;
   double best_score = -1;
 
+  // Reset tombstone compaction fields
+  v->tombstone_file_to_compact_ = nullptr;
+  v->tombstone_file_to_compact_level_ = -1;
+
+  // Track the file with highest tombstone density (> 50%)
+  FileMetaData* highest_tombstone_file = nullptr;
+  int highest_tombstone_level = -1;
+  double highest_tombstone_density = 0.5;  // Threshold: 50%
+
   for (int level = 0; level < config::kNumLevels - 1; level++) {
     double score;
     if (level == 0) {
@@ -1054,6 +1063,16 @@ void VersionSet::Finalize(Version* v) {
       const uint64_t level_bytes = TotalFileSize(v->files_[level]);
       score =
           static_cast<double>(level_bytes) / MaxBytesForLevel(options_, level);
+
+      // Check tombstone density for levels > 0
+      for (FileMetaData* f : v->files_[level]) {
+        double density = f->TombstoneDensity();
+        if (density > highest_tombstone_density) {
+          highest_tombstone_density = density;
+          highest_tombstone_file = f;
+          highest_tombstone_level = level;
+        }
+      }
     }
 
     if (score > best_score) {
@@ -1064,6 +1083,12 @@ void VersionSet::Finalize(Version* v) {
 
   v->compaction_level_ = best_level;
   v->compaction_score_ = best_score;
+
+  // Set tombstone compaction file if found (density > 50%)
+  if (highest_tombstone_file != nullptr) {
+    v->tombstone_file_to_compact_ = highest_tombstone_file;
+    v->tombstone_file_to_compact_level_ = highest_tombstone_level;
+  }
 }
 
 Status VersionSet::WriteSnapshot(log::Writer* log) {
@@ -1087,7 +1112,8 @@ Status VersionSet::WriteSnapshot(log::Writer* log) {
     const std::vector<FileMetaData*>& files = current_->files_[level];
     for (size_t i = 0; i < files.size(); i++) {
       const FileMetaData* f = files[i];
-      edit.AddFile(level, f->number, f->file_size, f->smallest, f->largest);
+      edit.AddFile(level, f->number, f->file_size, f->num_tombstones,
+                   f->num_entries, f->smallest, f->largest);
     }
   }
 
@@ -1253,11 +1279,23 @@ Compaction* VersionSet::PickCompaction() {
   Compaction* c;
   int level;
 
-  // We prefer compactions triggered by too much data in a level over
-  // the compactions triggered by seeks.
+  // Priority order:
+  // 1. Tombstone compaction (density > 50%) - highest priority
+  // 2. Size compaction (based on file size/number limits)
+  // 3. Seek compaction (based on seek stats)
+  const bool tombstone_compaction = (current_->tombstone_file_to_compact_ != nullptr);
   const bool size_compaction = (current_->compaction_score_ >= 1);
   const bool seek_compaction = (current_->file_to_compact_ != nullptr);
-  if (size_compaction) {
+
+  if (tombstone_compaction) {
+    // Prioritize compaction for files with high tombstone density (> 50%)
+    level = current_->tombstone_file_to_compact_level_;
+    assert(level >= 0);
+    assert(level > 0);  // Tombstone compaction only for levels > 0
+    assert(level + 1 < config::kNumLevels);
+    c = new Compaction(options_, level);
+    c->inputs_[0].push_back(current_->tombstone_file_to_compact_);
+  } else if (size_compaction) {
     level = current_->compaction_level_;
     assert(level >= 0);
     assert(level + 1 < config::kNumLevels);
