@@ -29,7 +29,6 @@
 
 #include <atomic>
 #include <cassert>
-#include <cstdlib>
 
 #include "util/arena.h"
 #include "util/random.h"
@@ -116,6 +115,9 @@ class SkipList {
   // If prev is non-null, fills prev[level] with pointer to previous
   // node at "level" for every level in [0..max_height_-1].
   Node* FindGreaterOrEqual(const Key& key, Node** prev) const;
+
+  // used inside of Insert() as it is externally synchronized
+  Node* FindGreaterOrEqualBarrierFree(const Key& key, Node** prev) const;
 
   // Return the latest node with a key < key.
   // Return head_ if there is no such node.
@@ -257,12 +259,33 @@ bool SkipList<Key, Comparator>::KeyIsAfterNode(const Key& key, Node* n) const {
 
 template <typename Key, class Comparator>
 typename SkipList<Key, Comparator>::Node*
-SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
-                                              Node** prev) const {
+SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key, Node** prev) const {
   Node* x = head_;
   int level = GetMaxHeight() - 1;
   while (true) {
     Node* next = x->Next(level);
+    if (KeyIsAfterNode(key, next)) {
+      // Keep searching in this list
+      x = next;
+    } else {
+      if (prev != nullptr) prev[level] = x;
+      if (level == 0) {
+        return next;
+      } else {
+        // Switch to next list
+        level--;
+      }
+    }
+  }
+}
+
+template <typename Key, class Comparator>
+typename SkipList<Key, Comparator>::Node*
+SkipList<Key, Comparator>::FindGreaterOrEqualBarrierFree(const Key& key, Node** prev) const {
+  Node* x = head_;
+  int level = GetMaxHeight() - 1;
+  while (true) {
+    Node* next = x->NoBarrier_Next(level);
     if (KeyIsAfterNode(key, next)) {
       // Keep searching in this list
       x = next;
@@ -333,10 +356,9 @@ SkipList<Key, Comparator>::SkipList(Comparator cmp, Arena* arena)
 
 template <typename Key, class Comparator>
 void SkipList<Key, Comparator>::Insert(const Key& key) {
-  // TODO(opt): We can use a barrier-free variant of FindGreaterOrEqual()
-  // here since Insert() is externally synchronized.
   Node* prev[kMaxHeight];
-  Node* x = FindGreaterOrEqual(key, prev);
+  // Use the barrier-free variant since Insert() is externally synchronized.
+  Node* x = FindGreaterOrEqualBarrierFree(key, prev);
 
   // Our data structure does not allow duplicate insertion
   assert(x == nullptr || !Equal(key, x->key));
