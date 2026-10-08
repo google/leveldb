@@ -85,6 +85,9 @@ Status TableBuilder::ChangeOptions(const Options& options) {
 
   // Note that any live BlockBuilders point to rep_->options and therefore
   // will automatically pick up the updated options.
+  if (!rep_->data_block.empty()) {
+    Flush();
+  }
   rep_->options = options;
   rep_->index_block_options = options;
   rep_->index_block_options.block_restart_interval = 1;
