@@ -94,6 +94,16 @@ bool ParseInternalKey(const Slice& internal_key, ParsedInternalKey* result);
 // Returns the user key portion of an internal key.
 inline Slice ExtractUserKey(const Slice& internal_key) {
   assert(internal_key.size() >= 8);
+  if (internal_key.size() < 8) {
+    // Defensive check: internal keys must always contain an 8-byte trailer
+    // (7-byte sequence number + 1-byte value type).  In release builds the
+    // assert above is compiled out, so without this guard a key shorter than
+    // 8 bytes would cause size_t underflow and the returned Slice would
+    // advertise a length near SIZE_MAX, leading to a heap out-of-bounds read
+    // in the next comparator call.  Return an empty Slice so callers surface
+    // a corruption error rather than reading past the end of the buffer.
+    return Slice();
+  }
   return Slice(internal_key.data(), internal_key.size() - 8);
 }
 
@@ -142,6 +152,13 @@ class InternalKey {
   }
 
   bool DecodeFrom(const Slice& s) {
+    // An internal key must be at least 8 bytes (the trailing tag composed of a
+    // 7-byte packed sequence number and a 1-byte value type).  Accepting a
+    // shorter Slice here means that any subsequent call to user_key() will hit
+    // the integer-underflow path in ExtractUserKey().  Reject it up-front so
+    // that callers (e.g. VersionEdit::DecodeFrom replaying a MANIFEST) surface
+    // a corruption error instead of propagating a malformed key.
+    if (s.size() < 8) return false;
     rep_.assign(s.data(), s.size());
     return !rep_.empty();
   }
