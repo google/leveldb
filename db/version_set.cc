@@ -998,7 +998,7 @@ bool VersionSet::ReuseManifest(const std::string& dscname,
   }
   FileType manifest_type;
   uint64_t manifest_number;
-  uint64_t manifest_size;
+  uint64_t manifest_size = 0;
   if (!ParseFileName(dscbase, &manifest_number, &manifest_type) ||
       manifest_type != kDescriptorFile ||
       !env_->GetFileSize(dscname, &manifest_size).ok() ||
