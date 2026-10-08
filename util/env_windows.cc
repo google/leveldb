@@ -247,7 +247,7 @@ class WindowsMmapReadableFile : public RandomAccessFile {
 
   Status Read(uint64_t offset, size_t n, Slice* result,
               char* scratch) const override {
-    if (offset + n > length_) {
+    if (offset + n < n || offset + n > length_) {
       *result = Slice();
       return WindowsError(filename_, ERROR_INVALID_PARAMETER);
     }

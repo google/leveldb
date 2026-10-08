@@ -198,6 +198,10 @@ class PosixRandomAccessFile final : public RandomAccessFile {
 
   Status Read(uint64_t offset, size_t n, Slice* result,
               char* scratch) const override {
+    if (offset > std::numeric_limits<off_t>::max()) {
+      return PosixError(filename_, EINVAL);
+    }
+
     int fd = fd_;
     if (!has_permanent_fd_) {
       fd = ::open(filename_.c_str(), O_RDONLY | kOpenBaseFlags);
@@ -258,7 +262,7 @@ class PosixMmapReadableFile final : public RandomAccessFile {
 
   Status Read(uint64_t offset, size_t n, Slice* result,
               char* scratch) const override {
-    if (offset + n > length_) {
+    if (offset + n < n || offset + n > length_) {
       *result = Slice();
       return PosixError(filename_, EINVAL);
     }
