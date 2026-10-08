@@ -839,4 +839,68 @@ TEST_P(CompressionTableTest, ApproximateOffsetOfCompressed) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
 }
 
+TEST(TableTest, ChangeOptionsLowersRestartInterval) {
+  // ChangeOptions() rewrites the Options that the live BlockBuilder reads
+  // through a pointer, so lowering block_restart_interval below the number of
+  // keys already accumulated in the open data block leaves counter_ above the
+  // new interval. BlockBuilder::Add() handles that correctly - it takes the
+  // restart branch - so the table must still build and read back intact.
+  Options options;
+  options.block_restart_interval = 16;
+  StringSink sink;
+  TableBuilder builder(options, &sink);
+
+  // Fill the open data block past the interval we are about to switch to.
+  const int kKeys = 8;
+  for (int i = 0; i < kKeys; i++) {
+    char key[16];
+    std::snprintf(key, sizeof(key), "k%02d", i);
+    builder.Add(key, "v");
+    ASSERT_LEVELDB_OK(builder.status());
+  }
+
+  Options lowered = options;
+  lowered.block_restart_interval = 2;
+  ASSERT_LEVELDB_OK(builder.ChangeOptions(lowered));
+
+  // Used to trip assert(counter_ <= options_->block_restart_interval) in
+  // BlockBuilder::Add().
+  for (int i = kKeys; i < 2 * kKeys; i++) {
+    char key[16];
+    std::snprintf(key, sizeof(key), "k%02d", i);
+    builder.Add(key, "v");
+    ASSERT_LEVELDB_OK(builder.status());
+  }
+  ASSERT_LEVELDB_OK(builder.Finish());
+
+  // The block written across the interval change must still be readable, with
+  // every key present and in order.
+  StringSource source(sink.contents());
+  Table* table = nullptr;
+  Options table_options;
+  ASSERT_LEVELDB_OK(
+      Table::Open(table_options, &source, sink.contents().size(), &table));
+
+  Iterator* iter = table->NewIterator(ReadOptions());
+  int found = 0;
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    char key[16];
+    std::snprintf(key, sizeof(key), "k%02d", found);
+    ASSERT_EQ(key, iter->key().ToString());
+    ASSERT_EQ("v", iter->value().ToString());
+    found++;
+  }
+  ASSERT_LEVELDB_OK(iter->status());
+  ASSERT_EQ(2 * kKeys, found);
+
+  // Seeking must work too, which exercises the restart array of that block.
+  iter->Seek("k09");
+  ASSERT_TRUE(iter->Valid());
+  ASSERT_EQ("k09", iter->key().ToString());
+
+  delete iter;
+  delete table;
+}
+
+
 }  // namespace leveldb
