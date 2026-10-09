@@ -68,7 +68,14 @@ static inline const char* DecodeEntry(const char* p, const char* limit,
     if ((p = GetVarint32Ptr(p, limit, value_length)) == nullptr) return nullptr;
   }
 
-  if (static_cast<uint32_t>(limit - p) < (*non_shared + *value_length)) {
+  // NB: (*non_shared + *value_length) is computed in 64 bits. Both are
+  // attacker-controlled uint32_t values decoded from the block, so the 32-bit
+  // sum can wrap around (e.g. non_shared=0xFFFFFFFF, value_length=1 sums to
+  // 0), which would defeat this bounds check and lead to out-of-bounds reads
+  // in Block::Iter::ParseNextKey/Seek.
+  const uint64_t entry_length =
+      static_cast<uint64_t>(*non_shared) + *value_length;
+  if (entry_length > static_cast<uint64_t>(limit - p)) {
     return nullptr;
   }
   return p;
