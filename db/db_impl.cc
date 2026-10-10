@@ -88,8 +88,11 @@ struct DBImpl::CompactionState {
 // Fix user-supplied options to be reasonable
 template <class T, class V>
 static void ClipToRange(T* ptr, V minvalue, V maxvalue) {
-  if (static_cast<V>(*ptr) > maxvalue) *ptr = maxvalue;
-  if (static_cast<V>(*ptr) < minvalue) *ptr = minvalue;
+  // Compare in the pointee's type T. Casting *ptr down to V (often a narrower
+  // int deduced from the bound literals) would overflow for large values -- a
+  // 2 GiB write_buffer_size became negative and was clamped to the minimum.
+  if (*ptr > static_cast<T>(maxvalue)) *ptr = static_cast<T>(maxvalue);
+  if (*ptr < static_cast<T>(minvalue)) *ptr = static_cast<T>(minvalue);
 }
 Options SanitizeOptions(const std::string& dbname,
                         const InternalKeyComparator* icmp,
