@@ -2357,4 +2357,32 @@ TEST_F(DBTest, Randomized) {
   } while (ChangeOptions());
 }
 
+TEST_F(DBTest, SanitizeOptionsOverflow) {
+  InternalKeyComparator cmp(BytewiseComparator());
+  Options options;
+  // Sizes >= 2 GiB previously overflowed to a negative int in ClipToRange,
+  // so they were incorrectly clamped to minvalue instead of maxvalue.
+  options.write_buffer_size = static_cast<size_t>(2) << 30;
+  options.max_file_size = static_cast<size_t>(2) << 30;
+  options.block_size = static_cast<size_t>(10) << 20;
+  Options sanitized = SanitizeOptions(dbname_, &cmp, nullptr, options);
+  delete sanitized.info_log;
+
+  ASSERT_EQ(sanitized.write_buffer_size, 1 << 30);
+  ASSERT_EQ(sanitized.max_file_size, 1 << 30);
+  ASSERT_EQ(sanitized.block_size, 4 << 20);
+
+  // Values exceeding 4 GiB previously wrapped around modulo 2^32.
+  options.write_buffer_size = static_cast<size_t>(4) << 30;
+  sanitized = SanitizeOptions(dbname_, &cmp, nullptr, options);
+  delete sanitized.info_log;
+  ASSERT_EQ(sanitized.write_buffer_size, 1 << 30);
+
+  // A negative max_open_files should clamp to the minimum.
+  options.max_open_files = -10;
+  sanitized = SanitizeOptions(dbname_, &cmp, nullptr, options);
+  delete sanitized.info_log;
+  ASSERT_GE(sanitized.max_open_files, 64);
+}
+
 }  // namespace leveldb
