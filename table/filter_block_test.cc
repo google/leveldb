@@ -119,4 +119,25 @@ TEST_F(FilterBlockTest, MultiChunk) {
   ASSERT_TRUE(!reader.KeyMayMatch(9000, "bar"));
 }
 
+class MockTestHashFilter : public TestHashFilter {
+ public:
+  MOCK_METHOD(bool, KeyMayMatch, (const Slice&, const Slice&), (const, override));
+};
+
+TEST_F(FilterBlockTest, EmptyFilterNotInvoked) {
+  MockTestHashFilter mock_policy;
+  FilterBlockBuilder builder(&mock_policy);
+  builder.StartBlock(0);
+  builder.AddKey("foo");
+  builder.StartBlock(4100);  // Leaves filter at index 1 empty (start == limit)
+  builder.AddKey("bar");
+  Slice block = builder.Finish();
+
+  FilterBlockReader reader(&mock_policy, block);
+
+  // For the empty filter at index 1 (offset 2048), KeyMayMatch should not be invoked.
+  EXPECT_CALL(mock_policy, KeyMayMatch(testing::_, testing::_)).Times(0);
+  ASSERT_FALSE(reader.KeyMayMatch(2048, "foo"));
+}
+
 }  // namespace leveldb
