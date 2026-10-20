@@ -263,6 +263,16 @@ Cache::Handle* LRUCache::Lookup(const Slice& key, uint32_t hash) {
 void LRUCache::Release(Cache::Handle* handle) {
   MutexLock l(&mutex_);
   Unref(reinterpret_cast<LRUHandle*>(handle));
+  // Unref may have made an entry evictable (moved it to lru_). If the
+  // capacity was lowered while the entry was pinned, enforce it now.
+  while (usage_ > capacity_ && lru_.next != &lru_) {
+    LRUHandle* old = lru_.next;
+    assert(old->refs == 1);
+    bool erased = FinishErase(table_.Remove(old->key(), old->hash));
+    if (!erased) {  // to avoid unused variable when compiled NDEBUG
+      assert(erased);
+    }
+  }
 }
 
 Cache::Handle* LRUCache::Insert(const Slice& key, uint32_t hash, void* value,
