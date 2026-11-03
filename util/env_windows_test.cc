@@ -55,6 +55,38 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
   ASSERT_LEVELDB_OK(env_->RemoveFile(test_file));
 }
 
+static void LogToLogger(Logger* logger, const char* format, ...) {
+  std::va_list arguments;
+  va_start(arguments, format);
+  logger->Logv(format, arguments);
+  va_end(arguments);
+}
+
+// The LOG file must survive being re-opened: the POSIX logger opens with
+// O_APPEND, while the Windows logger used fopen("wN"), which truncated the
+// log at every open and destroyed the previous run's diagnostics.
+TEST_F(EnvWindowsTest, LoggerAppendsAcrossOpens) {
+  std::string test_dir;
+  ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
+  std::string log_file = test_dir + "/append_logger_test.log";
+  env_->RemoveFile(log_file);  // Start from a clean slate if one is left over.
+
+  Logger* logger = nullptr;
+  ASSERT_LEVELDB_OK(env_->NewLogger(log_file, &logger));
+  LogToLogger(logger, "%s", "first open");
+  delete logger;
+
+  ASSERT_LEVELDB_OK(env_->NewLogger(log_file, &logger));
+  LogToLogger(logger, "%s", "second open");
+  delete logger;
+
+  std::string contents;
+  ASSERT_LEVELDB_OK(ReadFileToString(env_, log_file, &contents));
+  EXPECT_NE(std::string::npos, contents.find("first open"));
+  EXPECT_NE(std::string::npos, contents.find("second open"));
+  ASSERT_LEVELDB_OK(env_->RemoveFile(log_file));
+}
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
