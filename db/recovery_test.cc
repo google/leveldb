@@ -93,6 +93,8 @@ class RecoveryTest : public testing::Test {
     return dbname_ + "/" + current;
   }
 
+  std::string CurrentFile() { return CurrentFileName(dbname_); }
+
   std::string LogName(uint64_t number) { return LogFileName(dbname_, number); }
 
   size_t RemoveLogFiles() {
@@ -334,6 +336,29 @@ TEST_F(RecoveryTest, ManifestMissing) {
 #else
   ASSERT_TRUE(status.IsCorruption());
 #endif  // defined(LEVELDB_PLATFORM_CHROMIUM)
+}
+
+TEST_F(RecoveryTest, CurrentFileWithCrlf) {
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
+  Close();
+
+  // Simulate a Windows text tool rewriting CURRENT with CRLF line endings:
+  // without CRLF tolerance the trailing '\r' ends up inside the manifest file
+  // name, so every later open fails with corruption.
+  std::string current;
+  ASSERT_LEVELDB_OK(ReadFileToString(env(), CurrentFile(), &current));
+  ASSERT_EQ('\n', current[current.size() - 1]);
+  current.resize(current.size() - 1);
+  ASSERT_LEVELDB_OK(
+      WriteStringToFile(env(), current + "\r\n", CurrentFile()));
+
+  Open();
+  ASSERT_EQ("bar", Get("foo"));
+  Close();
+
+  // A torn CURRENT write without any line terminator must still be rejected.
+  ASSERT_LEVELDB_OK(WriteStringToFile(env(), current, CurrentFile()));
+  ASSERT_TRUE(OpenWithStatus().IsCorruption());
 }
 
 }  // namespace leveldb
