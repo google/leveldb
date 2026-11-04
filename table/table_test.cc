@@ -19,6 +19,7 @@
 #include "table/block.h"
 #include "table/block_builder.h"
 #include "table/format.h"
+#include "util/coding.h"
 #include "util/random.h"
 #include "util/testutil.h"
 
@@ -636,6 +637,29 @@ TEST_F(Harness, ZeroRestartPointsInBlock) {
   ASSERT_TRUE(!iter->Valid());
   iter->Seek("foo");
   ASSERT_TRUE(!iter->Valid());
+  delete iter;
+}
+
+TEST_F(Harness, CorruptedBlockEntryLengthOverflow) {
+  std::string data;
+  PutVarint32(&data, 0);           // shared = 0
+  PutVarint32(&data, 1);           // non_shared = 1
+  PutVarint32(&data, 0xffffffff);  // value_length = UINT32_MAX (wraps with 1)
+  data.push_back('a');             // 1 key byte so limit - p == 1
+  PutFixed32(&data, 0);            // restart[0] = 0
+  PutFixed32(&data, 1);            // num_restarts = 1
+
+  BlockContents contents;
+  contents.data = Slice(data);
+  contents.cachable = false;
+  contents.heap_allocated = false;
+  Block block(contents);
+  Iterator* iter = block.NewIterator(BytewiseComparator());
+
+  iter->SeekToFirst();
+  EXPECT_FALSE(iter->Valid());
+  EXPECT_TRUE(iter->status().IsCorruption());
+
   delete iter;
 }
 
