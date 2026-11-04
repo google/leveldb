@@ -93,6 +93,10 @@ const char* GetVarint32PtrFallback(const char* p, const char* limit,
       // More bytes are present
       result |= ((byte & 127) << shift);
     } else {
+      if (shift == 28 && byte > 0x0f) {
+        // The fifth byte can only hold the top 4 bits of a 32-bit value.
+        return nullptr;
+      }
       result |= (byte << shift);
       *value = result;
       return reinterpret_cast<const char*>(p);
@@ -122,6 +126,10 @@ const char* GetVarint64Ptr(const char* p, const char* limit, uint64_t* value) {
       // More bytes are present
       result |= ((byte & 127) << shift);
     } else {
+      if (shift == 63 && byte > 1) {
+        // The tenth byte can only hold the top bit of a 64-bit value.
+        return nullptr;
+      }
       result |= (byte << shift);
       *value = result;
       return reinterpret_cast<const char*>(p);

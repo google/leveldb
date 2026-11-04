@@ -4,6 +4,7 @@
 
 #include "util/coding.h"
 
+#include <limits>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -137,6 +138,22 @@ TEST(Coding, Varint32Overflow) {
                              &result) == nullptr);
 }
 
+TEST(Coding, Varint32OverflowInLastByte) {
+  uint32_t result;
+  // 2^32 does not fit in 32 bits and must not be decoded as 0.
+  std::string input("\x80\x80\x80\x80\x10");
+  ASSERT_TRUE(GetVarint32Ptr(input.data(), input.data() + input.size(),
+                             &result) == nullptr);
+  Slice slice(input);
+  ASSERT_FALSE(GetVarint32(&slice, &result));
+
+  std::string max_value("\xff\xff\xff\xff\x0f");
+  ASSERT_TRUE(GetVarint32Ptr(max_value.data(),
+                             max_value.data() + max_value.size(),
+                             &result) != nullptr);
+  ASSERT_EQ(std::numeric_limits<uint32_t>::max(), result);
+}
+
 TEST(Coding, Varint32Truncation) {
   uint32_t large_value = (1u << 31) + 100;
   std::string s;
@@ -155,6 +172,22 @@ TEST(Coding, Varint64Overflow) {
   std::string input("\x81\x82\x83\x84\x85\x81\x82\x83\x84\x85\x11");
   ASSERT_TRUE(GetVarint64Ptr(input.data(), input.data() + input.size(),
                              &result) == nullptr);
+}
+
+TEST(Coding, Varint64OverflowInLastByte) {
+  uint64_t result;
+  // 2^64 does not fit in 64 bits and must not be decoded as 0.
+  std::string input("\x80\x80\x80\x80\x80\x80\x80\x80\x80\x02");
+  ASSERT_TRUE(GetVarint64Ptr(input.data(), input.data() + input.size(),
+                             &result) == nullptr);
+  Slice slice(input);
+  ASSERT_FALSE(GetVarint64(&slice, &result));
+
+  std::string max_value("\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01");
+  ASSERT_TRUE(GetVarint64Ptr(max_value.data(),
+                             max_value.data() + max_value.size(),
+                             &result) != nullptr);
+  ASSERT_EQ(std::numeric_limits<uint64_t>::max(), result);
 }
 
 TEST(Coding, Varint64Truncation) {
