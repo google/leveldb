@@ -361,4 +361,195 @@ TEST_F(RecoveryTest, CurrentFileWithCrlf) {
   ASSERT_TRUE(OpenWithStatus().IsCorruption());
 }
 
+// ---------------------------------------------------------------------------
+// CURRENT file line terminators.
+//
+// A CURRENT file holds exactly one line: the name of the MANIFEST file plus a
+// line terminator. Windows text tools and sync clients rewrite CURRENT with
+// CRLF endings, and some old Mac-style writers use a lone CR; the terminator
+// must be stripped before the name is used to open the MANIFEST, otherwise
+// every later DB::Open() fails with
+//     Corruption: CURRENT points to a non-existent file
+// A CURRENT without any terminator is a torn write and must stay rejected.
+//
+// History: the same defect was fixed independently three times downstream --
+// Mojang's original leveldb-mcpe tree (commit 52edeaab, 2017),
+// Amulet-Team/leveldb-mcpe#6 (2021) and mojang/leveldb#8 (2024, merged into
+// Minecraft Bedrock in 2024-12). Upstream google/leveldb still has the
+// defect, so the tests below are the red side of the fix.
+// ---------------------------------------------------------------------------
+
+// One shape of the CURRENT file. "terminator" are the bytes that follow the
+// manifest file name; "empty_file" describes a CURRENT that holds no bytes
+// at all; "expect_open" is the outcome the database must produce.
+struct CurrentFileTerminatorCase {
+  const char* label;       // printable case name, used in the test output
+  const char* terminator;  // bytes appended after the manifest file name
+  bool empty_file;         // true: CURRENT is zero-length instead
+  bool expect_open;        // true: DB::Open() must succeed
+};
+
+std::ostream& operator<<(std::ostream& os, const CurrentFileTerminatorCase& c) {
+  return os << c.label;
+}
+
+class CurrentFileTerminator
+    : public ::testing::TestWithParam<CurrentFileTerminatorCase> {
+ public:
+  CurrentFileTerminator() : env_(Env::Default()), db_(nullptr) {
+    dbname_ = testing::TempDir() + "current_file_terminator_test";
+    DestroyDB(dbname_, Options());
+    // A failure here means the environment is broken, not the code under
+    // test. The assertion lives in a helper because an ASSERT_* macro may
+    // not return from a constructor.
+    OpenExpectSuccess();
+  }
+
+  ~CurrentFileTerminator() {
+    Close();
+    DestroyDB(dbname_, Options());
+  }
+
+  Env* env() const { return env_; }
+  const std::string& dbname() const { return dbname_; }
+  std::string CurrentFile() const { return CurrentFileName(dbname_); }
+
+  Status OpenWithStatus() {
+    Close();
+    Options opts;
+    opts.reuse_logs = true;
+    opts.create_if_missing = true;
+    opts.env = env_;
+    return DB::Open(opts, dbname_, &db_);
+  }
+
+  // Opens the database and aborts the current test if that fails. Only for
+  // the places where opening is expected to work.
+  void OpenExpectSuccess() { ASSERT_LEVELDB_OK(OpenWithStatus()); }
+
+  void Close() {
+    delete db_;
+    db_ = nullptr;
+  }
+
+  Status Put(const std::string& k, const std::string& v) {
+    return db_->Put(WriteOptions(), k, v);
+  }
+
+  std::string Get(const std::string& k) {
+    std::string result;
+    Status s = db_->Get(ReadOptions(), k, &result);
+    if (s.IsNotFound()) {
+      result = "NOT_FOUND";
+    } else if (!s.ok()) {
+      result = s.ToString();
+    }
+    return result;
+  }
+
+  // The manifest file name CURRENT points at, with its line terminator
+  // removed. The database accepts "\n", "\r\n" and a lone "\r" as terminators
+  // (see VersionSet::Recover), so all three are stripped here.
+  std::string ManifestName() {
+    std::string current;
+    EXPECT_LEVELDB_OK(
+        ReadFileToString(env_, CurrentFileName(dbname_), &current));
+    if (current.size() >= 2 && current[current.size() - 2] == '\r' &&
+        current[current.size() - 1] == '\n') {
+      current.resize(current.size() - 2);
+    } else if (!current.empty() && (current[current.size() - 1] == '\n' ||
+                                   current[current.size() - 1] == '\r')) {
+      current.resize(current.size() - 1);
+    }
+    return current;
+  }
+
+ private:
+  std::string dbname_;
+  Env* env_;
+  DB* db_;
+};
+
+// The value domain: the three terminators the database must accept, plus the
+// two shapes it must keep rejecting.
+INSTANTIATE_TEST_SUITE_P(CurrentFileTerminators, CurrentFileTerminator,
+                         ::testing::Values(
+                             CurrentFileTerminatorCase{"LF", "\n", false, true},
+                             CurrentFileTerminatorCase{"CRLF", "\r\n", false,
+                                                      true},
+                             CurrentFileTerminatorCase{"CR", "\r", false,
+                                                      true},
+                             CurrentFileTerminatorCase{"NoTerminator", "",
+                                                      false, false},
+                             CurrentFileTerminatorCase{"Empty", "", true,
+                                                      false}));
+
+TEST_P(CurrentFileTerminator, TerminatorIsStrippedBeforeTheManifestIsOpened) {
+  const CurrentFileTerminatorCase& c = GetParam();
+
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
+  Close();
+
+  // The manifest name leveldb itself wrote, without its LF terminator.
+  const std::string manifest = ManifestName();
+  ASSERT_FALSE(manifest.empty());
+
+  // Content consistency: the MANIFEST exists under the name without the
+  // terminator, and no file exists under the name with the terminator
+  // appended. The database can therefore only open if the terminator was
+  // stripped before the name was used. (With no terminator at all the two
+  // names are the same string, so there is nothing to compare.)
+  ASSERT_TRUE(env()->FileExists(dbname() + "/" + manifest));
+  if (!c.empty_file && c.terminator[0] != '\0') {
+    ASSERT_FALSE(env()->FileExists(dbname() + "/" + manifest + c.terminator));
+  }
+
+  // Rewrite CURRENT with the terminator under test.
+  const std::string rewritten =
+      c.empty_file ? std::string() : manifest + c.terminator;
+  ASSERT_LEVELDB_OK(WriteStringToFile(env(), rewritten, CurrentFile()));
+
+  if (c.expect_open) {
+    // The terminator was stripped, so CURRENT still names the real MANIFEST.
+    Status s = OpenWithStatus();
+    ASSERT_TRUE(s.ok()) << "CURRENT terminator case " << c.label
+                         << " must open the database, got: " << s.ToString();
+    ASSERT_EQ("bar", Get("foo"));
+    Close();
+
+    // The tolerance has to hold for every open, not only for the first one:
+    // the failure this guards against hits *every* DB::Open(). CURRENT is
+    // rewritten here because the database may have replaced it in the
+    // meantime.
+    const std::string reopened = ManifestName();
+    ASSERT_FALSE(reopened.empty());
+    ASSERT_TRUE(env()->FileExists(dbname() + "/" + reopened));
+    ASSERT_LEVELDB_OK(
+        WriteStringToFile(env(), reopened + c.terminator, CurrentFile()));
+    s = OpenWithStatus();
+    ASSERT_TRUE(s.ok()) << "CURRENT terminator case " << c.label
+                         << " must open the database again, got: "
+                         << s.ToString();
+    ASSERT_EQ("bar", Get("foo"));
+    Close();
+  } else {
+    // A CURRENT that is not "<manifest><terminator>" is a torn write: it must
+    // be refused instead of silently pointing at some other file.
+    const Status s = OpenWithStatus();
+    ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+    Close();
+
+    // Refusing must not cost data: a well-formed CURRENT recovers the very
+    // same database with the very same contents.
+    ASSERT_LEVELDB_OK(WriteStringToFile(env(), manifest + "\n", CurrentFile()));
+    Status restored = OpenWithStatus();
+    ASSERT_TRUE(restored.ok())
+        << "CURRENT terminator case " << c.label
+        << " must not cost data: the database did not come back: "
+        << restored.ToString();
+    ASSERT_EQ("bar", Get("foo"));
+    Close();
+  }
+}
+
 }  // namespace leveldb
