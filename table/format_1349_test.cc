@@ -130,5 +130,64 @@ TEST(ReadBlockIssue1349Test, PreservesValidZstdFallback) {
 #endif
 }
 
+TEST(ReadBlockIssue1349Test, AcceptsLargeWindowZstdFrame) {
+#if HAVE_ZSTD
+  std::string input(9 * 1024 * 1024, 'W'), payload;
+  ASSERT_TRUE(port::Zstd_Compress(1, input.data(), input.size(), &payload));
+  // Rewrite the window descriptor to declare a 256 MiB window.  The frame's
+  // compressed blocks are unchanged, and the one-pass decompressor this
+  // validation guards accepts it - so the pre-validation probe must not
+  // reject it either.
+  ASSERT_EQ(0, payload[4] & 0x20) << "expected a non-single-segment frame";
+  payload[5] = static_cast<char>(0x90);
+  BlockContents out;
+  Status s = ReadPayload(payload, kZstdCompression, &out);
+  ASSERT_TRUE(s.ok()) << s.ToString();
+  EXPECT_EQ(input.size(), out.data.size());
+  EXPECT_EQ(0, std::memcmp(input.data(), out.data.data(), input.size()));
+  if (out.heap_allocated) delete[] out.data.data();
+#else
+  GTEST_SKIP() << "Zstd support unavailable";
+#endif
+}
+
+TEST(ReadBlockIssue1349Test, AcceptsTrailingSkippableZstdFrame) {
+#if HAVE_ZSTD
+  std::string input(9 * 1024 * 1024, 'X'), payload;
+  ASSERT_TRUE(port::Zstd_Compress(1, input.data(), input.size(), &payload));
+  // A zero-payload skippable frame behind the data frame adds no decoded
+  // bytes; one-pass decoding ignores it, so the probe must as well.
+  const unsigned char skippable[] = {0x50, 0x2a, 0x4d, 0x18,
+                                     0x00, 0x00, 0x00, 0x00};
+  payload.append(reinterpret_cast<const char*>(skippable), sizeof(skippable));
+  BlockContents out;
+  Status s = ReadPayload(payload, kZstdCompression, &out);
+  ASSERT_TRUE(s.ok()) << s.ToString();
+  EXPECT_EQ(input.size(), out.data.size());
+  EXPECT_EQ(0, std::memcmp(input.data(), out.data.data(), input.size()));
+  if (out.heap_allocated) delete[] out.data.data();
+#else
+  GTEST_SKIP() << "Zstd support unavailable";
+#endif
+}
+
+TEST(ReadBlockIssue1349Test, RejectsFrameSequenceBeyondDeclaredSize) {
+#if HAVE_ZSTD
+  std::string input(9 * 1024 * 1024, 'Y'), payload;
+  ASSERT_TRUE(port::Zstd_Compress(1, input.data(), input.size(), &payload));
+  // Appending a second data frame makes the sequence produce more bytes
+  // than the first frame header declares; whatever rejected it before must
+  // keep rejecting it, now by the output budget as well.
+  std::string tail(100, 'z'), tail_payload;
+  ASSERT_TRUE(port::Zstd_Compress(1, tail.data(), tail.size(), &tail_payload));
+  payload += tail_payload;
+  BlockContents out;
+  Status s = ReadPayload(payload, kZstdCompression, &out);
+  EXPECT_TRUE(s.IsCorruption()) << s.ToString();
+#else
+  GTEST_SKIP() << "Zstd support unavailable";
+#endif
+}
+
 }  // namespace
 }  // namespace leveldb

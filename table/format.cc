@@ -162,7 +162,7 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
       // Ordinary blocks use the original one-pass decompressor. Large
       // declarations use bounded streaming validation before the large allocation.
       if (ulength > kDecompressionFastPathBytes &&
-          !port::Zstd_ValidateCompressedBuffer(data, n)) {
+          !port::Zstd_ValidateCompressedBuffer(data, n, ulength)) {
         delete[] buf;
         return Status::Corruption("corrupted zstd compressed block contents");
       }
