@@ -2,10 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <fcntl.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -210,6 +212,53 @@ TEST_F(EnvPosixTest, TestOpenOnRead) {
     delete files[i];
   }
   ASSERT_LEVELDB_OK(env_->RemoveFile(test_file));
+}
+
+TEST_F(EnvPosixTest, DuplicateLockAttemptKeepsOriginalLock) {
+  std::string test_dir;
+  ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
+  std::string file_path = test_dir + "/duplicate_lock.txt";
+
+  leveldb::FileLock* lock = nullptr;
+  ASSERT_LEVELDB_OK(env_->LockFile(file_path, &lock));
+
+  leveldb::FileLock* duplicate_lock = nullptr;
+  leveldb::Status duplicate_status = env_->LockFile(file_path, &duplicate_lock);
+  EXPECT_FALSE(duplicate_status.ok());
+  EXPECT_EQ(nullptr, duplicate_lock);
+
+  // POSIX record locks are process-owned and are not inherited across fork.
+  // Have a child process try the kernel lock directly so it can detect whether
+  // the duplicate open/close above accidentally released the parent's lock.
+  pid_t child = fork();
+  int fork_errno = errno;
+  int child_status = -1;
+  if (child == 0) {
+    int fd = ::open(file_path.c_str(), O_RDWR);
+    if (fd < 0) _exit(2);
+
+    struct ::flock file_lock_info;
+    std::memset(&file_lock_info, 0, sizeof(file_lock_info));
+    file_lock_info.l_type = F_WRLCK;
+    file_lock_info.l_whence = SEEK_SET;
+    if (::fcntl(fd, F_SETLK, &file_lock_info) == 0) {
+      _exit(1);  // The parent lock was lost.
+    }
+    _exit((errno == EACCES || errno == EAGAIN) ? 0 : 2);
+  } else if (child > 0) {
+    if (::waitpid(child, &child_status, 0) != child) child_status = -1;
+  }
+
+  leveldb::Status unlock_status = env_->UnlockFile(lock);
+  leveldb::Status remove_status = env_->RemoveFile(file_path);
+
+  ASSERT_GT(child, 0) << "fork failed: " << std::strerror(fork_errno);
+  ASSERT_NE(-1, child_status);
+  ASSERT_TRUE(WIFEXITED(child_status));
+  EXPECT_EQ(0, WEXITSTATUS(child_status))
+      << "a separate process acquired the lock after duplicate rejection";
+  EXPECT_TRUE(unlock_status.ok()) << unlock_status.ToString();
+  EXPECT_TRUE(remove_status.ok()) << remove_status.ToString();
 }
 
 #if HAVE_O_CLOEXEC
