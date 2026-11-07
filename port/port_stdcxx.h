@@ -220,13 +220,14 @@ inline bool Zstd_ValidateCompressedBuffer(const char* input, size_t length,
       ZSTD_freeDCtx(ctx);
       return false;
     }
-    total_output += out.pos;
-    if (total_output > expected_output) {
-      // More data than the caller will ever allocate for: reject before the
-      // read path does, and never let a frame sequence over-run the budget.
+    // Check the remaining output budget before adding: this also prevents
+    // size_t overflow if a future caller permits an extremely large size.
+    // The invariant total_output <= expected_output holds on each iteration.
+    if (out.pos > expected_output - total_output) {
       ZSTD_freeDCtx(ctx);
       return false;
     }
+    total_output += out.pos;
     if (rc == 0 && in.pos == in.size) {
       // A frame ended and the input is fully consumed.  Zero-output frames
       // (e.g. trailing skippable frames) are legal; the decoded size must

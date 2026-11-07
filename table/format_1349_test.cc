@@ -204,5 +204,42 @@ TEST(ReadBlockIssue1349Test, ReportsAllocationFailureForHugeRawRead) {
   EXPECT_FALSE(out.heap_allocated);
 }
 
+
+TEST(ReadBlockIssue1349Test, AcceptsMaxAllowedWindowWithSmallOutput) {
+#if HAVE_ZSTD
+  // Deliberately overstate the history window to 2^30 (1 GiB), while
+  // the actual decoded output is just 9 MiB. This must work within a
+  // separately enforced 384 MiB address-space cap on the test process.
+  std::string input(9 * 1024 * 1024, 'M'), payload;
+  ASSERT_TRUE(port::Zstd_Compress(1, input.data(), input.size(), &payload));
+  ASSERT_EQ(0, payload[4] & 0x20) << "expected a non-single-segment frame";
+  payload[5] = static_cast<char>(0xa0);  // windowLog 30
+  BlockContents out;
+  Status s = ReadPayload(payload, kZstdCompression, &out);
+  ASSERT_TRUE(s.ok()) << s.ToString();
+  EXPECT_EQ(input.size(), out.data.size());
+  EXPECT_EQ(0, std::memcmp(input.data(), out.data.data(), input.size()));
+  if (out.heap_allocated) delete[] out.data.data();
+#else
+  GTEST_SKIP() << "Zstd support unavailable";
+#endif
+}
+
+TEST(ReadBlockIssue1349Test, RejectsWindowAboveConfiguredLimit) {
+#if HAVE_ZSTD
+  // A forged frame declares a window of 2^32, exceeding our chosen
+  // streaming bound of 2^30. Reject without attempting multi-GiB memory.
+  std::string input(9 * 1024 * 1024, 'N'), payload;
+  ASSERT_TRUE(port::Zstd_Compress(1, input.data(), input.size(), &payload));
+  ASSERT_EQ(0, payload[4] & 0x20) << "expected a non-single-segment frame";
+  payload[5] = static_cast<char>(0xb0);  // windowLog 32
+  BlockContents out;
+  Status s = ReadPayload(payload, kZstdCompression, &out);
+  EXPECT_TRUE(s.IsCorruption()) << s.ToString();
+#else
+  GTEST_SKIP() << "Zstd support unavailable";
+#endif
+}
+
 }  // namespace
 }  // namespace leveldb
