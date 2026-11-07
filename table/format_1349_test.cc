@@ -189,5 +189,20 @@ TEST(ReadBlockIssue1349Test, RejectsFrameSequenceBeyondDeclaredSize) {
 #endif
 }
 
+TEST(ReadBlockIssue1349Test, ReportsAllocationFailureForHugeRawRead) {
+  // A handle whose raw-read buffer allocation cannot possibly succeed: the
+  // failure must come back as a Status, not as std::bad_alloc escaping a
+  // Status-returning interface.  Nothing is ever read from the file.
+  BlockHandle handle;
+  handle.set_offset(0);
+  handle.set_size((size_t(1) << 60) - kBlockTrailerSize);
+  StringSource1349 source("");
+  ReadOptions options;
+  BlockContents out;
+  Status s = ReadBlock(&source, options, handle, &out);
+  EXPECT_TRUE(s.IsCorruption()) << s.ToString();
+  EXPECT_FALSE(out.heap_allocated);
+}
+
 }  // namespace
 }  // namespace leveldb

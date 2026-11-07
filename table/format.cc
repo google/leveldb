@@ -79,9 +79,16 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   result->heap_allocated = false;
 
   // Read the block contents as well as the type/crc footer.
-  // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
-  char* buf = new char[n + kBlockTrailerSize];
+  // Preserve the full-width block size and reject raw read size overflow.
+  if (n != handle.size() || n + kBlockTrailerSize < n) {
+    return Status::Corruption("bad block handle");
+  }
+  // Report allocation failure through Status, not an escaping bad_alloc.
+  char* buf = new (std::nothrow) char[n + kBlockTrailerSize];
+  if (buf == nullptr) {
+    return Status::Corruption("raw block buffer allocation failed");
+  }
   Slice contents;
   Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
   if (!s.ok()) {
