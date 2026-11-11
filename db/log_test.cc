@@ -87,6 +87,11 @@ class LogTest : public testing::Test {
     dest_.contents_.resize(dest_.contents_.size() - bytes);
   }
 
+  void AppendRaw(const std::string& data) {
+    ASSERT_TRUE(!reading_) << "AppendRaw() after starting to read";
+    dest_.contents_.append(data);
+  }
+
   void FixChecksum(int header_offset, int len) {
     // Compute crc of type/len/data
     uint32_t crc = crc32c::Value(&dest_.contents_[header_offset + 6], 1 + len);
@@ -496,6 +501,29 @@ TEST_F(LogTest, CompleteTrailingRecordNotIncomplete) {
   ASSERT_EQ("foo", Read());
   ASSERT_EQ("EOF", Read());
   ASSERT_FALSE(HasIncompleteTrailingRecord());
+}
+
+TEST_F(LogTest, TrailingZeroBytesAreIncomplete) {
+  Write("foo");
+  AppendRaw(std::string(561, '\0'));
+  ASSERT_EQ("foo", Read());
+  ASSERT_EQ("EOF", Read());
+  ASSERT_TRUE(HasIncompleteTrailingRecord());
+  ASSERT_EQ(0, DroppedBytes());
+}
+
+TEST_F(LogTest, ZeroPaddingBeforeLaterBlockStillReturnsRecords) {
+  Write("foo");
+  const size_t pad = kBlockSize - (WrittenBytes() % kBlockSize);
+  AppendRaw(std::string(pad, '\0'));
+  Write("bar");
+  ASSERT_EQ("foo", Read());
+  ASSERT_EQ("bar", Read());
+  ASSERT_EQ("EOF", Read());
+  // The zero record is a hole, so the log is not safe to append to even
+  // though both records were readable.
+  ASSERT_TRUE(HasIncompleteTrailingRecord());
+  ASSERT_EQ(0, DroppedBytes());
 }
 
 TEST_F(LogTest, SkipIntoMultiRecord) {

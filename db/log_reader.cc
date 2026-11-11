@@ -241,7 +241,10 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
     if (type == kZeroType && length == 0) {
       // Skip zero length record without reporting any drops since
       // such records are produced by the mmap based writing code in
-      // env_posix.cc that preallocates file regions.
+      // env_posix.cc that preallocates file regions. The skipped bytes
+      // are a hole in the log: a later append in this block is dropped
+      // on the next read, so the file must not be reused.
+      incomplete_trailing_record_ = true;
       buffer_.clear();
       return kBadRecord;
     }

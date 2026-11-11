@@ -244,6 +244,35 @@ TEST_F(RecoveryTest, LogNotReusedWithIncompleteTrailingRecord) {
   ASSERT_NE(old_log, FirstLogFile()) << "must not reuse log with incomplete tail";
 }
 
+TEST_F(RecoveryTest, LogNotReusedWhenTailIsZeros) {
+  if (!CanAppend()) {
+    std::fprintf(stderr,
+                 "skipping test because env does not support appending\n");
+    return;
+  }
+  ASSERT_LEVELDB_OK(Put("a", "1"));
+  Close();
+  uint64_t old_log = FirstLogFile();
+
+  {
+    WritableFile* file = nullptr;
+    ASSERT_LEVELDB_OK(env()->NewAppendableFile(LogName(old_log), &file));
+    ASSERT_LEVELDB_OK(file->Append(std::string(561, '\0')));
+    ASSERT_LEVELDB_OK(file->Close());
+    delete file;
+  }
+
+  ASSERT_LEVELDB_OK(OpenWithStatus());
+  ASSERT_EQ("1", Get("a"));
+  ASSERT_NE(old_log, FirstLogFile()) << "must not reuse log that ends in zeros";
+  ASSERT_LEVELDB_OK(Put("b", "2"));
+  Close();
+
+  ASSERT_LEVELDB_OK(OpenWithStatus());
+  ASSERT_EQ("1", Get("a"));
+  ASSERT_EQ("2", Get("b"));
+}
+
 TEST_F(RecoveryTest, LogFileReuse) {
   if (!CanAppend()) {
     std::fprintf(stderr,
