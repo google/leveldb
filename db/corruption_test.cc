@@ -185,6 +185,8 @@ class CorruptionTest : public testing::Test {
   Options options_;
   DB* db_;
 
+  const std::string& dbname() const { return dbname_; }
+
  private:
   std::string dbname_;
   Cache* tiny_cache_;
@@ -340,6 +342,66 @@ TEST_F(CorruptionTest, CompactionInputErrorParanoid) {
   std::string tmp1, tmp2;
   Status s = db_->Put(WriteOptions(), Key(5, &tmp1), Value(5, &tmp2));
   ASSERT_TRUE(!s.ok()) << "write did not fail in corrupted paranoid db";
+}
+
+TEST_F(CorruptionTest, CompactionFailsOnInvalidInternalKey) {
+  // Flip the value type of the first record from 1 to 2. The record stays
+  // the same length, so only ParseInternalKey rejects it. Compression is off
+  // so the key bytes are stored plainly. The first record is the one that
+  // is stored in full; later records are prefix-compressed.
+  options_.compression = kNoCompression;
+  Reopen();
+  Build(4);
+  reinterpret_cast<DBImpl*>(db_)->TEST_CompactMemTable();
+
+  std::vector<std::string> filenames;
+  ASSERT_LEVELDB_OK(env_.target()->GetChildren(dbname(), &filenames));
+  std::string table_fname;
+  for (const std::string& filename : filenames) {
+    uint64_t number;
+    FileType type;
+    if (ParseFileName(filename, &number, &type) && type == kTableFile) {
+      ASSERT_TRUE(table_fname.empty()) << "expected exactly one table file";
+      table_fname = dbname() + "/" + filename;
+    }
+  }
+  ASSERT_FALSE(table_fname.empty());
+
+  std::string contents;
+  ASSERT_LEVELDB_OK(ReadFileToString(env_.target(), table_fname, &contents));
+  std::string marker_storage;
+  const std::string marker =
+      Key(0, &marker_storage).ToString() + std::string(1, '\x01');
+  size_t hits = 0;
+  for (size_t pos = contents.find(marker); pos != std::string::npos;
+       pos = contents.find(marker, pos + 1)) {
+    ++hits;
+  }
+  ASSERT_EQ(1, hits);
+  const size_t type_pos = contents.find(marker) + marker.size() - 1;
+  contents[type_pos] = '\x02';
+  ASSERT_LEVELDB_OK(WriteStringToFile(env_.target(), contents, table_fname));
+
+  // Drop the cache that still holds the pre-corruption block.
+  options_.block_cache = nullptr;
+  Reopen();
+  std::string key_storage, value_storage;
+  ASSERT_LEVELDB_OK(
+      db_->Get(ReadOptions(), Key(2, &key_storage), &value_storage));
+
+  DBImpl* dbi = reinterpret_cast<DBImpl*>(db_);
+  for (int level = 0; level <= config::kMaxMemCompactLevel; level++) {
+    dbi->TEST_CompactRange(level, nullptr, nullptr);
+  }
+  uint64_t table_size = 0;
+  ASSERT_LEVELDB_OK(env_.target()->GetFileSize(table_fname, &table_size))
+      << "source table was deleted by the failed compaction";
+
+  std::string write_key, write_value;
+  Status write_status =
+      db_->Put(WriteOptions(), Key(5, &write_key), Value(5, &write_value));
+  ASSERT_TRUE(!write_status.ok())
+      << "background compaction error was not recorded";
 }
 
 TEST_F(CorruptionTest, UnrelatedKeys) {

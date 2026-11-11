@@ -328,6 +328,7 @@ if(LEVELDB_BUILD_TESTS)
     target_sources(leveldb_tests
       PRIVATE
         "db/autocompact_test.cc"
+        "db/builder_test.cc"
         "db/corruption_test.cc"
         "db/db_test.cc"
         "db/dbformat_test.cc"

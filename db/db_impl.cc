@@ -948,41 +948,40 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
     }
 
     // Handle key/value, add to state, etc.
-    bool drop = false;
-    const bool parsed = ParseInternalKey(key, &ikey);
-    if (!parsed) {
-      // Do not hide error keys
-      current_user_key.clear();
-      has_current_user_key = false;
-      last_sequence_for_key = kMaxSequenceNumber;
-    } else {
-      if (!has_current_user_key ||
-          user_comparator()->Compare(ikey.user_key, Slice(current_user_key)) !=
-              0) {
-        // First occurrence of this user key
-        current_user_key.assign(ikey.user_key.data(), ikey.user_key.size());
-        has_current_user_key = true;
-        last_sequence_for_key = kMaxSequenceNumber;
-      }
-
-      if (last_sequence_for_key <= compact->smallest_snapshot) {
-        // Hidden by an newer entry for same user key
-        drop = true;  // (A)
-      } else if (ikey.type == kTypeDeletion &&
-                 ikey.sequence <= compact->smallest_snapshot &&
-                 compact->compaction->IsBaseLevelForKey(ikey.user_key)) {
-        // For this user key:
-        // (1) there is no data in higher levels
-        // (2) data in lower levels will have larger sequence numbers
-        // (3) data in layers that are being compacted here and have
-        //     smaller sequence numbers will be dropped in the next
-        //     few iterations of this loop (by rule (A) above).
-        // Therefore this deletion marker is obsolete and can be dropped.
-        drop = true;
-      }
-
-      last_sequence_for_key = ikey.sequence;
+    if (!ParseInternalKey(key, &ikey)) {
+      // Skipping the record would let the compaction succeed and delete the
+      // inputs, which destroys the bad key along with the evidence. Fail so
+      // the inputs stay referenced.
+      status = Status::Corruption("invalid internal key in compaction input");
+      break;
     }
+    bool drop = false;
+    if (!has_current_user_key ||
+        user_comparator()->Compare(ikey.user_key, Slice(current_user_key)) !=
+            0) {
+      // First occurrence of this user key
+      current_user_key.assign(ikey.user_key.data(), ikey.user_key.size());
+      has_current_user_key = true;
+      last_sequence_for_key = kMaxSequenceNumber;
+    }
+
+    if (last_sequence_for_key <= compact->smallest_snapshot) {
+      // Hidden by an newer entry for same user key
+      drop = true;  // (A)
+    } else if (ikey.type == kTypeDeletion &&
+               ikey.sequence <= compact->smallest_snapshot &&
+               compact->compaction->IsBaseLevelForKey(ikey.user_key)) {
+      // For this user key:
+      // (1) there is no data in higher levels
+      // (2) data in lower levels will have larger sequence numbers
+      // (3) data in layers that are being compacted here and have
+      //     smaller sequence numbers will be dropped in the next
+      //     few iterations of this loop (by rule (A) above).
+      // Therefore this deletion marker is obsolete and can be dropped.
+      drop = true;
+    }
+
+    last_sequence_for_key = ikey.sequence;
 #if 0
     Log(options_.info_log,
         "  Compact: %s, seq %d, type: %d %d, drop: %d, is_base: %d, "
@@ -993,7 +992,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         (int)last_sequence_for_key, (int)compact->smallest_snapshot);
 #endif
 
-    if (!drop && parsed) {
+    if (!drop) {
       // Open output file if necessary
       if (compact->builder == nullptr) {
         status = OpenCompactionOutputFile(compact);
