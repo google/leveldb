@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <cstring>
 
+#include <cstring>
+
 #include "gtest/gtest.h"
 #include "db/log_reader.h"
 #include "db/log_writer.h"
@@ -327,6 +329,86 @@ TEST(PartialReadSourceTest, LogReaderRetriesShortReads) {
   ASSERT_TRUE(reader.ReadRecord(&record, &scratch));
   ASSERT_EQ(2 * kBlockSize, record.size());
   ASSERT_FALSE(reader.ReadRecord(&record, &scratch));
+}
+
+// Returns each chunk from one internal buffer, then overwrites that buffer
+// on the next Read(). A reader that only counts chunk.size() will assemble
+// a corrupted record.
+class ReusingBufferSource : public SequentialFile {
+ public:
+  ReusingBufferSource(std::string contents, size_t max_per_read)
+      : contents_(std::move(contents)), max_per_read_(max_per_read) {}
+
+  Status Read(size_t n, Slice* result, char* scratch) override {
+    std::memset(buffer_, 0xa5, sizeof(buffer_));
+    std::memset(scratch, 0, n);
+    if (contents_.empty()) {
+      *result = Slice(buffer_, 0);
+      return Status::OK();
+    }
+    const size_t to_read =
+        std::min(n, std::min(max_per_read_, contents_.size()));
+    std::memcpy(buffer_, contents_.data(), to_read);
+    *result = Slice(buffer_, to_read);
+    contents_.erase(0, to_read);
+    return Status::OK();
+  }
+
+  Status Skip(uint64_t n) override {
+    if (n > contents_.size()) {
+      contents_.clear();
+      return Status::NotFound("in-memory file skipped past end");
+    }
+    contents_.erase(0, static_cast<size_t>(n));
+    return Status::OK();
+  }
+
+ private:
+  std::string contents_;
+  const size_t max_per_read_;
+  char buffer_[kBlockSize];
+};
+
+TEST(ReusingBufferSourceTest, LogReaderCopiesReturnedBuffer) {
+  class StringDest : public WritableFile {
+   public:
+    Status Close() override { return Status::OK(); }
+    Status Flush() override { return Status::OK(); }
+    Status Sync() override { return Status::OK(); }
+    Status Append(const Slice& slice) override {
+      contents_.append(slice.data(), slice.size());
+      return Status::OK();
+    }
+
+    std::string contents_;
+  };
+
+  StringDest dest;
+  Writer writer(&dest);
+  ASSERT_TRUE(writer.AddRecord(Slice("first")).ok());
+  ASSERT_TRUE(writer.AddRecord(Slice("")).ok());
+  ASSERT_TRUE(writer.AddRecord(Slice(BigString("x", 2 * kBlockSize))).ok());
+  ASSERT_TRUE(writer.AddRecord(Slice("last")).ok());
+
+  const size_t max_per_read[] = {kBlockSize, 1000};
+  for (size_t limit : max_per_read) {
+    ReusingBufferSource source(dest.contents_, limit);
+    Reader::Reporter* reporter = nullptr;
+    Reader reader(&source, reporter, true /*checksum*/, 0 /*initial_offset*/);
+
+    Slice record;
+    std::string scratch;
+    ASSERT_TRUE(reader.ReadRecord(&record, &scratch)) << limit;
+    ASSERT_EQ("first", record.ToString()) << limit;
+    ASSERT_TRUE(reader.ReadRecord(&record, &scratch)) << limit;
+    ASSERT_EQ("", record.ToString()) << limit;
+    ASSERT_TRUE(reader.ReadRecord(&record, &scratch)) << limit;
+    ASSERT_EQ(2 * kBlockSize, record.size()) << limit;
+    ASSERT_EQ(std::string(2 * kBlockSize, 'x'), record.ToString()) << limit;
+    ASSERT_TRUE(reader.ReadRecord(&record, &scratch)) << limit;
+    ASSERT_EQ("last", record.ToString()) << limit;
+    ASSERT_FALSE(reader.ReadRecord(&record, &scratch)) << limit;
+  }
 }
 
 TEST_F(LogTest, Empty) { ASSERT_EQ("EOF", Read()); }

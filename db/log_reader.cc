@@ -5,6 +5,7 @@
 #include "db/log_reader.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include "leveldb/env.h"
 #include "util/coding.h"
@@ -207,6 +208,12 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
           if (chunk.size() == 0) {
             eof_ = true;
             break;
+          }
+          // Read() may return a slice into its own buffer, valid only until
+          // the next Read(). Copy it into scratch before that buffer is reused.
+          // memmove covers a result that already overlaps the scratch.
+          if (chunk.data() != backing_store_ + nread) {
+            std::memmove(backing_store_ + nread, chunk.data(), chunk.size());
           }
           nread += chunk.size();
         }
