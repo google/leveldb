@@ -268,6 +268,12 @@ if(HAVE_CLANG_THREAD_SAFETY)
       -Werror -Wthread-safety)
 endif(HAVE_CLANG_THREAD_SAFETY)
 
+if (WIN32)
+  target_compile_options(leveldb
+    PUBLIC
+      -Wno-deprecated-declarations)
+endif(WIN32)
+
 if(HAVE_CRC32C)
   target_link_libraries(leveldb crc32c)
 endif(HAVE_CRC32C)
@@ -409,6 +415,11 @@ if(LEVELDB_BUILD_BENCHMARKS)
   set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
   set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
   add_subdirectory("third_party/benchmark")
+  if (WIN32)
+    target_compile_options(benchmark 
+      PUBLIC 
+    -Wno-invalid-offsetof -Wno-shorten-64-to-32)
+  endif(WIN32)
 
   function(leveldb_benchmark bench_file)
     get_filename_component(bench_target_name "${bench_file}" NAME_WE)
