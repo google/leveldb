@@ -42,7 +42,7 @@ class Random {
     if (seed_ > M) {
       seed_ -= M;
     }
-    return seed_;
+    return seed_ - 1;
   }
   // Returns a uniformly distributed value in the range [0..n-1]
   // REQUIRES: n > 0
