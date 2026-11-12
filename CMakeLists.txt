@@ -331,6 +331,7 @@ if(LEVELDB_BUILD_TESTS)
         "db/corruption_test.cc"
         "db/db_test.cc"
         "db/dbformat_test.cc"
+        "db/dumpfile_test.cc"
         "db/filename_test.cc"
         "db/log_test.cc"
         "db/recovery_test.cc"

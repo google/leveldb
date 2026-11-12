@@ -24,7 +24,7 @@ namespace leveldb {
 namespace {
 
 bool GuessType(const std::string& fname, FileType* type) {
-  size_t pos = fname.rfind('/');
+  size_t pos = fname.find_last_of("/\\");
   std::string basename;
   if (pos == std::string::npos) {
     basename = fname;
