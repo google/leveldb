@@ -2,10 +2,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <fcntl.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -328,6 +330,51 @@ TEST_F(EnvPosixTest, TestCloseOnExecLogger) {
 }
 
 #endif  // HAVE_O_CLOEXEC
+
+TEST_F(EnvPosixTest, LockFileDuplicateDoesNotReleaseLock) {
+  std::string test_dir;
+  ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
+  std::string file_path = test_dir + "/duplicate_lock.txt";
+  ASSERT_LEVELDB_OK(WriteStringToFile(env_, "0123456789", file_path));
+
+  leveldb::FileLock* original_lock = nullptr;
+  ASSERT_LEVELDB_OK(env_->LockFile(file_path, &original_lock));
+
+  leveldb::FileLock* duplicate_lock = nullptr;
+  ASSERT_FALSE(env_->LockFile(file_path, &duplicate_lock).ok());
+  ASSERT_EQ(nullptr, duplicate_lock);
+
+  const pid_t child_pid = ::fork();
+  ASSERT_NE(-1, child_pid);
+  if (child_pid == 0) {
+    const int fd = ::open(file_path.c_str(), O_RDWR);
+    if (fd < 0) {
+      _exit(1);
+    }
+
+    struct ::flock file_lock_info;
+    std::memset(&file_lock_info, 0, sizeof(file_lock_info));
+    file_lock_info.l_type = F_WRLCK;
+    file_lock_info.l_whence = SEEK_SET;
+    file_lock_info.l_len = 0;
+    const int lock_result = ::fcntl(fd, F_SETLK, &file_lock_info);
+    const int lock_errno = errno;
+    ::close(fd);
+
+    if (lock_result == -1 && (lock_errno == EACCES || lock_errno == EAGAIN)) {
+      _exit(0);
+    }
+    _exit(lock_result == 0 ? 2 : 3);
+  }
+
+  int child_status = 0;
+  ASSERT_EQ(child_pid, ::waitpid(child_pid, &child_status, 0));
+  ASSERT_TRUE(WIFEXITED(child_status));
+  ASSERT_EQ(0, WEXITSTATUS(child_status));
+
+  ASSERT_LEVELDB_OK(env_->UnlockFile(original_lock));
+  ASSERT_LEVELDB_OK(env_->RemoveFile(file_path));
+}
 
 }  // namespace leveldb
 
