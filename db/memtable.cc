@@ -5,7 +5,6 @@
 #include "db/memtable.h"
 #include "db/dbformat.h"
 #include "leveldb/comparator.h"
-#include "leveldb/env.h"
 #include "leveldb/iterator.h"
 #include "util/coding.h"
 

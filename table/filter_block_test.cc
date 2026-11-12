@@ -9,7 +9,6 @@
 #include "util/coding.h"
 #include "util/hash.h"
 #include "util/logging.h"
-#include "util/testutil.h"
 
 namespace leveldb {
 
