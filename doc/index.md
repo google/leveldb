@@ -10,8 +10,8 @@ according to a user-specified comparator function.
 ## Opening A Database
 
 A leveldb database has a name which corresponds to a file system directory. All
-of the contents of database are stored in this directory. The following example
-shows how to open a database, creating it if necessary:
+of the contents of the database are stored in this directory. The following
+example shows how to open a database, creating it if necessary:
 
 ```c++
 #include <cassert>
