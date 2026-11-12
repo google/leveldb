@@ -653,11 +653,25 @@ class WindowsEnv : public Env {
   }
 
   uint64_t NowMicros() override {
-    // GetSystemTimeAsFileTime typically has a resolution of 10-20 msec.
-    // TODO(cmumford): Switch to GetSystemTimePreciseAsFileTime which is
-    // available in Windows 8 and later.
+    // GetSystemTimePreciseAsFileTime() is only available on Windows 8 and
+    // later. Resolve it at runtime so that older systems can still load the
+    // module, and fall back to the lower-resolution GetSystemTimeAsFileTime()
+    using GetSystemTimePreciseAsFileTimeFn = void(WINAPI*)(LPFILETIME);
+    static const GetSystemTimePreciseAsFileTimeFn get_system_time_precise =
+        []() -> GetSystemTimePreciseAsFileTimeFn {
+      HMODULE kernel32 = ::GetModuleHandleA("Kernel32.dll");
+      return kernel32 ? reinterpret_cast<GetSystemTimePreciseAsFileTimeFn>(
+                            ::GetProcAddress(
+                                kernel32, "GetSystemTimePreciseAsFileTime"))
+                      : nullptr;
+    }();
+
     FILETIME ft;
-    ::GetSystemTimeAsFileTime(&ft);
+    if (get_system_time_precise != nullptr) {
+      get_system_time_precise(&ft);
+    } else {
+      ::GetSystemTimeAsFileTime(&ft);
+    }
     // Each tick represents a 100-nanosecond intervals since January 1, 1601
     // (UTC).
     uint64_t num_ticks =
