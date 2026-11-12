@@ -170,17 +170,25 @@ class WindowsSequentialFile : public SequentialFile {
   ~WindowsSequentialFile() override {}
 
   Status Read(size_t n, Slice* result, char* scratch) override {
-    DWORD bytes_read;
-    // DWORD is 32-bit, but size_t could technically be larger. However leveldb
-    // files are limited to leveldb::Options::max_file_size which is clamped to
-    // 1<<30 or 1 GiB.
-    assert(n <= std::numeric_limits<DWORD>::max());
-    if (!::ReadFile(handle_.get(), scratch, static_cast<DWORD>(n), &bytes_read,
-                    nullptr)) {
-      return WindowsError(filename_, ::GetLastError());
+    size_t nread = 0;
+    while (nread < n) {
+      DWORD bytes_read = 0;
+      const size_t bytes_left = n - nread;
+      // DWORD is 32-bit, but size_t could technically be larger. However
+      // leveldb files are limited to leveldb::Options::max_file_size which is
+      // clamped to 1<<30 or 1 GiB.
+      assert(bytes_left <= std::numeric_limits<DWORD>::max());
+      if (!::ReadFile(handle_.get(), scratch + nread,
+                      static_cast<DWORD>(bytes_left), &bytes_read, nullptr)) {
+        return WindowsError(filename_, ::GetLastError());
+      }
+      if (bytes_read == 0) {
+        break;  // EOF
+      }
+      nread += bytes_read;
     }
 
-    *result = Slice(scratch, bytes_read);
+    *result = Slice(scratch, nread);
     return Status::OK();
   }
 

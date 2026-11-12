@@ -5,6 +5,7 @@
 #include "db/log_reader.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include "leveldb/env.h"
 #include "util/coding.h"
@@ -192,14 +193,33 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
       if (!eof_) {
         // Last read was a full read, so this is a trailer to skip
         buffer_.clear();
-        Status status = file_->Read(kBlockSize, &buffer_, backing_store_);
-        end_of_buffer_offset_ += buffer_.size();
-        if (!status.ok()) {
-          buffer_.clear();
-          ReportDrop(kBlockSize, status);
-          eof_ = true;
-          return kEof;
-        } else if (buffer_.size() < kBlockSize) {
+        size_t nread = 0;
+        Status status;
+        while (nread < kBlockSize) {
+          Slice chunk;
+          status = file_->Read(kBlockSize - nread, &chunk,
+                                backing_store_ + nread);
+          if (!status.ok()) {
+            buffer_.clear();
+            ReportDrop(kBlockSize, status);
+            eof_ = true;
+            return kEof;
+          }
+          if (chunk.size() == 0) {
+            eof_ = true;
+            break;
+          }
+          // Read() may return a slice into its own buffer, valid only until
+          // the next Read(). Copy it into scratch before that buffer is reused.
+          // memmove covers a result that already overlaps the scratch.
+          if (chunk.data() != backing_store_ + nread) {
+            std::memmove(backing_store_ + nread, chunk.data(), chunk.size());
+          }
+          nread += chunk.size();
+        }
+        end_of_buffer_offset_ += nread;
+        buffer_ = Slice(backing_store_, nread);
+        if (nread < kBlockSize) {
           eof_ = true;
         }
         continue;
