@@ -293,6 +293,9 @@ class VersionSet {
 
   void AppendVersion(Version* v);
 
+  // Return true iff the manifest contains the specified record.
+  bool ManifestContains(const std::string& record) const;
+
   Env* const env_;
   const std::string dbname_;
   const Options* const options_;
