@@ -1,0 +1,13 @@
+name: spm
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  swift-build-run:
+    runs-on: macOS-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: swift build
