@@ -20,6 +20,7 @@
 
 #include "leveldb/export.h"
 #include "leveldb/status.h"
+#include "leveldb/db_path.h"
 
 // This workaround can be removed when leveldb::Env::DeleteFile is removed.
 #if defined(_WIN32)
@@ -112,6 +113,9 @@ class LEVELDB_EXPORT Env {
 
   // Returns true iff the named file exists.
   virtual bool FileExists(const std::string& fname) = 0;
+
+  // Returns true if the input directory path exists.
+  virtual bool DirectoryExists(const std::string& dirname) = 0;
 
   // Store in *result the names of the children of the specified directory.
   // The names are relative to "dir".
@@ -357,6 +361,9 @@ class LEVELDB_EXPORT EnvWrapper : public Env {
   }
   bool FileExists(const std::string& f) override {
     return target_->FileExists(f);
+  }
+  bool DirectoryExists(const std::string& d) override {
+    return target_->DirectoryExists(d);
   }
   Status GetChildren(const std::string& dir,
                      std::vector<std::string>* r) override {
