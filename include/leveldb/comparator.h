@@ -25,7 +25,7 @@ class LEVELDB_EXPORT Comparator {
   //   < 0 iff "a" < "b",
   //   == 0 iff "a" == "b",
   //   > 0 iff "a" > "b"
-  virtual int Compare(const Slice& a, const Slice& b) const = 0;
+  virtual int Compare(const Slice& a, const Slice& c) const = 0;
 
   // The name of the comparator.  Used to check for comparator
   // mismatches (i.e., a DB created with one comparator is
