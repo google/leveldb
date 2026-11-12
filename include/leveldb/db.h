@@ -11,12 +11,12 @@
 #include "leveldb/export.h"
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
+#include "leveldb/version_config.h"
 
 namespace leveldb {
 
-// Update CMakeLists.txt if you change these
-static const int kMajorVersion = 1;
-static const int kMinorVersion = 23;
+static const int kMajorVersion = LEVELDB_VERSION_MAJOR;
+static const int kMinorVersion = LEVELDB_VERSION_MINOR;
 
 struct Options;
 struct ReadOptions;
