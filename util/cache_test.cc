@@ -4,10 +4,12 @@
 
 #include "leveldb/cache.h"
 
+#include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "util/coding.h"
+
+#include "gtest/gtest.h"
 
 namespace leveldb {
 
@@ -31,8 +33,14 @@ class CacheTest : public testing::Test {
     current_->deleted_values_.push_back(DecodeValue(v));
   }
 
+  static void StringKeyDeleter(const Slice& key, void* v) {
+    current_->deleted_string_keys_.push_back(key.ToString());
+    current_->deleted_values_.push_back(DecodeValue(v));
+  }
+
   static constexpr int kCacheSize = 1000;
   std::vector<int> deleted_keys_;
+  std::vector<std::string> deleted_string_keys_;
   std::vector<int> deleted_values_;
   Cache* cache_;
 
@@ -84,6 +92,26 @@ TEST_F(CacheTest, HitAndMiss) {
 
   ASSERT_EQ(1, deleted_keys_.size());
   ASSERT_EQ(100, deleted_keys_[0]);
+  ASSERT_EQ(101, deleted_values_[0]);
+}
+
+TEST_F(CacheTest, InsertKeyLongerThanOneByte) {
+  const std::string key = "long-key";
+  Cache::Handle* handle =
+      cache_->Insert(key, EncodeValue(101), 1, &CacheTest::StringKeyDeleter);
+  ASSERT_NE(nullptr, handle);
+  ASSERT_EQ(101, DecodeValue(cache_->Value(handle)));
+  cache_->Release(handle);
+
+  handle = cache_->Lookup(key);
+  ASSERT_NE(nullptr, handle);
+  ASSERT_EQ(101, DecodeValue(cache_->Value(handle)));
+  cache_->Release(handle);
+
+  cache_->Erase(key);
+  ASSERT_EQ(1, deleted_string_keys_.size());
+  ASSERT_EQ(key, deleted_string_keys_[0]);
+  ASSERT_EQ(1, deleted_values_.size());
   ASSERT_EQ(101, deleted_values_[0]);
 }
 
