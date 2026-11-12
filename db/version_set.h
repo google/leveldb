@@ -353,6 +353,10 @@ class Compaction {
   // before processing "internal_key".
   bool ShouldStopBefore(const Slice& internal_key);
 
+  // Reset per-output grandparent overlap accounting after an output file
+  // is closed because it reached MaxOutputFileSize().
+  void ResetGrandparentOverlap();
+
   // Release the input version for the compaction, once the compaction
   // is successful.
   void ReleaseInputs();
@@ -360,6 +364,7 @@ class Compaction {
  private:
   friend class Version;
   friend class VersionSet;
+  friend class CompactionTest;
 
   Compaction(const Options* options, int level);
 

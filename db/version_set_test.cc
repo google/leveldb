@@ -3,6 +3,7 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/version_set.h"
+#include "db/table_cache.h"
 
 #include "gtest/gtest.h"
 #include "util/logging.h"
@@ -326,6 +327,95 @@ TEST_F(AddBoundaryInputsTest, TestDisjoinFilePointers) {
   ASSERT_EQ(f1, compaction_files_[0]);
   ASSERT_EQ(f4, compaction_files_[1]);
   ASSERT_EQ(f3, compaction_files_[2]);
+}
+
+class CompactionTest : public testing::Test {
+ protected:
+  CompactionTest()
+      : icmp_(BytewiseComparator()),
+        options_(),
+        table_cache_("/tmp/leveldb-compaction-test", options_, 10),
+        versions_("/tmp/leveldb-compaction-test", &options_, &table_cache_,
+                  &icmp_) {}
+
+  FileMetaData* NewGrandparent(const char* smallest, const char* largest,
+                               uint64_t size) {
+    FileMetaData* f = new FileMetaData;
+    f->number = files_.size() + 100;
+    f->file_size = size;
+    f->smallest = InternalKey(smallest, 100, kTypeValue);
+    f->largest = InternalKey(largest, 100, kTypeValue);
+    files_.push_back(f);
+    return f;
+  }
+
+  Compaction* NewCompaction() {
+    Compaction* c = new Compaction(&options_, 1);
+    c->input_version_ = versions_.current();
+    c->input_version_->Ref();
+    return c;
+  }
+
+  void AddGrandparent(Compaction* c, const char* smallest,
+                      const char* largest, uint64_t size) {
+    c->grandparents_.push_back(NewGrandparent(smallest, largest, size));
+  }
+
+  bool Stop(Compaction* c, const char* key) {
+    InternalKey k(key, 100, kTypeValue);
+    return c->ShouldStopBefore(k.Encode());
+  }
+
+  int64_t OverlappedBytes(const Compaction* c) const {
+    return c->overlapped_bytes_;
+  }
+
+  size_t GrandparentIndex(const Compaction* c) const {
+    return c->grandparent_index_;
+  }
+
+  ~CompactionTest() override {
+    for (FileMetaData* f : files_) {
+      delete f;
+    }
+  }
+
+  InternalKeyComparator icmp_;
+  Options options_;
+  TableCache table_cache_;
+  VersionSet versions_;
+  std::vector<FileMetaData*> files_;
+};
+
+TEST_F(CompactionTest, SizeBoundaryResetsGrandparentOverlap) {
+  Compaction* c = NewCompaction();
+
+  const uint64_t grandparent_size = 4 * options_.max_file_size;
+
+  AddGrandparent(c, "a", "c", grandparent_size);
+  AddGrandparent(c, "d", "f", grandparent_size);
+  AddGrandparent(c, "g", "i", grandparent_size);
+  AddGrandparent(c, "j", "l", grandparent_size);
+
+  ASSERT_FALSE(Stop(c, "b"));
+  ASSERT_FALSE(Stop(c, "e"));
+  ASSERT_EQ(grandparent_size, OverlappedBytes(c));
+  ASSERT_EQ(1U, GrandparentIndex(c));
+
+  c->ResetGrandparentOverlap();
+
+  EXPECT_EQ(0, OverlappedBytes(c));
+  EXPECT_EQ(1U, GrandparentIndex(c));
+
+  ASSERT_FALSE(Stop(c, "h"));
+  EXPECT_EQ(0, OverlappedBytes(c));
+  EXPECT_EQ(2U, GrandparentIndex(c));
+
+  EXPECT_FALSE(Stop(c, "k"));
+  EXPECT_EQ(grandparent_size, OverlappedBytes(c));
+  EXPECT_EQ(3U, GrandparentIndex(c));
+
+  delete c;
 }
 
 }  // namespace leveldb
