@@ -91,6 +91,42 @@ TEST_F(MemEnvTest, Basics) {
   ASSERT_LEVELDB_OK(env_->RemoveDir("/dir"));
 }
 
+TEST_F(MemEnvTest, AppendableFileRegistersNewFile) {
+  // NewAppendableFile() on a file that does not exist yet has to store the
+  // newly created FileState in the file map, the way NewWritableFile() does.
+  // Otherwise the map holds a null FileState under a name that FileExists()
+  // reports as present, and every later lookup dereferences it.
+  WritableFile* writable_file;
+  ASSERT_LEVELDB_OK(env_->NewAppendableFile("/dir/appendable", &writable_file));
+  ASSERT_LEVELDB_OK(writable_file->Append("hello"));
+  ASSERT_LEVELDB_OK(writable_file->Flush());
+  delete writable_file;
+
+  ASSERT_TRUE(env_->FileExists("/dir/appendable"));
+
+  uint64_t file_size = 0;
+  ASSERT_LEVELDB_OK(env_->GetFileSize("/dir/appendable", &file_size));
+  ASSERT_EQ(5, file_size);
+
+  // Re-opening for append must extend the same file, not start a new one.
+  ASSERT_LEVELDB_OK(env_->NewAppendableFile("/dir/appendable", &writable_file));
+  ASSERT_LEVELDB_OK(writable_file->Append(" world"));
+  ASSERT_LEVELDB_OK(writable_file->Flush());
+  delete writable_file;
+
+  ASSERT_LEVELDB_OK(env_->GetFileSize("/dir/appendable", &file_size));
+  ASSERT_EQ(11, file_size);
+
+  SequentialFile* sequential_file;
+  ASSERT_LEVELDB_OK(
+      env_->NewSequentialFile("/dir/appendable", &sequential_file));
+  char scratch[64];
+  Slice result;
+  ASSERT_LEVELDB_OK(sequential_file->Read(sizeof(scratch), &result, scratch));
+  ASSERT_EQ("hello world", result.ToString());
+  delete sequential_file;
+}
+
 TEST_F(MemEnvTest, ReadWrite) {
   WritableFile* writable_file;
   SequentialFile* seq_file;
