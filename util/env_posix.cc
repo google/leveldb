@@ -307,6 +307,7 @@ class PosixWritableFile final : public WritableFile {
     // Can't fit in buffer, so need to do at least one write.
     Status status = FlushBuffer();
     if (!status.ok()) {
+      pos_ -= copy_size;
       return status;
     }
 
