@@ -168,6 +168,7 @@ class LogTest : public testing::Test {
       contents_.append(slice.data(), slice.size());
       return Status::OK();
     }
+    std::string GetName() const override { return ""; }
 
     std::string contents_;
   };
@@ -204,6 +205,7 @@ class LogTest : public testing::Test {
 
       return Status::OK();
     }
+    std::string GetName() const { return ""; }
 
     Slice contents_;
     bool force_error_;
