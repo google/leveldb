@@ -340,6 +340,7 @@ if(LEVELDB_BUILD_TESTS)
         "db/write_batch_test.cc"
         "helpers/memenv/memenv_test.cc"
         "table/filter_block_test.cc"
+        "table/format_test.cc"
         "table/table_test.cc"
         "util/arena_test.cc"
         "util/bloom_test.cc"
