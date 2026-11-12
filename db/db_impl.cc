@@ -1013,6 +1013,7 @@ Status DBImpl::DoCompactionWork(CompactionState* compact) {
         if (!status.ok()) {
           break;
         }
+        compact->compaction->RestartOverlappedBytes();
       }
     }
 
