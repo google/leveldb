@@ -241,4 +241,20 @@ TEST_F(CacheTest, SetCapacity) {
   ASSERT_EQ(0, cache_->TotalCharge());
 }
 
+TEST_F(CacheTest, SetCapacityWithPinnedEntry) {
+  // Insert an entry and keep it pinned (in use) across SetCapacity.
+  Cache::Handle* h = InsertAndReturnHandle(100, 101, 100);
+  ASSERT_EQ(100, cache_->TotalCharge());
+
+  cache_->SetCapacity(0);
+  // The entry is pinned, so it cannot be evicted yet.
+  ASSERT_EQ(100, cache_->TotalCharge());
+
+  // Once released, the entry becomes evictable and the cache is over its
+  // new capacity, so it must be evicted.
+  cache_->Release(h);
+  ASSERT_EQ(0, cache_->TotalCharge());
+  ASSERT_EQ(-1, Lookup(100));
+}
+
 }  // namespace leveldb
