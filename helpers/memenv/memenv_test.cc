@@ -256,4 +256,19 @@ TEST_F(MemEnvTest, DBTest) {
   delete db;
 }
 
+TEST_F(MemEnvTest, RenameFileToItself) {
+  WritableFile* writable_file;
+  uint64_t file_size;
+
+  ASSERT_LEVELDB_OK(env_->CreateDir("/dir"));
+  ASSERT_LEVELDB_OK(env_->NewWritableFile("/dir/f", &writable_file));
+  ASSERT_LEVELDB_OK(writable_file->Append("abc"));
+  delete writable_file;
+
+  ASSERT_LEVELDB_OK(env_->RenameFile("/dir/f", "/dir/f"));
+  ASSERT_TRUE(env_->FileExists("/dir/f"));
+  ASSERT_LEVELDB_OK(env_->GetFileSize("/dir/f", &file_size));
+  ASSERT_EQ(3, file_size);
+}
+
 }  // namespace leveldb

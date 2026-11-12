@@ -349,6 +349,10 @@ class InMemoryEnv : public EnvWrapper {
       return Status::IOError(src, "File not found");
     }
 
+    if (src == target) {
+      return Status::OK();  // Renaming a file to itself is a no-op
+    }
+
     RemoveFileInternal(target);
     file_map_[target] = file_map_[src];
     file_map_.erase(src);
