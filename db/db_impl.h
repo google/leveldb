@@ -15,7 +15,6 @@
 #include "db/snapshot.h"
 #include "leveldb/db.h"
 #include "leveldb/env.h"
-#include "port/port.h"
 #include "port/thread_annotations.h"
 
 namespace leveldb {
