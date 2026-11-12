@@ -1,0 +1,9 @@
+package(default_visibility = ["//visibility:public"])
+load("//:copts.bzl", "LEVELDB_FLAGS")
+
+cc_library(
+    name = "leveldb",
+    hdrs = glob(["*.h"]),
+    include_prefix = "leveldb",
+    copts = LEVELDB_FLAGS,
+)
