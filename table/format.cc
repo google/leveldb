@@ -4,6 +4,8 @@
 
 #include "table/format.h"
 
+#include <limits>
+
 #include "leveldb/env.h"
 #include "leveldb/options.h"
 #include "port/port.h"
@@ -74,6 +76,11 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
 
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
+  if (handle.size() >
+      static_cast<uint64_t>(std::numeric_limits<size_t>::max()) -
+          kBlockTrailerSize) {
+    return Status::Corruption("block size overflow");
+  }
   size_t n = static_cast<size_t>(handle.size());
   char* buf = new char[n + kBlockTrailerSize];
   Slice contents;

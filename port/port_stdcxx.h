@@ -164,7 +164,9 @@ inline bool Zstd_GetUncompressedLength(const char* input, size_t length,
                                        size_t* result) {
 #if HAVE_ZSTD
   size_t size = ZSTD_getFrameContentSize(input, length);
-  if (size == 0) return false;
+  if (size == 0 || size == ZSTD_CONTENTSIZE_UNKNOWN ||
+      size == ZSTD_CONTENTSIZE_ERROR)
+    return false;
   *result = size;
   return true;
 #else
