@@ -2,22 +2,65 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include <sys/resource.h>
-#include <sys/wait.h>
-#include <unistd.h>
-
+#include <algorithm>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
+#include <memory>
 #include <string>
+#include <sys/resource.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #include <unordered_set>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "leveldb/env.h"
+
 #include "port/port.h"
 #include "util/env_posix_test_helper.h"
 #include "util/testutil.h"
+
+#include "gtest/gtest.h"
+
+#if defined(LEVELDB_TEST_PREAD_WRAP)
+
+namespace {
+
+// Only the single-threaded pread tests install a state. Other tests use pread
+// unchanged. Positive results cap a real read; negative results inject errno.
+struct PreadState {
+  std::vector<ssize_t> results;
+  size_t calls = 0;
+  int last_fd = -1;
+};
+
+PreadState* pread_state = nullptr;
+
+}  // namespace
+
+extern "C" ssize_t __real_pread(int fd, void* buffer, size_t count,
+                                off_t offset);
+
+extern "C" ssize_t __wrap_pread(int fd, void* buffer, size_t count,
+                                off_t offset) {
+  if (pread_state != nullptr) {
+    pread_state->last_fd = fd;
+    const size_t call = pread_state->calls++;
+    if (call < pread_state->results.size()) {
+      const ssize_t result = pread_state->results[call];
+      if (result < 0) {
+        errno = static_cast<int>(-result);
+        return -1;
+      }
+      count = std::min(count, static_cast<size_t>(result));
+    }
+  }
+  return __real_pread(fd, buffer, count, offset);
+}
+
+#endif  // defined(LEVELDB_TEST_PREAD_WRAP)
 
 #if HAVE_O_CLOEXEC
 
@@ -180,6 +223,137 @@ class EnvPosixTest : public testing::Test {
 
   Env* env_;
 };
+
+#if defined(LEVELDB_TEST_PREAD_WRAP)
+
+class EnvPosixPreadTest : public EnvPosixTest,
+                          public testing::WithParamInterface<bool> {
+ protected:
+  void SetUp() override {
+    std::string test_dir;
+    ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
+    filename_ = test_dir + "/pread.txt";
+    ASSERT_LEVELDB_OK(
+        WriteStringToFile(env_, "abcdefghijklmnopqrstuvwxyz", filename_));
+
+    // Exhaust mmap slots to select pread. Also exhaust permanent fd slots when
+    // testing the open-on-read path.
+    const int held_count = kMMapLimit + (GetParam() ? kReadOnlyFileLimit : 0);
+    for (int i = 0; i < held_count; ++i) {
+      RandomAccessFile* file;
+      ASSERT_LEVELDB_OK(env_->NewRandomAccessFile(filename_, &file));
+      held_files_.emplace_back(file);
+    }
+    RandomAccessFile* file;
+    ASSERT_LEVELDB_OK(env_->NewRandomAccessFile(filename_, &file));
+    file_.reset(file);
+    pread_state = &state_;
+  }
+
+  void TearDown() override {
+    pread_state = nullptr;
+    if (state_.last_fd != -1) {
+      // Every read, including failed reads, must close a temporary descriptor.
+      if (GetParam()) {
+        EXPECT_EQ(-1, ::fcntl(state_.last_fd, F_GETFD));
+        EXPECT_EQ(EBADF, errno);
+      } else {
+        EXPECT_NE(-1, ::fcntl(state_.last_fd, F_GETFD));
+      }
+    }
+    file_.reset();
+    held_files_.clear();
+    if (!filename_.empty()) {
+      EXPECT_LEVELDB_OK(env_->RemoveFile(filename_));
+    }
+  }
+
+  Status Read(uint64_t offset, size_t n) {
+    result_ = Slice("unchanged");
+    std::memset(scratch_, '?', sizeof(scratch_));
+    Status status = file_->Read(offset, n, &result_, scratch_);
+    EXPECT_EQ(scratch_, result_.data());
+    EXPECT_EQ('?', scratch_[n]);
+    return status;
+  }
+
+  PreadState state_;
+  Slice result_;
+
+ private:
+  std::string filename_;
+  std::vector<std::unique_ptr<RandomAccessFile>> held_files_;
+  std::unique_ptr<RandomAccessFile> file_;
+  char scratch_[32];
+};
+
+TEST_P(EnvPosixPreadTest, CompleteRead) {
+  ASSERT_LEVELDB_OK(Read(2, 10));
+  EXPECT_EQ("cdefghijkl", result_.ToString());
+  EXPECT_EQ(1, state_.calls);
+}
+
+TEST_P(EnvPosixPreadTest, ShortReads) {
+  state_.results = {3, 2, 1};
+  ASSERT_LEVELDB_OK(Read(2, 10));
+  EXPECT_EQ("cdefghijkl", result_.ToString());
+  EXPECT_EQ(4, state_.calls);
+
+  // Random reads must not depend on the previous read's position.
+  ASSERT_LEVELDB_OK(Read(0, 4));
+  EXPECT_EQ("abcd", result_.ToString());
+}
+
+TEST_P(EnvPosixPreadTest, InterruptedReads) {
+  state_.results = {-EINTR, -EINTR, 3, -EINTR, 2};
+  ASSERT_LEVELDB_OK(Read(2, 10));
+  EXPECT_EQ("cdefghijkl", result_.ToString());
+  EXPECT_EQ(6, state_.calls);
+}
+
+TEST_P(EnvPosixPreadTest, ReadUntilEOF) {
+  state_.results = {3, 2};
+  ASSERT_LEVELDB_OK(Read(20, 10));
+  EXPECT_EQ("uvwxyz", result_.ToString());
+  EXPECT_EQ(4, state_.calls);
+}
+
+TEST_P(EnvPosixPreadTest, ReadAtEOF) {
+  ASSERT_LEVELDB_OK(Read(26, 10));
+  EXPECT_TRUE(result_.empty());
+  EXPECT_EQ(1, state_.calls);
+}
+
+TEST_P(EnvPosixPreadTest, ReadPastEOF) {
+  ASSERT_LEVELDB_OK(Read(30, 10));
+  EXPECT_TRUE(result_.empty());
+  EXPECT_EQ(1, state_.calls);
+}
+
+TEST_P(EnvPosixPreadTest, ZeroLengthRead) {
+  ASSERT_LEVELDB_OK(Read(2, 0));
+  EXPECT_TRUE(result_.empty());
+  EXPECT_EQ(0, state_.calls);
+}
+
+TEST_P(EnvPosixPreadTest, ReadError) {
+  state_.results = {-EIO};
+  EXPECT_TRUE(Read(2, 10).IsIOError());
+  EXPECT_TRUE(result_.empty());
+  EXPECT_EQ(1, state_.calls);
+}
+
+TEST_P(EnvPosixPreadTest, ReadErrorAfterPartialRead) {
+  state_.results = {3, -EINTR, 2, -EIO};
+  EXPECT_TRUE(Read(2, 10).IsIOError());
+  EXPECT_EQ("cdefg", result_.ToString());
+  EXPECT_EQ(4, state_.calls);
+}
+
+INSTANTIATE_TEST_SUITE_P(PermanentAndTemporaryFD, EnvPosixPreadTest,
+                         testing::Bool());
+
+#endif  // defined(LEVELDB_TEST_PREAD_WRAP)
 
 TEST_F(EnvPosixTest, TestOpenOnRead) {
   // Write some test data to a single file that will be opened |n| times.

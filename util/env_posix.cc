@@ -209,12 +209,20 @@ class PosixRandomAccessFile final : public RandomAccessFile {
     assert(fd != -1);
 
     Status status;
-    ssize_t read_size = ::pread(fd, scratch, n, static_cast<off_t>(offset));
-    *result = Slice(scratch, (read_size < 0) ? 0 : read_size);
-    if (read_size < 0) {
-      // An error: return a non-ok status.
-      status = PosixError(filename_, errno);
+    size_t total_read = 0;
+    while (total_read < n) {
+      ssize_t read_size = ::pread(fd, scratch + total_read, n - total_read,
+                                  static_cast<off_t>(offset + total_read));
+      if (read_size > 0) {
+        total_read += read_size;
+      } else if (read_size == 0) {
+        break;  // End of file.
+      } else if (errno != EINTR) {
+        status = PosixError(filename_, errno);
+        break;
+      }
     }
+    *result = Slice(scratch, total_read);
     if (!has_permanent_fd_) {
       // Close the temporary file descriptor opened earlier.
       assert(fd != fd_);
