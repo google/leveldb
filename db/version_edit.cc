@@ -86,11 +86,8 @@ void VersionEdit::EncodeTo(std::string* dst) const {
 
 static bool GetInternalKey(Slice* input, InternalKey* dst) {
   Slice str;
-  if (GetLengthPrefixedSlice(input, &str)) {
-    return dst->DecodeFrom(str);
-  } else {
-    return false;
-  }
+  // DecodeFrom checks length and value type, so a bad MANIFEST key fails here.
+  return GetLengthPrefixedSlice(input, &str) && dst->DecodeFrom(str);
 }
 
 static bool GetLevel(Slice* input, int* level) {

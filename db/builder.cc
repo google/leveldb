@@ -22,6 +22,12 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
 
   std::string fname = TableFileName(dbname, meta->number);
   if (iter->Valid()) {
+    // Reject a bad first key before creating the file. There is nothing to
+    // clean up yet, and the key must not become table metadata.
+    if (!meta->smallest.DecodeFrom(iter->key())) {
+      return Status::Corruption("invalid internal key in BuildTable input");
+    }
+
     WritableFile* file;
     s = env->NewWritableFile(fname, &file);
     if (!s.ok()) {
@@ -29,21 +35,35 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     }
 
     TableBuilder* builder = new TableBuilder(options, file);
-    meta->smallest.DecodeFrom(iter->key());
     Slice key;
+    ParsedInternalKey parsed;
     for (; iter->Valid(); iter->Next()) {
       key = iter->key();
+      if (!ParseInternalKey(key, &parsed)) {
+        // Fall through to the shared cleanup so the builder is abandoned
+        // and the partial file is removed.
+        s = Status::Corruption("invalid internal key in BuildTable input");
+        break;
+      }
       builder->Add(key, iter->value());
     }
-    if (!key.empty()) {
-      meta->largest.DecodeFrom(key);
-    }
 
-    // Finish and check for builder errors
-    s = builder->Finish();
     if (s.ok()) {
-      meta->file_size = builder->FileSize();
-      assert(meta->file_size > 0);
+      if (!key.empty()) {
+        meta->largest.DecodeFrom(key);
+      }
+
+      // Finish and check for builder errors
+      s = builder->Finish();
+      if (s.ok()) {
+        meta->file_size = builder->FileSize();
+        assert(meta->file_size > 0);
+      }
+    } else {
+      // ~TableBuilder asserts that Finish() or Abandon() ran. Abandon() is
+      // the error path: Finish() would write more of the bad input.
+      builder->Abandon();
+      file->Close();
     }
     delete builder;
 
