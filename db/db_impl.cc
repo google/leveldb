@@ -5,6 +5,7 @@
 #include "db/db_impl.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
@@ -520,8 +521,8 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
     mutex_.Lock();
   }
 
-  Log(options_.info_log, "Level-0 table #%llu: %lld bytes %s",
-      (unsigned long long)meta.number, (unsigned long long)meta.file_size,
+  Log(options_.info_log, "Level-0 table #%" PRIu64 " : %" PRIu64 " bytes %s",
+      meta.number, meta.file_size,
       s.ToString().c_str());
   delete iter;
   pending_outputs_.erase(meta.number);
