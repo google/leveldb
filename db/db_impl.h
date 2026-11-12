@@ -9,6 +9,7 @@
 #include <deque>
 #include <set>
 #include <string>
+#include <vector> 
 
 #include "db/dbformat.h"
 #include "db/log_writer.h"
@@ -48,6 +49,9 @@ class DBImpl : public DB {
   bool GetProperty(const Slice& property, std::string* value) override;
   void GetApproximateSizes(const Range* range, int n, uint64_t* sizes) override;
   void CompactRange(const Slice* begin, const Slice* end) override;
+ 
+  // Retrieve all active snapshots in the database
+  std::vector<const Snapshot*> GetAllSnapshots() override;
 
   // Extra methods (for testing) that are not in the public DB interface
 
