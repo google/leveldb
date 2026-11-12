@@ -281,6 +281,7 @@ class InMemoryEnv : public EnvWrapper {
     if (file == nullptr) {
       file = new FileState();
       file->Ref();
+      *sptr = file;
     }
     *result = new WritableFileImpl(file);
     return Status::OK();
