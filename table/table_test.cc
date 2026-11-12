@@ -13,6 +13,7 @@
 #include "db/write_batch_internal.h"
 #include "leveldb/db.h"
 #include "leveldb/env.h"
+#include "leveldb/filter_policy.h"
 #include "leveldb/iterator.h"
 #include "leveldb/options.h"
 #include "leveldb/table_builder.h"
@@ -807,6 +808,29 @@ TEST(TableTest, ApproximateOffsetOfPlain) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k06"), 510000, 511000));
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k07"), 510000, 511000));
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 610000, 612000));
+}
+
+TEST(TableTest, ChangeOptionsRejectsFilterPolicyChange) {
+  Options options;
+  options.filter_policy = NewBloomFilterPolicy(10);
+  {
+    StringSink sink;
+    TableBuilder builder(options, &sink);
+    builder.Add("key", "value");
+
+    Options changed = options;
+    changed.filter_policy = nullptr;
+    Status s = builder.ChangeOptions(changed);
+    if (!s.IsInvalidArgument()) {
+      builder.Abandon();  // Keep the destructor assert quiet while failing.
+      FAIL() << "ChangeOptions accepted a filter policy change: "
+             << s.ToString();
+    }
+    // The rejected change must not have modified the builder, so the table
+    // can still be finished with the original filter policy.
+    ASSERT_LEVELDB_OK(builder.Finish());
+  }
+  delete options.filter_policy;
 }
 
 static bool CompressionSupported(CompressionType type) {

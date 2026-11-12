@@ -82,6 +82,10 @@ Status TableBuilder::ChangeOptions(const Options& options) {
   if (options.comparator != rep_->options.comparator) {
     return Status::InvalidArgument("changing comparator while building table");
   }
+  if (options.filter_policy != rep_->options.filter_policy) {
+    return Status::InvalidArgument(
+        "changing filter policy while building table");
+  }
 
   // Note that any live BlockBuilders point to rep_->options and therefore
   // will automatically pick up the updated options.
