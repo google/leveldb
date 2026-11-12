@@ -55,6 +55,73 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
   ASSERT_LEVELDB_OK(env_->RemoveFile(test_file));
 }
 
+// RenameFile must handle both absent and existing targets. The previous
+// implementation used MoveFileA for absent targets and a ReplaceFileA
+// fallback for existing ones; ReplaceFile could fail with
+// ERROR_UNABLE_TO_REMOVE_REPLACED when the existing target could not be
+// removed (issue #775). This test covers the basic replacement behavior:
+// replacing an existing target, its resulting contents, and a subsequent
+// rename to an absent target. It does not attempt to reproduce crash
+// durability (issue #195).
+TEST_F(EnvWindowsTest, TestRenameFileReplacesExisting) {
+  std::string test_dir;
+  ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
+  std::string from = test_dir + "/rename_from.txt";
+  std::string to = test_dir + "/rename_to.txt";
+  std::string to2 = test_dir + "/rename_to2.txt";
+  // Start from a clean slate for the files this test creates. The "absent
+  // target" precondition on to2 is deliberately NOT cleaned up here: a
+  // leftover file must fail loudly below instead of silently turning that
+  // step into another replacement.
+  env_->RemoveFile(from);  // Ignore errors when the files do not exist.
+  env_->RemoveFile(to);
+
+  {
+    WritableFile* f = nullptr;
+    ASSERT_LEVELDB_OK(env_->NewWritableFile(from, &f));
+    ASSERT_LEVELDB_OK(f->Append("new-content"));
+    ASSERT_LEVELDB_OK(f->Close());
+    delete f;
+  }
+  {
+    WritableFile* f = nullptr;
+    ASSERT_LEVELDB_OK(env_->NewWritableFile(to, &f));
+    ASSERT_LEVELDB_OK(f->Append("old-content"));
+    ASSERT_LEVELDB_OK(f->Close());
+    delete f;
+  }
+
+  // Target exists: the rename must replace it.
+  ASSERT_LEVELDB_OK(env_->RenameFile(from, to));
+  ASSERT_FALSE(env_->FileExists(from));
+
+  {
+    SequentialFile* f = nullptr;
+    ASSERT_LEVELDB_OK(env_->NewSequentialFile(to, &f));
+    char buf[32];
+    Slice result;
+    ASSERT_LEVELDB_OK(f->Read(sizeof(buf) - 1, &result, buf));
+    ASSERT_EQ("new-content", result.ToString());
+    delete f;
+  }
+
+  // Renaming to a non-existent target must work too. The precondition is
+  // asserted explicitly so a leftover file cannot mask this case.
+  ASSERT_FALSE(env_->FileExists(to2));
+  ASSERT_LEVELDB_OK(env_->RenameFile(to, to2));
+  ASSERT_FALSE(env_->FileExists(to));
+  {
+    SequentialFile* f = nullptr;
+    ASSERT_LEVELDB_OK(env_->NewSequentialFile(to2, &f));
+    char buf[32];
+    Slice result;
+    ASSERT_LEVELDB_OK(f->Read(sizeof(buf) - 1, &result, buf));
+    ASSERT_EQ("new-content", result.ToString());
+    delete f;
+  }
+  ASSERT_LEVELDB_OK(env_->RemoveFile(to2));
+}
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
