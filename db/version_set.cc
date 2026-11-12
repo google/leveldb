@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <limits>
 
 #include "db/filename.h"
 #include "db/log_reader.h"
@@ -950,6 +951,8 @@ Status VersionSet::Recover(bool* save_manifest) {
   if (s.ok()) {
     if (!have_next_file) {
       s = Status::Corruption("no meta-nextfile entry in descriptor");
+    } else if (next_file == std::numeric_limits<uint64_t>::max()) {
+      s = Status::Corruption("bad meta-nextfile entry in descriptor");
     } else if (!have_log_number) {
       s = Status::Corruption("no meta-lognumber entry in descriptor");
     } else if (!have_last_sequence) {

@@ -2,9 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <limits>
+
 #include "gtest/gtest.h"
 #include "db/db_impl.h"
 #include "db/filename.h"
+#include "db/log_writer.h"
+#include "db/version_edit.h"
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
 #include "leveldb/db.h"
@@ -151,6 +155,8 @@ class RecoveryTest : public testing::Test {
     ASSERT_LEVELDB_OK(file->Flush());
     delete file;
   }
+
+  std::string dbname() const { return dbname_; }
 
  private:
   std::string dbname_;
@@ -320,6 +326,35 @@ TEST_F(RecoveryTest, MultipleLogFiles) {
   ASSERT_EQ("bar2", Get("foo"));
   ASSERT_EQ("world", Get("hello"));
   ASSERT_EQ("there", Get("hi"));
+}
+
+TEST_F(RecoveryTest, ManifestNextFileNumberOverflow) {
+  ASSERT_LEVELDB_OK(Put("foo", "bar"));
+  Close();
+
+  // A well-formed MANIFEST whose next file number is UINT64_MAX would make
+  // next_file + 1 wrap to 0 and later trip the file-number invariant.
+  WritableFile* manifest = nullptr;
+  ASSERT_LEVELDB_OK(
+      env()->NewWritableFile(DescriptorFileName(dbname(), 1), &manifest));
+  {
+    log::Writer writer(manifest);
+    VersionEdit edit;
+    edit.SetComparatorName("leveldb.BytewiseComparator");
+    edit.SetLogNumber(2);
+    edit.SetNextFile(std::numeric_limits<uint64_t>::max());
+    edit.SetLastSequence(0);
+    std::string record;
+    edit.EncodeTo(&record);
+    ASSERT_LEVELDB_OK(writer.AddRecord(record));
+  }
+  ASSERT_LEVELDB_OK(manifest->Sync());
+  delete manifest;
+  ASSERT_LEVELDB_OK(SetCurrentFile(env(), dbname(), 1));
+
+  Status status = OpenWithStatus();
+  ASSERT_TRUE(status.IsCorruption());
+  ASSERT_EQ("Corruption: bad meta-nextfile entry in descriptor", status.ToString());
 }
 
 TEST_F(RecoveryTest, ManifestMissing) {
