@@ -37,6 +37,10 @@ void WriteBatch::Clear() {
   rep_.resize(kHeader);
 }
 
+void WriteBatch::Reserve(size_t size) {
+  rep_.reserve(size);
+}
+
 size_t WriteBatch::ApproximateSize() const { return rep_.size(); }
 
 Status WriteBatch::Iterate(Handler* handler) const {
