@@ -40,7 +40,10 @@ check_include_file("unistd.h" HAVE_UNISTD_H)
 include(CheckLibraryExists)
 check_library_exists(crc32c crc32c_value "" HAVE_CRC32C)
 check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
-check_library_exists(zstd zstd_compress "" HAVE_ZSTD)
+# The exported symbol is ZSTD_compress (capital), not zstd_compress: a
+# lowercase probe never links, so HAVE_ZSTD stayed empty even with
+# libzstd-dev installed and the zstd compression path was never compiled.
+check_library_exists(zstd ZSTD_compress "" HAVE_ZSTD)
 check_library_exists(tcmalloc malloc "" HAVE_TCMALLOC)
 
 include(CheckCXXSymbolExists)

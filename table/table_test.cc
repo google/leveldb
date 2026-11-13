@@ -4,8 +4,12 @@
 
 #include "leveldb/table.h"
 
+#include <cstdio>
 #include <map>
+#include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "gtest/gtest.h"
 #include "db/dbformat.h"
@@ -861,6 +865,54 @@ TEST_P(CompressionTableTest, ApproximateOffsetOfCompressed) {
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("k04"), min_z, max_z));
   // Have now emitted two large compressible strings, so adjust expected offset.
   ASSERT_TRUE(Between(c.ApproximateOffsetOf("xyz"), 2 * min_z, 2 * max_z));
+}
+
+
+// Round-trips every value through the table's read path: the blocks are
+// written with the parameterized compression type, reopened, and each value
+// is read back through Block reads (which decompress). The offset test above
+// only proves the writer compressed; it never exercises the decoder, so a
+// build where the codec is half-broken (compress works, decompress fails)
+// would pass it. This test fails if any value comes back corrupted, or if
+// the reader silently treats the block as uncompressed.
+TEST_P(CompressionTableTest, RoundTripThroughDecompression) {
+  CompressionType type = ::testing::get<0>(GetParam());
+  if (!CompressionSupported(type)) {
+    GTEST_SKIP() << "skipping compression test: " << type;
+  }
+
+  Random rnd(301);
+  TableConstructor c(BytewiseComparator());
+  std::string tmp;
+  std::vector<std::pair<std::string, std::string>> expected;
+  for (int i = 0; i < 40; i++) {
+    char keybuf[16];
+    std::snprintf(keybuf, sizeof(keybuf), "key%03d", i);
+    std::string key = keybuf;
+    std::string value =
+        test::CompressibleString(&rnd, 0.25, 2000, &tmp).ToString();
+    expected.emplace_back(key, value);
+    c.Add(key, value);
+  }
+
+  Options options;
+  options.block_size = 4096;
+  options.compression = type;
+  std::vector<std::string> keys;
+  KVMap kvmap;
+  c.Finish(options, &keys, &kvmap);
+
+  std::unique_ptr<Iterator> iter(c.NewIterator());
+  size_t seen = 0;
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    ASSERT_TRUE(iter->status().ok()) << iter->status().ToString();
+    ASSERT_LT(seen, expected.size());
+    ASSERT_EQ(expected[seen].first, iter->key().ToString());
+    ASSERT_EQ(expected[seen].second, iter->value().ToString());
+    seen++;
+  }
+  ASSERT_TRUE(iter->status().ok()) << iter->status().ToString();
+  ASSERT_EQ(seen, expected.size());
 }
 
 }  // namespace leveldb
