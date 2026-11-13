@@ -6,12 +6,14 @@
 
 #include "gtest/gtest.h"
 #include "db/db_impl.h"
+#include "db/dbformat.h"
 #include "db/filename.h"
 #include "db/log_format.h"
 #include "db/version_set.h"
 #include "leveldb/cache.h"
 #include "leveldb/db.h"
 #include "leveldb/table.h"
+#include "leveldb/table_builder.h"
 #include "leveldb/write_batch.h"
 #include "util/logging.h"
 #include "util/testutil.h"
@@ -166,6 +168,8 @@ class CorruptionTest : public testing::Test {
       return -1;
     }
   }
+
+  const std::string& dbname() const { return dbname_; }
 
   // Return the ith key
   Slice Key(int i, std::string* storage) {
@@ -340,6 +344,85 @@ TEST_F(CorruptionTest, CompactionInputErrorParanoid) {
   std::string tmp1, tmp2;
   Status s = db_->Put(WriteOptions(), Key(5, &tmp1), Value(5, &tmp2));
   ASSERT_TRUE(!s.ok()) << "write did not fail in corrupted paranoid db";
+}
+
+namespace {
+// A WritableFile that collects into a string, for building tables in tests.
+class MemorySink : public WritableFile {
+ public:
+  Status Close() override { return Status::OK(); }
+  Status Flush() override { return Status::OK(); }
+  Status Sync() override { return Status::OK(); }
+  Status Append(const Slice& data) override {
+    contents_.append(data.data(), data.size());
+    return Status::OK();
+  }
+
+  std::string contents_;
+};
+}  // namespace
+
+TEST_F(CorruptionTest, RepairTableRecomputesMetadataAfterTransientError) {
+  // A table whose first read fails (injected once): ScanTable() records the
+  // error and hands the file to RepairTable(), whose re-scan succeeds.  The
+  // rebuilt table must publish the metadata of the records that actually
+  // made it in - not the empty boundaries the failed first scan collected.
+  delete db_;
+  db_ = nullptr;
+
+  // Hand-build a valid table under the old ".sst" name.
+  const std::string sst_name = SSTTableFileName(dbname(), 7);
+  std::string table_bytes;
+  {
+    Options builder_options;
+    builder_options.compression = kNoCompression;
+    MemorySink sink;
+    TableBuilder builder(builder_options, &sink);
+    InternalKey key("key", 5, kTypeValue);
+    builder.Add(key.Encode(), "v1");
+    ASSERT_LEVELDB_OK(builder.Finish());
+    table_bytes = sink.contents_;
+  }
+  {
+    WritableFile* file = nullptr;
+    ASSERT_LEVELDB_OK(env_.target()->NewWritableFile(sst_name, &file));
+    ASSERT_LEVELDB_OK(file->Append(table_bytes));
+    ASSERT_LEVELDB_OK(file->Close());
+    delete file;
+  }
+
+  class FlakyEnv : public EnvWrapper {
+   public:
+    explicit FlakyEnv(Env* base) : EnvWrapper(base) {}
+    Status NewRandomAccessFile(const std::string& fname,
+                               RandomAccessFile** result) override {
+      if (fail_next_table_read_ && fname.size() > 4 &&
+          fname.compare(fname.size() - 4, 4, ".sst") == 0) {
+        fail_next_table_read_ = false;
+        return Status::IOError("injected first-table-read failure");
+      }
+      return target()->NewRandomAccessFile(fname, result);
+    }
+    bool fail_next_table_read_ = true;
+  } flaky(env_.target());
+
+  Options repair_options = options_;
+  repair_options.env = &flaky;
+  ASSERT_LEVELDB_OK(::leveldb::RepairDB(dbname(), repair_options));
+
+  // The rebuilt table must be registered with real boundaries: the DB opens
+  // and serves the record.
+  Reopen();
+  std::string value;
+  ASSERT_LEVELDB_OK(db_->Get(ReadOptions(), "key", &value));
+  ASSERT_EQ("v1", value);
+
+  // The recovered LastSequence must cover the repaired records: a new write
+  // lands above them and wins over the repaired value.
+  ASSERT_LEVELDB_OK(db_->Put(WriteOptions(), "key", "v2"));
+  Reopen();
+  ASSERT_LEVELDB_OK(db_->Get(ReadOptions(), "key", &value));
+  ASSERT_EQ("v2", value);
 }
 
 TEST_F(CorruptionTest, UnrelatedKeys) {
