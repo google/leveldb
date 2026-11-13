@@ -304,12 +304,36 @@ class Repairer {
     }
     TableBuilder* builder = new TableBuilder(options_, file);
 
-    // Copy data.
+    // Copy data.  Recompute the metadata from the records that actually make
+    // it into the rebuilt table: ScanTable() may have bailed out on a
+    // transient I/O error before collecting anything, leaving empty
+    // boundaries and a zero sequence number.  Publishing those stale values
+    // trips the InternalKey encode assert in WriteDescriptor (and writes an
+    // empty boundary into the MANIFEST in release builds), and a zero
+    // LastSequence makes the next write reuse sequence numbers, losing to the
+    // repaired record.
     Iterator* iter = NewTableIterator(t.meta);
     int counter = 0;
+    bool have_key = false;
+    ParsedInternalKey parsed;
+    t.meta.smallest.Clear();
+    t.meta.largest.Clear();
+    t.max_sequence = 0;
     for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
-      builder->Add(iter->key(), iter->value());
+      const Slice key = iter->key();
+      const bool parsable = ParseInternalKey(key, &parsed);
+      builder->Add(key, iter->value());
       counter++;
+      if (parsable) {
+        if (!have_key) {
+          t.meta.smallest.DecodeFrom(key);
+          have_key = true;
+        }
+        t.meta.largest.DecodeFrom(key);
+        if (parsed.sequence > t.max_sequence) {
+          t.max_sequence = parsed.sequence;
+        }
+      }
     }
     delete iter;
 
