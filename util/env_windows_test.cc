@@ -55,6 +55,34 @@ TEST_F(EnvWindowsTest, TestOpenOnRead) {
   ASSERT_LEVELDB_OK(env_->RemoveFile(test_file));
 }
 
+// Sync() on a MANIFEST-named file must flush the file's parent directory
+// (the Windows counterpart of POSIX SyncDirIfManifest()): the directory is
+// opened with GENERIC_WRITE | FILE_FLAG_BACKUP_SEMANTICS and flushed with
+// FlushFileBuffers(). Non-manifest files take the plain path.
+TEST_F(EnvWindowsTest, ManifestSyncFlushesDirectory) {
+  std::string test_dir;
+  ASSERT_LEVELDB_OK(env_->GetTestDirectory(&test_dir));
+
+  std::string manifest = test_dir + "/MANIFEST-000999";
+  WritableFile* f = nullptr;
+  ASSERT_LEVELDB_OK(env_->NewWritableFile(manifest, &f));
+  ASSERT_LEVELDB_OK(f->Append("manifest-data"));
+  ASSERT_LEVELDB_OK(f->Sync());  // exercises SyncDirIfManifest()
+  ASSERT_LEVELDB_OK(f->Append("more"));
+  ASSERT_LEVELDB_OK(f->Sync());
+  ASSERT_LEVELDB_OK(f->Close());
+  delete f;
+  ASSERT_LEVELDB_OK(env_->RemoveFile(manifest));
+
+  std::string log = test_dir + "/000999.log";
+  ASSERT_LEVELDB_OK(env_->NewWritableFile(log, &f));
+  ASSERT_LEVELDB_OK(f->Append("log-data"));
+  ASSERT_LEVELDB_OK(f->Sync());
+  ASSERT_LEVELDB_OK(f->Close());
+  delete f;
+  ASSERT_LEVELDB_OK(env_->RemoveFile(log));
+}
+
 }  // namespace leveldb
 
 int main(int argc, char** argv) {
