@@ -872,10 +872,21 @@ Status VersionSet::Recover(bool* save_manifest) {
   if (!s.ok()) {
     return s;
   }
-  if (current.empty() || current[current.size() - 1] != '\n') {
+  const size_t size = current.size();
+  if (size == 0 || (current[size - 1] != '\n' && current[size - 1] != '\r')) {
     return Status::Corruption("CURRENT file does not end with newline");
   }
-  current.resize(current.size() - 1);
+
+  // Tolerate CRLF: Windows text tools and sync clients rewrite CURRENT with
+  // CRLF endings, and a trailing '\r' would otherwise end up inside the
+  // manifest file name. (from mojang/leveldb#8, same fix as
+  // Amulet-Team/leveldb-mcpe#6)
+  size_t trim = 1;
+  if (size >= 2 && current[size - 2] == '\r') {
+    trim = 2;
+  }
+
+  current.resize(size - trim);
 
   std::string dscname = dbname_ + "/" + current;
   SequentialFile* file;
