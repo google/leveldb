@@ -307,7 +307,17 @@ class Repairer {
     // Copy data.
     Iterator* iter = NewTableIterator(t.meta);
     int counter = 0;
+    ParsedInternalKey parsed;
     for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+      Slice key = iter->key();
+      if (!ParseInternalKey(key, &parsed)) {
+        // ScanTable() skips unparsable keys when collecting metadata; do the
+        // same here so they never reach the rebuilt table. (from Mojang's
+        // leveldb-mcpe, 2018)
+        Log(options_.info_log, "Table #%llu: unparsable key %s",
+            (unsigned long long)t.meta.number, EscapeString(key).c_str());
+        continue;
+      }
       builder->Add(iter->key(), iter->value());
       counter++;
     }
