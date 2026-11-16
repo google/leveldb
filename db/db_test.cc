@@ -17,6 +17,8 @@
 #include "leveldb/env.h"
 #include "leveldb/filter_policy.h"
 #include "leveldb/table.h"
+#include "db/dbformat.h"
+#include "leveldb/table_builder.h"
 #include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/hash.h"
@@ -2356,5 +2358,130 @@ TEST_F(DBTest, Randomized) {
     if (db_snap != nullptr) db_->ReleaseSnapshot(db_snap);
   } while (ChangeOptions());
 }
+
+// RepairTable()'s rescue copy loop must skip entries whose internal key
+// cannot be parsed, exactly like ScanTable()'s metadata pass already does.
+// The crafted table contains one valid entry, one entry whose key has an
+// invalid type byte (it fails ParseInternalKey), and a third valid entry.
+// Repair only rebuilds a table when its scan ends with an error, and repair
+// scans with verify_checksums disabled, so the error is injected with an Env
+// wrapper whose RandomAccessFile::Read fails on one given call (the third
+// data block). ScanTable() then hands the damaged table to RepairTable();
+// the rescue copy re-reads the cached table with the countdown spent, so the
+// valid third entry is rescued too. The rebuilt table must keep the two
+// valid entries and must never receive the unparsable one. (Guard ported
+// from Amulet-Team/leveldb-mcpe commit 52253f2f.)
+class RepairErrorEnv : public EnvWrapper {
+ public:
+  RepairErrorEnv() : EnvWrapper(Env::Default()) {}
+  int error_on_read_call = 0;  // 1-based call number to fail; 0 = never.
+  mutable int read_calls = 0;
+
+  class ErroringRandomAccessFile : public RandomAccessFile {
+   public:
+    ErroringRandomAccessFile(RandomAccessFile* target, RepairErrorEnv* owner)
+        : target_(target), owner_(owner) {}
+    ~ErroringRandomAccessFile() override { delete target_; }
+    Status Read(uint64_t offset, size_t n, Slice* result,
+                char* scratch) const override {
+      ++owner_->read_calls;
+      if (owner_->error_on_read_call > 0 &&
+          owner_->read_calls == owner_->error_on_read_call) {
+        return Status::IOError("injected read error");
+      }
+      return target_->Read(offset, n, result, scratch);
+    }
+
+   private:
+    RandomAccessFile* target_;
+    RepairErrorEnv* owner_;
+  };
+
+  Status NewRandomAccessFile(const std::string& fname,
+                             RandomAccessFile** result) override {
+    RandomAccessFile* target = nullptr;
+    Status s = EnvWrapper::NewRandomAccessFile(fname, &target);
+    if (!s.ok()) {
+      return s;
+    }
+    *result = new ErroringRandomAccessFile(target, this);
+    return Status::OK();
+  }
+};
+
+TEST_F(DBTest, RepairTableSkipsUnparsableKeys) {
+  RepairErrorEnv env;
+  Options options;
+  options.block_size = 1;  // One data block per entry.
+  options.env = &env;
+  std::string dbname;
+  options.env->GetTestDirectory(&dbname);
+  dbname += "/db_repair_skip_unparsable";
+  DestroyDB(dbname, options);
+  // Ignore "already exists" - leveldb's own GetTestDirectory does the same.
+  options.env->CreateDir(dbname);
+
+  // Block 1: valid entry. Block 2: key with an invalid type byte (fails
+  // ParseInternalKey). Block 3: valid entry; its read is the one that gets
+  // the injected error below.
+  std::string table_name = dbname + "/000005.ldb";
+  {
+    WritableFile* file = nullptr;
+    ASSERT_LEVELDB_OK(options.env->NewWritableFile(table_name, &file));
+    TableBuilder builder(options, file);
+    builder.Add(InternalKey("a", 1, kTypeValue).Encode(), "va");
+    // An entry whose key trailer carries an invalid type byte (0xff): built
+    // by hand - the internal helpers assert on invalid types.
+    std::string unparsable = "b";
+    unparsable.append(8, '\0');
+    unparsable[unparsable.size() - 8] = static_cast<char>(0xff);  // type byte
+    unparsable[unparsable.size() - 7] = '\x01';                   // sequence = 1
+    builder.Add(unparsable, "vb");
+    builder.Add(InternalKey("c", 1, kTypeValue).Encode(), "vc");
+    ASSERT_LEVELDB_OK(builder.Finish());
+    ASSERT_LEVELDB_OK(file->Close());
+    delete file;
+  }
+
+  // ScanTable() opens the table (footer + index reads, calls 1-2) and then
+  // iterates the three data blocks (calls 3-5). Failing call 5 - the third
+  // block - makes the metadata pass end with an error, which is what sends
+  // the table to RepairTable(). The rescue copy re-reads the cached table
+  // with the countdown already spent, so both valid entries come through;
+  // the unparsable second entry must be dropped by the guard.
+  env.error_on_read_call = 5;
+
+  ASSERT_LEVELDB_OK(RepairDB(dbname, options));
+
+  // Inspect the rebuilt table directly at the internal-key level: a
+  // DB::NewIterator() hands out user keys, which ParseInternalKey cannot
+  // parse by design.
+  RandomAccessFile* ra = nullptr;
+  uint64_t rebuilt_size = 0;
+  ASSERT_LEVELDB_OK(options.env->GetFileSize(table_name, &rebuilt_size));
+  ASSERT_LEVELDB_OK(options.env->NewRandomAccessFile(table_name, &ra));
+  Table* table = nullptr;
+  ASSERT_LEVELDB_OK(Table::Open(options, ra, rebuilt_size, &table));
+  Iterator* iter = table->NewIterator(ReadOptions());
+  int count = 0;
+  std::string user_keys;
+  for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
+    ParsedInternalKey parsed;
+    ASSERT_TRUE(ParseInternalKey(iter->key(), &parsed));
+    if (count > 0) {
+      user_keys += ",";
+    }
+    user_keys += ExtractUserKey(iter->key()).ToString();
+    ++count;
+  }
+  ASSERT_LEVELDB_OK(iter->status());
+  ASSERT_EQ(2, count);  // "a" and "c" rescued.
+  ASSERT_EQ("a,c", user_keys);
+  delete iter;
+  delete table;
+  DestroyDB(dbname, options);
+}
+
+
 
 }  // namespace leveldb
