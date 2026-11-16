@@ -642,7 +642,9 @@ class WindowsEnv : public Env {
   }
 
   Status NewLogger(const std::string& filename, Logger** result) override {
-    std::FILE* fp = std::fopen(filename.c_str(), "wN");
+    // Append like the POSIX O_APPEND logger so the LOG file survives
+    // re-opening; "N" keeps the handle non-inheritable.
+    std::FILE* fp = std::fopen(filename.c_str(), "aN");
     if (fp == nullptr) {
       *result = nullptr;
       return WindowsError(filename, ::GetLastError());
