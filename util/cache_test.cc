@@ -199,7 +199,7 @@ TEST_F(CacheTest, VariableLengthKeys) {
   Cache::Handle* handle = cache_->Insert(
       key, EncodeValue(123), 1,
       [](const Slice& deleted_key, void* value) {
-        EXPECT_EQ(key.size(), deleted_key.size());
+        EXPECT_EQ(14U, deleted_key.size());
       });
   ASSERT_NE(nullptr, handle);
   Cache::Handle* found = cache_->Lookup(key);
