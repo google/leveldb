@@ -198,8 +198,8 @@ TEST_F(CacheTest, VariableLengthKeys) {
   const std::string key = "long cache key";
   Cache::Handle* handle = cache_->Insert(
       key, EncodeValue(123), 1,
-      [](const Slice& deleted_key, void* value) {
-        EXPECT_EQ(14U, deleted_key.size());
+      [](const Slice& deleted_key, void*) {
+        EXPECT_EQ("long cache key", deleted_key.ToString());
       });
   ASSERT_NE(nullptr, handle);
   Cache::Handle* found = cache_->Lookup(key);
