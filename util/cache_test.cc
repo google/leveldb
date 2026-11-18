@@ -194,6 +194,21 @@ TEST_F(CacheTest, HeavyEntries) {
   ASSERT_LE(cached_weight, kCacheSize + kCacheSize / 10);
 }
 
+TEST_F(CacheTest, VariableLengthKeys) {
+  const std::string key = "long cache key";
+  Cache::Handle* handle = cache_->Insert(
+      key, EncodeValue(123), 1,
+      [](const Slice& deleted_key, void* value) {
+        EXPECT_EQ(key.size(), deleted_key.size());
+      });
+  ASSERT_NE(nullptr, handle);
+  Cache::Handle* found = cache_->Lookup(key);
+  ASSERT_NE(nullptr, found);
+  EXPECT_EQ(123, DecodeValue(cache_->Value(found)));
+  cache_->Release(found);
+  cache_->Release(handle);
+}
+
 TEST_F(CacheTest, NewId) {
   uint64_t a = cache_->NewId();
   uint64_t b = cache_->NewId();
