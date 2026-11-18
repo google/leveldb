@@ -51,7 +51,7 @@ struct LRUHandle {
   bool in_cache;     // Whether entry is in the cache.
   uint32_t refs;     // References, including cache reference, if present.
   uint32_t hash;     // Hash of key(); used for fast sharding and comparisons
-  char key_data[1];  // Beginning of key
+  char* key_data;    // Points to the key bytes stored after this structure
 
   Slice key() const {
     // next is only equal to this if the LRU handle is the list head of an
@@ -271,8 +271,8 @@ Cache::Handle* LRUCache::Insert(const Slice& key, uint32_t hash, void* value,
                                                 void* value)) {
   MutexLock l(&mutex_);
 
-  LRUHandle* e =
-      reinterpret_cast<LRUHandle*>(malloc(sizeof(LRUHandle) - 1 + key.size()));
+  LRUHandle* e = reinterpret_cast<LRUHandle*>(malloc(sizeof(LRUHandle) + key.size()));
+  e->key_data = reinterpret_cast<char*>(e + 1);
   e->value = value;
   e->deleter = deleter;
   e->charge = charge;
