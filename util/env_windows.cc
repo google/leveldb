@@ -266,7 +266,11 @@ class WindowsMmapReadableFile : public RandomAccessFile {
 class WindowsWritableFile : public WritableFile {
  public:
   WindowsWritableFile(std::string filename, ScopedHandle handle)
-      : pos_(0), handle_(std::move(handle)), filename_(std::move(filename)) {}
+      : pos_(0),
+        handle_(std::move(handle)),
+        is_manifest_(IsManifest(filename)),
+        filename_(std::move(filename)),
+        dirname_(Dirname(filename_)) {}
 
   ~WindowsWritableFile() override = default;
 
@@ -310,10 +314,12 @@ class WindowsWritableFile : public WritableFile {
   Status Flush() override { return FlushBuffer(); }
 
   Status Sync() override {
-    // On Windows no need to sync parent directory. Its metadata will be updated
-    // via the creation of the new file, without an explicit sync.
+    Status status = SyncDirIfManifest();
+    if (!status.ok()) {
+      return status;
+    }
 
-    Status status = FlushBuffer();
+    status = FlushBuffer();
     if (!status.ok()) {
       return status;
     }
@@ -342,12 +348,63 @@ class WindowsWritableFile : public WritableFile {
     return Status::OK();
   }
 
+  // The Windows counterpart of POSIX SyncDirIfManifest(): flushes the parent
+  // directory so a newly created MANIFEST's directory entry is persisted
+  // before the database relies on it. The directory handle needs GENERIC_WRITE
+  // (a read-only directory handle fails with ERROR_ACCESS_DENIED) and
+  // FILE_FLAG_BACKUP_SEMANTICS (required to open a directory at all); no
+  // administrator privilege is involved.
+  Status SyncDirIfManifest() {
+    Status status;
+    if (!is_manifest_) {
+      return status;
+    }
+
+    ScopedHandle dir = ::CreateFileA(
+        dirname_.c_str(), GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+        OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+    if (!dir.is_valid()) {
+      return WindowsError(dirname_, ::GetLastError());
+    }
+    if (!::FlushFileBuffers(dir.get())) {
+      return WindowsError(dirname_, ::GetLastError());
+    }
+    return status;
+  }
+
+  // Unlike the POSIX side, Windows paths can use both '/' and '\\' as the
+  // separator (e.g. paths derived from GetTempPathA), so both are handled.
+  static std::string Dirname(const std::string& filename) {
+    std::string::size_type separator_pos = filename.find_last_of("/\\");
+    if (separator_pos == std::string::npos) {
+      return std::string(".");
+    }
+    return filename.substr(0, separator_pos);
+  }
+
+  static Slice Basename(const std::string& filename) {
+    std::string::size_type separator_pos = filename.find_last_of("/\\");
+    if (separator_pos == std::string::npos) {
+      return Slice(filename);
+    }
+    return Slice(filename.c_str() + separator_pos + 1,
+                 filename.length() - separator_pos - 1);
+  }
+
+  // True if the given file is a manifest file.
+  static bool IsManifest(const std::string& filename) {
+    return Basename(filename).starts_with("MANIFEST");
+  }
+
   // buf_[0, pos_-1] contains data to be written to handle_.
   char buf_[kWritableFileBufferSize];
   size_t pos_;
 
   ScopedHandle handle_;
+  const bool is_manifest_;  // True if the file's name starts with MANIFEST.
   const std::string filename_;
+  const std::string dirname_;  // The directory of filename_.
 };
 
 // Lock or unlock the entire file as specified by |lock|. Returns true
