@@ -40,7 +40,7 @@ check_include_file("unistd.h" HAVE_UNISTD_H)
 include(CheckLibraryExists)
 check_library_exists(crc32c crc32c_value "" HAVE_CRC32C)
 check_library_exists(snappy snappy_compress "" HAVE_SNAPPY)
-check_library_exists(zstd zstd_compress "" HAVE_ZSTD)
+check_library_exists(zstd ZSTD_compress "" HAVE_ZSTD)
 check_library_exists(tcmalloc malloc "" HAVE_TCMALLOC)
 
 include(CheckCXXSymbolExists)
@@ -340,6 +340,7 @@ if(LEVELDB_BUILD_TESTS)
         "db/write_batch_test.cc"
         "helpers/memenv/memenv_test.cc"
         "table/filter_block_test.cc"
+        "table/format_1349_test.cc"
         "table/table_test.cc"
         "util/arena_test.cc"
         "util/bloom_test.cc"

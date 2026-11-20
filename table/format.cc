@@ -4,6 +4,8 @@
 
 #include "table/format.h"
 
+#include <new>
+
 #include "leveldb/env.h"
 #include "leveldb/options.h"
 #include "port/port.h"
@@ -12,6 +14,15 @@
 #include "util/crc32c.h"
 
 namespace leveldb {
+
+namespace {
+constexpr size_t kDecompressionFastPathBytes = 8 * 1024 * 1024;
+
+// The densest Snappy element is a 3-byte copy tag that emits at most 64
+// bytes, so a valid stream decodes to at most 64/3 (< 22) times its
+// compressed size. Larger claimed lengths cannot be valid.
+constexpr size_t kSnappyMaxExpansionRatio = 22;
+}  // namespace
 
 void BlockHandle::EncodeTo(std::string* dst) const {
   // Sanity check that all fields have been set
@@ -73,9 +84,16 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   result->heap_allocated = false;
 
   // Read the block contents as well as the type/crc footer.
-  // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
-  char* buf = new char[n + kBlockTrailerSize];
+  // Preserve the full-width block size and reject raw read size overflow.
+  if (n != handle.size() || n + kBlockTrailerSize < n) {
+    return Status::Corruption("bad block handle");
+  }
+  // Report allocation failure through Status, not an escaping bad_alloc.
+  char* buf = new (std::nothrow) char[n + kBlockTrailerSize];
+  if (buf == nullptr) {
+    return Status::Corruption("raw block buffer allocation failed");
+  }
   Slice contents;
   Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
   if (!s.ok()) {
@@ -123,7 +141,25 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
         delete[] buf;
         return Status::Corruption("corrupted snappy compressed block length");
       }
-      char* ubuf = new char[ulength];
+      // Reject impossible expansion in O(1), before any allocation sized by
+      // the untrusted length header.
+      if (ulength / kSnappyMaxExpansionRatio > n) {
+        delete[] buf;
+        return Status::Corruption("corrupted snappy compressed block length");
+      }
+      // Ordinary blocks stay on the original one-pass fast path. Large
+      // declarations are validated before any equally large allocation. This
+      // threshold selects an implementation path; it does not reject valid data.
+      if (ulength > kDecompressionFastPathBytes &&
+          !port::Snappy_ValidateCompressedBuffer(data, n)) {
+        delete[] buf;
+        return Status::Corruption("corrupted snappy compressed block contents");
+      }
+      char* ubuf = new (std::nothrow) char[ulength];
+      if (ubuf == nullptr) {
+        delete[] buf;
+        return Status::Corruption("snappy block allocation failed");
+      }
       if (!port::Snappy_Uncompress(data, n, ubuf)) {
         delete[] buf;
         delete[] ubuf;
@@ -141,7 +177,18 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
         delete[] buf;
         return Status::Corruption("corrupted zstd compressed block length");
       }
-      char* ubuf = new char[ulength];
+      // Ordinary blocks use the original one-pass decompressor. Large
+      // declarations use bounded streaming validation before the large allocation.
+      if (ulength > kDecompressionFastPathBytes &&
+          !port::Zstd_ValidateCompressedBuffer(data, n, ulength)) {
+        delete[] buf;
+        return Status::Corruption("corrupted zstd compressed block contents");
+      }
+      char* ubuf = new (std::nothrow) char[ulength];
+      if (ubuf == nullptr) {
+        delete[] buf;
+        return Status::Corruption("zstd block allocation failed");
+      }
       if (!port::Zstd_Uncompress(data, n, ubuf)) {
         delete[] buf;
         delete[] ubuf;

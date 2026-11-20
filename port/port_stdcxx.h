@@ -37,6 +37,7 @@
 #include <condition_variable>  // NOLINT
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <mutex>  // NOLINT
 #include <string>
 
@@ -118,6 +119,16 @@ inline bool Snappy_GetUncompressedLength(const char* input, size_t length,
 #endif  // HAVE_SNAPPY
 }
 
+inline bool Snappy_ValidateCompressedBuffer(const char* input, size_t length) {
+#if HAVE_SNAPPY
+  return snappy::IsValidCompressedBuffer(input, length);
+#else
+  (void)input;
+  (void)length;
+  return false;
+#endif  // HAVE_SNAPPY
+}
+
 inline bool Snappy_Uncompress(const char* input, size_t length, char* output) {
 #if HAVE_SNAPPY
   return snappy::RawUncompress(input, length, output);
@@ -163,15 +174,80 @@ inline bool Zstd_Compress(int level, const char* input, size_t length,
 inline bool Zstd_GetUncompressedLength(const char* input, size_t length,
                                        size_t* result) {
 #if HAVE_ZSTD
-  size_t size = ZSTD_getFrameContentSize(input, length);
-  if (size == 0) return false;
-  *result = size;
+  const unsigned long long size = ZSTD_getFrameContentSize(input, length);
+  if (size == 0 || size == ZSTD_CONTENTSIZE_ERROR ||
+      size == ZSTD_CONTENTSIZE_UNKNOWN ||
+      size > std::numeric_limits<size_t>::max()) {
+    return false;
+  }
+  *result = static_cast<size_t>(size);
   return true;
 #else
   // Silence compiler warnings about unused arguments.
   (void)input;
   (void)length;
   (void)result;
+  return false;
+#endif  // HAVE_ZSTD
+}
+
+inline bool Zstd_ValidateCompressedBuffer(const char* input, size_t length,
+                                          size_t expected_output) {
+#if HAVE_ZSTD
+  ZSTD_DCtx* ctx = ZSTD_createDCtx();
+  if (ctx == nullptr) return false;
+  // The one-pass decompressor this probe guards allocates only the output
+  // buffer and ignores the frame's declared window, so it accepts frames no
+  // matter how large a window they declare.  The streaming probe allocates
+  // window-sized buffers instead; raise its limit to 30 so every window a
+  // real encoder declares (non-long modes stay at or below 27) is accepted,
+  // while a forged header can still only make the probe allocate ~1 GiB -
+  // bounded, unlike the unbounded allocation the probe exists to prevent.
+  if (ZSTD_isError(ZSTD_DCtx_setParameter(ctx, ZSTD_d_windowLogMax, 30))) {
+    ZSTD_freeDCtx(ctx);
+    return false;
+  }
+
+  char scratch[64 * 1024];
+  ZSTD_inBuffer in = {input, length, 0};
+  size_t total_output = 0;
+  size_t last_in_pos = 0;
+
+  while (true) {
+    ZSTD_outBuffer out = {scratch, sizeof(scratch), 0};
+    const size_t rc = ZSTD_decompressStream(ctx, &out, &in);
+    if (ZSTD_isError(rc)) {
+      ZSTD_freeDCtx(ctx);
+      return false;
+    }
+    // Check the remaining output budget before adding: this also prevents
+    // size_t overflow if a future caller permits an extremely large size.
+    // The invariant total_output <= expected_output holds on each iteration.
+    if (out.pos > expected_output - total_output) {
+      ZSTD_freeDCtx(ctx);
+      return false;
+    }
+    total_output += out.pos;
+    if (rc == 0 && in.pos == in.size) {
+      // A frame ended and the input is fully consumed.  Zero-output frames
+      // (e.g. trailing skippable frames) are legal; the decoded size must
+      // still match what the caller allocated for.
+      ZSTD_freeDCtx(ctx);
+      return total_output == expected_output;
+    }
+    // After a frame end with input left over, the next loop iteration
+    // continues with the following frame in the same context.
+    if (in.pos == last_in_pos && out.pos == 0) {
+      // Neither input moved nor output produced: truncated or stuck stream.
+      ZSTD_freeDCtx(ctx);
+      return false;
+    }
+    last_in_pos = in.pos;
+  }
+#else
+  (void)input;
+  (void)length;
+  (void)expected_output;
   return false;
 #endif  // HAVE_ZSTD
 }
