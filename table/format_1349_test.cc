@@ -4,6 +4,7 @@
 
 #include "table/format.h"
 
+#include <cstdint>
 #include <cstring>
 #include <string>
 
@@ -239,6 +240,121 @@ TEST(ReadBlockIssue1349Test, RejectsWindowAboveConfiguredLimit) {
 #else
   GTEST_SKIP() << "Zstd support unavailable";
 #endif
+}
+
+#if HAVE_SNAPPY
+// Appends the Snappy varint32 preamble (the claimed uncompressed length).
+void AppendSnappyLength(std::string* dst, uint32_t v) {
+  while (v >= 0x80) {
+    dst->push_back(static_cast<char>((v & 0x7f) | 0x80));
+    v >>= 7;
+  }
+  dst->push_back(static_cast<char>(v));
+}
+
+// Builds the densest possible valid stream: one literal byte followed by
+// `copies` 3-byte copy tags (length 64, offset 1). It decodes to
+// 1 + 64 * copies bytes from 2 + 3 * copies element bytes.
+std::string DenseSnappyStream(uint32_t copies) {
+  std::string s;
+  AppendSnappyLength(&s, 1 + 64 * copies);
+  s.push_back('\x00');  // Literal, length 1.
+  s.push_back('d');
+  for (uint32_t i = 0; i < copies; ++i) {
+    s.push_back(static_cast<char>((63 << 2) | 2));  // Copy-2, length 64.
+    s.push_back('\x01');                            // Offset 1, little-endian.
+    s.push_back('\x00');
+  }
+  return s;
+}
+#endif  // HAVE_SNAPPY
+
+TEST(ReadBlockIssue1349Test, AcceptsMaximallyDenseSnappyBelowFastPathLimit) {
+#if HAVE_SNAPPY
+  const std::string payload = DenseSnappyStream(1000);
+  BlockContents out;
+  Status s = ReadPayload(payload, kSnappyCompression, &out);
+  ASSERT_TRUE(s.ok()) << s.ToString();
+  ASSERT_EQ(1 + 64 * 1000u, out.data.size());
+  EXPECT_EQ(std::string(out.data.size(), 'd'), out.data.ToString());
+  if (out.heap_allocated) delete[] out.data.data();
+#else
+  GTEST_SKIP() << "Snappy support unavailable";
+#endif
+}
+
+TEST(ReadBlockIssue1349Test, AcceptsMaximallyDenseSnappyAboveFastPathLimit) {
+#if HAVE_SNAPPY
+  // About 9 MiB decoded from about 432 KiB: ~21.3x, the format's maximum.
+  const uint32_t copies = (9 * 1024 * 1024) / 64;
+  const std::string payload = DenseSnappyStream(copies);
+  BlockContents out;
+  Status s = ReadPayload(payload, kSnappyCompression, &out);
+  ASSERT_TRUE(s.ok()) << s.ToString();
+  ASSERT_EQ(1 + 64 * static_cast<size_t>(copies), out.data.size());
+  EXPECT_EQ(std::string(out.data.size(), 'd'), out.data.ToString());
+  if (out.heap_allocated) delete[] out.data.data();
+#else
+  GTEST_SKIP() << "Snappy support unavailable";
+#endif
+}
+
+TEST(ReadBlockIssue1349Test, SnappyExpansionBoundIsExact) {
+#if HAVE_SNAPPY
+  // An 8-byte payload whose preamble is 2 bytes for both claims below.
+  // Claims up to 22 * 8 + 21 pass the O(1) bound (then fail decoding);
+  // 22 * 9 is the first claim it rejects.
+  for (uint32_t claim : {22u * 8 + 21, 22u * 9}) {
+    std::string payload;
+    AppendSnappyLength(&payload, claim);
+    ASSERT_EQ(2u, payload.size());
+    payload.append(6, '\x00');
+    ASSERT_EQ(8u, payload.size());
+    BlockContents out;
+    Status s = ReadPayload(payload, kSnappyCompression, &out);
+    ASSERT_TRUE(s.IsCorruption()) << claim << ": " << s.ToString();
+    const bool rejected_as_length =
+        s.ToString().find("block length") != std::string::npos;
+    EXPECT_EQ(claim == 22u * 9, rejected_as_length)
+        << claim << ": " << s.ToString();
+    EXPECT_FALSE(out.heap_allocated);
+  }
+#else
+  GTEST_SKIP() << "Snappy support unavailable";
+#endif
+}
+
+TEST(ReadBlockIssue1349Test, RejectsImpossibleSnappyClaimBelowFastPathLimit) {
+#if HAVE_SNAPPY
+  // A 4 MiB claim backed by 8 bytes is under the validation threshold, so
+  // only the expansion bound stops a 4 MiB allocation for it.
+  std::string payload;
+  AppendSnappyLength(&payload, 4 * 1024 * 1024);
+  payload.append(4, '\x00');
+  BlockContents out;
+  Status s = ReadPayload(payload, kSnappyCompression, &out);
+  ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+  EXPECT_NE(std::string::npos, s.ToString().find("block length"))
+      << s.ToString();
+  EXPECT_FALSE(out.heap_allocated);
+#else
+  GTEST_SKIP() << "Snappy support unavailable";
+#endif
+}
+
+TEST(ReadBlockIssue1349Test, RejectsBlockHandleSizeOverflow) {
+  // n + kBlockTrailerSize must not wrap around to a small allocation.
+  BlockHandle handle;
+  handle.set_offset(0);
+  handle.set_size(~static_cast<uint64_t>(0) - 1);
+  StringSource1349 source("");
+  ReadOptions options;
+  BlockContents out;
+  Status s = ReadBlock(&source, options, handle, &out);
+  ASSERT_TRUE(s.IsCorruption()) << s.ToString();
+  EXPECT_NE(std::string::npos, s.ToString().find("bad block handle"))
+      << s.ToString();
+  EXPECT_FALSE(out.heap_allocated);
 }
 
 }  // namespace

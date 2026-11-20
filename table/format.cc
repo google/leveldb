@@ -17,6 +17,11 @@ namespace leveldb {
 
 namespace {
 constexpr size_t kDecompressionFastPathBytes = 8 * 1024 * 1024;
+
+// The densest Snappy element is a 3-byte copy tag that emits at most 64
+// bytes, so a valid stream decodes to at most 64/3 (< 22) times its
+// compressed size. Larger claimed lengths cannot be valid.
+constexpr size_t kSnappyMaxExpansionRatio = 22;
 }  // namespace
 
 void BlockHandle::EncodeTo(std::string* dst) const {
@@ -133,6 +138,12 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
     case kSnappyCompression: {
       size_t ulength = 0;
       if (!port::Snappy_GetUncompressedLength(data, n, &ulength)) {
+        delete[] buf;
+        return Status::Corruption("corrupted snappy compressed block length");
+      }
+      // Reject impossible expansion in O(1), before any allocation sized by
+      // the untrusted length header.
+      if (ulength / kSnappyMaxExpansionRatio > n) {
         delete[] buf;
         return Status::Corruption("corrupted snappy compressed block length");
       }
