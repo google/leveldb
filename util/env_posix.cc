@@ -608,11 +608,23 @@ class PosixEnv : public Env {
       return PosixError(directory_path, errno);
     }
     struct ::dirent* entry;
-    while ((entry = ::readdir(dir)) != nullptr) {
+    for (;;) {
+      // readdir() returns nullptr both at end-of-directory and on error.
+      // Clear errno before each call so the two cases can be distinguished.
+      errno = 0;
+      entry = ::readdir(dir);
+      if (entry == nullptr) {
+        int read_errno = errno;
+        ::closedir(dir);
+        if (read_errno != 0) {
+          // A partial listing must not be mistaken for a complete one.
+          result->clear();
+          return PosixError(directory_path, read_errno);
+        }
+        return Status::OK();
+      }
       result->emplace_back(entry->d_name);
     }
-    ::closedir(dir);
-    return Status::OK();
   }
 
   Status RemoveFile(const std::string& filename) override {
